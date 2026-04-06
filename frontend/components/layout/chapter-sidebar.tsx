@@ -40,7 +40,7 @@ export function ChapterSidebar({
     <motion.aside
       animate={{ width }}
       transition={transition}
-      className="fixed top-14 left-0 bottom-0 z-40 bg-white border-r border-gray-200 overflow-hidden"
+      className="fixed top-14 left-0 bottom-0 z-40 bg-card border-r border-border overflow-hidden"
     >
       <nav className="h-full flex flex-col">
         {/* Subsections scrollable area */}
@@ -53,7 +53,7 @@ export function ChapterSidebar({
                 onClick={() => onSelectSubsection(index)}
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm relative
-                  ${isActive ? 'text-primary font-medium' : 'text-gray-600 hover:text-gray-900'}
+                  ${isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'}
                 `}
                 whileHover={prefersReducedMotion ? {} : { x: 2 }}
                 transition={{ duration: 0.15 }}
@@ -73,7 +73,7 @@ export function ChapterSidebar({
                   className={`
                     w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 font-medium
                     transition-colors duration-200
-                    ${isActive ? 'text-white' : 'bg-gray-100 text-gray-400'}
+                    ${isActive ? 'text-white' : 'bg-muted text-muted-foreground'}
                   `}
                   style={isActive ? { backgroundColor: chapter.color } : {}}
                 >

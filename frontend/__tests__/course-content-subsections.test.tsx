@@ -37,6 +37,7 @@ const mockChapter2: CourseChapter = {
   progress: 100,
   status: 'completed',
   lessons: 10,
+  subsectionExercises: {},
 }
 
 // Chapter 3: String - for testing
@@ -58,6 +59,7 @@ const mockChapter3: CourseChapter = {
   progress: 85,
   status: 'learning',
   lessons: 8,
+  subsectionExercises: {},
 }
 
 describe('CourseContent Subsection Navigation', () => {

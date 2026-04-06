@@ -24,6 +24,7 @@ const mockChapters: CourseChapter[] = [
     progress: 100,
     status: 'completed',
     lessons: 8,
+    subsectionExercises: {},
   },
   {
     id: 2,
@@ -37,6 +38,7 @@ const mockChapters: CourseChapter[] = [
     progress: 100,
     status: 'completed',
     lessons: 10,
+    subsectionExercises: {},
   },
   {
     id: 3,
@@ -50,6 +52,7 @@ const mockChapters: CourseChapter[] = [
     progress: 85,
     status: 'learning',
     lessons: 8,
+    subsectionExercises: {},
   },
   {
     id: 4,
@@ -63,6 +66,7 @@ const mockChapters: CourseChapter[] = [
     progress: 45,
     status: 'learning',
     lessons: 12,
+    subsectionExercises: {},
   },
   {
     id: 5,
@@ -76,6 +80,7 @@ const mockChapters: CourseChapter[] = [
     progress: 65,
     status: 'learning',
     lessons: 14,
+    subsectionExercises: {},
   },
   {
     id: 6,
@@ -89,6 +94,7 @@ const mockChapters: CourseChapter[] = [
     progress: 0,
     status: 'new',
     lessons: 16,
+    subsectionExercises: {},
   },
 ]
 

@@ -3,7 +3,7 @@
 import { CourseChapter, getChapterTotalExercises } from '@/lib/course-data'
 import { cn } from '@/lib/utils'
 import { Clock, BookOpen, Sparkles, CheckCircle, FileText, ChevronLeft, ChevronRight, Check, LogOut, X, XCircle } from 'lucide-react'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 
 // Exercise interface
 interface Exercise {
@@ -63,7 +63,7 @@ interface ChapterContentProps {
   activeIndex: number
   onNavigate: (index: number) => void
   onStartIDE: () => void
-  onStartIDEWithTemplate?: (template: string) => void  // 编程题打开IDE并传入模板
+  onStartIDEWithTemplate?: (template: string, question?: string, options?: string[]) => void  // 编程题打开IDE并传入模板
   isSplitScreen?: boolean  // IDE是否正在显示
   lang: 'zh' | 'en'
   completedExercisesBySubsection?: Record<number, number[]>  // {小节索引: [已完成习题ID列表]}
@@ -87,6 +87,26 @@ export function ChapterContent({
   const [completedExercises, setCompletedExercises] = useState<number[]>([])
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({})
   const [submittedChoiceExercises, setSubmittedChoiceExercises] = useState<Record<number, boolean>>({})
+
+  // Map of question element refs, keyed by `${chapter.id}-${activeIndex}-${exerciseId}`
+  const questionElementsRef = useRef<Map<string, HTMLDivElement>>(new Map())
+
+  // Set answer status on a question element (called when answer changes)
+  const setQuestionElementStatus = useCallback((
+    exerciseId: number,
+    status: "unanswered" | "correct" | "wrong"
+  ) => {
+    const key = `${chapter.id}-${activeIndex}-${exerciseId}`
+    const el = questionElementsRef.current.get(key)
+    if (el) {
+      el.setAttribute("data-question-answer-status", status)
+    }
+  }, [chapter.id, activeIndex])
+
+  // Use ref to track completedExercisesBySubsection to avoid infinite loops from object reference changes
+  const completedExercisesBySubsectionRef = useRef(completedExercisesBySubsection)
+  const completedExercisesBySubsectionJSONPrev = useRef(JSON.stringify(completedExercisesBySubsection))
+
 
   // 使用 useMemo 缓存 exercises，避免每次渲染创建新数组
   const exercises = useMemo(() => getExercises(chapter.id, activeIndex), [chapter.id, activeIndex])
@@ -113,6 +133,11 @@ export function ChapterContent({
 
   // 当 completedExercisesBySubsection 从后端加载变化时，同步 completedExercises
   useEffect(() => {
+    const currentJSON = JSON.stringify(completedExercisesBySubsection)
+    if (currentJSON === completedExercisesBySubsectionJSONPrev.current) {
+      return // No actual change, avoid infinite loop
+    }
+    completedExercisesBySubsectionJSONPrev.current = currentJSON
     const completedInCurrentSection = completedExercisesBySubsection[activeIndex] || []
     setCompletedExercises(completedInCurrentSection)
   }, [completedExercisesBySubsection, activeIndex])
@@ -126,8 +151,14 @@ export function ChapterContent({
     const selectedAnswer = selectedAnswers[exerciseId]
     if (selectedAnswer === undefined) return
 
+    const exercise = exercises.find(e => e.id === exerciseId)
     const correctAnswer = getCorrectAnswerIndex(exerciseId)
-    if (correctAnswer !== null && selectedAnswer === correctAnswer) {
+    const isCorrect = correctAnswer !== null ? selectedAnswer === correctAnswer : selectedAnswer === exercise?.answer
+
+    // Update DOM status for orb detection
+    setQuestionElementStatus(exerciseId, isCorrect ? "correct" : "wrong")
+
+    if (isCorrect) {
       // 答对了，标记完成
       handleMarkComplete(exerciseId)
     }
@@ -136,6 +167,8 @@ export function ChapterContent({
   }
 
   const handleMarkComplete = (exerciseId: number) => {
+    // Update DOM status for orb detection
+    setQuestionElementStatus(exerciseId, "correct")
     // 只通知父组件，不直接设置 completedExercises
     // completedExercises 通过 useEffect 从 completedExercisesBySubsection prop 同步更新
     if (onExerciseComplete) {
@@ -261,12 +294,12 @@ export function ChapterContent({
   }
 
   return (
-    <main className="h-full min-h-0 overflow-y-auto bg-gray-50" data-testid="content-area">
+    <main className="h-full min-h-0 overflow-y-auto bg-background" data-testid="content-area">
       <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Content Header */}
         <div className="mb-8">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
             <span
               className="px-2 py-0.5 rounded text-xs font-medium"
               style={{
@@ -276,19 +309,19 @@ export function ChapterContent({
             >
               {t(chapter.title, chapter.titleEn)}
             </span>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-400">
+            <span className="text-muted-foreground/50">/</span>
+            <span className="text-muted-foreground">
               {t('第', '')}{activeIndex + 1}{t('节', '')} / {chapter.subsections.length}
             </span>
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-foreground mb-4">
             {activeIndex + 1}. {activeSubsection}
           </h1>
 
           {/* Meta */}
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
               <span>
@@ -307,7 +340,7 @@ export function ChapterContent({
         {/* Content Body */}
         <div className="space-y-6">
           {/* Key Concepts Card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-card rounded-xl border border-border p-6">
             <div className="flex items-start gap-4 mb-4">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
@@ -316,8 +349,8 @@ export function ChapterContent({
                 <Sparkles className="w-6 h-6" style={{ color: chapter.color }} />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">{content.title}</h3>
-                <p className="text-sm text-gray-500">{t('核心知识点', 'Key Concepts')}</p>
+                <h3 className="font-semibold text-foreground mb-1">{content.title}</h3>
+                <p className="text-sm text-muted-foreground">{t('核心知识点', 'Key Concepts')}</p>
               </div>
             </div>
 
@@ -328,15 +361,15 @@ export function ChapterContent({
                     className="w-5 h-5 shrink-0 mt-0.5"
                     style={{ color: chapter.color }}
                   />
-                  <span className="text-gray-700 leading-relaxed">{item}</span>
+                  <span className="text-foreground leading-relaxed">{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
           {/* Related Concepts */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <div className="bg-muted rounded-xl p-6">
+            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               {t('相关概念', 'Related Concepts')}
             </h4>
@@ -344,12 +377,12 @@ export function ChapterContent({
               {chapter.topics.slice(0, 3).map((topic) => (
                 <span
                   key={topic}
-                  className="px-3 py-1 bg-white rounded-full text-sm text-gray-600 border border-gray-200"
+                  className="px-3 py-1 bg-card rounded-full text-sm text-foreground border border-border"
                 >
                   {topic}
                 </span>
               ))}
-              <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-600 border border-gray-200">
+              <span className="px-3 py-1 bg-card rounded-full text-sm text-foreground border border-border">
                 +{chapter.subsections.length - 3} {t('个小节', ' subsections')}
               </span>
             </div>
@@ -357,28 +390,46 @@ export function ChapterContent({
 
           {/* Exercises Section */}
           {exercises.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-card rounded-xl border border-border p-6">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-purple-600" />
+                <h4 className="font-semibold text-foreground flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-primary" />
                   {t('课后习题', 'Exercises')}
                 </h4>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   {completedExercises.length}/{exercises.length} {t('已完成', 'completed')}
                 </span>
               </div>
               <div className="space-y-6">
                 {exercises.map((exercise) => (
-                  <div key={exercise.id} className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
-                    <p className="font-medium text-gray-800 mb-3">
+                  <div
+                    key={exercise.id}
+                    className="pb-4 mb-2 relative"
+                    ref={(el) => {
+                      if (el) {
+                        questionElementsRef.current.set(`${chapter.id}-${activeIndex}-${exercise.id}`, el)
+                      } else {
+                        questionElementsRef.current.delete(`${chapter.id}-${activeIndex}-${exercise.id}`)
+                      }
+                    }}
+                    data-question-context
+                    data-question-type={exercise.type}
+                    data-question-id={`${chapter.id}-${activeIndex}-${exercise.id}`}
+                    data-exercise-id={exercise.id}
+                    data-question-text={exercise.question}
+                    data-question-answer-status="unanswered"
+                    {...(exercise.options ? { 'data-question-options': JSON.stringify(exercise.options) } : {})}
+                    {...(exercise.template ? { 'data-question-code': exercise.template } : {})}
+                  >
+                    <p className="font-medium text-foreground mb-3">
                       {exercise.id}. {exercise.question}
                     </p>
                     {exercise.type === 'programming' ? (
                       // Programming exercise
-                      <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="bg-muted rounded-lg p-4">
                         <div className="mb-3">
-                          <span className="text-sm text-gray-500">{t('预期输出', 'Expected Output')}: </span>
-                          <code className="text-sm bg-white px-2 py-1 rounded border">{exercise.expectedOutput}</code>
+                          <span className="text-sm text-muted-foreground">{t('预期输出', 'Expected Output')}: </span>
+                          <code className="text-sm bg-card px-2 py-1 rounded border border-border">{exercise.expectedOutput}</code>
                         </div>
                         <button
                           onClick={() => {
@@ -386,7 +437,7 @@ export function ChapterContent({
                               // IDE is open, close it
                               onStartIDE()
                             } else if (exercise.template && onStartIDEWithTemplate) {
-                              onStartIDEWithTemplate(exercise.template)
+                              onStartIDEWithTemplate(exercise.template, exercise.question, exercise.options)
                             } else {
                               onStartIDE()
                             }
@@ -469,7 +520,7 @@ export function ChapterContent({
                                   />
                                   <span className={cn(
                                     'text-sm',
-                                    showResult && isCorrect ? 'text-green-700 font-medium' : 'text-gray-700'
+                                    showResult && isCorrect ? 'text-green-600 font-medium' : 'text-foreground'
                                   )}>
                                     {option}
                                   </span>
@@ -488,7 +539,7 @@ export function ChapterContent({
                         {selectedAnswers[exercise.id] !== undefined && !submittedChoiceExercises[exercise.id] && !completedExercises.includes(exercise.id) && (
                           <button
                             onClick={() => handleSubmitChoice(exercise.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 transition-colors"
                           >
                             <Check className="w-4 h-4" />
                             {t('确认答案', 'Submit Answer')}
@@ -496,7 +547,7 @@ export function ChapterContent({
                         )}
                         {/* 选择题结果区域：已提交或已完成时显示 */}
                         {(submittedChoiceExercises[exercise.id] || completedExercises.includes(exercise.id)) && (
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                             {(() => {
                               const correctAnswer = getCorrectAnswerIndex(exercise.id)
                               const userAnswer = selectedAnswers[exercise.id]
@@ -533,23 +584,8 @@ export function ChapterContent({
           )}
         </div>
 
-        {/* DEBUG: Reset button */}
-        <div className="fixed bottom-4 right-4 z-50">
-          <button
-            onClick={() => {
-              setSelectedAnswers({})
-              setSubmittedChoiceExercises({})
-              setCompletedExercises([])
-              alert('已重置所有答题状态（仅本地）')
-            }}
-            className="px-4 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 shadow-lg"
-          >
-            [DEBUG] 重置答题
-          </button>
-        </div>
-
         {/* Navigation Footer */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200 relative z-50 bg-gray-50">
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-border relative z-50 bg-muted/50">
           <button
             onClick={() => onNavigate(Math.max(0, activeIndex - 1))}
             disabled={activeIndex === 0}
@@ -558,8 +594,8 @@ export function ChapterContent({
               transition-colors
               ${
                 activeIndex === 0
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'text-muted-foreground/50 cursor-not-allowed'
+                  : 'text-foreground hover:bg-muted'
               }
             `}
           >
@@ -567,7 +603,7 @@ export function ChapterContent({
             {t('上一节', 'Previous')}
           </button>
 
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-muted-foreground">
             {activeIndex + 1} / {chapter.subsections.length}
           </span>
 
@@ -579,8 +615,8 @@ export function ChapterContent({
               transition-colors
               ${
                 activeIndex === chapter.subsections.length - 1
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-blue-600 hover:bg-blue-50'
+                  ? 'text-muted-foreground/50 cursor-not-allowed'
+                  : 'text-primary hover:bg-primary/10'
               }
             `}
           >

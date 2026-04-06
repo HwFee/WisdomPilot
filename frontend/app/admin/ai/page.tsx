@@ -80,24 +80,24 @@ export default function AdminAISettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-card shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Settings className="w-6 h-6 text-violet-600" />
-            <h1 className="text-xl font-bold text-gray-900">AI 配置管理</h1>
+            <Settings className="w-6 h-6 text-primary" />
+            <h1 className="text-xl font-bold text-foreground">AI 配置管理</h1>
           </div>
           <button
             onClick={() => router.push('/admin')}
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             返回管理后台
           </button>
@@ -108,25 +108,25 @@ export default function AdminAISettingsPage() {
         {message && (
           <div className={cn(
             'mb-4 p-4 rounded-lg flex items-center gap-2',
-            message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
           )}>
             {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span>{message.text}</span>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-6">
+        <div className="bg-card rounded-lg shadow p-6 space-y-6">
           {/* 状态指示 */}
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
             <Bot className={cn(
               'w-5 h-5',
-              config?.is_configured ? 'text-green-600' : 'text-gray-400'
+              config?.is_configured ? 'text-emerald-600' : 'text-muted-foreground'
             )} />
             <span className="text-sm font-medium">
               {config?.is_configured ? 'AI 服务已配置' : 'AI 服务未配置'}
             </span>
             {config && (
-              <span className="text-xs text-gray-500 ml-auto">
+              <span className="text-xs text-muted-foreground ml-auto">
                 {config.provider} / {config.model}
               </span>
             )}
@@ -134,11 +134,11 @@ export default function AdminAISettingsPage() {
 
           {/* API 提供商 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">AI 提供商</label>
+            <label className="text-sm font-medium text-foreground">AI 提供商</label>
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
             >
               <option value="openai">OpenAI</option>
               <option value="local">本地模型（开发中）</option>
@@ -147,24 +147,24 @@ export default function AdminAISettingsPage() {
 
           {/* API Key */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">API 密钥</label>
+            <label className="text-sm font-medium text-foreground">API 密钥</label>
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="sk-xxxxxxxxxxxx"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
             />
-            <p className="text-xs text-gray-500">留空则使用现有配置</p>
+            <p className="text-xs text-muted-foreground">留空则使用现有配置</p>
           </div>
 
           {/* 模型 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">模型</label>
+            <label className="text-sm font-medium text-foreground">模型</label>
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
             >
               <option value="gpt-4o-mini">GPT-4o Mini</option>
               <option value="gpt-4o">GPT-4o</option>
@@ -174,7 +174,7 @@ export default function AdminAISettingsPage() {
 
           {/* 温度 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-foreground">
               温度参数: {temperature}
             </label>
             <input
@@ -186,7 +186,7 @@ export default function AdminAISettingsPage() {
               onChange={(e) => setTemperature(parseFloat(e.target.value))}
               className="w-full"
             />
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>精确 (0)</span>
               <span>创意 (1)</span>
             </div>
@@ -194,22 +194,22 @@ export default function AdminAISettingsPage() {
 
           {/* Base URL */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Base URL（可选）</label>
+            <label className="text-sm font-medium text-foreground">Base URL（可选）</label>
             <input
               type="text"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
               placeholder="https://api.openai.com/v1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
             />
-            <p className="text-xs text-gray-500">用于代理或兼容 OpenAI 接口的其他服务</p>
+            <p className="text-xs text-muted-foreground">用于代理或兼容 OpenAI 接口的其他服务</p>
           </div>
 
           {/* Save Button */}
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />

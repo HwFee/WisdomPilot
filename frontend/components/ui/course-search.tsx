@@ -165,14 +165,14 @@ export function CourseSearch({
       <div
         className={`
           relative flex items-center gap-2 px-4 py-2.5 rounded-xl
-          bg-white border transition-all duration-200
+          bg-card border transition-all duration-200
           ${isFocused
             ? 'border-blue-400 shadow-sm ring-2 ring-blue-100'
-            : 'border-gray-200 hover:border-gray-300'
+            : 'border-border hover:border-muted-foreground'
           }
         `}
       >
-        <Search className={`w-4 h-4 shrink-0 ${isFocused ? 'text-blue-500' : 'text-gray-400'} transition-colors`} />
+        <Search className={`w-4 h-4 shrink-0 ${isFocused ? 'text-blue-500' : 'text-muted-foreground'} transition-colors`} />
         <input
           ref={inputRef}
           type="text"
@@ -182,20 +182,20 @@ export function CourseSearch({
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-400"
+          className="flex-1 min-w-0 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
         />
         {value ? (
           <button
             onClick={handleClear}
-            className="p-0.5 rounded-full hover:bg-gray-100 transition-colors shrink-0"
+            className="p-0.5 rounded-full hover:bg-muted transition-colors shrink-0"
             aria-label="清除搜索"
           >
-            <X className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+            <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
           </button>
         ) : isFocused ? (
-          <span className="text-xs text-gray-400 shrink-0 bg-gray-100 px-1.5 py-0.5 rounded">Esc</span>
+          <span className="text-xs text-muted-foreground shrink-0 bg-muted px-1.5 py-0.5 rounded">Esc</span>
         ) : (
-          <span className="text-xs text-gray-400 shrink-0 hidden sm:inline">Ctrl+K</span>
+          <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">Ctrl+K</span>
         )}
       </div>
 
@@ -203,7 +203,7 @@ export function CourseSearch({
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-50"
+          className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl border border-border shadow-lg overflow-hidden z-50"
         >
           <div className="max-h-80 overflow-y-auto">
             {results.map((result, index) => (
@@ -212,7 +212,7 @@ export function CourseSearch({
                 onClick={() => handleSelect(result)}
                 className={`
                   w-full flex items-center gap-3 px-4 py-3 text-left transition-colors
-                  ${index === selectedIndex ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                  ${index === selectedIndex ? 'bg-primary/5' : 'hover:bg-muted'}
                 `}
               >
                 {/* Number badge */}
@@ -228,15 +228,15 @@ export function CourseSearch({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900 text-sm">
+                    <span className="font-medium text-foreground text-sm">
                       {result.chapter.title}
                     </span>
                     {result.type === 'chapter' && (
-                      <span className="text-xs text-gray-400">{result.chapter.titleEn}</span>
+                      <span className="text-xs text-muted-foreground">{result.chapter.titleEn}</span>
                     )}
                   </div>
                   {result.type === 'subsection' && result.subsection && (
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {result.subsection}
                     </p>
                   )}
@@ -246,11 +246,11 @@ export function CourseSearch({
           </div>
 
           {/* Footer hint */}
-          <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
-            <p className="text-xs text-gray-400">
-              按 <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Enter</kbd> 选择{' '}
-              <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs ml-1">↑↓</kbd> 导航{' '}
-              <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs ml-1">Esc</kbd> 关闭
+          <div className="px-4 py-2 bg-muted/50 border-t border-border">
+            <p className="text-xs text-muted-foreground">
+              按 <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> 选择{' '}
+              <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">↑↓</kbd> 导航{' '}
+              <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Esc</kbd> 关闭
             </p>
           </div>
         </div>

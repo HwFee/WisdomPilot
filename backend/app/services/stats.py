@@ -180,7 +180,7 @@ class StatsService:
         result = await self.db.execute(
             select(LearningSession).where(
                 LearningSession.user_id == user_id,
-                LearningSession.is_active == True
+                LearningSession.is_active.is_(True)
             )
         )
         sessions = result.scalars().all()
@@ -201,7 +201,7 @@ class StatsService:
         result = await self.db.execute(
             select(LearningSession).where(
                 LearningSession.user_id == user_id,
-                LearningSession.is_active == True
+                LearningSession.is_active.is_(True)
             )
         )
         session = result.scalar_one_or_none()
@@ -215,7 +215,7 @@ class StatsService:
             select(LearningSession).where(
                 LearningSession.id == session_id,
                 LearningSession.user_id == user_id,
-                LearningSession.is_active == True
+                LearningSession.is_active.is_(True)
             )
         )
         session = result.scalar_one_or_none()
@@ -256,7 +256,7 @@ class StatsService:
             )
             .where(
                 LearningSession.user_id == user_id,
-                LearningSession.is_active == False
+                LearningSession.is_active.is_(False)
             )
         )
         session_stats = result.one()

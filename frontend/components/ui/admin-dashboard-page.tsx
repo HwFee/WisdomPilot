@@ -40,7 +40,7 @@ export default function AdminDashboardPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true)
-      const res = await fetch('http://localhost:8000/api/admin/users', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Failed to fetch users')
@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
 
   const fetchOnlineUsers = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/admin/users/online', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users/online`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Failed to fetch online users')
@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
 
   const deleteUser = async (userId: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/users/${userId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

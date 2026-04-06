@@ -7,6 +7,8 @@ import { getStoredUser, getStoredToken, logout, User, startLearningSession, endL
 import { courseChapters, CourseChapter } from '@/lib/course-data'
 import { ChapterHeader, ChapterSidebar, ChapterContent } from '@/components/layout'
 import { CodeEditorPanel, CodeEditorPanelRef } from '@/components/editor/CodeEditorPanel'
+import { AIContextProvider } from '@/contexts/AIContext'
+import { MorphPanel } from '@/components/ui/morph-panel'
 
 const CONTENT_TRANSITION = {
   duration: 0.32,
@@ -34,6 +36,8 @@ export default function ChapterPage() {
   const [chapterProgress, setChapterProgress] = useState<ChapterProgress | null>(null)
   const [exerciseAnswers, setExerciseAnswers] = useState<ChapterExerciseAnswers | null>(null)
   const [programmingTemplate, setProgrammingTemplate] = useState('')
+  const [programmingQuestion, setProgrammingQuestion] = useState('')
+  const [programmingOptions, setProgrammingOptions] = useState<string[] | undefined>(undefined)
   const sessionIdRef = useRef<string | null>(null)
   const sessionStartedAtRef = useRef<number | null>(null)
   const tokenRef = useRef<string | null>(null)
@@ -197,8 +201,10 @@ export default function ChapterPage() {
     setIsSplitScreen(prev => !prev)
   }
 
-  const handleStartIDEWithTemplate = (template: string) => {
+  const handleStartIDEWithTemplate = (template: string, question = '', options?: string[]) => {
     setProgrammingTemplate(template)
+    setProgrammingQuestion(question)
+    setProgrammingOptions(options)
     setIsSplitScreen(true)
     setTimeout(() => {
       codeEditorRef.current?.setCode(template)
@@ -255,83 +261,90 @@ export default function ChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <ChapterHeader
-        chapter={chapter}
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={handleToggleSidebar}
-        user={user}
-        onLogout={handleLogout}
-        onToggleLang={toggleLanguage}
-        lang={lang}
-      />
+    <AIContextProvider>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <ChapterHeader
+          chapter={chapter}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={handleToggleSidebar}
+          user={user}
+          onLogout={handleLogout}
+          onToggleLang={toggleLanguage}
+          lang={lang}
+        />
 
-      {/* Sidebar */}
-      <ChapterSidebar
-        chapter={chapter}
-        isOpen={isSidebarOpen}
-        activeIndex={activeIndex}
-        onSelectSubsection={handleSelectSubsection}
-        lang={lang}
-      />
+        {/* Sidebar */}
+        <ChapterSidebar
+          chapter={chapter}
+          isOpen={isSidebarOpen}
+          activeIndex={activeIndex}
+          onSelectSubsection={handleSelectSubsection}
+          lang={lang}
+        />
 
-      {/* Main Content */}
-      <motion.div
-        className="pt-14 min-h-screen"
-        animate={{
-          paddingLeft: sidebarOffset,
-        }}
-        transition={prefersReducedMotion ? { duration: 0.05 } : CONTENT_TRANSITION}
-      >
-        {/* Split screen layout */}
-        <div className="flex h-[calc(100vh-56px)]">
-          {/* Left: Course Content */}
-          <motion.div
-            className="min-h-0 flex-1 overflow-hidden min-w-0"
-            animate={{
-              width: isSplitScreen ? `${100 - IDE_WIDTH}%` : '100%',
-            }}
-            transition={prefersReducedMotion ? { duration: 0.05 } : CONTENT_TRANSITION}
-          >
-            <ChapterContent
-              chapter={chapter}
-              activeIndex={activeIndex}
-              onNavigate={handleNavigate}
-              onStartIDE={handleSplitScreen}
-              onStartIDEWithTemplate={handleStartIDEWithTemplate}
-              isSplitScreen={isSplitScreen}
-              lang={lang}
-              completedExercisesBySubsection={chapterProgress?.completed_exercises_by_subsection || {}}
-              onExerciseComplete={handleExerciseComplete}
-              exerciseAnswers={exerciseAnswers?.answers || []}
-            />
-          </motion.div>
+        {/* Main Content */}
+        <motion.div
+          className="pt-14 min-h-screen"
+          animate={{
+            paddingLeft: sidebarOffset,
+          }}
+          transition={prefersReducedMotion ? { duration: 0.05 } : CONTENT_TRANSITION}
+        >
+          {/* Split screen layout */}
+          <div className="flex h-[calc(100vh-56px)]">
+            {/* Left: Course Content */}
+            <motion.div
+              className="min-h-0 flex-1 overflow-hidden min-w-0"
+              animate={{
+                width: isSplitScreen ? `${100 - IDE_WIDTH}%` : '100%',
+              }}
+              transition={prefersReducedMotion ? { duration: 0.05 } : CONTENT_TRANSITION}
+            >
+              <ChapterContent
+                chapter={chapter}
+                activeIndex={activeIndex}
+                onNavigate={handleNavigate}
+                onStartIDE={handleSplitScreen}
+                onStartIDEWithTemplate={handleStartIDEWithTemplate}
+                isSplitScreen={isSplitScreen}
+                lang={lang}
+                completedExercisesBySubsection={chapterProgress?.completed_exercises_by_subsection || {}}
+                onExerciseComplete={handleExerciseComplete}
+                exerciseAnswers={exerciseAnswers?.answers || []}
+              />
+            </motion.div>
 
-          {/* Right: IDE Panel with AnimatePresence */}
-          <AnimatePresence mode="wait">
-            {isSplitScreen && (
-              <motion.div
-                key="ide-panel"
-                className="border-l border-gray-200 flex flex-col min-w-0 overflow-hidden"
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: `${IDE_WIDTH}%`, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={prefersReducedMotion ? { duration: 0.05 } : PANEL_TRANSITION}
-              >
-                <CodeEditorPanel
-                  ref={codeEditorRef}
-                  defaultCode={programmingTemplate}
-                  defaultLanguage={71}
-                  chapterId={chapter.id}
-                  subsectionIndex={activeIndex}
-                  onClose={handleSplitScreen}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
-    </div>
+            {/* Right: IDE Panel with AnimatePresence */}
+            <AnimatePresence mode="wait">
+              {isSplitScreen && (
+                <motion.div
+                  key="ide-panel"
+                  className="border-l border-gray-200 flex flex-col min-w-0 overflow-hidden"
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: `${IDE_WIDTH}%`, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={prefersReducedMotion ? { duration: 0.05 } : PANEL_TRANSITION}
+                >
+                  <CodeEditorPanel
+                    ref={codeEditorRef}
+                    defaultCode={programmingTemplate}
+                    defaultLanguage={71}
+                    chapterId={chapter.id}
+                    subsectionIndex={activeIndex}
+                    exerciseQuestion={programmingQuestion || '编程题'}
+                    exerciseOptions={programmingOptions}
+                    onClose={handleSplitScreen}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* AI Buddy (floating) */}
+        <MorphPanel />
+      </div>
+    </AIContextProvider>
   )
 }

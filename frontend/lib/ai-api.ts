@@ -40,44 +40,6 @@ export async function getChoiceExplanation(
 }
 
 // ========================================
-// AI 代码审查
-// ========================================
-
-export interface CodeReviewRequest {
-  code: string
-  language: string
-  chapter_id?: number
-  subsection_index?: number
-}
-
-export interface CodeReviewResponse {
-  review: string
-  score?: number
-  suggestions?: string[]
-}
-
-export async function getCodeReview(
-  token: string,
-  request: CodeReviewRequest
-): Promise<CodeReviewResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/code-review`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(request),
-  })
-
-  if (!response.ok) {
-    const data = await response.json()
-    throw new Error(data.detail || '代码审查失败')
-  }
-
-  return response.json()
-}
-
-// ========================================
 // AI 配置管理（管理员）
 // ========================================
 
@@ -127,6 +89,88 @@ export async function updateAIConfig(
   if (!response.ok) {
     const data = await response.json()
     throw new Error(data.detail || '更新 AI 配置失败')
+  }
+
+  return response.json()
+}
+
+// ========================================
+// AI 选择题分析 —— 错题触发
+// ========================================
+
+export interface ChoiceAnalysisRequest {
+  question_text: string
+  options: string[]
+  user_selected: number
+  correct_answer: number
+  chapter_id: number
+  exercise_id: string
+}
+
+export interface ChoiceAnalysisResponse {
+  analysis: string
+  is_correct: boolean
+}
+
+export async function getChoiceAnalysis(
+  token: string,
+  request: ChoiceAnalysisRequest
+): Promise<ChoiceAnalysisResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/ai/choice-analysis`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    const data = await response.json()
+    throw new Error(data.detail || '获取 AI 分析失败')
+  }
+
+  return response.json()
+}
+
+// ========================================
+// AI 编程题反馈 —— 纠错 + 优化 + 建议 三合一
+// ========================================
+
+export interface CodeFeedbackRequest {
+  code: string
+  language: string
+  exercise_description: string
+  expected_output: string
+  actual_output?: string
+  status?: string
+  error_message?: string
+  chapter_id: number
+  exercise_id: string
+}
+
+export interface CodeFeedbackResponse {
+  diagnosis: string
+  suggestions: string
+  optimized_code: string
+}
+
+export async function getCodeFeedback(
+  token: string,
+  request: CodeFeedbackRequest
+): Promise<CodeFeedbackResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/ai/code-feedback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    const data = await response.json()
+    throw new Error(data.detail || '获取 AI 反馈失败')
   }
 
   return response.json()

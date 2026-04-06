@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { useRouter } from 'next/navigation'
 import { CourseChapter } from '@/lib/course-data'
 import { User } from '@/lib/api'
@@ -8,6 +8,34 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
   }),
+}))
+
+// Mock react-markdown before importing ChapterContent (which imports AIHintModal)
+jest.mock('react-markdown', () => ({
+  __esModule: true,
+  default: function MockMarkdown({ children }: { children: React.ReactNode }) {
+    return <>{children}</>
+  },
+}))
+jest.mock('remark-gfm', () => () => {})
+
+// Mock AIContext
+jest.mock('@/contexts/AIContext', () => ({
+  useAIContext: () => ({
+    currentExercise: null,
+    setCurrentExercise: jest.fn(),
+    clearResults: jest.fn(),
+    hintLoading: false,
+    hintResult: null,
+    analysisLoading: false,
+    analysisResult: null,
+    feedbackLoading: false,
+    feedbackResult: null,
+    triggerHint: jest.fn(),
+    triggerAnalysis: jest.fn(),
+    triggerFeedback: jest.fn(),
+  }),
+  AIContextProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
 // Import after mock
@@ -40,6 +68,7 @@ const mockChapter: CourseChapter = {
     '循环链表',
     '线性表的应用',
   ],
+  subsectionExercises: {},
   progress: 100,
   status: 'completed',
   lessons: 8,
@@ -232,7 +261,7 @@ describe('ChapterContent Component', () => {
 
     it('renders IDE mode button', () => {
       render(<ChapterContent {...defaultProps} />)
-      expect(screen.getByText('进入IDE模式')).toBeInTheDocument()
+      expect(screen.getByText('进入IDE作答')).toBeInTheDocument()
     })
   })
 
@@ -263,30 +292,40 @@ describe('ChapterContent Component', () => {
 
     it('calls onStartIDE when IDE button clicked', () => {
       render(<ChapterContent {...defaultProps} />)
-      fireEvent.click(screen.getByText('进入IDE模式'))
+      fireEvent.click(screen.getByText('进入IDE作答'))
       expect(defaultProps.onStartIDE).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('Exercises', () => {
-    it('renders exercise completion button when answer selected', () => {
+    it('renders exercise completion button when answer selected', async () => {
       render(<ChapterContent {...defaultProps} activeIndex={0} />)
-      // Select an answer
-      const radioButton = screen.getByRole('radio', { name: /算法的执行速度/i })
-      fireEvent.click(radioButton)
-      // Should show mark complete button
-      expect(screen.getByText('标记完成')).toBeInTheDocument()
+      // Select an answer - use getByText since component uses custom radio styling
+      const optionLabel = screen.getByText('算法的执行速度').closest('label')
+      if (optionLabel) {
+        fireEvent.click(optionLabel)
+      }
+      await waitFor(() => {
+        expect(screen.getByText('确认答案')).toBeInTheDocument()
+      })
     })
 
-    it('shows completed state after marking complete', () => {
+    it('shows completed state after marking complete', async () => {
       render(<ChapterContent {...defaultProps} activeIndex={0} />)
       // Select an answer
-      const radioButton = screen.getByRole('radio', { name: /算法的执行速度/i })
-      fireEvent.click(radioButton)
-      // Click mark complete
-      fireEvent.click(screen.getByText('标记完成'))
+      const optionLabel = screen.getByText('算法的执行速度').closest('label')
+      if (optionLabel) {
+        fireEvent.click(optionLabel)
+      }
+      // Click confirm/submit
+      await waitFor(() => {
+        expect(screen.getByText('确认答案')).toBeInTheDocument()
+      })
+      fireEvent.click(screen.getByText('确认答案'))
       // Should show completed state
-      expect(screen.getByText('已完成')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('已完成')).toBeInTheDocument()
+      })
     })
   })
 })

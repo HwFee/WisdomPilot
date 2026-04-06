@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from app.database import Base, get_db
 from app.main import app
 from app.utils.time import utc_now
+from app.models import User
+from app.utils.security import get_password_hash, create_access_token
 
 if TYPE_CHECKING:
     from app.models.stats import ChapterProgress, LearningSession, ActivityLog
@@ -94,6 +96,53 @@ async def client(setup_database) -> AsyncGenerator[AsyncClient, None]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture
+async def auth_user(db_session) -> User:
+    """Create authenticated user for testing"""
+    user = User(
+        id=str(uuid.uuid4()),
+        email="auth@test.com",
+        username="authuser",
+        hashed_password=get_password_hash("Password123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def auth_headers(auth_user):
+    """Get auth headers for the user"""
+    token = create_access_token({"sub": auth_user.id})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+async def admin_user(db_session) -> User:
+    """Create admin user for testing"""
+    user = User(
+        id=str(uuid.uuid4()),
+        email="admin@test.com",
+        username="adminuser",
+        hashed_password=get_password_hash("Password123"),
+        is_active=True,
+        is_admin=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def admin_auth_headers(admin_user):
+    """Get auth headers for the admin user"""
+    token = create_access_token({"sub": admin_user.id})
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture(autouse=True)

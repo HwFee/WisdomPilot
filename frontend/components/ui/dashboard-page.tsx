@@ -136,25 +136,25 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500">加载中...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">加载中...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">DSA 教学平台</h1>
-                <p className="text-xs text-gray-400">数据结构与算法</p>
+                <h1 className="text-lg font-bold text-foreground">DSA 教学平台</h1>
+                <p className="text-xs text-muted-foreground">数据结构与算法</p>
               </div>
             </div>
 
@@ -174,13 +174,13 @@ export default function DashboardPage() {
                 className="w-80"
               />
 
-              <div className="flex items-center bg-gray-100 rounded-full p-1">
+              <div className="flex items-center bg-muted rounded-full p-1">
                 <button
                   onClick={() => { if (lang !== 'zh') toggleLanguage() }}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     lang === 'zh'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   中文
@@ -189,8 +189,8 @@ export default function DashboardPage() {
                   onClick={() => { if (lang !== 'en') toggleLanguage() }}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     lang === 'en'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   EN
@@ -198,8 +198,8 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">
-                  {t('欢迎', 'Welcome')}, <span className="font-semibold text-gray-900">{user?.username}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('欢迎', 'Welcome')}, <span className="font-semibold text-foreground">{user?.username}</span>
                 </span>
                 <button
                   onClick={handleLogout}
@@ -215,17 +215,17 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Banner */}
-        <div className="rounded-xl mb-8 p-6 bg-white border border-gray-200">
+        <div className="rounded-xl mb-8 p-6 bg-card border border-border">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3b82f6, #06d6a0)' }}>
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <p className="text-gray-500 text-sm">{t('欢迎回来，', 'Welcome back,')}{user?.username}</p>
-              <h2 className="text-lg font-bold text-gray-900">
+              <p className="text-muted-foreground text-sm">{t('欢迎回来，', 'Welcome back,')}{user?.username}</p>
+              <h2 className="text-lg font-bold text-foreground">
                 {t('「不积跬步，无以至千里」', '"Small steps lead to great journeys"')}
               </h2>
-              <p className="text-gray-500 text-sm">
+              <p className="text-muted-foreground text-sm">
                 {t('数据结构与算法是程序的灵魂，每天坚持学习必有收获', 'Data structures and algorithms are the soul of programs')}
               </p>
             </div>
@@ -246,7 +246,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2">
             {/* Course content header */}
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-foreground">
                 {t('课程内容', 'Course Content')}
               </h2>
               <div className="flex gap-2">
@@ -258,11 +258,11 @@ export default function DashboardPage() {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                    style={{
-                      background: activeTab === tab.key ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
-                      color: activeTab === tab.key ? '#10b981' : '#64748b',
-                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      activeTab === tab.key
+                        ? 'bg-emerald-100 text-emerald-600'
+                        : 'bg-transparent text-muted-foreground hover:text-foreground'
+                    }`}
                   >
                     {lang === 'zh' ? tab.zh : tab.en}
                   </button>
@@ -277,7 +277,7 @@ export default function DashboardPage() {
                   <div
                     key={chapter.id}
                     onClick={() => router.push(`/chapter/${chapter.id}`)}
-                    className="group bg-white rounded-xl p-5 border border-gray-200 hover:shadow-lg hover:border-gray-300 transition-all duration-300 cursor-pointer"
+                    className="group bg-card rounded-xl p-5 border border-border hover:shadow-lg hover:border-muted-foreground/30 transition-all duration-300 cursor-pointer"
                   >
                     <div className="flex items-center gap-4 mb-4">
                       <div
@@ -287,19 +287,19 @@ export default function DashboardPage() {
                         {chapter.num}
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
+                        <h4 className="font-bold text-foreground group-hover:text-muted-foreground transition-colors">
                           {t(chapter.title, chapter.titleEn)}
                         </h4>
-                        <p className="text-xs text-gray-400">Chapter {chapter.id}</p>
+                        <p className="text-xs text-muted-foreground">Chapter {chapter.id}</p>
                       </div>
                     </div>
 
                     <div className="mb-4">
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>{t('进度', 'Progress')}</span>
                         <span>{getChapterProgress(chapter.id)}%</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${getChapterProgress(chapter.id)}%`, backgroundColor: chapter.color }}
@@ -323,7 +323,7 @@ export default function DashboardPage() {
                       ))}
                       {chapter.topics.length > 3 && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium"
+                          className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium"
                         >
                           +{chapter.topics.length - 3}
                         </span>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
+                <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Search className="w-12 h-12 mb-4" />
                   <p className="text-lg font-medium">{t('未找到匹配课程', 'No courses found')}</p>
                   <p className="text-sm">{t('请尝试其他关键词', 'Try a different search term')}</p>
@@ -344,8 +344,8 @@ export default function DashboardPage() {
           {/* Right sidebar - aligned with course cards (offset by header height) */}
           <div className="flex flex-col mt-[56px] h-[calc(100vh-296px)] overflow-auto">
             {/* Last study card */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-4">{t('上次学习', 'Last Study')}</h3>
+            <div className="bg-card rounded-xl p-6 border border-border mb-6">
+              <h3 className="font-semibold text-foreground mb-4">{t('上次学习', 'Last Study')}</h3>
               {(() => {
                 // 直接取第一个活动（最新）
                 const lastActivity = activities[0]
@@ -361,7 +361,7 @@ export default function DashboardPage() {
 
                 if (!lastActivity || !lastChapter) {
                   return (
-                    <div className="text-center py-6 text-gray-400">
+                    <div className="text-center py-6 text-muted-foreground">
                       <Play className="w-10 h-10 mx-auto mb-2 opacity-50" />
                       <p>{t('暂无学习记录', 'No study record')}</p>
                       <p className="text-sm">{t('开始学习一个章节吧！', 'Start learning a chapter!')}</p>
@@ -387,27 +387,27 @@ export default function DashboardPage() {
                         {lastChapter.num}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-gray-900 mb-1">
+                        <h4 className="font-medium text-foreground mb-1">
                           {t(lastChapter.title, lastChapter.titleEn)}
                         </h4>
-                        <p className="text-sm text-gray-500 mb-1">
+                        <p className="text-sm text-muted-foreground mb-1">
                           {t('上次学习：', 'Last studied:')} {lastChapter.subsections[lastStudiedSubsection]}
                         </p>
                         {progress ? (
                           <>
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+                            <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
                               <div
                                 className="h-full rounded-full"
                                 style={{ width: `${progressPercent}%`, background: `linear-gradient(90deg, ${lastChapter.color}, ${lastChapter.color}aa)` }}
                               />
                             </div>
-                            <div className="flex justify-between text-xs text-gray-500">
+                            <div className="flex justify-between text-xs text-muted-foreground">
                               <span>{progressPercent}% {t('已完成', 'completed')}</span>
                               <span>{completedCount}/{totalSubsections} {t('课时', 'lessons')}</span>
                             </div>
                           </>
                         ) : (
-                          <div className="flex justify-between text-xs text-gray-400">
+                          <div className="flex justify-between text-xs text-muted-foreground">
                             <span>{t('新开始学习', 'Started learning')}</span>
                             <span>{totalSubsections} {t('课时', 'lessons')}</span>
                           </div>
@@ -430,8 +430,8 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent activity - stretches to fill remaining height */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col flex-1 min-h-0">
-              <h3 className="font-semibold text-gray-900 mb-4">{t('最近动态', 'Recent Activity')}</h3>
+            <div className="bg-card rounded-xl p-6 border border-border flex flex-col flex-1 min-h-0">
+              <h3 className="font-semibold text-foreground mb-4">{t('最近动态', 'Recent Activity')}</h3>
               <div className="flex-1 overflow-auto">
                 <ActivityFeed
                   // 只显示章节级别的活动，不显示小节切换

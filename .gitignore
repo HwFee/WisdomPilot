@@ -54,6 +54,5 @@ htmlcov/
 # Claude Code
 .claude/settings.local.json
 
-# Everything-claude-code cache
-everything-claude-code/.ruff_cache/
-everything-claude-code/.pytest_cache/
+# Everything-claude-code
+everything-claude-code/

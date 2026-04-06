@@ -47,7 +47,7 @@ class AdminService:
     async def get_online_users(self) -> list[User]:
         """Get users with active login sessions"""
         result = await self.db.execute(
-            select(LoginSession).where(LoginSession.is_active == True)
+            select(LoginSession).where(LoginSession.is_active.is_(True))
         )
         sessions = result.scalars().all()
 

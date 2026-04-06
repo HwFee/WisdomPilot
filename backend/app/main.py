@@ -11,7 +11,7 @@ from app.routers import (
     stats_router,
     code_router,
 )
-from app.routers.ai import choice_router, review_router, config_router
+from app.routers.ai import choice_router, review_router, config_router, chat_router, analysis_router
 
 
 @asynccontextmanager
@@ -67,6 +67,8 @@ app.include_router(code_router)
 app.include_router(choice_router)
 app.include_router(review_router)
 app.include_router(config_router)
+app.include_router(chat_router)
+app.include_router(analysis_router)
 
 
 @app.get("/")

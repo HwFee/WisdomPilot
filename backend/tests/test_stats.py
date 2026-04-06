@@ -18,27 +18,6 @@ from app.utils.security import get_password_hash
 class TestStatsAPI:
     """Test stats API endpoints"""
 
-    @pytest_asyncio.fixture
-    async def auth_user(self, db_session):
-        """Create authenticated user"""
-        user = User(
-            id=str(uuid.uuid4()),
-            email="stats@test.com",
-            username="statsuser",
-            hashed_password=get_password_hash("Password123"),  # Real bcrypt hash
-        )
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
-        return user
-
-    @pytest_asyncio.fixture
-    async def auth_headers(self, auth_user):
-        """Get auth headers for the user"""
-        from app.utils.security import create_access_token
-        token = create_access_token({"sub": auth_user.id})
-        return {"Authorization": f"Bearer {token}"}
-
     @pytest.mark.asyncio
     async def test_get_progress_empty(self, client, auth_headers):
         """Test getting empty progress"""

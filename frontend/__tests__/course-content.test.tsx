@@ -38,6 +38,7 @@ const mockChapter: CourseChapter = {
   progress: 100,
   status: 'completed',
   lessons: 8,
+  subsectionExercises: {},
 }
 
 describe('CourseContent Component', () => {

@@ -1,18 +1,21 @@
 'use client'
 
-import { useRef, useState, useCallback, forwardRef as forwardRefReact, useImperativeHandle } from 'react'
+import { useRef, useState, useCallback, useEffect, forwardRef as forwardRefReact, useImperativeHandle } from 'react'
+import type { RefObject } from 'react'
 import Editor, { OnMount, OnChange } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
 import { cn } from '@/lib/utils'
 import { executeCode, CodeExecutionResponse, LANGUAGE_CONFIG } from '@/lib/code-api'
 import { getStoredToken } from '@/lib/api'
 import { Play, Save, Loader2, ChevronDown, X } from 'lucide-react'
-
+import { registerActiveEditor } from '@/lib/editor-registry'
 export interface CodeEditorPanelProps {
   defaultCode?: string
   defaultLanguage?: number
   chapterId?: number
   subsectionIndex?: number
+  exerciseQuestion?: string
+  exerciseOptions?: string[]
   onCodeChange?: (code: string) => void
   onClose?: () => void
   className?: string
@@ -22,6 +25,16 @@ export interface CodeEditorPanelRef {
   getCode: () => string
   setCode: (code: string) => void
   getLanguage: () => number
+  getExerciseContext: () => {
+    chapterId: number
+    subsectionIndex: number
+    exerciseId: number
+    question: string
+    options?: string[]
+    code: string
+    language: string
+    type: "choice" | "programming"
+  } | null
 }
 
 const LANGUAGES = [
@@ -39,6 +52,8 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       defaultLanguage = 71,
       chapterId,
       subsectionIndex,
+      exerciseQuestion = '编程题',
+      exerciseOptions,
       onCodeChange,
       onClose,
       className,
@@ -52,6 +67,12 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
     const [output, setOutput] = useState<CodeExecutionResponse | null>(null)
     const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
 
+    // Register this IDE as the active editor for orb drop detection
+    useEffect(() => {
+      registerActiveEditor(ref as unknown as RefObject<CodeEditorPanelRef>)
+      return () => registerActiveEditor(null)
+    }, [ref])
+
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
       getCode: () => code,
@@ -60,6 +81,27 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
         editorRef.current?.setValue(newCode)
       },
       getLanguage: () => language,
+      getExerciseContext: () => {
+        // Read live question text from DOM (may be updated by parent)
+        // Monaco's dom node structure: .monaco-editor > .overflow-guard > .monaco-editor-background
+        // IDE root div is the parent of the monaco container
+        const monacoDom = editorRef.current?.getDomNode()
+        const monacoContainer = monacoDom?.parentElement?.parentElement?.parentElement
+        const rootEl = monacoContainer?.closest?.('[data-question-context]')
+        const questionText = rootEl?.getAttribute('data-question-text') ?? exerciseQuestion
+        const optionsStr = rootEl?.getAttribute('data-question-options')
+        const liveOptions = optionsStr ? JSON.parse(optionsStr) : exerciseOptions
+        return {
+          chapterId: chapterId ?? 0,
+          subsectionIndex: subsectionIndex ?? 0,
+          exerciseId: 0,
+          question: questionText,
+          options: liveOptions,
+          code,
+          language: LANGUAGE_CONFIG[language]?.label?.toLowerCase() ?? 'python',
+          type: "programming" as const,
+        }
+      },
     }))
 
     const handleEditorMount: OnMount = (editor, monaco) => {
@@ -148,7 +190,17 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
     }
 
     return (
-      <div className={cn('flex flex-col h-full bg-gray-900', className)}>
+      <div
+        className={cn('flex flex-col h-full bg-gray-900', className)}
+        data-question-context
+        data-question-type="programming"
+        data-question-id={`${chapterId}-${subsectionIndex}-0`}
+        data-exercise-id={0}
+        data-question-text={exerciseQuestion}
+        data-question-options={exerciseOptions ? JSON.stringify(exerciseOptions) : undefined}
+        data-question-code={code}
+        data-question-language={LANGUAGE_CONFIG[language]?.label?.toLowerCase() ?? 'python'}
+      >
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
           {/* Language selector */}
@@ -234,7 +286,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
         </div>
 
         {/* Output panel - 洛谷风格 */}
-        <div className="border-t border-gray-700 bg-gray-800 max-h-56 overflow-y-auto">
+        <div className="border-t border-gray-700 bg-gray-800 max-h-80 overflow-y-auto">
           <div className="px-4 py-2 border-b border-gray-700 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-300">Output</span>

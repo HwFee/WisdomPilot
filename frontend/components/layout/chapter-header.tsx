@@ -32,7 +32,7 @@ export function ChapterHeader({
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white border-b border-gray-200">
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-card border-b border-border">
       <div className="flex items-center justify-between h-full px-4">
         {/* Left Section: Back + Lines Icon + Chapter Title */}
         <div className="flex items-center gap-3">
@@ -40,22 +40,22 @@ export function ChapterHeader({
           <button
             onClick={handleBack}
             aria-label="Back"
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 text-gray-600" />
+            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
           </button>
 
           {/* Lines Icon (Sidebar Toggle) */}
           <button
             onClick={onToggleSidebar}
             aria-label="Toggle sidebar"
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
           >
-            <AlignLeft className="w-5 h-5 text-gray-600" />
+            <AlignLeft className="w-5 h-5 text-muted-foreground" />
           </button>
 
           {/* Divider */}
-          <div className="h-5 w-px bg-gray-200" />
+          <div className="h-5 w-px bg-muted" />
 
           {/* Chapter Badge */}
           <div
@@ -69,7 +69,7 @@ export function ChapterHeader({
           </div>
 
           {/* Chapter Title */}
-          <h1 className="font-medium text-gray-900 text-sm">
+          <h1 className="font-medium text-foreground text-sm">
             {t(chapter.title, chapter.titleEn)}
           </h1>
         </div>
@@ -82,17 +82,17 @@ export function ChapterHeader({
           {/* Language Toggle */}
           <button
             onClick={onToggleLang}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted hover:bg-muted/80 transition-colors"
           >
             {lang === 'zh' ? 'EN' : '中文'}
           </button>
 
           {/* User Info */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <UserIcon className="w-4 h-4 text-gray-500" />
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+              <UserIcon className="w-4 h-4 text-muted-foreground" />
             </div>
-            <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+            <span className="text-sm font-medium text-foreground hidden sm:inline">
               {user?.username}
             </span>
           </div>
@@ -101,7 +101,7 @@ export function ChapterHeader({
           <button
             onClick={onLogout}
             aria-label="Logout"
-            className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"
           >
             <LogOut className="w-4 h-4" />
           </button>

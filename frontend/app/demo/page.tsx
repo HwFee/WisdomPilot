@@ -1,5 +1,9 @@
-import { Component } from "@/components/ui/animated-characters-login-page";
+import { MorphPanel } from "@/components/ui/ai-input";
 
-export default function DemoLoginPage() {
-  return <Component />;
+export default function DemoPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <MorphPanel />
+    </div>
+  );
 }

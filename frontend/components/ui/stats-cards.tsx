@@ -25,10 +25,10 @@ export function StatsCards({ stats, totalChapters, lang, isLoading }: StatsCards
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 animate-pulse">
-            <div className="h-10 w-10 bg-gray-200 rounded-lg mb-3" />
-            <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
-            <div className="h-8 bg-gray-200 rounded w-16" />
+          <div key={i} className="bg-card rounded-xl p-5 border border-border animate-pulse">
+            <div className="h-10 w-10 bg-muted rounded-lg mb-3" />
+            <div className="h-4 bg-muted rounded w-20 mb-2" />
+            <div className="h-8 bg-muted rounded w-16" />
           </div>
         ))}
       </div>
@@ -78,13 +78,13 @@ export function StatsCards({ stats, totalChapters, lang, isLoading }: StatsCards
         return (
           <div
             key={index}
-            className="bg-white rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow"
+            className="bg-card rounded-xl p-5 border border-border hover:shadow-md transition-shadow"
           >
             <div className={`w-10 h-10 ${card.bgColor} rounded-lg flex items-center justify-center mb-3`}>
               <Icon className={`w-5 h-5 ${card.iconColor}`} />
             </div>
-            <p className="text-sm text-gray-500 mb-1">{card.label}</p>
-            <p className={`text-3xl font-bold text-gray-900 ${card.isText ? 'text-lg' : ''}`}>
+            <p className="text-sm text-muted-foreground mb-1">{card.label}</p>
+            <p className={`text-3xl font-bold text-foreground ${card.isText ? 'text-lg' : ''}`}>
               {card.value}
             </p>
           </div>

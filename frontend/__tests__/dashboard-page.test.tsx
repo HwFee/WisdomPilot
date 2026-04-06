@@ -54,7 +54,9 @@ describe('DashboardPage', () => {
 
       render(<DashboardPage />)
 
-      expect(screen.getByText('上次学习')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('上次学习')).toBeInTheDocument()
+      })
     })
 
     it('应该从activities中找到最近学习的章节', async () => {
@@ -96,6 +98,8 @@ describe('DashboardPage', () => {
           status: 'in_progress',
           progress_percent: 40,
           completed_subsections: [0, 1],
+          completed_exercise_count: 0,
+          completed_exercises_by_subsection: {},
           started_at: oneHourAgo,
           completed_at: null,
           updated_at: oneHourAgo,
@@ -105,8 +109,9 @@ describe('DashboardPage', () => {
       render(<DashboardPage />)
 
       await waitFor(() => {
-        // 应该显示第三章，因为它是最近学习的
-        expect(screen.getByText('基础与核心概念概述')).toBeInTheDocument()
+        // 应该显示第三章（字符串），因为它是最近学习的
+        // Use getAllByText because StrictMode may render twice
+        expect(screen.getAllByText('字符串').length).toBeGreaterThan(0)
       })
     })
 
@@ -126,8 +131,9 @@ describe('DashboardPage', () => {
       render(<DashboardPage />)
 
       await waitFor(() => {
-        expect(screen.getByText('暂无学习记录')).toBeInTheDocument()
-        expect(screen.getByText('开始学习一个章节吧！')).toBeInTheDocument()
+        // StrictMode may cause duplicate renders, use getAllByText
+        expect(screen.getAllByText('暂无学习记录').length).toBeGreaterThan(0)
+        expect(screen.getAllByText('开始学习一个章节吧！').length).toBeGreaterThan(0)
       })
     })
   })
@@ -149,7 +155,9 @@ describe('DashboardPage', () => {
       render(<DashboardPage />)
 
       // 验证两个卡片都存在
-      expect(screen.getByText('上次学习')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('上次学习')).toBeInTheDocument()
+      })
       expect(screen.getByText('最近动态')).toBeInTheDocument()
     })
   })
