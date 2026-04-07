@@ -110,11 +110,35 @@ class StatsService:
             if progress.progress_percent == 100:
                 progress.status = ProgressStatus.COMPLETED.value
                 progress.completed_at = progress.completed_at or utc_now()
+            elif progress.progress_percent < 100 and progress.status == ProgressStatus.COMPLETED.value:
+                # 进度从100%降下来了，状态也要改
+                progress.status = ProgressStatus.IN_PROGRESS.value
+                progress.completed_at = None
+            # 从 completed_exercises_by_subsection 推导已完成的小节
+            if data.completed_exercises_by_subsection is not None:
+                # 小节索引：凡是在 dict 中有记录的，说明该小节有练习被做过
+                completed_subsections_from_exercises = sorted([
+                    int(sidx) for sidx, exercises in data.completed_exercises_by_subsection.items()
+                    if exercises and len(exercises) > 0
+                ])
+                if completed_subsections_from_exercises:
+                    progress.completed_subsections = completed_subsections_from_exercises
         elif data.completed_subsections is not None:
             total_subsections = 14
-            progress.progress_percent = min(100, int(len(data.completed_subsections) / total_subsections * 100))
-        if data.completed_subsections is not None:
             progress.completed_subsections = data.completed_subsections
+            progress.progress_percent = min(100, int(len(data.completed_subsections) / total_subsections * 100))
+            if progress.progress_percent == 100:
+                if progress.status != ProgressStatus.COMPLETED.value:
+                    progress.status = ProgressStatus.COMPLETED.value
+                    progress.completed_at = progress.completed_at or utc_now()
+            elif progress.progress_percent > 0:
+                if progress.status == ProgressStatus.NOT_STARTED.value:
+                    progress.status = ProgressStatus.IN_PROGRESS.value
+                    progress.started_at = progress.started_at or utc_now()
+                elif progress.status == ProgressStatus.COMPLETED.value:
+                    # 进度从100%降下来了
+                    progress.status = ProgressStatus.IN_PROGRESS.value
+                    progress.completed_at = None
 
     def _apply_completed_exercises_by_subsection(self, progress: ChapterProgress, data: UpdateProgressRequest) -> None:
         """Handle exercise dict."""

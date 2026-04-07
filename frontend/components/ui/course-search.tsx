@@ -36,48 +36,73 @@ export function CourseSearch({
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Search function
+  // Chinese fuzzy match - splits query into chars and matches if all chars appear
+  const chineseMatch = (text: string, query: string): boolean => {
+    const chars = query.split('').filter(c => c.trim() && !'和与的了是都'.includes(c))
+    if (chars.length === 0) return false
+    return chars.every(char => text.includes(char))
+  }
+
+  // Score a match (higher = better)
+  const scoreMatch = (chapter: CourseChapter, query: string, isChapterTitle: boolean, matchText?: string): number => {
+    const q = query.toLowerCase().trim()
+    let score = 0
+    if (isChapterTitle) {
+      if (chapter.title.toLowerCase().includes(q)) score = 100
+      else if (chineseMatch(chapter.title, query)) score = 80
+      else if (chapter.titleEn.toLowerCase().includes(q)) score = 60
+    } else {
+      const text = matchText || ''
+      if (text.toLowerCase().includes(q)) score = 40
+      else if (chineseMatch(text, query)) score = 30
+    }
+    return score
+  }
+
+  // Search function - fuzzy Chinese match + relevance scoring
   const searchChapters = useCallback((query: string): SearchResult[] => {
     if (!query.trim()) return []
 
     const lowerQuery = query.toLowerCase().trim()
-    const results: SearchResult[] = []
+    const scoredResults: { result: SearchResult; score: number }[] = []
 
     chapters.forEach((chapter) => {
       // Check chapter title
-      if (chapter.title.toLowerCase().includes(lowerQuery)) {
-        results.push({
-          type: 'chapter',
-          chapter,
-          matchText: chapter.title,
+      let chapterScore = scoreMatch(chapter, query, true)
+      if (chapterScore > 0) {
+        scoredResults.push({
+          result: {
+            type: 'chapter',
+            chapter,
+            matchText: chapter.title,
+          },
+          score: chapterScore,
         })
-        return
-      }
-      if (chapter.titleEn.toLowerCase().includes(lowerQuery)) {
-        results.push({
-          type: 'chapter',
-          chapter,
-          matchText: chapter.titleEn,
-        })
-        return
       }
 
       // Check subsections
       chapter.subsections.forEach((subsection, idx) => {
-        if (subsection.toLowerCase().includes(lowerQuery)) {
-          results.push({
-            type: 'subsection',
-            chapter,
-            subsection,
-            subsectionIndex: idx,
-            matchText: subsection,
+        const subScore = scoreMatch(chapter, query, false, subsection)
+        if (subScore > 0) {
+          scoredResults.push({
+            result: {
+              type: 'subsection',
+              chapter,
+              subsection,
+              subsectionIndex: idx,
+              matchText: subsection,
+            },
+            score: subScore,
           })
         }
       })
     })
 
-    // Limit results
-    return results.slice(0, 8)
+    // Sort by score descending, limit to 8
+    return scoredResults
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map(({ result }) => result)
   }, [chapters])
 
   // Update search results when value changes
@@ -85,7 +110,7 @@ export function CourseSearch({
     if (value.trim()) {
       const searchResults = searchChapters(value)
       setResults(searchResults)
-      setShowDropdown(searchResults.length > 0)
+      setShowDropdown(true)  // 始终显示下拉框，有结果则列结果，无结果则显示提示
       setSelectedIndex(-1)
     } else {
       setResults([])
@@ -178,7 +203,13 @@ export function CourseSearch({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            setIsFocused(true)
+            // 聚焦时如果有搜索词和结果，显示下拉框
+            if (value.trim()) {
+              setShowDropdown(true)
+            }
+          }}
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
@@ -206,43 +237,52 @@ export function CourseSearch({
           className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl border border-border shadow-lg overflow-hidden z-50"
         >
           <div className="max-h-80 overflow-y-auto">
-            {results.map((result, index) => (
-              <button
-                key={`${result.chapter.id}-${result.type}-${result.subsection || 'chapter'}`}
-                onClick={() => handleSelect(result)}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3 text-left transition-colors
-                  ${index === selectedIndex ? 'bg-primary/5' : 'hover:bg-muted'}
-                `}
-              >
-                {/* Number badge */}
-                <span
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
-                  style={{
-                    backgroundColor: `${result.chapter.color}15`,
-                    color: result.chapter.color,
-                  }}
+            {results.length === 0 ? (
+              /* 无结果提示 */
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-muted-foreground">
+                <Search className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-sm font-medium">未找到相关课程</p>
+                <p className="text-xs mt-1">尝试其他关键词</p>
+              </div>
+            ) : (
+              results.map((result, index) => (
+                <button
+                  key={`${result.chapter.id}-${result.type}-${result.subsection || 'chapter'}`}
+                  onClick={() => handleSelect(result)}
+                  className={`
+                    w-full flex items-center gap-3 px-4 py-3 text-left transition-colors
+                    ${index === selectedIndex ? 'bg-primary/5' : 'hover:bg-muted'}
+                  `}
                 >
-                  {result.type === 'chapter' ? result.chapter.num : `${result.chapter.num}-${(result.subsectionIndex || 0) + 1}`}
-                </span>
+                  {/* Number badge */}
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{
+                      backgroundColor: `${result.chapter.color}15`,
+                      color: result.chapter.color,
+                    }}
+                  >
+                    {result.type === 'chapter' ? result.chapter.num : `${result.chapter.num}-${(result.subsectionIndex || 0) + 1}`}
+                  </span>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground text-sm">
-                      {result.chapter.title}
-                    </span>
-                    {result.type === 'chapter' && (
-                      <span className="text-xs text-muted-foreground">{result.chapter.titleEn}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground text-sm">
+                        {result.chapter.title}
+                      </span>
+                      {result.type === 'chapter' && (
+                        <span className="text-xs text-muted-foreground">{result.chapter.titleEn}</span>
+                      )}
+                    </div>
+                    {result.type === 'subsection' && result.subsection && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {result.subsection}
+                      </p>
                     )}
                   </div>
-                  {result.type === 'subsection' && result.subsection && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {result.subsection}
-                    </p>
-                  )}
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </div>
 
           {/* Footer hint */}

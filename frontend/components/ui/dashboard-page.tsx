@@ -94,23 +94,38 @@ export default function DashboardPage() {
 
   const t = (zh: string, en: string) => lang === 'zh' ? zh : en
 
-  // Search courses function - searches in title, topics, and subsections
+  // Chinese fuzzy search - splits query into characters and matches if all chars appear
+  const chineseMatch = (text: string, query: string): boolean => {
+    const chars = query.split('').filter(c => c.trim() && !'和与的了是都'.includes(c))
+    if (chars.length === 0) return true
+    return chars.every(char => text.includes(char))
+  }
+
+  // Score a chapter match (higher = better match)
+  const scoreChapter = (chapter: CourseChapter, query: string): number => {
+    let score = 0
+    const q = query.toLowerCase().trim()
+    // Exact title match (highest)
+    if (chapter.title.toLowerCase().includes(q)) score += 100
+    // Title contains all query chars
+    if (chineseMatch(chapter.title, query)) score += 80
+    // English title match
+    if (chapter.titleEn.toLowerCase().includes(q)) score += 60
+    // Topics match
+    if (chapter.topics.some(t => t.toLowerCase().includes(q) || chineseMatch(t, query))) score += 50
+    // Subsections match
+    if (chapter.subsections.some(s => s.toLowerCase().includes(q) || chineseMatch(s, query))) score += 20
+    return score
+  }
+
+  // Search courses - fuzzy match across all fields, sorted by relevance
   const searchCourses = (chapters: CourseChapter[], query: string): CourseChapter[] => {
-    if (!query.trim()) {
-      return chapters
-    }
-    const lowerQuery = query.toLowerCase().trim()
-    return chapters.filter((chapter) => {
-      // Search in title
-      if (chapter.title.toLowerCase().includes(lowerQuery)) return true
-      // Search in English title
-      if (chapter.titleEn.toLowerCase().includes(lowerQuery)) return true
-      // Search in topics (main tags)
-      if (chapter.topics.some((topic) => topic.toLowerCase().includes(lowerQuery))) return true
-      // Search in subsections (detailed content)
-      if (chapter.subsections.some((subsection) => subsection.toLowerCase().includes(lowerQuery))) return true
-      return false
-    })
+    if (!query.trim()) return chapters
+    const scored = chapters
+      .map(chapter => ({ chapter, score: scoreChapter(chapter, query) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+    return scored.map(({ chapter }) => chapter)
   }
 
   // Apply tab filter first, then search filter
@@ -335,7 +350,17 @@ export default function DashboardPage() {
                 <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Search className="w-12 h-12 mb-4" />
                   <p className="text-lg font-medium">{t('未找到匹配课程', 'No courses found')}</p>
-                  <p className="text-sm">{t('请尝试其他关键词', 'Try a different search term')}</p>
+                  {searchQuery.trim() ? (
+                    <p className="text-sm">{t('请尝试其他关键词', 'Try a different search term')}</p>
+                  ) : (
+                    <p className="text-sm">
+                      {activeTab === 'learning'
+                        ? t('暂无学习中课程', 'No courses in progress')
+                        : activeTab === 'completed'
+                          ? t('暂无已完成课程', 'No completed courses')
+                          : t('暂无课程', 'No courses')}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

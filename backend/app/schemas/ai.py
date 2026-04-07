@@ -47,6 +47,8 @@ class AIProviderConfig(BaseModel):
     model: str = "gpt-4o-mini"
     temperature: float = 0.7
     base_url: Optional[str] = None
+    local_base_url: Optional[str] = None  # 本地服务地址（自动检测）
+    is_local_first: bool = False  # 本地优先模式
 
 
 class AIConfigResponse(BaseModel):
@@ -56,6 +58,12 @@ class AIConfigResponse(BaseModel):
     model: str
     temperature: float
     is_configured: bool
+    has_api_key: bool = False  # 是否有 API Key 已保存（不返回 key 本身）
+    api_key_preview: Optional[str] = None  # 已保存 Key 的预览，如 "sk-cp****abcd"
+    api_key_length: Optional[int] = None  # 已保存 Key 的长度
+    connection_status: Optional[str] = None  # "connected" | "disconnected" | "unknown"
+    connection_address: Optional[str] = None
+    is_local_first: bool = False
 
 
 class UpdateAIConfigRequest(BaseModel):
@@ -66,6 +74,8 @@ class UpdateAIConfigRequest(BaseModel):
     model: Optional[str] = None
     temperature: Optional[float] = None
     base_url: Optional[str] = None
+    local_base_url: Optional[str] = None
+    is_local_first: Optional[bool] = None
 
 
 class AIChatRequest(BaseModel):
@@ -125,3 +135,42 @@ class ChatStreamRequest(BaseModel):
 
     message: str = Field(..., max_length=2000)
     context: Optional[dict] = Field(default=None, description="题目上下文 {type, question, options?, code?}")
+
+
+class ProviderStatus(BaseModel):
+    """单个 Provider 的状态"""
+
+    type: str  # "ollama" | "lmstudio" | "minimax" | "openai"
+    address: str
+    status: str  # "connected" | "disconnected" | "unknown"
+    model: Optional[str] = None
+    available_models: Optional[list[str]] = None
+
+
+class AIStatusResponse(BaseModel):
+    """AI 服务状态响应"""
+
+    current_provider: str
+    current_model: str
+    is_local_first: bool
+    providers: list[ProviderStatus]
+
+
+class TestConnectionRequest(BaseModel):
+    """测试 AI 连接请求"""
+
+    provider: str = Field(..., description="ollama | lmstudio | minimax | openai")
+    api_key: Optional[str] = None
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+    local_base_url: Optional[str] = None
+
+
+class TestConnectionResponse(BaseModel):
+    """测试 AI 连接响应"""
+
+    success: bool
+    message: str
+    model: Optional[str] = None
+    address: Optional[str] = None
+    latency_ms: Optional[int] = None

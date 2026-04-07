@@ -23,6 +23,9 @@ from app.schemas.ai import (
     CodeFeedbackRequest,
     CodeFeedbackResponse,
     ChatStreamRequest,
+    AIStatusResponse,
+    TestConnectionRequest,
+    TestConnectionResponse,
 )
 from app.services.ai import ai_service
 from app.config import get_settings
@@ -79,11 +82,24 @@ async def get_ai_config(
 ):
     """获取当前 AI 配置 - 管理员专用"""
     settings = get_settings()
+
+    # 生成密钥预览：显示前4位和后4位，中间用****掩码
+    def make_preview(key: str) -> str:
+        if not key or len(key) <= 8:
+            return "****"
+        return f"{key[:4]}****{key[-4:]}"
+
     return AIConfigResponse(
         provider=settings.AI_PROVIDER,
         model=settings.AI_MODEL,
         temperature=settings.AI_TEMPERATURE,
         is_configured=bool(settings.AI_API_KEY),
+        has_api_key=bool(settings.AI_API_KEY),
+        api_key_preview=make_preview(settings.AI_API_KEY) if settings.AI_API_KEY else None,
+        api_key_length=len(settings.AI_API_KEY) if settings.AI_API_KEY else None,
+        connection_status=None,
+        connection_address=settings.AI_BASE_URL,
+        is_local_first=settings.AI_LOCAL_FIRST,
     )
 
 
@@ -92,21 +108,240 @@ async def update_ai_config(
     request: UpdateAIConfigRequest,
     current_user: Annotated[User, Depends(get_current_admin_user)],
 ):
-    """更新 AI 配置 - 管理员专用"""
+    """更新 AI 配置 - 管理员专用（持久化到 .env）"""
     from app.schemas.ai import AIProviderConfig
+    from dotenv import set_key
+    import os
 
     settings = get_settings()
+    # 重要: 用空字符串显式删除 API key，不允许 None 值绕过
+    api_key_to_save = settings.AI_API_KEY
+    if request.api_key is not None:
+        api_key_to_save = request.api_key  # 空字符串 = 删除key
+
     new_config = AIProviderConfig(
         provider=request.provider or settings.AI_PROVIDER,
-        api_key=request.api_key or settings.AI_API_KEY,
+        api_key=api_key_to_save,
         model=request.model or settings.AI_MODEL,
         temperature=request.temperature
         if request.temperature is not None
         else settings.AI_TEMPERATURE,
         base_url=request.base_url or settings.AI_BASE_URL,
+        local_base_url=request.local_base_url or settings.AI_LOCAL_BASE_URL,
+        is_local_first=request.is_local_first if request.is_local_first is not None else settings.AI_LOCAL_FIRST,
     )
-    ai_service.configure(new_config)
-    return {"message": "AI 配置更新成功"}
+
+    # 持久化到 .env
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
+    if request.provider is not None:
+        set_key(env_path, "AI_PROVIDER", request.provider)
+    # 空字符串也写入 .env（实现 key 删除）
+    if request.api_key is not None:
+        set_key(env_path, "AI_API_KEY", request.api_key)
+    if request.model is not None:
+        set_key(env_path, "AI_MODEL", request.model)
+    if request.temperature is not None:
+        set_key(env_path, "AI_TEMPERATURE", str(request.temperature))
+    if request.base_url is not None:
+        set_key(env_path, "AI_BASE_URL", request.base_url)
+    if request.local_base_url is not None:
+        set_key(env_path, "AI_LOCAL_BASE_URL", request.local_base_url)
+    if request.is_local_first is not None:
+        set_key(env_path, "AI_LOCAL_FIRST", str(request.is_local_first).lower())
+
+    # 清除缓存，确保 get_settings() 返回新值
+    get_settings.cache_clear()
+
+    # 用新值重新配置（清除 lru_cache 后 get_settings() 会重新加载 .env）
+    fresh_settings = get_settings()
+    fresh_config = AIProviderConfig(
+        provider=fresh_settings.AI_PROVIDER,
+        api_key=fresh_settings.AI_API_KEY,
+        model=fresh_settings.AI_MODEL,
+        temperature=fresh_settings.AI_TEMPERATURE,
+        base_url=fresh_settings.AI_BASE_URL,
+        local_base_url=fresh_settings.AI_LOCAL_BASE_URL,
+        is_local_first=fresh_settings.AI_LOCAL_FIRST,
+    )
+    ai_service.configure(fresh_config)
+    return {"message": "AI 配置已保存并生效"}
+
+
+@config_router.get("/status", response_model=AIStatusResponse)
+async def get_ai_status(
+    current_user: Annotated[User, Depends(get_current_admin_user)],
+):
+    """获取所有 AI Provider 的连接状态"""
+    return await ai_service.get_provider_status()
+
+
+@config_router.post("/test-connection", response_model=TestConnectionResponse)
+async def test_ai_connection(
+    request: TestConnectionRequest,
+    current_user: Annotated[User, Depends(get_current_admin_user)],
+):
+    """测试指定 Provider 的连接是否正常"""
+    import time
+    import httpx
+    from app.services.ai import OllamaProvider, LMStudioProvider
+
+    start = time.time()
+
+    if request.provider == "ollama":
+        address = request.local_base_url or OllamaProvider.DEFAULT_BASE_URL
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"{address}/v1/models")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    models = [m.get("id", "") for m in data.get("data", [])]
+                    model = models[0] if models else request.model or ""
+                    latency = int((time.time() - start) * 1000)
+                    return TestConnectionResponse(
+                        success=True,
+                        message="连接成功",
+                        model=model,
+                        address=address,
+                        latency_ms=latency,
+                    )
+                else:
+                    latency = int((time.time() - start) * 1000)
+                    return TestConnectionResponse(
+                        success=False,
+                        message=f"HTTP {resp.status_code}",
+                        address=address,
+                        latency_ms=latency,
+                    )
+        except Exception as e:
+            latency = int((time.time() - start) * 1000)
+            return TestConnectionResponse(
+                success=False,
+                message=f"连接失败: {e}",
+                address=address,
+                latency_ms=latency,
+            )
+
+    elif request.provider == "lmstudio":
+        address = request.local_base_url or LMStudioProvider.DEFAULT_BASE_URL
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"{address}/v1/models")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    models = [m.get("id", "") for m in data.get("data", [])]
+                    model = models[0] if models else request.model or ""
+                    latency = int((time.time() - start) * 1000)
+                    return TestConnectionResponse(
+                        success=True,
+                        message="连接成功",
+                        model=model,
+                        address=address,
+                        latency_ms=latency,
+                    )
+                else:
+                    latency = int((time.time() - start) * 1000)
+                    return TestConnectionResponse(
+                        success=False,
+                        message=f"HTTP {resp.status_code}",
+                        address=address,
+                        latency_ms=latency,
+                    )
+        except Exception as e:
+            latency = int((time.time() - start) * 1000)
+            return TestConnectionResponse(
+                success=False,
+                message=f"连接失败: {e}",
+                address=address,
+                latency_ms=latency,
+            )
+
+    elif request.provider == "minimax":
+        address = request.base_url or "https://api.minimaxi.com/anthropic"
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    f"{address}/v1/messages",
+                    headers={
+                        "x-api-key": request.api_key or get_settings().AI_API_KEY,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": request.model or "MiniMax-M2.7",
+                        "max_tokens": 1,
+                        "messages": [{"role": "user", "content": "hi"}],
+                    },
+                )
+                latency = int((time.time() - start) * 1000)
+                if resp.status_code == 200:
+                    return TestConnectionResponse(
+                        success=True,
+                        message="连接成功",
+                        model=request.model or "MiniMax-M2.7",
+                        address=address,
+                        latency_ms=latency,
+                    )
+                else:
+                    return TestConnectionResponse(
+                        success=False,
+                        message=f"HTTP {resp.status_code}: {resp.text[:100]}",
+                        address=address,
+                        latency_ms=latency,
+                    )
+        except Exception as e:
+            latency = int((time.time() - start) * 1000)
+            return TestConnectionResponse(
+                success=False,
+                message=f"连接失败: {e}",
+                address=address,
+                latency_ms=latency,
+            )
+
+    elif request.provider == "openai":
+        address = request.base_url or "https://api.openai.com/v1"
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    f"{address}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {request.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": request.model or "gpt-4o-mini",
+                        "max_tokens": 1,
+                        "messages": [{"role": "user", "content": "hi"}],
+                    },
+                )
+                latency = int((time.time() - start) * 1000)
+                if resp.status_code == 200:
+                    return TestConnectionResponse(
+                        success=True,
+                        message="连接成功",
+                        model=request.model or "gpt-4o-mini",
+                        address=address,
+                        latency_ms=latency,
+                    )
+                else:
+                    return TestConnectionResponse(
+                        success=False,
+                        message=f"HTTP {resp.status_code}: {resp.text[:100]}",
+                        address=address,
+                        latency_ms=latency,
+                    )
+        except Exception as e:
+            latency = int((time.time() - start) * 1000)
+            return TestConnectionResponse(
+                success=False,
+                message=f"连接失败: {e}",
+                address=address,
+                latency_ms=latency,
+            )
+
+    return TestConnectionResponse(
+        success=False,
+        message=f"未知 Provider: {request.provider}",
+    )
 
 
 # AI 聊天路由
