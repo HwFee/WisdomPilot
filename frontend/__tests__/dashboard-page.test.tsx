@@ -100,6 +100,7 @@ describe('DashboardPage', () => {
           completed_subsections: [0, 1],
           completed_exercise_count: 0,
           completed_exercises_by_subsection: {},
+          exercise_results: {},
           started_at: oneHourAgo,
           completed_at: null,
           updated_at: oneHourAgo,

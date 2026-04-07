@@ -18,6 +18,9 @@ export interface CodeEditorPanelProps {
   exerciseOptions?: string[]
   onCodeChange?: (code: string) => void
   onClose?: () => void
+  onExerciseComplete?: (completedExercisesBySubsection: Record<number, number[]>, completedCount: number, totalCount: number) => void
+  onProgrammingResult?: (isCorrect: boolean, exerciseId?: number) => void
+  onProgrammingAttempt?: (isCorrect: boolean, exerciseId: number) => void  // 每次运行都自动保存结果
   className?: string
 }
 
@@ -56,12 +59,22 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       exerciseOptions,
       onCodeChange,
       onClose,
+      onExerciseComplete,
+      onProgrammingResult,
+      onProgrammingAttempt,
       className,
     },
     ref
   ) => {
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-    const [code, setCodeState] = useState(defaultCode)
+    // Initialize code: try to load from localStorage first, otherwise use defaultCode
+    const [code, setCodeState] = useState(() => {
+      if (chapterId !== undefined && subsectionIndex !== undefined) {
+        const saved = localStorage.getItem(`code_${chapterId}_${subsectionIndex}_${defaultLanguage}`)
+        if (saved) return saved
+      }
+      return defaultCode
+    })
     const [language, setLanguage] = useState(defaultLanguage)
     const [isRunning, setIsRunning] = useState(false)
     const [output, setOutput] = useState<CodeExecutionResponse | null>(null)
@@ -72,6 +85,17 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       registerActiveEditor(ref as unknown as RefObject<CodeEditorPanelRef>)
       return () => registerActiveEditor(null)
     }, [ref])
+
+    // Load saved code when language changes
+    useEffect(() => {
+      if (chapterId !== undefined && subsectionIndex !== undefined) {
+        const saved = localStorage.getItem(`code_${chapterId}_${subsectionIndex}_${language}`)
+        if (saved && saved !== code) {
+          setCodeState(saved)
+          editorRef.current?.setValue(saved)
+        }
+      }
+    }, [language])
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
@@ -138,6 +162,29 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
           stdin: '',
         })
         setOutput(result)
+
+        // Programming exercise uses id 0
+        const exerciseId = 0
+        const isCorrect = result.status_id === 3 // Accepted = correct
+
+        // Always report the result (correct or wrong)
+        if (onProgrammingResult) {
+          onProgrammingResult(isCorrect, exerciseId)
+        }
+
+        // Auto-save result to backend (无论对错都保存)
+        if (onProgrammingAttempt) {
+          onProgrammingAttempt(isCorrect, exerciseId)
+        }
+
+        // If execution is successful, mark exercise as complete
+        if (isCorrect && onExerciseComplete && chapterId !== undefined && subsectionIndex !== undefined) {
+          const completedSubsections: Record<number, number[]> = {}
+          completedSubsections[subsectionIndex] = [exerciseId]
+          const totalCount = 14
+          const completedCount = 1
+          onExerciseComplete(completedSubsections, completedCount, totalCount)
+        }
       } catch (error) {
         setOutput({
           token: '',
@@ -154,10 +201,26 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       } finally {
         setIsRunning(false)
       }
-    }, [code, language])
+    }, [code, language, chapterId, subsectionIndex, onExerciseComplete, onProgrammingAttempt])
 
     const handleSave = useCallback(() => {
-      // TODO: Implement code saving to backend
+      // Save code to localStorage (keyed by chapterId-subsectionIndex-language)
+      if (chapterId === undefined || subsectionIndex === undefined) return
+      const storageKey = `code_${chapterId}_${subsectionIndex}_${language}`
+      localStorage.setItem(storageKey, code)
+      // Provide visual feedback
+      setOutput({
+        token: '',
+        status: 'Saved',
+        status_id: 3, // Use same status_id as Accepted for green display
+        stdout: '代码已保存到本地',
+        stderr: null,
+        compile_output: null,
+        message: null,
+        time: null,
+        memory: null,
+        exit_code: 0,
+      })
     }, [chapterId, subsectionIndex, code, language])
 
     const selectedLanguageLabel = LANGUAGE_CONFIG[language]?.label || 'Python'

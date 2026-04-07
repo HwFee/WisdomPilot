@@ -134,6 +134,7 @@ export interface ChapterProgress {
   completed_subsections: number[]
   completed_exercise_count: number
   completed_exercises_by_subsection: Record<number, number[]>  // {小节索引: [已完成习题ID列表]}
+  exercise_results: Record<string, string>  // {exerciseKey: "correct" | "wrong"}
   started_at: string | null
   completed_at: string | null
   updated_at: string
@@ -188,6 +189,7 @@ export interface UpdateProgressData {
   completed_exercise_count?: number
   total_exercises?: number
   completed_exercises_by_subsection?: Record<number, number[]>  // {小节索引: [已完成习题ID列表]}
+  exercise_results?: Record<string, string>  // {exerciseKey: "correct" | "wrong"}
 }
 
 // ========================================

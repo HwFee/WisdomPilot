@@ -75,6 +75,12 @@ class ChapterProgress(Base):
         default=dict,
         nullable=False
     )
+    # 存储每道题的答题结果：{chapterId}-{subsectionIndex}-{exerciseId}: "correct" | "wrong"
+    exercise_results: Mapped[dict] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False
+    )
     started_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime,
         nullable=True

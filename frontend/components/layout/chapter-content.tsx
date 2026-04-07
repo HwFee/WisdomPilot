@@ -26,7 +26,7 @@ interface ExerciseAnswer {
 // Exercises for Chapter 1 Section 1 ("数据结构的基本概念")
 const chapter1Section1Exercises: Exercise[] = [
   {
-    id: 1,
+    id: 0,
     type: 'programming',
     question: '编程题：输出一行数字',
     template: '# 请在下方编写代码，输出一行：1 2 3\n# 注意：数字之间用空格分隔\n\n',
@@ -63,11 +63,14 @@ interface ChapterContentProps {
   activeIndex: number
   onNavigate: (index: number) => void
   onStartIDE: () => void
-  onStartIDEWithTemplate?: (template: string, question?: string, options?: string[]) => void  // 编程题打开IDE并传入模板
+  onStartIDEWithTemplate?: (template: string, question?: string, options?: string[], subsectionIndex?: number) => void  // 编程题打开IDE并传入模板
   isSplitScreen?: boolean  // IDE是否正在显示
   lang: 'zh' | 'en'
   completedExercisesBySubsection?: Record<number, number[]>  // {小节索引: [已完成习题ID列表]}
   onExerciseComplete?: (completedExercisesBySubsection: Record<number, number[]>, completedCount: number, totalCount: number) => void  // 进度更新回调
+  onProgrammingResult?: (isCorrect: boolean, exerciseId?: number) => void  // 编程题运行结果回调
+  onChoiceAttempt?: (isCorrect: boolean, exerciseId: number) => void  // 选择题答题结果回调（自动保存到后端）
+  programmingResults?: Record<number, 'correct' | 'wrong'>  // 编程题结果 {exerciseId: 'correct' | 'wrong'}
   exerciseAnswers?: ExerciseAnswer[]  // 后端返回的习题答案列表
 }
 
@@ -81,6 +84,9 @@ export function ChapterContent({
   lang,
   completedExercisesBySubsection = {},
   onExerciseComplete,
+  onProgrammingResult,
+  onChoiceAttempt,
+  programmingResults = {},
   exerciseAnswers = [],
 }: ChapterContentProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
@@ -124,13 +130,6 @@ export function ChapterContent({
     return `${String.fromCharCode(65 + index)}. ${option}`
   }
 
-  // 当 activeIndex 变化时，恢复已完成状态，但保留当前小节的用户作答状态
-  useEffect(() => {
-    const completedInCurrentSection = completedExercisesBySubsection[activeIndex] || []
-    setCompletedExercises(completedInCurrentSection)
-    // 不重置 selectedAnswers 和 submittedChoiceExercises，保留用户的选择
-  }, [activeIndex])
-
   // 当 completedExercisesBySubsection 从后端加载变化时，同步 completedExercises
   useEffect(() => {
     const currentJSON = JSON.stringify(completedExercisesBySubsection)
@@ -158,12 +157,13 @@ export function ChapterContent({
     // Update DOM status for orb detection
     setQuestionElementStatus(exerciseId, isCorrect ? "correct" : "wrong")
 
-    if (isCorrect) {
-      // 答对了，标记完成
-      handleMarkComplete(exerciseId)
-    }
+    // 无论答对答错都标记完成（计入进度）
+    handleMarkComplete(exerciseId)
     // 标记为已提交（显示结果）
     setSubmittedChoiceExercises(prev => ({ ...prev, [exerciseId]: true }))
+
+    // 自动保存答题结果到后端
+    onChoiceAttempt?.(isCorrect, exerciseId)
   }
 
   const handleMarkComplete = (exerciseId: number) => {
@@ -431,33 +431,51 @@ export function ChapterContent({
                           <span className="text-sm text-muted-foreground">{t('预期输出', 'Expected Output')}: </span>
                           <code className="text-sm bg-card px-2 py-1 rounded border border-border">{exercise.expectedOutput}</code>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (isSplitScreen) {
-                              // IDE is open, close it
-                              onStartIDE()
-                            } else if (exercise.template && onStartIDEWithTemplate) {
-                              onStartIDEWithTemplate(exercise.template, exercise.question, exercise.options)
-                            } else {
-                              onStartIDE()
-                            }
-                          }}
-                          className={cn(
-                            'flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors',
-                            isSplitScreen
-                              ? 'bg-red-600 text-white hover:bg-red-700'
-                              : 'bg-green-600 text-white hover:bg-green-700'
-                          )}
-                        >
-                          {isSplitScreen ? (
-                            <LogOut className="w-4 h-4" />
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                            </svg>
-                          )}
-                          {isSplitScreen ? t('退出IDE', 'Exit IDE') : t('进入IDE作答', 'Open IDE')}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              if (isSplitScreen) {
+                                // IDE is open, close it
+                                onStartIDE()
+                              } else if (exercise.template && onStartIDEWithTemplate) {
+                                onStartIDEWithTemplate(exercise.template, exercise.question, exercise.options, activeIndex)
+                              } else {
+                                onStartIDE()
+                              }
+                            }}
+                            className={cn(
+                              'flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors',
+                              isSplitScreen
+                                ? 'bg-red-600 text-white hover:bg-red-700'
+                                : 'bg-green-600 text-white hover:bg-green-700'
+                            )}
+                          >
+                            {isSplitScreen ? (
+                              <LogOut className="w-4 h-4" />
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                              </svg>
+                            )}
+                            {isSplitScreen ? t('退出IDE', 'Exit IDE') : t('进入IDE作答', 'Open IDE')}
+                          </button>
+                        </div>
+                        {/* 编程题结果区域：有结果时显示 */}
+                        {(programmingResults[exercise.id] === 'correct' || programmingResults[exercise.id] === 'wrong') && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            {programmingResults[exercise.id] === 'correct' ? (
+                              <div className="flex items-center gap-2 text-green-600 text-sm">
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
+                                {t('回答正确', 'Correct')}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-red-600 text-sm">
+                                <div className="w-2 h-2 rounded-full bg-red-500" />
+                                {t('回答错误', 'Wrong Answer')}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       // Choice exercise
@@ -503,12 +521,6 @@ export function ChapterContent({
                                           : 'border-gray-400 bg-white'
                                   )}
                                 >
-                                  {isSelected && !isWrong && (
-                                    <div className="w-2 h-2 bg-white rounded-full" />
-                                  )}
-                                  {showResult && isCorrect && !isSelected && (
-                                    <Check className="w-3 h-3 text-white" />
-                                  )}
                                 </div>
                                   <input
                                     type="radio"
@@ -525,10 +537,10 @@ export function ChapterContent({
                                     {option}
                                   </span>
                                   {showResult && isCorrect && (
-                                    <Check className="w-4 h-4 text-green-600 ml-auto" />
+                                    <div className="w-2 h-2 rounded-full bg-green-500 ml-auto" />
                                   )}
                                   {isWrong && (
-                                    <X className="w-4 h-4 text-red-600 ml-auto" />
+                                    <div className="w-2 h-2 rounded-full bg-red-500 ml-auto" />
                                   )}
                                 </label>
                               )
@@ -555,7 +567,7 @@ export function ChapterContent({
                               if (isCorrect) {
                                 return (
                                   <div className="flex items-center gap-2 text-green-600 text-sm">
-                                    <CheckCircle className="w-4 h-4" />
+                                    <div className="w-2 h-2 rounded-full bg-green-500" />
                                     {t('已完成', 'Completed')}
                                   </div>
                                 )
@@ -563,9 +575,11 @@ export function ChapterContent({
                                 const correctIdx = correctAnswer !== null ? correctAnswer : exercise.answer
                                 const correctOptionText = exercise.options?.[correctIdx]
                                 return (
-                                  <div className="flex items-center gap-2 text-red-600 text-sm">
-                                    <XCircle className="w-4 h-4" />
-                                    {t('回答错误', 'Wrong Answer')} · {t('正确答案：', 'Correct: ')}
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                                    <span className="text-red-600">{t('回答错误', 'Wrong Answer')}</span>
+                                    <span className="text-muted-foreground">·</span>
+                                    <span className="text-muted-foreground">{t('正确答案：', 'Correct: ')}</span>
                                     <span className="font-medium text-green-600">
                                       {correctOptionText ? formatOptionLabel(correctIdx, correctOptionText) : ''}
                                     </span>

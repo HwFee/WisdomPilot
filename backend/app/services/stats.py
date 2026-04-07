@@ -57,6 +57,7 @@ class StatsService:
                 completed_subsections=[],
                 completed_exercise_count=0,
                 completed_exercises_by_subsection={},
+                exercise_results={},
             )
             self.db.add(progress)
             await self.db.commit()
@@ -72,6 +73,7 @@ class StatsService:
         self._apply_progress_percent(progress, data)
         self._apply_completed_subsections(progress, data)
         self._apply_completed_exercises_by_subsection(progress, data)
+        self._apply_exercise_results(progress, data)
         await self.db.commit()
         await self.db.refresh(progress)
         return progress
@@ -144,6 +146,18 @@ class StatsService:
         """Handle exercise dict."""
         if data.completed_exercises_by_subsection is not None:
             progress.completed_exercises_by_subsection = data.completed_exercises_by_subsection
+
+    def _apply_exercise_results(self, progress: ChapterProgress, data: UpdateProgressRequest) -> None:
+        """Handle exercise results (correct/wrong per exercise)."""
+        if data.exercise_results is not None:
+            # 如果是空字典，显式清除所有结果
+            if data.exercise_results == {}:
+                progress.exercise_results = {}
+            else:
+                # Merge with existing results (don't overwrite, just update)
+                existing = progress.exercise_results or {}
+                merged = {**existing, **data.exercise_results}
+                progress.exercise_results = merged
 
     async def start_session(
         self, user_id: str, data: StartSessionRequest

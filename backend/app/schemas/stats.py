@@ -14,6 +14,8 @@ class ChapterProgressBase(BaseModel):
     completed_subsections: list[int] = Field(default_factory=list)
     completed_exercise_count: int = 0
     completed_exercises_by_subsection: dict[str, list[int]] = Field(default_factory=dict)
+    # 存储每道题的答题结果：{chapterId}-{subsectionIndex}-{exerciseId}: "correct" | "wrong"
+    exercise_results: dict[str, str] = Field(default_factory=dict)
 
 
 class ChapterProgressResponse(ChapterProgressBase):
@@ -35,6 +37,7 @@ class UpdateProgressRequest(BaseModel):
     completed_exercise_count: Optional[int] = None
     total_exercises: Optional[int] = None
     completed_exercises_by_subsection: Optional[dict[str, list[int]]] = None
+    exercise_results: Optional[dict[str, str]] = None  # {exerciseKey: "correct" | "wrong"}
 
 
 class LearningSessionResponse(BaseModel):

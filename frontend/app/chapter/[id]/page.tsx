@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { getStoredUser, getStoredToken, logout, User, startLearningSession, endLearningSession, updateSessionSubsection, updateChapterProgress, getUserProgress, ChapterProgress, getChapterExerciseAnswers, ChapterExerciseAnswers } from '@/lib/api'
-import { courseChapters, CourseChapter } from '@/lib/course-data'
+import { courseChapters, CourseChapter, getChapterTotalExercises } from '@/lib/course-data'
 import { ChapterHeader, ChapterSidebar, ChapterContent } from '@/components/layout'
 import { CodeEditorPanel, CodeEditorPanelRef } from '@/components/editor/CodeEditorPanel'
 import { AIContextProvider } from '@/contexts/AIContext'
@@ -38,10 +38,38 @@ export default function ChapterPage() {
   const [programmingTemplate, setProgrammingTemplate] = useState('')
   const [programmingQuestion, setProgrammingQuestion] = useState('')
   const [programmingOptions, setProgrammingOptions] = useState<string[] | undefined>(undefined)
+  const [programmingResults, setProgrammingResults] = useState<Record<number, 'correct' | 'wrong'>>({})
+  // Sync programmingResults from chapterProgress.exercise_results when progress changes
+  useEffect(() => {
+    if (!chapterProgress?.exercise_results || !chapter) return
+    // exercise_results key format: "chapterId-subsectionIndex-exerciseId"
+    const results: Record<number, 'correct' | 'wrong'> = {}
+    let hasMatchingResult = false
+    for (const [key, status] of Object.entries(chapterProgress.exercise_results)) {
+      const parts = key.split('-')
+      if (parts.length !== 3) continue
+      const [cId, sIdx, eId] = parts.map(Number)
+      if (cId === chapter.id && sIdx === activeIndex && eId === 0) {
+        results[0] = status as 'correct' | 'wrong'
+        hasMatchingResult = true
+      }
+    }
+    if (hasMatchingResult) {
+      setProgrammingResults(prev => ({ ...prev, ...results }))
+    } else {
+      // 如果没有匹配的结果，清除编程题结果
+      setProgrammingResults(prev => {
+        const newResults = { ...prev }
+        delete newResults[0]
+        return newResults
+      })
+    }
+  }, [chapterProgress?.exercise_results, chapter, activeIndex])
   const sessionIdRef = useRef<string | null>(null)
   const sessionStartedAtRef = useRef<number | null>(null)
   const tokenRef = useRef<string | null>(null)
   const codeEditorRef = useRef<CodeEditorPanelRef>(null)
+  const isDebug = searchParams.get('debug') === '1'
 
   const prefersReducedMotion = useReducedMotion()
 
@@ -114,21 +142,110 @@ export default function ChapterPage() {
   // Handle exercise completion
   const handleExerciseComplete = async (
     completedExercisesBySubsection: Record<number, number[]>,
-    completedCount: number,
-    totalCount: number
+    _completedCount: number,
+    _totalCount: number
   ) => {
     if (!chapter || !tokenRef.current) {
       return
     }
     try {
+      // Merge with existing completed exercises
+      const existingCompletedBySubsection = chapterProgress?.completed_exercises_by_subsection || {}
+      const mergedCompletedBySubsection: Record<number, number[]> = { ...existingCompletedBySubsection }
+      for (const [subsectionIdx, exerciseIds] of Object.entries(completedExercisesBySubsection)) {
+        const idx = parseInt(subsectionIdx, 10)
+        const existing = mergedCompletedBySubsection[idx] || []
+        // Merge and dedupe exercise IDs
+        const merged = Array.from(new Set([...existing, ...exerciseIds]))
+        mergedCompletedBySubsection[idx] = merged
+      }
+
+      // Calculate total completed exercises from merged dict
+      const totalCompleted = Object.values(mergedCompletedBySubsection).reduce(
+        (sum, exerciseIds) => sum + exerciseIds.length,
+        0
+      )
+      const totalExercises = getChapterTotalExercises(chapter)
+
       const result = await updateChapterProgress(tokenRef.current, chapter.id, {
-        completed_exercise_count: completedCount,
-        total_exercises: totalCount,
-        completed_exercises_by_subsection: completedExercisesBySubsection,
+        completed_exercise_count: totalCompleted,
+        total_exercises: totalExercises,
+        completed_exercises_by_subsection: mergedCompletedBySubsection,
       })
       setChapterProgress(result)
     } catch (error) {
       console.error('[进度] 保存习题完成失败:', error)
+    }
+  }
+
+  // Handle programming exercise result (correct/wrong)
+  const handleProgrammingResult = (isCorrect: boolean, exerciseId: number = 0) => {
+    setProgrammingResults(prev => ({ ...prev, [exerciseId]: isCorrect ? 'correct' : 'wrong' }))
+  }
+
+  // Handle programming exercise attempt - auto-save result to backend
+  const handleProgrammingAttempt = async (isCorrect: boolean, exerciseId: number = 0) => {
+    if (!tokenRef.current || !chapter) return
+    try {
+      // Construct exercise key: chapterId-subsectionIndex-exerciseId
+      const exerciseKey = `${chapter.id}-${activeIndex}-${exerciseId}`
+      const resultStatus = isCorrect ? 'correct' : 'wrong'
+
+      // Get existing exercise results
+      const existingResults = chapterProgress?.exercise_results || {}
+
+      // Update with new result
+      const updatedResults = { ...existingResults, [exerciseKey]: resultStatus }
+
+      // Save to backend
+      await updateChapterProgress(tokenRef.current, chapter.id, {
+        exercise_results: updatedResults,
+      })
+    } catch (error) {
+      console.error('[编程题] 保存答题结果失败:', error)
+    }
+  }
+
+  // Handle choice exercise attempt - auto-save result to backend
+  const handleChoiceAttempt = async (isCorrect: boolean, exerciseId: number) => {
+    if (!tokenRef.current || !chapter) return
+    try {
+      // Construct exercise key: chapterId-subsectionIndex-exerciseId
+      const exerciseKey = `${chapter.id}-${activeIndex}-${exerciseId}`
+      const resultStatus = isCorrect ? 'correct' : 'wrong'
+
+      // Get existing exercise results
+      const existingResults = chapterProgress?.exercise_results || {}
+
+      // Update with new result
+      const updatedResults = { ...existingResults, [exerciseKey]: resultStatus }
+
+      // Save to backend
+      await updateChapterProgress(tokenRef.current, chapter.id, {
+        exercise_results: updatedResults,
+      })
+    } catch (error) {
+      console.error('[选择题] 保存答题结果失败:', error)
+    }
+  }
+
+  // Debug: reset chapter progress directly in database
+  const handleResetProgress = async () => {
+    if (!tokenRef.current || !chapter) return
+    try {
+      const totalExercises = getChapterTotalExercises(chapter)
+      const result = await updateChapterProgress(tokenRef.current, chapter.id, {
+        completed_exercise_count: 0,
+        total_exercises: totalExercises,
+        completed_exercises_by_subsection: {},
+        exercise_results: {},
+      })
+      setProgrammingResults({})
+      setChapterProgress(result)
+      alert('已重置答题状态')
+    } catch (error) {
+      console.error('[Debug] 重置答题状态失败:', error)
+      alert('重置失败')
     }
   }
 
@@ -201,13 +318,24 @@ export default function ChapterPage() {
     setIsSplitScreen(prev => !prev)
   }
 
-  const handleStartIDEWithTemplate = (template: string, question = '', options?: string[]) => {
-    setProgrammingTemplate(template)
+  const handleStartIDEWithTemplate = (template: string, question = '', options?: string[], subsectionIndex?: number) => {
+    // Check if there's saved code in localStorage (across all languages)
+    const chapterId = parseInt(params.id as string, 10)
+    const subIdx = subsectionIndex ?? 0
+    const languages = [71, 63, 74, 50, 54] // Python, JavaScript, TypeScript, C, C++
+    let savedCode: string | null = null
+    for (const langId of languages) {
+      savedCode = localStorage.getItem(`code_${chapterId}_${subIdx}_${langId}`)
+      if (savedCode) break
+    }
+    const initialCode = savedCode || template
+
+    setProgrammingTemplate(initialCode)
     setProgrammingQuestion(question)
     setProgrammingOptions(options)
     setIsSplitScreen(true)
     setTimeout(() => {
-      codeEditorRef.current?.setCode(template)
+      codeEditorRef.current?.setCode(initialCode)
     }, 100)
   }
 
@@ -274,6 +402,16 @@ export default function ChapterPage() {
           lang={lang}
         />
 
+        {/* Debug button - only visible when ?debug=1 */}
+        {isDebug && chapter?.id === 1 && (
+          <button
+            onClick={handleResetProgress}
+            className="fixed bottom-4 right-4 px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg shadow-lg hover:bg-red-600 transition-colors z-50"
+          >
+            [Debug] 重置答题状态
+          </button>
+        )}
+
         {/* Sidebar */}
         <ChapterSidebar
           chapter={chapter}
@@ -311,6 +449,9 @@ export default function ChapterPage() {
                 lang={lang}
                 completedExercisesBySubsection={chapterProgress?.completed_exercises_by_subsection || {}}
                 onExerciseComplete={handleExerciseComplete}
+                onProgrammingResult={handleProgrammingResult}
+                onChoiceAttempt={handleChoiceAttempt}
+                programmingResults={programmingResults}
                 exerciseAnswers={exerciseAnswers?.answers || []}
               />
             </motion.div>
@@ -335,6 +476,9 @@ export default function ChapterPage() {
                     exerciseQuestion={programmingQuestion || '编程题'}
                     exerciseOptions={programmingOptions}
                     onClose={handleSplitScreen}
+                    onExerciseComplete={handleExerciseComplete}
+                    onProgrammingResult={handleProgrammingResult}
+                    onProgrammingAttempt={handleProgrammingAttempt}
                   />
                 </motion.div>
               )}
