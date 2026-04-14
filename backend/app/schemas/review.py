@@ -1,0 +1,130 @@
+"""Review API Schemas - 复习相关数据传输对象"""
+
+from datetime import datetime
+from typing import Optional, List
+from pydantic import BaseModel, Field
+
+
+class WeakPointBase(BaseModel):
+    """Base weak point schema"""
+    course_id: int
+    knowledge_point: str
+    error_count: int = 0
+    mastery_level: int = Field(default=1, ge=1, le=5)
+
+
+class WeakPointResponse(WeakPointBase):
+    """Response for weak point"""
+    id: str
+    user_id: str
+    last_error_at: Optional[datetime] = None
+    review_count: int = 0
+    last_review_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+    @property
+    def weakness_score(self) -> float:
+        """Calculate weakness score"""
+        error_factor = min(1.0, self.error_count / 10)
+        mastery_factor = (6 - self.mastery_level) / 5
+        return (error_factor + mastery_factor) / 2
+
+
+class SpacedRepetitionBase(BaseModel):
+    """Base spaced repetition schema"""
+    exercise_id: int
+    stage_id: Optional[int] = None
+    next_review_at: datetime
+    review_interval: int = 1
+    ease_factor: float = 2.5
+
+
+class SpacedRepetitionResponse(SpacedRepetitionBase):
+    """Response for spaced repetition record"""
+    id: str
+    user_id: str
+    review_count: int = 0
+    last_review_at: Optional[datetime] = None
+    last_review_result: Optional[bool] = None
+
+    model_config = {"from_attributes": True}
+
+    @property
+    def is_due(self) -> bool:
+        """Check if review is due"""
+        from app.utils.time import utc_now
+        return utc_now() >= self.next_review_at
+
+    @property
+    def days_overdue(self) -> int:
+        """Get days overdue"""
+        from app.utils.time import utc_now
+        from datetime import timedelta
+        delta = utc_now() - self.next_review_at
+        return max(0, delta.days)
+
+
+class ReviewQueueItem(BaseModel):
+    """Item in the review queue"""
+    repetition: SpacedRepetitionResponse
+    exercise_id: int
+    exercise_type: str
+    exercise_difficulty: int
+    knowledge_points: List[str]
+    stage_id: Optional[int] = None
+    priority: float = 0.0  # Higher = more important to review
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewQueueResponse(BaseModel):
+    """Response for review queue endpoint"""
+    items: List[ReviewQueueItem]
+    total_due: int
+    total_scheduled: int
+
+
+class CompleteReviewRequest(BaseModel):
+    """Request to complete a review"""
+    exercise_id: int
+    quality: int = Field(..., ge=0, le=5, description="Recall quality (0-5)")
+    success: bool = Field(..., description="Whether the answer was correct")
+
+
+class CompleteReviewResponse(BaseModel):
+    """Response after completing a review"""
+    repetition: SpacedRepetitionResponse
+    weak_point_updated: bool = False
+    mastery_change: int = 0
+    message: str
+
+
+class TargetPracticeRequest(BaseModel):
+    """Request for targeted practice on weak points"""
+    course_id: Optional[int] = None
+    knowledge_points: Optional[List[str]] = None
+    limit: int = Field(default=5, ge=1, le=20)
+
+
+class TargetPracticeResponse(BaseModel):
+    """Response with exercises for targeted practice"""
+    exercises: List[dict]
+    weak_points: List[WeakPointResponse]
+    total: int
+
+
+class WeakPointListResponse(BaseModel):
+    """Response for weak points list endpoint"""
+    weak_points: List[WeakPointResponse]
+    total: int
+
+
+class ReviewStatsResponse(BaseModel):
+    """Response for review statistics"""
+    total_due: int
+    total_scheduled: int
+    reviewed_today: int
+    streak_days: int
+    weak_points_count: int
+    mastery_distribution: dict  # {level: count}

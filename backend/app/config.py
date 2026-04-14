@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # JWT
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
 
     # AI Configuration (independent module)
     AI_PROVIDER: str = "openai"
@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     AI_MODEL: str = "gpt-4o-mini"
     AI_TEMPERATURE: float = 0.7
     AI_BASE_URL: str | None = None
+    AI_LOCAL_FIRST: bool = False
+    AI_LOCAL_BASE_URL: str | None = None
 
     # External services
     JUDGE0_BASE_URL: str = "https://ce.judge0.com"

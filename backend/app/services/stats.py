@@ -199,19 +199,10 @@ class StatsService:
             await self.db.commit()
             await self.db.refresh(session)
 
-            # Log activity with subsection_index
-            await self.log_activity(
-                user_id=user_id,
-                activity_type=ActivityType.SESSION_ENDED.value,
-                chapter_id=session.chapter_id,
-                subsection_index=session.subsection_index,
-                description='学习时长: ' + str(data.duration_seconds) + '秒',
-            )
-
         return session
 
     async def end_all_active_sessions(self, user_id: str) -> None:
-        """End all active sessions for a user and log session_ended activities"""
+        """End all active sessions for a user"""
         # Expire any cached session data to force fresh read
         self.db.expire_all()
 
@@ -223,14 +214,6 @@ class StatsService:
         )
         sessions = result.scalars().all()
         for session in sessions:
-            # Log session_ended activity before ending
-            await self.log_activity(
-                user_id=user_id,
-                activity_type=ActivityType.SESSION_ENDED.value,
-                chapter_id=session.chapter_id,
-                subsection_index=session.subsection_index,
-                description="切换章节，结束学习",
-            )
             session.is_active = False
             session.ended_at = utc_now()
         await self.db.commit()
@@ -432,3 +415,101 @@ class StatsService:
                     "correct_answer_index": correct_answer_index,
                 })
         return answers
+
+    # ============ Daily Trends ============
+
+    async def get_daily_exercises_trend(self, user_id: str, days: int = 7) -> list[dict]:
+        """Get daily exercises count for the past N days"""
+        now = utc_now()
+        trends = []
+
+        for i in range(days):
+            day_start = (now - timedelta(days=i)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            day_end = day_start + timedelta(days=1)
+
+            # Count exercises completed on this day
+            result = await self.db.execute(
+                select(func.count(ActivityLog.id))
+                .where(
+                    ActivityLog.user_id == user_id,
+                    ActivityLog.activity_type == "exercise_complete",
+                    ActivityLog.created_at >= day_start,
+                    ActivityLog.created_at < day_end,
+                )
+            )
+            count = result.scalar() or 0
+
+            trends.append({
+                "date": day_start.strftime("%Y-%m-%d"),
+                "count": count,
+            })
+
+        return trends  # Most recent first
+
+    async def get_daily_accuracy_trend(self, user_id: str, days: int = 7) -> list[dict]:
+        """Get daily accuracy rate for the past N days"""
+        now = utc_now()
+        trends = []
+
+        for i in range(days):
+            day_start = (now - timedelta(days=i)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            day_end = day_start + timedelta(days=1)
+
+            # Get all exercise results for this day from activity logs
+            result = await self.db.execute(
+                select(ActivityLog)
+                .where(
+                    ActivityLog.user_id == user_id,
+                    ActivityLog.activity_type == "exercise_complete",
+                    ActivityLog.created_at >= day_start,
+                    ActivityLog.created_at < day_end,
+                )
+            )
+            activities = result.scalars().all()
+
+            total = len(activities)
+            correct = sum(1 for a in activities if a.extra_data.get("is_correct", False))
+            accuracy = round(correct / total * 100, 1) if total > 0 else 0.0
+
+            trends.append({
+                "date": day_start.strftime("%Y-%m-%d"),
+                "accuracy": accuracy,
+                "total": total,
+                "correct": correct,
+            })
+
+        return trends  # Most recent first
+
+    async def get_daily_time_trend(self, user_id: str, days: int = 7) -> list[dict]:
+        """Get daily learning time for the past N days"""
+        now = utc_now()
+        trends = []
+
+        for i in range(days):
+            day_start = (now - timedelta(days=i)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            day_end = day_start + timedelta(days=1)
+
+            # Sum duration of sessions that ended on this day
+            result = await self.db.execute(
+                select(func.sum(LearningSession.duration_seconds))
+                .where(
+                    LearningSession.user_id == user_id,
+                    LearningSession.ended_at >= day_start,
+                    LearningSession.ended_at < day_end,
+                )
+            )
+            total_seconds = result.scalar() or 0
+            minutes = round(total_seconds / 60)
+
+            trends.append({
+                "date": day_start.strftime("%Y-%m-%d"),
+                "minutes": minutes,
+            })
+
+        return trends  # Most recent first

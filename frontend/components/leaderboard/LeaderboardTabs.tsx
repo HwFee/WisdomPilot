@@ -1,0 +1,305 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Trophy, Swords, Crown, Medal, Flame, ChevronRight } from 'lucide-react'
+import { getMasteryLeaderboard, getArenaLeaderboard, TIER_ICONS, TIER_NAMES, MASTERY_LEVEL_COLORS } from '@/lib/api'
+import type { LeaderboardEntry, Tier, MasteryLevel } from '@/types/api'
+
+interface LeaderboardTabsProps {
+  courseId: number
+  defaultTab?: 'mastery' | 'arena'
+  limit?: number
+  showViewAll?: boolean
+  onViewAll?: (tab: 'mastery' | 'arena') => void
+}
+
+export function LeaderboardTabs({
+  courseId,
+  defaultTab = 'mastery',
+  limit = 10,
+  showViewAll = true,
+  onViewAll,
+}: LeaderboardTabsProps) {
+  const [activeTab, setActiveTab] = useState<'mastery' | 'arena'>(defaultTab)
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
+  const [userRank, setUserRank] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Get current user from token
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        setCurrentUserId(payload.sub)
+      } catch {
+        // Ignore
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      try {
+        setLoading(true)
+        const data = activeTab === 'mastery'
+          ? await getMasteryLeaderboard(courseId, token, limit)
+          : await getArenaLeaderboard(courseId, token, limit)
+
+        setEntries(data.entries)
+        setUserRank(data.user_rank)
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error)
+        setEntries([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [courseId, activeTab, limit])
+
+  const getRankStyle = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return 'bg-gradient-to-r from-yellow-500/20 via-yellow-500/10 to-transparent border-yellow-500/30'
+      case 2:
+        return 'bg-gradient-to-r from-gray-400/20 via-gray-400/10 to-transparent border-gray-400/30'
+      case 3:
+        return 'bg-gradient-to-r from-amber-600/20 via-amber-600/10 to-transparent border-amber-600/30'
+      default:
+        return 'bg-card border-border'
+    }
+  }
+
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="w-5 h-5 text-yellow-500" />
+      case 2:
+        return <Medal className="w-5 h-5 text-gray-400" />
+      case 3:
+        return <Medal className="w-5 h-5 text-amber-600" />
+      default:
+        return <span className="text-sm font-bold text-muted-foreground">{rank}</span>
+    }
+  }
+
+  return (
+    <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      {/* Tabs */}
+      <div className="flex border-b border-border">
+        <button
+          onClick={() => setActiveTab('mastery')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'mastery'
+              ? 'text-amber-500 border-b-2 border-amber-500 bg-amber-500/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          <Trophy className="w-4 h-4" />
+          精进榜
+        </button>
+        <button
+          onClick={() => setActiveTab('arena')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'arena'
+              ? 'text-blue-500 border-b-2 border-blue-500 bg-blue-500/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          <Swords className="w-4 h-4" />
+          竞技榜
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">暂无排名数据</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {entries.map((entry) => (
+              <div
+                key={entry.user_id}
+                className={`rounded-xl border p-3 flex items-center justify-between transition-all ${
+                  entry.user_id === currentUserId
+                    ? 'ring-2 ring-primary border-primary/30 bg-primary/5'
+                    : getRankStyle(entry.rank)
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Rank */}
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    {getRankIcon(entry.rank)}
+                  </div>
+
+                  {/* Avatar */}
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-medium text-sm ${
+                    activeTab === 'mastery'
+                      ? 'bg-gradient-to-br from-amber-500 to-amber-600'
+                      : 'bg-gradient-to-br from-blue-500 to-blue-600'
+                  }`}>
+                    {entry.username.charAt(0)}
+                  </div>
+
+                  {/* Info */}
+                  <div>
+                    <p className="font-medium text-foreground text-sm">
+                      {entry.username}
+                      {entry.user_id === currentUserId && (
+                        <span className="ml-1 text-xs text-primary">(你)</span>
+                      )}
+                    </p>
+                    {activeTab === 'mastery' ? (
+                      <p className="text-xs text-muted-foreground">
+                        {entry.mastered_chapters}/{entry.total_chapters} 章节精通
+                      </p>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{TIER_ICONS[entry.tier as Tier]}</span>
+                        <span>{TIER_NAMES[entry.tier as Tier]}</span>
+                        <span className="flex items-center gap-0.5">
+                          <Flame className="w-3 h-3 text-orange-500" />
+                          {entry.wins}胜
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Score */}
+                <div className="text-right">
+                  {activeTab === 'mastery' ? (
+                    <>
+                      <p className="font-bold text-foreground">
+                        {entry.total_mastery?.toFixed(0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">掌握分</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-bold text-blue-500">
+                        {entry.total_score?.toFixed(0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">竞技分</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* User rank */}
+        {userRank && userRank > limit && (
+          <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/20">
+            <p className="text-sm text-center text-muted-foreground">
+              你的排名：<span className="font-bold text-primary">#{userRank}</span>
+            </p>
+          </div>
+        )}
+
+        {/* View all */}
+        {showViewAll && (
+          <button
+            onClick={() => onViewAll?.(activeTab)}
+            className="w-full mt-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center justify-center gap-1"
+          >
+            查看完整榜单
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Minimal preview component for dashboard
+export function LeaderboardPreview({
+  type,
+  courseId,
+  limit = 5,
+}: {
+  type: 'mastery' | 'arena'
+  courseId: number
+  limit?: number
+}) {
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      try {
+        setLoading(true)
+        const data = type === 'mastery'
+          ? await getMasteryLeaderboard(courseId, token, limit)
+          : await getArenaLeaderboard(courseId, token, limit)
+
+        setEntries(data.entries)
+      } catch {
+        setEntries([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [courseId, type, limit])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"></div>
+      </div>
+    )
+  }
+
+  if (entries.length === 0) {
+    return (
+      <p className="text-center text-sm text-muted-foreground py-4">暂无数据</p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {entries.slice(0, 3).map((entry) => (
+        <div
+          key={entry.user_id}
+          className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+        >
+          <span className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
+            entry.rank === 1 ? 'text-yellow-500' :
+            entry.rank === 2 ? 'text-gray-400' :
+            entry.rank === 3 ? 'text-amber-600' :
+            'text-muted-foreground'
+          }`}>
+            {entry.rank}
+          </span>
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-primary-foreground text-xs font-medium">
+            {entry.username.charAt(0)}
+          </div>
+          <span className="flex-1 text-sm text-foreground truncate">{entry.username}</span>
+          <span className="text-sm font-medium text-foreground">
+            {type === 'mastery'
+              ? entry.total_mastery?.toFixed(0)
+              : entry.total_score?.toFixed(0)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}

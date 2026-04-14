@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
-from app.services.ai import LocalAIProvider, MiniMaxProvider, OpenAIProvider, AIService, ai_service
+from app.services.ai import OllamaProvider, LMStudioProvider, MiniMaxProvider, OpenAIProvider, AIService, ai_service
 from app.schemas.ai import AIProviderConfig
 
 
@@ -20,20 +20,20 @@ def configure_ai_service():
     yield
 
 
-class TestLocalAIProvider:
-    """Test LocalAIProvider calls local LLM endpoint"""
+class TestOllamaProvider:
+    """Test OllamaProvider calls local LLM endpoint"""
 
     @pytest.mark.asyncio
-    async def test_local_provider_generate_explanation(self):
-        """LocalAIProvider calls local endpoint for explanation"""
+    async def test_ollama_provider_generate_explanation(self):
+        """OllamaProvider calls local endpoint for explanation"""
         config = AIProviderConfig(
-            provider="local",
+            provider="ollama",
             api_key="test-key",
             model="local-model",
             temperature=0.7,
-            base_url="http://localhost:8080/v1",
+            local_base_url="http://localhost:8080",
         )
-        provider = LocalAIProvider(config)
+        provider = OllamaProvider(config)
 
         mock_response = Mock()
         mock_response.json.return_value = {
@@ -54,16 +54,16 @@ class TestLocalAIProvider:
         assert "localhost:8080/v1/chat/completions" in call_kwargs.kwargs.get("url", call_kwargs[0][0])
 
     @pytest.mark.asyncio
-    async def test_local_provider_review_code(self):
-        """LocalAIProvider calls local endpoint for code review"""
+    async def test_ollama_provider_review_code(self):
+        """OllamaProvider calls local endpoint for code review"""
         config = AIProviderConfig(
-            provider="local",
+            provider="ollama",
             api_key="test-key",
             model="local-model",
             temperature=0.5,
-            base_url="http://localhost:8080/v1",
+            local_base_url="http://localhost:8080",
         )
-        provider = LocalAIProvider(config)
+        provider = OllamaProvider(config)
 
         mock_response = Mock()
         mock_response.json.return_value = {
@@ -82,24 +82,37 @@ class TestLocalAIProvider:
         mock_client.post.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_local_provider_without_base_url(self):
-        """LocalAIProvider uses default local URL when base_url not set"""
+    async def test_ollama_provider_without_base_url(self):
+        """OllamaProvider uses default local URL when local_base_url not set"""
         config = AIProviderConfig(
-            provider="local",
+            provider="ollama",
             api_key="test-key",
             model="local-model",
             temperature=0.7,
         )
-        provider = LocalAIProvider(config)
-        # Default should point to a common local LLM endpoint
-        assert provider.base_url == "http://localhost:11434/v1"
+        provider = OllamaProvider(config)
+        # Default should point to Ollama default port
+        assert provider.base_url == "http://localhost:11434"
 
 
 class TestAIServiceLocalProvider:
-    """Test AIService switching to LocalAIProvider"""
+    """Test AIService switching to OllamaProvider"""
 
-    def test_ai_service_configure_local_provider(self):
-        """AIService creates LocalAIProvider when provider is 'local'"""
+    def test_ai_service_configure_ollama_provider(self):
+        """AIService creates OllamaProvider when provider is 'ollama'"""
+        service = AIService()
+        config = AIProviderConfig(
+            provider="ollama",
+            api_key="test-key",
+            model="ollama-model",
+            temperature=0.7,
+        )
+        service.configure(config)
+        assert service.is_configured()
+        assert isinstance(service._provider, OllamaProvider)
+
+    def test_ai_service_configure_local_fallback(self):
+        """AIService creates OllamaProvider when provider is 'local' (backwards compat)"""
         service = AIService()
         config = AIProviderConfig(
             provider="local",
@@ -109,7 +122,20 @@ class TestAIServiceLocalProvider:
         )
         service.configure(config)
         assert service.is_configured()
-        assert isinstance(service._provider, LocalAIProvider)
+        assert isinstance(service._provider, OllamaProvider)
+
+    def test_ai_service_configure_lmstudio_provider(self):
+        """AIService creates LMStudioProvider when provider is 'lmstudio'"""
+        service = AIService()
+        config = AIProviderConfig(
+            provider="lmstudio",
+            api_key="test-key",
+            model="lmstudio-model",
+            temperature=0.7,
+        )
+        service.configure(config)
+        assert service.is_configured()
+        assert isinstance(service._provider, LMStudioProvider)
 
     def test_ai_service_configure_openai_provider(self):
         """AIService creates OpenAIProvider when provider is 'openai'"""

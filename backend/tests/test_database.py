@@ -60,29 +60,25 @@ class TestForeignKeyViaRawQuery:
     """Test FK enforcement via raw SQL."""
 
     @pytest.mark.asyncio
-    async def test_orphaned_login_session_rejected(self):
+    async def test_orphaned_login_session_rejected(self, db_session):
         """Inserting a login_session with nonexistent user_id should fail."""
         from sqlalchemy.exc import IntegrityError
-        from app.database import AsyncSessionLocal
 
         with pytest.raises(IntegrityError):
-            async with AsyncSessionLocal() as session:
-                await session.execute(text(
-                    "INSERT INTO login_sessions (id, user_id, token, is_active, created_at) "
-                    "VALUES ('test-id-raw-001', 'nonexistent-user', 'tok-raw-123', 1, '2024-01-01 00:00:00')"
-                ))
-                await session.commit()
+            await db_session.execute(text(
+                "INSERT INTO login_sessions (id, user_id, token, is_active, created_at) "
+                "VALUES ('test-id-raw-001', 'nonexistent-user', 'tok-raw-123', 1, '2024-01-01 00:00:00')"
+            ))
+            await db_session.commit()
 
     @pytest.mark.asyncio
-    async def test_orphaned_activity_log_rejected(self):
+    async def test_orphaned_activity_log_rejected(self, db_session):
         """Inserting an activity_log with nonexistent user_id should fail."""
         from sqlalchemy.exc import IntegrityError
-        from app.database import AsyncSessionLocal
 
         with pytest.raises(IntegrityError):
-            async with AsyncSessionLocal() as session:
-                await session.execute(text(
-                    "INSERT INTO activity_logs (id, user_id, activity_type, description, extra_data, created_at) "
-                    "VALUES ('test-id-raw-002', 'nonexistent-user', 'test', 'testing', '{}', '2024-01-01 00:00:00')"
-                ))
-                await session.commit()
+            await db_session.execute(text(
+                "INSERT INTO activity_logs (id, user_id, activity_type, description, extra_data, created_at) "
+                "VALUES ('test-id-raw-002', 'nonexistent-user', 'test', 'testing', '{}', '2024-01-01 00:00:00')"
+            ))
+            await db_session.commit()

@@ -3,6 +3,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 from app.models import ChapterProgress, LearningSession, ActivityLog  # noqa: F401 - registers models
+from app.models import Course, Chapter, Exercise  # noqa: F401 - registers course models
+from app.models import Challenge, UserChallenge  # noqa: F401 - registers challenge models
+from app.models import Achievement, UserAchievement  # noqa: F401 - registers achievement models
+from app.models import Stage, UserStageProgress, UserWeakPoint, SpacedRepetition  # noqa: F401 - registers new models
+from app.models import Favorite, Note  # noqa: F401 - registers favorites and notes models
+from app.models import ChapterMastery, ChallengeSession, UserArenaProfile  # noqa: F401 - registers mastery and arena models
 from app.middleware import RateLimitMiddleware
 from app.routers import (
     auth_router,
@@ -11,7 +17,17 @@ from app.routers import (
     stats_router,
     code_router,
 )
+from app.routers.courses import router as courses_router
 from app.routers.ai import choice_router, review_router, config_router, chat_router, analysis_router
+from app.routers.challenges import router as challenges_router
+from app.routers.achievements import router as achievements_router
+from app.routers.exercises import router as exercises_router
+from app.routers.stages import router as stages_router
+from app.routers.review import router as spaced_review_router
+from app.routers.chapters import router as chapters_router
+from app.routers.favorites import router as favorites_router
+from app.routers.notes import router as notes_router
+from app.routers.learning_path import router as learning_path_router
 
 
 @asynccontextmanager
@@ -31,6 +47,8 @@ async def lifespan(app: FastAPI):
         model=settings.AI_MODEL,
         temperature=settings.AI_TEMPERATURE,
         base_url=settings.AI_BASE_URL,
+        local_base_url=settings.AI_LOCAL_BASE_URL,
+        is_local_first=settings.AI_LOCAL_FIRST,
     )
     ai_service.configure(ai_config)
     yield
@@ -50,10 +68,10 @@ app.add_middleware(RateLimitMiddleware)
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js dev server
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["Content-Type", "Authorization", "Accept"],
+    allow_headers=["*"],
 )
 
 # Include routers
@@ -62,6 +80,7 @@ app.include_router(users_router)
 app.include_router(admin_router)
 app.include_router(stats_router)
 app.include_router(code_router)
+app.include_router(courses_router)
 
 # AI Module routers (独立模块)
 app.include_router(choice_router)
@@ -69,6 +88,15 @@ app.include_router(review_router)
 app.include_router(config_router)
 app.include_router(chat_router)
 app.include_router(analysis_router)
+app.include_router(challenges_router)
+app.include_router(achievements_router)
+app.include_router(exercises_router)
+app.include_router(chapters_router)
+app.include_router(stages_router)
+app.include_router(spaced_review_router)
+app.include_router(favorites_router)
+app.include_router(notes_router)
+app.include_router(learning_path_router)
 
 
 @app.get("/")

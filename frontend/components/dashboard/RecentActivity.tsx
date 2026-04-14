@@ -1,0 +1,159 @@
+'use client'
+
+import { Clock, Rocket, ArrowRight, CheckCircle, XCircle } from 'lucide-react'
+
+interface Activity {
+  id: string
+  type?: string
+  activity_type?: string
+  description: string
+  created_at?: string
+  timestamp?: string
+  details?: {
+    stage_id?: number
+    stage_name?: string
+    exercise_id?: number
+    exercise_title?: string
+    exercises_completed?: number
+    exercises_correct?: number
+    is_correct?: boolean
+  }
+}
+
+interface RecentActivityProps {
+  activities: Activity[]
+  onStartLearning?: () => void
+  lang?: 'zh' | 'en'
+  compact?: boolean
+}
+
+export function RecentActivity({ activities, onStartLearning, lang = 'zh', compact = false }: RecentActivityProps) {
+  const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
+
+  const getActivityIcon = (activity: Activity) => {
+    const type = activity.type || activity.activity_type
+    if (!type) return '📌'
+
+    if (type === 'exercise_complete') {
+      const details = activity.details
+      if (details?.is_correct === true) {
+        return '✅'
+      } else if (details?.is_correct === false) {
+        return '❌'
+      }
+      return '📝'
+    }
+
+    switch (type) {
+      case 'chapter_complete':
+      case 'chapter_completed':
+        return '📚'
+      case 'achievement_earned':
+        return '🏆'
+      case 'streak':
+        return '🔥'
+      case 'chapter_started':
+        return '📖'
+      default:
+        return '📌'
+    }
+  }
+
+  // 获取活动显示文本 - 对于练习完成，显示"练习 xxx 正确/错误"
+  const getActivityText = (activity: Activity) => {
+    const type = activity.type || activity.activity_type
+
+    if (type === 'exercise_complete') {
+      const details = activity.details
+      // 优先显示具体练习题名称，其次显示关卡名称
+      const exerciseName = details?.exercise_title || details?.stage_name || '练习'
+
+      if (details?.is_correct === true) {
+        return (
+          <>
+            <span className="text-foreground">{exerciseName}</span>
+            <span className="text-emerald-500 ml-1">{t('正确', 'Correct')}</span>
+          </>
+        )
+      } else if (details?.is_correct === false) {
+        return (
+          <>
+            <span className="text-foreground">{exerciseName}</span>
+            <span className="text-red-500 ml-1">{t('错误', 'Wrong')}</span>
+          </>
+        )
+      }
+    }
+
+    return activity.description
+  }
+
+  // 格式化时间显示
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr) return ''
+    try {
+      const date = new Date(timeStr)
+      const now = new Date()
+      const diffMs = now.getTime() - date.getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      if (diffMins < 1) return t('刚刚', 'Just now')
+      if (diffMins < 60) return t(`${diffMins} 分钟前`, `${diffMins} mins ago`)
+      if (diffHours < 24) return t(`${diffHours} 小时前`, `${diffHours} hours ago`)
+      if (diffDays < 7) return t(`${diffDays} 天前`, `${diffDays} days ago`)
+      return date.toLocaleDateString()
+    } catch {
+      return timeStr
+    }
+  }
+
+  return (
+    <div className={`bg-card rounded-2xl border border-border p-6 h-full flex flex-col ${compact ? 'overflow-hidden' : ''}`}>
+      <h3 className="font-semibold text-foreground flex items-center gap-2 mb-4 flex-shrink-0">
+        <Clock className="w-5 h-5 text-primary" />
+        {t('最近动态', 'Recent Activity')}
+      </h3>
+
+      <div className="flex-1 overflow-auto max-h-[300px]">
+        {activities.length === 0 ? (
+          <div className="text-center py-6 h-full flex flex-col items-center justify-center">
+            <Rocket className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+            <p className="text-sm text-muted-foreground mb-2">
+              {t('暂无学习记录', 'No activity yet')}
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              {t('开始你的学习之旅吧！', 'Start your learning journey!')}
+            </p>
+            {onStartLearning && (
+              <button
+                onClick={onStartLearning}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
+              >
+                {t('浏览课程', 'Browse Courses')}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activities.slice(0, compact ? 3 : 8).map((activity, index) => (
+              <div key={activity.id || index} className="flex items-start gap-3 group">
+                <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground line-clamp-2">
+                    <span className="mr-1">{getActivityIcon(activity)}</span>
+                    {getActivityText(activity)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatTime(activity.created_at || activity.timestamp)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

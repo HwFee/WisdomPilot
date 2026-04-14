@@ -56,3 +56,16 @@ htmlcov/
 
 # Everything-claude-code
 everything-claude-code/
+
+# Downloaded data
+backend/data/
+backend/downloads/
+
+# Test artifacts
+backend/test_content.txt
+*.exe
+matrix_solution.c
+matrix_solution.exe
+
+# Lock files (keep pnpm-lock.yaml)
+frontend/package-lock.json

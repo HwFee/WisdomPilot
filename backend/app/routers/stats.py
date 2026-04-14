@@ -1,8 +1,10 @@
 """Router for learning statistics endpoints"""
 
+from datetime import datetime, date
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.database import get_db
 from app.utils.deps import get_current_active_user
@@ -17,8 +19,12 @@ from app.schemas.stats import (
     LearningStatistics,
     ActivityResponse,
     ChapterExerciseAnswersResponse,
+    DailyExercisesTrendResponse,
+    DailyAccuracyTrendResponse,
+    DailyTimeTrendResponse,
 )
 from app.services.stats import StatsService
+from app.services.stats_service import stats_service
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
@@ -71,15 +77,6 @@ async def start_session(
     service: StatsService = Depends(get_stats_service),
 ):
     """Start a new learning session"""
-    # Log chapter started activity with subsection_index
-    await service.log_activity(
-        user_id=current_user.id,
-        activity_type="chapter_started",
-        chapter_id=data.chapter_id,
-        subsection_index=data.subsection_index,
-        description=f"开始学习章节 {data.chapter_id}",
-    )
-
     return await service.start_session(current_user.id, data)
 
 
@@ -171,3 +168,170 @@ async def get_chapter_exercise_answers(
     """Get exercise answers for a chapter (for grading choice questions)"""
     answers = await service.get_chapter_exercise_answers(chapter_id)
     return ChapterExerciseAnswersResponse(chapter_id=chapter_id, answers=answers)
+
+
+# Additional stats endpoints using the new stats_service
+db_dependency = Annotated[AsyncSession, Depends(get_db)]
+auth_dependency = Annotated[User, Depends(get_current_active_user)]
+
+
+@router.get("/user/me")
+async def get_my_stats(
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """
+    Get current user's learning statistics.
+
+    Requires authentication.
+    """
+    return await stats_service.get_user_stats(db, current_user.id)
+
+
+@router.get("/courses/{course_id}")
+async def get_course_stats(
+    db: db_dependency,
+    course_id: int = Path(gt=0, description="Course ID"),
+):
+    """
+    Get statistics for a specific course.
+
+    Public endpoint - no authentication required.
+    """
+    return await stats_service.get_course_stats(db, course_id)
+
+
+@router.get("/leaderboard")
+async def get_leaderboard(
+    db: db_dependency,
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+):
+    """
+    Get XP-based leaderboard.
+
+    Public endpoint - no authentication required.
+    """
+    return await stats_service.get_leaderboard(db, limit=limit, offset=offset)
+
+
+@router.get("/activity/me")
+async def get_my_recent_activity(
+    db: db_dependency,
+    current_user: auth_dependency,
+    limit: int = Query(default=10, ge=1, le=50),
+):
+    """
+    Get recent activity for current user.
+
+    Requires authentication.
+    """
+    return await stats_service.get_recent_activity(db, current_user.id, limit=limit)
+
+
+# ========================================
+# Trend Endpoints
+# ========================================
+
+@router.get("/trends/exercises", response_model=DailyExercisesTrendResponse)
+async def get_exercises_trend(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    service: StatsService = Depends(get_stats_service),
+    days: int = Query(default=7, ge=1, le=30),
+):
+    """Get daily exercises count trend for the past N days"""
+    trends = await service.get_daily_exercises_trend(current_user.id, days)
+    return DailyExercisesTrendResponse(trends=trends)
+
+
+@router.get("/trends/accuracy", response_model=DailyAccuracyTrendResponse)
+async def get_accuracy_trend(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    service: StatsService = Depends(get_stats_service),
+    days: int = Query(default=7, ge=1, le=30),
+):
+    """Get daily accuracy rate trend for the past N days"""
+    trends = await service.get_daily_accuracy_trend(current_user.id, days)
+    return DailyAccuracyTrendResponse(trends=trends)
+
+
+@router.get("/trends/time", response_model=DailyTimeTrendResponse)
+async def get_time_trend(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    service: StatsService = Depends(get_stats_service),
+    days: int = Query(default=7, ge=1, le=30),
+):
+    """Get daily learning time trend for the past N days"""
+    trends = await service.get_daily_time_trend(current_user.id, days)
+    return DailyTimeTrendResponse(trends=trends)
+
+
+# ========================================
+# Today Stats API
+# ========================================
+
+@router.get("/today")
+async def get_today_stats(
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """
+    Get today's learning statistics.
+
+    Returns:
+    - exercises: Number of exercises completed today (deduplicated)
+    - correct: Number of correct answers today (based on latest attempt)
+    - accuracy: Accuracy rate today (percentage)
+    - time_minutes: Total learning time today in minutes
+    """
+    from datetime import datetime, timezone
+    from app.models.stats import ActivityLog, LearningSession
+
+    # Use UTC time for consistency with database storage
+    utc_now = datetime.now(timezone.utc)
+    today_start = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Get today's exercises from activity log
+    exercises_result = await db.execute(
+        select(ActivityLog)
+        .where(
+            ActivityLog.user_id == current_user.id,
+            ActivityLog.created_at >= today_start,
+            ActivityLog.activity_type == 'exercise_complete'
+        )
+        .order_by(ActivityLog.created_at.desc())  # 按时间倒序，最新的在前面
+    )
+    today_activities = exercises_result.scalars().all()
+
+    # 去重：每道题只取最新的一次状态
+    seen_exercises = set()
+    unique_exercises = []
+    for a in today_activities:
+        ex_id = a.extra_data.get('exercise_id')
+        if ex_id and ex_id not in seen_exercises:
+            seen_exercises.add(ex_id)
+            unique_exercises.append(a)
+
+    # Calculate stats - deduplicated count, correct based on latest attempt
+    exercises = len(unique_exercises)
+    correct = sum(1 for a in unique_exercises if a.extra_data.get('is_correct', False))
+    accuracy = round((correct / exercises) * 100, 1) if exercises > 0 else 0.0
+
+    # Get learning time from sessions
+    sessions_result = await db.execute(
+        select(LearningSession)
+        .where(
+            LearningSession.user_id == current_user.id,
+            LearningSession.started_at >= today_start
+        )
+    )
+    today_sessions = sessions_result.scalars().all()
+    time_seconds = sum(s.duration_seconds or 0 for s in today_sessions)
+    time_minutes = round(time_seconds / 60, 1)
+
+    return {
+        "exercises": exercises,
+        "correct": correct,
+        "accuracy": accuracy,
+        "time_minutes": time_minutes,
+    }

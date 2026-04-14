@@ -54,7 +54,7 @@ class TestAuthRateLimitIntegration:
     """Integration tests for auth endpoint rate limiting (C5)"""
 
     @pytest.fixture(autouse=True)
-    def _reset_limiters(self):
+    def _reset_limiters(self, setup_database):
         """Reset limiter state between tests to avoid cross-test pollution."""
         import app.middleware as mw
 

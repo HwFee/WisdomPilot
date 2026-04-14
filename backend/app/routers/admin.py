@@ -65,3 +65,64 @@ async def list_online_users(
     service = AdminService(db)
     users = await service.get_online_users()
     return [UserResponse.model_validate(u) for u in users]
+
+
+@router.get("/users/{user_id}/quota")
+async def get_user_quota(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Get user's AI quota status (admin only)"""
+    from app.services.quota import quota_service
+
+    user = await quota_service.get_or_create_user_quota(user_id, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    return await quota_service.get_quota(user, db)
+
+
+@router.put("/users/{user_id}/quota")
+async def set_user_quota(
+    user_id: str,
+    amount: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Set user's AI quota to a specific amount (admin only)"""
+    from app.services.quota import quota_service
+
+    user = await quota_service.get_or_create_user_quota(user_id, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    await quota_service.set_quota(user, db, amount)
+    return {"message": "Quota updated", "quota": amount}
+
+
+@router.post("/users/{user_id}/quota/reset")
+async def reset_user_quota(
+    user_id: str,
+    amount: int = 100,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Reset user's AI quota to default (admin only)"""
+    from app.services.quota import quota_service
+
+    user = await quota_service.get_or_create_user_quota(user_id, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    await quota_service.reset_quota(user, db, amount)
+    return {"message": "Quota reset", "quota": amount}

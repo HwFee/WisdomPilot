@@ -105,3 +105,42 @@ class ChapterExerciseAnswersResponse(BaseModel):
     """Schema for chapter exercise answers response"""
     chapter_id: int
     answers: list[ExerciseAnswer]
+
+
+# ========================================
+# Trend Schemas
+# ========================================
+
+class DailyTrendPoint(BaseModel):
+    """Single day data point for trend charts"""
+    date: str  # ISO date string YYYY-MM-DD
+    count: int = 0
+
+
+class DailyExercisesTrendResponse(BaseModel):
+    """Response for daily exercises trend"""
+    trends: list[DailyTrendPoint]
+
+
+class DailyAccuracyTrendPoint(BaseModel):
+    """Single day accuracy data point"""
+    date: str
+    accuracy: float = 0.0
+    total: int = 0
+    correct: int = 0
+
+
+class DailyAccuracyTrendResponse(BaseModel):
+    """Response for daily accuracy trend"""
+    trends: list[DailyAccuracyTrendPoint]
+
+
+class DailyTimeTrendPoint(BaseModel):
+    """Single day learning time data point"""
+    date: str
+    minutes: int = 0
+
+
+class DailyTimeTrendResponse(BaseModel):
+    """Response for daily learning time trend"""
+    trends: list[DailyTimeTrendPoint]

@@ -55,7 +55,7 @@ describe('DashboardPage', () => {
       render(<DashboardPage />)
 
       await waitFor(() => {
-        expect(screen.getByText('上次学习')).toBeInTheDocument()
+        expect(screen.getByText('学习时长')).toBeInTheDocument()
       })
     })
 
@@ -110,9 +110,8 @@ describe('DashboardPage', () => {
       render(<DashboardPage />)
 
       await waitFor(() => {
-        // 应该显示第三章（字符串），因为它是最近学习的
-        // Use getAllByText because StrictMode may render twice
-        expect(screen.getAllByText('字符串').length).toBeGreaterThan(0)
+        // 应该显示"继续学习"按钮，因为有进行中的章节
+        expect(screen.getAllByText('继续学习').length).toBeGreaterThan(0)
       })
     })
 
@@ -134,7 +133,7 @@ describe('DashboardPage', () => {
       await waitFor(() => {
         // StrictMode may cause duplicate renders, use getAllByText
         expect(screen.getAllByText('暂无学习记录').length).toBeGreaterThan(0)
-        expect(screen.getAllByText('开始学习一个章节吧！').length).toBeGreaterThan(0)
+        expect(screen.getAllByText('点击上方课程卡片开始学习').length).toBeGreaterThan(0)
       })
     })
   })
@@ -157,7 +156,7 @@ describe('DashboardPage', () => {
 
       // 验证两个卡片都存在
       await waitFor(() => {
-        expect(screen.getByText('上次学习')).toBeInTheDocument()
+        expect(screen.getByText('学习时长')).toBeInTheDocument()
       })
       expect(screen.getByText('最近动态')).toBeInTheDocument()
     })
