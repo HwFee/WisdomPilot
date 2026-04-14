@@ -3,33 +3,42 @@
 import { useState, FormEvent } from 'react'
 import Link from 'next/link'
 import { forgotPassword } from '@/lib/api'
+import { validateEmail } from '@/lib/utils/validation'
+import { Sparkles, Mail, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState('')
-  const [emailError, setEmailError] = useState('')
+  const [emailTouched, setEmailTouched] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [lang, setLang] = useState<'zh' | 'en'>('zh')
 
-  const validateEmail = (value: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!value) {
-      setEmailError('请输入邮箱地址')
-      return false
+  const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value)
+    if (emailTouched) {
+      const result = validateEmail(value)
+      setEmailError(result.valid ? null : result.error || null)
     }
-    if (!emailRegex.test(value)) {
-      setEmailError('请输入有效的邮箱地址')
-      return false
-    }
-    setEmailError('')
-    return true
+  }
+
+  const handleEmailBlur = () => {
+    setEmailTouched(true)
+    const result = validateEmail(email)
+    setEmailError(result.valid ? null : result.error || null)
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
+    setEmailTouched(true)
 
-    if (!validateEmail(email)) {
+    const result = validateEmail(email)
+    if (!result.valid) {
+      setEmailError(result.error || null)
       return
     }
 
@@ -39,7 +48,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email)
       setIsSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '发送失败，请稍后重试')
+      setError(err instanceof Error ? err.message : t('发送失败，请稍后重试', 'Failed to send, please try again'))
     } finally {
       setIsLoading(false)
     }
@@ -47,33 +56,69 @@ export default function ForgotPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+      <div className="min-h-screen grid lg:grid-cols-2">
+        {/* Left decoration section */}
+        <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary/90 via-primary to-primary/80 p-12 text-primary-foreground">
+          <div className="relative z-20">
+            <div className="flex items-center gap-2 text-lg font-semibold">
+              <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
+                <Sparkles className="size-4" />
+              </div>
+              <span>{t('DSA 教学平台', 'DSA Platform')}</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              邮件已发送
-            </h2>
-            <p className="text-gray-600 mb-6">
-              我们已向 <span className="font-medium">{email}</span> 发送了一封重置密码的邮件。
-              请查收并按照邮件中的指示重置密码。
-            </p>
-            <div className="bg-blue-50 rounded-lg p-4 mb-6 text-left">
-              <p className="text-sm text-blue-800">
-                <strong>提示：</strong> 如果没有收到邮件，请检查垃圾邮件文件夹。
-                链接将在 24 小时后过期。
+          </div>
+
+          <div className="relative z-20 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-24 h-24 bg-primary-foreground/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Mail className="w-12 h-12 text-primary-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">{t('检查您的邮箱', 'Check Your Email')}</h2>
+              <p className="text-primary-foreground/70">{t('我们已发送密码重置链接', 'We&apos;ve sent a password reset link')}</p>
+            </div>
+          </div>
+
+          <div className="relative z-20 text-sm text-primary-foreground/60">
+            {t('© 2024 DSA 教学平台', '© 2024 DSA Platform')}
+          </div>
+
+          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+        </div>
+
+        {/* Right success message section */}
+        <div className="flex items-center justify-center p-8 bg-background">
+          <div className="w-full max-w-[420px]">
+            {/* Mobile Logo */}
+            <div className="lg:hidden flex items-center justify-center gap-2 text-lg font-semibold mb-12">
+              <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Sparkles className="size-4 text-primary" />
+              </div>
+              <span>{t('DSA 教学平台', 'DSA Platform')}</span>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-2">
+                {t('邮件已发送', 'Email Sent')}
+              </h1>
+              <p className="text-muted-foreground mb-6">
+                {t(`我们已向 ${email} 发送了一封重置密码的邮件`, `We've sent a password reset email to ${email}`)}
               </p>
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 mb-6 text-left">
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  {t('如果没有收到邮件，请检查垃圾邮件文件夹。链接将在 24 小时后过期。', 'If you don\'t see the email, check your spam folder. The link will expire in 24 hours.')}
+                </p>
+              </div>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {t('返回登录', 'Back to Login')}
+              </Link>
             </div>
-            <Link
-              href="/login"
-              className="block w-full text-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-            >
-              返回登录
-            </Link>
           </div>
         </div>
       </div>
@@ -81,70 +126,141 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-            </svg>
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Left decoration section */}
+      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary/90 via-primary to-primary/80 p-12 text-primary-foreground">
+        <div className="relative z-20">
+          <div className="flex items-center gap-2 text-lg font-semibold">
+            <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
+              <Sparkles className="size-4" />
+            </div>
+            <span>{t('DSA 教学平台', 'DSA Platform')}</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            找回密码
-          </h2>
-          <p className="text-gray-500 mt-2">
-            输入您注册的邮箱，我们会发送重置密码的链接
-          </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded">
-              {error}
+        <div className="relative z-20 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-primary-foreground/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Mail className="w-12 h-12 text-primary-foreground" />
             </div>
-          )}
+            <h2 className="text-2xl font-bold mb-2">{t('找回密码', 'Forgot Password')}</h2>
+            <p className="text-primary-foreground/70">{t('输入您的邮箱地址', 'Enter your email address')}</p>
+          </div>
+        </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              邮箱地址
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => validateEmail(email)}
-              className={`mt-1 block w-full px-3 py-2 border ${
-                emailError ? 'border-red-500' : 'border-gray-300'
-              } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-              placeholder="you@example.com"
-            />
-            {emailError && (
-              <p className="mt-1 text-sm text-red-500">{emailError}</p>
-            )}
+        <div className="relative z-20 text-sm text-primary-foreground/60">
+          {t('© 2024 DSA 教学平台', '© 2024 DSA Platform')}
+        </div>
+
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+      </div>
+
+      {/* Right form section */}
+      <div className="flex items-center justify-center p-8 bg-background relative">
+        {/* Language Switcher */}
+        <div className="absolute top-6 right-6">
+          <div className="inline-flex items-center bg-secondary rounded-full p-1">
+            <button
+              onClick={() => setLang('zh')}
+              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
+                lang === 'zh'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              中文
+            </button>
+            <button
+              onClick={() => setLang('en')}
+              className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
+                lang === 'en'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              EN
+            </button>
+          </div>
+        </div>
+
+        <div className="w-full max-w-[420px]">
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center justify-center gap-2 text-lg font-semibold mb-12">
+            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Sparkles className="size-4 text-primary" />
+            </div>
+            <span>{t('DSA 教学平台', 'DSA Platform')}</span>
           </div>
 
-          <div>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold tracking-tight mb-2">{t('找回密码', 'Forgot Password')}</h1>
+            <p className="text-muted-foreground text-sm">{t('输入您注册的邮箱，我们会发送重置密码的链接', 'Enter your registered email and we\'ll send you a reset link')}</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg flex items-center gap-2">
+                <AlertCircle className="size-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">
+                {t('邮箱地址', 'Email Address')}
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  onBlur={handleEmailBlur}
+                  className={`w-full h-12 pl-10 pr-4 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors ${
+                    emailTouched && emailError
+                      ? 'border-red-500 focus:border-red-500'
+                      : emailTouched && !emailError && email
+                        ? 'border-green-500 focus:border-green-500'
+                        : 'border-border/60 focus:border-primary'
+                  }`}
+                  placeholder={t('you@example.com', 'you@example.com')}
+                />
+                {emailTouched && !emailError && email && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-green-500" />
+                )}
+              </div>
+              {emailTouched && emailError && (
+                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="size-3" />
+                  {emailError}
+                </p>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
+              className="w-full h-12 text-base font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? '发送中...' : '发送重置链接'}
+              {isLoading ? t('发送中...', 'Sending...') : t('发送重置链接', 'Send Reset Link')}
             </button>
-          </div>
 
-          <div className="text-center">
-            <Link
-              href="/login"
-              className="text-sm text-blue-600 hover:text-blue-500"
-            >
-              返回登录
-            </Link>
-          </div>
-        </form>
+            <div className="text-center">
+              <Link
+                href="/login"
+                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                {t('返回登录', 'Back to Login')}
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )

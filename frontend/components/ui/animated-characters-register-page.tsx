@@ -5,10 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Sparkles, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Sparkles, User, AlertCircle, CheckCircle2 } from "lucide-react";
 import { register } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import {
+  validateEmail,
+  validateUsername,
+  validatePassword,
+  validatePasswordConfirm,
+} from "@/lib/utils/validation";
+import { PasswordStrengthIndicator } from "./password-strength-indicator";
 
 
 interface PupilProps {
@@ -197,6 +204,18 @@ function RegisterPage() {
   const yellowRef = useRef<HTMLDivElement>(null);
   const orangeRef = useRef<HTMLDivElement>(null);
 
+  // Field validation states
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
+
+  // Validation results
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [passwordResult, setPasswordResult] = useState<ReturnType<typeof validatePassword> | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
+
   const toggleLang = () => setLang(lang === 'en' ? 'zh' : 'en');
   const t = (en: string, zh: string) => lang === 'en' ? en : zh;
 
@@ -259,6 +278,37 @@ function RegisterPage() {
     }
   }, [isPasswordField]);
 
+  // Real-time validation
+  useEffect(() => {
+    if (emailTouched && email) {
+      const result = validateEmail(email);
+      setEmailError(result.valid ? null : result.error || null);
+    }
+  }, [email, emailTouched]);
+
+  useEffect(() => {
+    if (usernameTouched && username) {
+      const result = validateUsername(username);
+      setUsernameError(result.valid ? null : result.error || null);
+    }
+  }, [username, usernameTouched]);
+
+  useEffect(() => {
+    if (passwordTouched && password) {
+      const result = validatePassword(password);
+      setPasswordResult(result);
+    } else {
+      setPasswordResult(null);
+    }
+  }, [password, passwordTouched]);
+
+  useEffect(() => {
+    if (confirmPasswordTouched && confirmPassword) {
+      const result = validatePasswordConfirm(password, confirmPassword);
+      setConfirmPasswordError(result.valid ? null : result.error || null);
+    }
+  }, [password, confirmPassword, confirmPasswordTouched]);
+
   const calculatePosition = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (!ref.current) return { faceX: 0, faceY: 0, bodyRotation: 0 };
 
@@ -285,18 +335,35 @@ function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    if (!email || !username || !password || !confirmPassword) {
-      setError(t("Please fill in all fields", "请填写所有字段"));
+    // Mark all fields as touched to show validation errors
+    setEmailTouched(true);
+    setUsernameTouched(true);
+    setPasswordTouched(true);
+    setConfirmPasswordTouched(true);
+
+    // Validate all fields
+    const emailResult = validateEmail(email);
+    const usernameResult = validateUsername(username);
+    const passwordRes = validatePassword(password);
+    const confirmResult = validatePasswordConfirm(password, confirmPassword);
+
+    if (!emailResult.valid) {
+      setError(emailResult.error || t("Invalid email", "邮箱格式错误"));
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError(t("Passwords do not match", "两次密码输入不一致"));
+    if (!usernameResult.valid) {
+      setError(usernameResult.error || t("Invalid username", "用户名格式错误"));
       return;
     }
 
-    if (password.length < 8) {
-      setError(t("Password must be at least 8 characters", "密码至少8个字符"));
+    if (!passwordRes.valid) {
+      setError(passwordRes.error || t("Invalid password", "密码格式错误"));
+      return;
+    }
+
+    if (!confirmResult.valid) {
+      setError(confirmResult.error || t("Passwords do not match", "两次密码输入不一致"));
       return;
     }
 
@@ -568,10 +635,23 @@ function RegisterPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   onFocus={() => setIsTyping(true)}
-                  onBlur={() => setIsTyping(false)}
-                  className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
+                  onBlur={() => { setIsTyping(false); setUsernameTouched(true); }}
+                  className={cn(
+                    "h-12 pl-10 bg-background border-border/60 focus:border-primary",
+                    usernameTouched && usernameError && "border-red-500 focus:border-red-500",
+                    usernameTouched && !usernameError && username && "border-green-500 focus:border-green-500"
+                  )}
                 />
+                {usernameTouched && !usernameError && username && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-green-500" />
+                )}
               </div>
+              {usernameTouched && usernameError && (
+                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="size-3" />
+                  {usernameError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -585,10 +665,23 @@ function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onFocus={() => setIsTyping(true)}
-                  onBlur={() => setIsTyping(false)}
-                  className="h-12 pl-10 bg-background border-border/60 focus:border-primary"
+                  onBlur={() => { setIsTyping(false); setEmailTouched(true); }}
+                  className={cn(
+                    "h-12 pl-10 bg-background border-border/60 focus:border-primary",
+                    emailTouched && emailError && "border-red-500 focus:border-red-500",
+                    emailTouched && !emailError && email && "border-green-500 focus:border-green-500"
+                  )}
                 />
+                {emailTouched && !emailError && email && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-green-500" />
+                )}
               </div>
+              {emailTouched && emailError && (
+                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="size-3" />
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -600,9 +693,13 @@ function RegisterPage() {
                   placeholder={t('Min. 8 characters', '至少8个字符')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => { setIsTyping(true); setIsPasswordField(true); }}
+                  onFocus={() => { setIsTyping(true); setIsPasswordField(true); setPasswordTouched(true); }}
                   onBlur={() => { setIsTyping(false); setIsPasswordField(false); }}
-                  className="h-12 pr-10 bg-background border-border/60 focus:border-primary"
+                  className={cn(
+                    "h-12 pr-10 bg-background border-border/60 focus:border-primary",
+                    passwordTouched && passwordResult && !passwordResult.valid && "border-red-500 focus:border-red-500",
+                    passwordTouched && passwordResult?.valid && "border-green-500 focus:border-green-500"
+                  )}
                 />
                 <button
                   type="button"
@@ -612,6 +709,15 @@ function RegisterPage() {
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
+              {/* Password strength indicator */}
+              {password && (
+                <PasswordStrengthIndicator
+                  password={password}
+                  strength={passwordResult?.strength}
+                  requirements={passwordResult?.requirements}
+                  lang={lang}
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -623,9 +729,13 @@ function RegisterPage() {
                   placeholder={t('Re-enter password', '再次输入密码')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  onFocus={() => { setIsTyping(true); setIsPasswordField(true); }}
+                  onFocus={() => { setIsTyping(true); setIsPasswordField(true); setConfirmPasswordTouched(true); }}
                   onBlur={() => { setIsTyping(false); setIsPasswordField(false); }}
-                  className="h-12 pr-10 bg-background border-border/60 focus:border-primary"
+                  className={cn(
+                    "h-12 pr-10 bg-background border-border/60 focus:border-primary",
+                    confirmPasswordTouched && confirmPasswordError && "border-red-500 focus:border-red-500",
+                    confirmPasswordTouched && !confirmPasswordError && confirmPassword && "border-green-500 focus:border-green-500"
+                  )}
                 />
                 <button
                   type="button"
@@ -634,7 +744,16 @@ function RegisterPage() {
                 >
                   {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
+                {confirmPasswordTouched && !confirmPasswordError && confirmPassword && (
+                  <CheckCircle2 className="absolute right-10 top-1/2 -translate-y-1/2 size-4 text-green-500" />
+                )}
               </div>
+              {confirmPasswordTouched && confirmPasswordError && (
+                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="size-3" />
+                  {confirmPasswordError}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center">

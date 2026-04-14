@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Mail, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
 import { login } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { validateEmail } from "@/lib/utils/validation";
 
 
 interface PupilProps {
@@ -196,6 +197,10 @@ function LoginPage() {
   const [isPasswordField, setIsPasswordField] = useState(false); // Track if password field is focused
   const [lang, setLang] = useState<'en' | 'zh'>('zh');
 
+  // Field validation states
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   const toggleLang = () => setLang(lang === 'en' ? 'zh' : 'en');
 
   const t = (en: string, zh: string) => lang === 'en' ? en : zh;
@@ -264,6 +269,14 @@ function LoginPage() {
     }
   }, [isPasswordField]);
 
+  // Real-time email validation
+  useEffect(() => {
+    if (emailTouched && email) {
+      const result = validateEmail(email);
+      setEmailError(result.valid ? null : result.error || null);
+    }
+  }, [email, emailTouched]);
+
   // Disabled peeking animation - respecting password privacy
   // Purple sneaky peeking animation when typing password - REMOVED for privacy
 
@@ -295,6 +308,20 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setEmailTouched(true);
+
+    // Validate email
+    const emailResult = validateEmail(email);
+    if (!emailResult.valid) {
+      setError(emailResult.error || t("Invalid email", "邮箱格式错误"));
+      return;
+    }
+
+    if (!password) {
+      setError(t("Please enter password", "请输入密码"));
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -561,20 +588,43 @@ function LoginPage() {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg flex items-center gap-2">
+                <AlertCircle className="size-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">{t('Email', '邮箱地址')}</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder={t('you@example.com', 'you@example.com')}
-                value={email}
-                autoComplete="off"
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={() => setIsTyping(true)}
-                onBlur={() => setIsTyping(false)}
-                required
-                className="h-12 bg-background border-border/60 focus:border-primary"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={t('you@example.com', 'you@example.com')}
+                  value={email}
+                  autoComplete="off"
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setIsTyping(true)}
+                  onBlur={() => { setIsTyping(false); setEmailTouched(true); }}
+                  required
+                  className={cn(
+                    "h-12 pl-10 bg-background border-border/60 focus:border-primary",
+                    emailTouched && emailError && "border-red-500 focus:border-red-500",
+                    emailTouched && !emailError && email && "border-green-500 focus:border-green-500"
+                  )}
+                />
+                {emailTouched && !emailError && email && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-green-500" />
+                )}
+              </div>
+              {emailTouched && emailError && (
+                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                  <AlertCircle className="size-3" />
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -622,12 +672,6 @@ function LoginPage() {
                 {t('Forgot password?', '忘记密码？')}
               </a>
             </div>
-
-            {error && (
-              <div className="p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg">
-                {error}
-              </div>
-            )}
 
             <Button
               type="submit"
