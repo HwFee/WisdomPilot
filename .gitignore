@@ -51,8 +51,14 @@ htmlcov/
 # Ruff cache
 .ruff_cache/
 
-# Claude Code
-.claude/settings.local.json
+# Claude Code (local config)
+.claude/
+backend/.claude/
+
+# Local docs and plans
+docs/
+CLAUDE.md
+frontend/AGENTS.md
 
 # Everything-claude-code
 everything-claude-code/
