@@ -92,6 +92,7 @@ class ExerciseSubmitResponse(BaseModel):
     explanation: Optional[str] = None
     xp_earned: int = 0
     points: int = 0
+    wrong_question_updated: bool = False
 
 
 class ExerciseVerifyRequest(BaseModel):

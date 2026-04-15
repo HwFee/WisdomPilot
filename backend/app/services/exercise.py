@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.exercise import Exercise
 from app.models.chapter import Chapter
 from app.services.ai import ai_service
+from app.services.wrong_question import wrong_question_service
 
 
 class ExerciseService:
@@ -95,8 +96,21 @@ class ExerciseService:
         user: User,
         exercise: Exercise,
         user_answer: Any,
+        course_id: int = 0,
+        chapter_id: int = None,
+        stage_id: int = None,
     ) -> dict:
-        """Check user's answer and return feedback"""
+        """Check user's answer and return feedback
+
+        Args:
+            db: 数据库会话
+            user: 用户对象
+            exercise: 练习题对象
+            user_answer: 用户答案
+            course_id: 课程ID（用于错题收集）
+            chapter_id: 章节ID（可选）
+            stage_id: 关卡ID（可选）
+        """
         # Get correct answer from solution
         solution = exercise.solution or {}
         correct_answer = solution.get("answer")
@@ -135,6 +149,8 @@ class ExerciseService:
         # Calculate XP earned
         xp_earned = 0
         points = 0
+        wrong_question_updated = False
+
         if is_correct:
             # Base XP by difficulty
             base_xp = {1: 5, 2: 10, 3: 15, 4: 20, 5: 25}
@@ -152,10 +168,37 @@ class ExerciseService:
                     user.correct_exercises / user.total_exercises * 100, 1
                 )
 
+            # 答对了：检查是否是曾经错过的题目，标记为已解决
+            existing_wrong = await wrong_question_service.get_wrong_question_by_exercise(
+                db=db,
+                user_id=user.id,
+                exercise_id=exercise.id,
+            )
+            if existing_wrong:
+                await wrong_question_service.mark_resolved(
+                    db=db,
+                    user_id=user.id,
+                    exercise_id=exercise.id,
+                )
+                wrong_question_updated = True
+
             db.add(user)
         else:
             user.total_exercises += 1
             db.add(user)
+
+            # 答错了：收集错题
+            if course_id > 0:
+                await wrong_question_service.collect_wrong_question(
+                    db=db,
+                    user_id=user.id,
+                    exercise=exercise,
+                    user_answer=user_answer,
+                    course_id=course_id,
+                    chapter_id=chapter_id,
+                    stage_id=stage_id,
+                )
+                wrong_question_updated = True
 
         db.add(exercise)
         await db.commit()
@@ -166,6 +209,7 @@ class ExerciseService:
             "explanation": explanation,
             "xp_earned": xp_earned,
             "points": points,
+            "wrong_question_updated": wrong_question_updated,
         }
 
     async def verify_exercise(

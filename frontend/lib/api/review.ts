@@ -10,6 +10,12 @@ import {
   TargetPracticeResponse,
   WeakPointListResponse,
   ReviewStatsResponse,
+  WrongQuestionListResponse,
+  WrongQuestionResponse,
+  WeakPointAnalysisResponse,
+  EnhancedTargetPracticeRequest,
+  EnhancedTargetPracticeResponse,
+  ReviewReminderResponse,
 } from '@/types/review'
 import { get, post } from './client'
 
@@ -41,9 +47,14 @@ export async function completeReview(
 // ========================================
 
 export async function getWeakPoints(
-  token: string
+  token: string,
+  courseId?: number,
+  limit: number = 20
 ): Promise<WeakPointListResponse> {
-  return get<WeakPointListResponse>('/api/review/weak-points', token)
+  const params = new URLSearchParams()
+  if (courseId) params.append('course_id', String(courseId))
+  params.append('limit', String(limit))
+  return get<WeakPointListResponse>(`/api/review/weak-points?${params}`, token)
 }
 
 export async function getTargetPractice(
@@ -63,6 +74,75 @@ export async function getReviewStats(
   return get<ReviewStatsResponse>('/api/review/stats', token)
 }
 
+// ========================================
+// Wrong Questions API Functions
+// ========================================
+
+export async function getWrongQuestions(
+  token: string,
+  params?: {
+    course_id?: number
+    chapter_id?: number
+    is_resolved?: boolean
+    limit?: number
+    offset?: number
+  }
+): Promise<WrongQuestionListResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.course_id) searchParams.append('course_id', String(params.course_id))
+  if (params?.chapter_id) searchParams.append('chapter_id', String(params.chapter_id))
+  if (params?.is_resolved !== undefined) searchParams.append('is_resolved', String(params.is_resolved))
+  if (params?.limit) searchParams.append('limit', String(params.limit))
+  if (params?.offset) searchParams.append('offset', String(params.offset))
+
+  const queryString = searchParams.toString()
+  const url = queryString ? `/api/review/wrong-questions?${queryString}` : '/api/review/wrong-questions'
+  return get<WrongQuestionListResponse>(url, token)
+}
+
+export async function getWrongQuestion(
+  wrongQuestionId: string,
+  token: string
+): Promise<WrongQuestionResponse> {
+  return get<WrongQuestionResponse>(`/api/review/wrong-questions/${wrongQuestionId}`, token)
+}
+
+// ========================================
+// Analysis API Functions
+// ========================================
+
+export async function getWeakPointsAnalysis(
+  token: string,
+  courseId?: number,
+  limit: number = 20
+): Promise<WeakPointAnalysisResponse> {
+  const params = new URLSearchParams()
+  if (courseId) params.append('course_id', String(courseId))
+  params.append('limit', String(limit))
+  return get<WeakPointAnalysisResponse>(`/api/review/analysis/weak-points?${params}`, token)
+}
+
+// ========================================
+// Enhanced Practice API Functions
+// ========================================
+
+export async function getEnhancedTargetPractice(
+  request: EnhancedTargetPracticeRequest,
+  token: string
+): Promise<EnhancedTargetPracticeResponse> {
+  return post<EnhancedTargetPracticeResponse>('/api/review/practice/enhanced', token, request)
+}
+
+// ========================================
+// Review Reminder API Functions
+// ========================================
+
+export async function getReviewReminders(
+  token: string
+): Promise<ReviewReminderResponse> {
+  return get<ReviewReminderResponse>('/api/review/reminders', token)
+}
+
 // Re-export types
 export type {
   ReviewQueueResponse,
@@ -70,4 +150,10 @@ export type {
   TargetPracticeResponse,
   WeakPointListResponse,
   ReviewStatsResponse,
+  WrongQuestionListResponse,
+  WrongQuestionResponse,
+  WeakPointAnalysisResponse,
+  EnhancedTargetPracticeRequest,
+  EnhancedTargetPracticeResponse,
+  ReviewReminderResponse,
 }

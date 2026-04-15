@@ -1,9 +1,48 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Brain, Clock, Target, TrendingDown, ChevronRight, CheckCircle, XCircle, Flame, BookOpen } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft, Brain, Clock, Target, TrendingDown, ChevronRight, CheckCircle, XCircle, Flame, BookOpen, BarChart3, AlertTriangle } from 'lucide-react'
+
+// Wrong Question interface
+interface WrongQuestion {
+  id: string
+  exercise_id: number
+  course_id: number
+  chapter_id?: number
+  knowledge_points: string[]
+  user_answer?: Record<string, unknown>
+  correct_answer?: Record<string, unknown>
+  exercise_type: string
+  exercise_difficulty: number
+  error_count: number
+  is_resolved: boolean
+  first_error_at: string
+  last_error_at: string
+  resolved_at?: string
+  exercise_content?: Record<string, unknown>
+}
+
+// Knowledge Point Analysis interface
+interface KnowledgePointAnalysis {
+  knowledge_point: string
+  error_count: number
+  total_attempts: number
+  error_rate: number
+  mastery_level: number
+  weak_score: number
+  rank: number
+}
+
+// Review Reminder interface
+interface ReviewReminder {
+  due_reviews: ReviewItem[]
+  upcoming_reviews: { date: string; count: number; label: string }[]
+  ebbinghaus_schedule: { day: number; label: string; count: number }[]
+  total_due: number
+  total_upcoming: number
+}
 
 interface ReviewItem {
   exercise_id: number
@@ -35,12 +74,47 @@ interface ReviewStats {
 }
 
 export default function ReviewPage() {
+  return (
+    <Suspense fallback={<ReviewLoading />}>
+      <ReviewPageContent />
+    </Suspense>
+  )
+}
+
+function ReviewLoading() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+    </div>
+  )
+}
+
+function ReviewPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [reviewQueue, setReviewQueue] = useState<ReviewItem[]>([])
   const [weakPoints, setWeakPoints] = useState<WeakPoint[]>([])
   const [stats, setStats] = useState<ReviewStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'queue' | 'weak'>('queue')
+  const [activeTab, setActiveTab] = useState<'queue' | 'weak' | 'wrong' | 'analysis'>('queue')
+  const [wrongQuestions, setWrongQuestions] = useState<WrongQuestion[]>([])
+  const [analysisData, setAnalysisData] = useState<{
+    knowledge_points: KnowledgePointAnalysis[]
+    weakest_knowledge_points: KnowledgePointAnalysis[]
+    strongest_knowledge_points: KnowledgePointAnalysis[]
+    total_knowledge_points: number
+    overall_error_rate: number
+  } | null>(null)
+  const [reviewReminders, setReviewReminders] = useState<ReviewReminder | null>(null)
+  const [practiceMode, setPracticeMode] = useState<'quick' | 'deep' | 'specific'>('quick')
+
+  // Handle URL query parameter for initial tab
+  useEffect(() => {
+    const type = searchParams.get('type')
+    if (type === 'wrong' || type === 'weak' || type === 'analysis') {
+      setActiveTab(type)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -58,7 +132,7 @@ export default function ReviewPage() {
       const token = localStorage.getItem('token')
 
       // 并行获取数据
-      const [queueRes, weakRes, statsRes] = await Promise.all([
+      const [queueRes, weakRes, statsRes, wrongRes, analysisRes, remindersRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/queue`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
@@ -66,6 +140,15 @@ export default function ReviewPage() {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/stats`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/wrong-questions`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/analysis/weak-points`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/reminders`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ])
@@ -84,6 +167,21 @@ export default function ReviewPage() {
         const data = await statsRes.json()
         setStats(data)
       }
+
+      if (wrongRes.ok) {
+        const data = await wrongRes.json()
+        setWrongQuestions(data.wrong_questions || [])
+      }
+
+      if (analysisRes.ok) {
+        const data = await analysisRes.json()
+        setAnalysisData(data)
+      }
+
+      if (remindersRes.ok) {
+        const data = await remindersRes.json()
+        setReviewReminders(data)
+      }
     } catch (error) {
       console.error('Failed to fetch review data:', error)
     } finally {
@@ -98,18 +196,19 @@ export default function ReviewPage() {
   const handleTargetPractice = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/weak-points/target`, {
+      const limit = practiceMode === 'quick' ? 5 : practiceMode === 'deep' ? 10 : 5
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/practice/enhanced`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ limit: 5 })
+        body: JSON.stringify({ mode: practiceMode, limit })
       })
 
       if (response.ok) {
         const data = await response.json()
-        if (data.exercises.length > 0) {
+        if (data.exercises && data.exercises.length > 0) {
           router.push(`/exercise/${data.exercises[0].id}?mode=target`)
         }
       }
@@ -247,6 +346,33 @@ export default function ReviewPage() {
                   <span className="px-1.5 py-0.5 text-xs bg-orange-500 text-white rounded-full">{weakPoints.length}</span>
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab('wrong')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'wrong'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span>错题本</span>
+                {wrongQuestions.filter(w => !w.is_resolved).length > 0 && (
+                  <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                    {wrongQuestions.filter(w => !w.is_resolved).length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('analysis')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'analysis'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>分析</span>
+              </button>
             </div>
           </div>
 
@@ -318,7 +444,7 @@ export default function ReviewPage() {
                 </div>
               )}
             </>
-          ) : (
+          ) : activeTab === 'weak' ? (
             <>
               {/* Weak Points */}
               <div className="mb-6">
@@ -380,6 +506,191 @@ export default function ReviewPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </>
+          ) : activeTab === 'wrong' ? (
+            <>
+              {/* Wrong Questions Notebook */}
+              {wrongQuestions.length === 0 ? (
+                <div className="text-center py-16 bg-card rounded-2xl border border-border">
+                  <div className="w-16 h-16 bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">暂无错题记录</h3>
+                  <p className="text-sm text-muted-foreground">继续保持，做错的题目会自动记录到这里</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {wrongQuestions.map((wq) => (
+                    <div
+                      key={wq.id}
+                      className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className={`w-4 h-4 ${wq.is_resolved ? 'text-green-500' : 'text-red-500'}`} />
+                            <span className="font-medium text-foreground">{getTypeLabel(wq.exercise_type)}</span>
+                            <span className="text-xs px-2 py-0.5 bg-muted rounded-full">难度 {wq.exercise_difficulty}</span>
+                            {wq.is_resolved && (
+                              <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-500 rounded-full">已掌握</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <XCircle className="w-3 h-3 text-red-500" />
+                              错误 {wq.error_count} 次
+                            </span>
+                            <span>最近 {new Date(wq.last_error_at).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex gap-1 mt-2">
+                            {wq.knowledge_points.slice(0, 3).map((kp, i) => (
+                              <span key={i} className="text-xs px-2 py-0.5 bg-primary/5 text-primary rounded-full">
+                                {kp}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => router.push(`/exercise/${wq.exercise_id}?mode=review`)}
+                          className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-all"
+                        >
+                          复习
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Analysis Tab */}
+              {analysisData && (
+                <div className="space-y-6">
+                  {/* Overall Stats */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-primary" />
+                      整体概况
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <p className="text-2xl font-bold text-foreground">{analysisData.total_knowledge_points}</p>
+                        <p className="text-xs text-muted-foreground">知识点总数</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <p className="text-2xl font-bold text-red-500">{(analysisData.overall_error_rate * 100).toFixed(1)}%</p>
+                        <p className="text-xs text-muted-foreground">整体错误率</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ebbinghaus Schedule */}
+                  {reviewReminders && reviewReminders.ebbinghaus_schedule.length > 0 && (
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-primary" />
+                        艾宾浩斯复习计划
+                      </h3>
+                      <div className="space-y-2">
+                        {reviewReminders.ebbinghaus_schedule.map((slot) => (
+                          <div key={slot.day} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-foreground">{slot.label}</span>
+                              <span className="text-xs text-muted-foreground">第 {slot.day} 天</span>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              slot.count > 0 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {slot.count} 题
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Weakest Knowledge Points */}
+                  {analysisData.weakest_knowledge_points && analysisData.weakest_knowledge_points.length > 0 && (
+                    <div className="bg-card rounded-xl border border-border p-4">
+                      <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <TrendingDown className="w-5 h-5 text-red-500" />
+                        最薄弱知识点
+                      </h3>
+                      <div className="space-y-3">
+                        {analysisData.weakest_knowledge_points.slice(0, 5).map((kp, index) => (
+                          <div key={kp.knowledge_point} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center text-xs font-bold">
+                                  {index + 1}
+                                </span>
+                                <span className="text-sm font-medium text-foreground">{kp.knowledge_point}</span>
+                              </div>
+                              <span className="text-sm text-red-500 font-medium">
+                                {kp.error_count} 次错误
+                              </span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-red-500 transition-all"
+                                style={{ width: `${kp.error_rate * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Practice Mode Selection */}
+                  <div className="bg-card rounded-xl border border-border p-4">
+                    <h3 className="font-semibold text-foreground mb-4">练习模式</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setPracticeMode('quick')}
+                        className={`p-3 rounded-lg border text-center transition-all ${
+                          practiceMode === 'quick'
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/30'
+                        }`}
+                      >
+                        <p className="font-medium text-sm">快速练习</p>
+                        <p className="text-xs text-muted-foreground mt-1">5题</p>
+                      </button>
+                      <button
+                        onClick={() => setPracticeMode('deep')}
+                        className={`p-3 rounded-lg border text-center transition-all ${
+                          practiceMode === 'deep'
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/30'
+                        }`}
+                      >
+                        <p className="font-medium text-sm">深度练习</p>
+                        <p className="text-xs text-muted-foreground mt-1">10题</p>
+                      </button>
+                      <button
+                        onClick={() => setPracticeMode('specific')}
+                        className={`p-3 rounded-lg border text-center transition-all ${
+                          practiceMode === 'specific'
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/30'
+                        }`}
+                      >
+                        <p className="font-medium text-sm">专项突破</p>
+                        <p className="text-xs text-muted-foreground mt-1">薄弱点</p>
+                      </button>
+                    </div>
+                    <button
+                      onClick={handleTargetPractice}
+                      className="w-full mt-4 bg-gradient-to-r from-primary to-primary-600 text-primary-foreground rounded-xl p-4 flex items-center justify-center gap-2 font-medium hover:shadow-lg hover:shadow-primary/25 transition-all"
+                    >
+                      <Target className="w-5 h-5" />
+                      开始{practiceMode === 'quick' ? '快速' : practiceMode === 'deep' ? '深度' : '专项'}练习
+                    </button>
+                  </div>
                 </div>
               )}
             </>
