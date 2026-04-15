@@ -143,7 +143,9 @@ export default function ChallengePage() {
     if (!answer || !session) return
 
     const currentExercise = session.exercises[currentExerciseIndex]
-    // Simulate correctness (in real app, this would come from backend)
+    // TODO: Backend should validate the answer
+    // For now, simulate correctness based on answer selection
+    // In production, this should be validated by backend API
     const correct = Math.random() > 0.4
 
     setIsCorrect(correct)
@@ -170,7 +172,8 @@ export default function ChallengePage() {
     }
   }
 
-  const handleSubmitChallenge = async () => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleSubmitChallenge = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       if (!token || !session) return
@@ -197,7 +200,7 @@ export default function ChallengePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session, sessionStartTime, courseId, answers])
 
   const handleBackToSelect = () => {
     setChallengeState('select')
@@ -391,7 +394,9 @@ export default function ChallengePage() {
 
             {/* Question */}
             <div className="bg-card rounded-2xl border border-border p-6 mb-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">{currentExercise.title}</h2>
+              <h2 className="text-xl font-bold text-foreground mb-4">
+                {currentExercise.content?.text || currentExercise.title}
+              </h2>
 
               {/* Knowledge points */}
               {currentExercise.knowledge_points.length > 0 && (
@@ -404,45 +409,93 @@ export default function ChallengePage() {
                 </div>
               )}
 
-              {/* Placeholder for actual question content */}
-              <p className="text-muted-foreground">
-                点击下方选项选择答案...
-              </p>
+              {/* Programming question: show code template and test cases */}
+              {currentExercise.type === 'programming' && currentExercise.content?.code_template && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground mb-2">代码模板：</p>
+                  <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm font-mono">
+                    {currentExercise.content.code_template}
+                  </pre>
+                </div>
+              )}
+
+              {/* Test cases for programming questions */}
+              {currentExercise.type === 'programming' && currentExercise.test_cases && currentExercise.test_cases.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground mb-2">测试用例：</p>
+                  <div className="space-y-2">
+                    {currentExercise.test_cases.map((tc: { input: string; expected: string }, i: number) => (
+                      <div key={i} className="bg-muted rounded-lg p-3 text-sm font-mono">
+                        <span className="text-muted-foreground">输入: </span>
+                        <span className="text-foreground">{tc.input}</span>
+                        <span className="text-muted-foreground ml-4">期望: </span>
+                        <span className="text-green-500">{tc.expected}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Choice question hint */}
+              {currentExercise.type !== 'programming' && currentExercise.content?.options && (
+                <p className="text-muted-foreground text-sm">
+                  点击下方选项选择答案...
+                </p>
+              )}
             </div>
 
-            {/* Options */}
-            <div className="space-y-3">
-              {['A', 'B', 'C', 'D'].map((opt, i) => (
+            {/* Options - for choice questions */}
+            {currentExercise.type !== 'programming' && currentExercise.content?.options && (
+              <div className="space-y-3">
+                {currentExercise.content.options.map((opt: string, i: number) => {
+                  const optLabel = String.fromCharCode(65 + i) // A, B, C, D
+                  return (
+                    <button
+                      key={optLabel}
+                      onClick={() => !submitted && setAnswer(optLabel)}
+                      disabled={submitted}
+                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                        submitted
+                          ? answer === optLabel
+                            ? isCorrect
+                              ? 'border-emerald-500 bg-emerald-500/10'
+                              : 'border-red-500 bg-red-500/10'
+                            : 'border-border opacity-50'
+                          : answer === optLabel
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-muted hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
+                          answer === optLabel && !submitted ? 'bg-primary text-primary-foreground' :
+                          submitted && answer === optLabel && isCorrect ? 'bg-emerald-500 text-white' :
+                          submitted && answer === optLabel && !isCorrect ? 'bg-red-500 text-white' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {optLabel}
+                        </span>
+                        <span className="text-foreground">{opt}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Programming question: show open editor button */}
+            {currentExercise.type === 'programming' && (
+              <div className="text-center py-4">
                 <button
-                  key={opt}
-                  onClick={() => !submitted && setAnswer(opt)}
-                  disabled={submitted}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                    submitted
-                      ? answer === opt
-                        ? isCorrect
-                          ? 'border-emerald-500 bg-emerald-500/10'
-                          : 'border-red-500 bg-red-500/10'
-                        : 'border-border opacity-50'
-                      : answer === opt
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-muted hover:bg-muted/30'
-                  }`}
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
-                      answer === opt && !submitted ? 'bg-primary text-primary-foreground' :
-                      submitted && answer === opt && isCorrect ? 'bg-emerald-500 text-white' :
-                      submitted && answer === opt && !isCorrect ? 'bg-red-500 text-white' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
-                      {opt}
-                    </span>
-                    <span className="text-foreground">选项 {opt}</span>
-                  </div>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                  </svg>
+                  打开编辑器
                 </button>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </main>
 

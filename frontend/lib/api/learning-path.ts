@@ -16,6 +16,19 @@ import type {
   ChallengeSubmitRequest,
   ChallengeResultResponse,
   LeaderboardResponse,
+  KnowledgeContentResponse,
+  MasteryQuizGenerateRequest,
+  MasteryQuizGenerateResponse,
+  MasteryQuizSubmitRequest,
+  MasteryQuizSubmitResponse,
+  // New base question types
+  BaseQuestionListResponse,
+  BaseAnswersSubmitRequest,
+  BaseAnswersSubmitResponse,
+  EnhancedQuizGenerateRequest,
+  EnhancedQuizGenerateResponse,
+  EnhancedQuizSubmitRequest,
+  EnhancedQuizSubmitResponse,
 } from '@/types/api'
 
 // ========================================
@@ -174,4 +187,116 @@ export const MASTERY_LEVEL_COLORS: Record<string, string> = {
   '练习': 'text-green-500',
   '熟练': 'text-yellow-500',
   '精通': 'text-purple-500',
+}
+
+// ========================================
+// Mastery Quiz APIs (精进之路测试)
+// ========================================
+
+/**
+ * Get chapter knowledge content for mastery path
+ */
+export async function getChapterKnowledgeContent(
+  courseId: number,
+  chapterId: number,
+  token: string
+): Promise<KnowledgeContentResponse> {
+  return get<KnowledgeContentResponse>(
+    `/api/learning-path/mastery/${courseId}/chapter/${chapterId}/knowledge`,
+    token
+  )
+}
+
+/**
+ * Generate mastery quiz questions based on user profile
+ */
+export async function generateMasteryQuiz(
+  courseId: number,
+  request: MasteryQuizGenerateRequest,
+  token: string
+): Promise<MasteryQuizGenerateResponse> {
+  return post<MasteryQuizGenerateResponse>(
+    `/api/learning-path/mastery/${courseId}/generate-quiz`,
+    token,
+    request
+  )
+}
+
+/**
+ * Submit mastery quiz answers and get results
+ */
+export async function submitMasteryQuiz(
+  courseId: number,
+  request: MasteryQuizSubmitRequest,
+  token: string
+): Promise<MasteryQuizSubmitResponse> {
+  return post<MasteryQuizSubmitResponse>(
+    `/api/learning-path/mastery/${courseId}/submit-quiz`,
+    token,
+    request
+  )
+}
+
+// ========================================
+// Chapter Base Question APIs (章节基础测试题)
+// ========================================
+
+/**
+ * Get chapter base questions (fixed questions from database)
+ */
+export async function getChapterBaseQuestions(
+  courseId: number,
+  chapterId: number,
+  token: string
+): Promise<BaseQuestionListResponse> {
+  return get<BaseQuestionListResponse>(
+    `/api/learning-path/mastery/${courseId}/chapter/${chapterId}/base-questions`,
+    token
+  )
+}
+
+/**
+ * Submit base question answers and get weak/strong point analysis
+ */
+export async function submitBaseAnswers(
+  courseId: number,
+  chapterId: number,
+  request: BaseAnswersSubmitRequest,
+  token: string
+): Promise<BaseAnswersSubmitResponse> {
+  return post<BaseAnswersSubmitResponse>(
+    `/api/learning-path/mastery/${courseId}/chapter/${chapterId}/submit-base`,
+    token,
+    request
+  )
+}
+
+/**
+ * Generate enhanced quiz based on weak points
+ */
+export async function generateEnhancedQuiz(
+  courseId: number,
+  request: EnhancedQuizGenerateRequest,
+  token: string
+): Promise<EnhancedQuizGenerateResponse> {
+  return post<EnhancedQuizGenerateResponse>(
+    `/api/learning-path/mastery/${courseId}/generate-enhanced`,
+    token,
+    request
+  )
+}
+
+/**
+ * Submit enhanced quiz answers
+ */
+export async function submitEnhancedQuiz(
+  courseId: number,
+  request: EnhancedQuizSubmitRequest,
+  token: string
+): Promise<EnhancedQuizSubmitResponse> {
+  return post<EnhancedQuizSubmitResponse>(
+    `/api/learning-path/mastery/${courseId}/submit-enhanced`,
+    token,
+    request
+  )
 }

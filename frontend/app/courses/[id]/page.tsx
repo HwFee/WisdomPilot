@@ -173,7 +173,13 @@ export default function CoursePage() {
   }
 
   const handleMasteryPathStart = () => {
-    // Check if there are any stages
+    // Navigate to mastery path - AI-generated knowledge and quiz
+    router.push(`/mastery/${courseId}`)
+  }
+
+  const handleChallengePathStart = () => {
+    // Navigate to challenge path - IDE-based stage learning
+    // Find the appropriate stage to start
     if (!course?.stages?.length) {
       console.error('No stages available for this course')
       return
@@ -191,10 +197,6 @@ export default function CoursePage() {
     } else {
       console.error('No valid stage to start')
     }
-  }
-
-  const handleChallengePathStart = () => {
-    router.push(`/challenge/${courseId}`)
   }
 
   // 计算进度

@@ -62,10 +62,15 @@ export async function register(
   return data
 }
 
-export async function login(email: string, password: string): Promise<Token> {
+export async function login(
+  email: string,
+  password: string,
+  rememberMe: boolean = false
+): Promise<Token> {
   const data = await postPublic<Token>('/api/auth/login', {
     email,
     password,
+    remember_me: rememberMe,
   } as UserLogin)
 
   // Store token in localStorage

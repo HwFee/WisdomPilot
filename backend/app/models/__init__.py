@@ -19,6 +19,7 @@ from app.models.chapter_mastery import ChapterMastery
 from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
 from app.models.wrong_question import WrongQuestion
+from app.models.chapter_base_question import ChapterBaseQuestion
 
 __all__ = [
     # User & Auth
@@ -58,4 +59,6 @@ __all__ = [
     "UserArenaProfile",
     # Wrong Questions System
     "WrongQuestion",
+    # Chapter Base Questions
+    "ChapterBaseQuestion",
 ]

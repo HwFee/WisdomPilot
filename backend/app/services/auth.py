@@ -71,9 +71,15 @@ class AuthService:
         if not user.is_active:
             raise ValueError("Account is inactive")
 
+        # Use longer expiration if remember_me is True
+        if login_data.remember_me:
+            expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES_REMEMBER)
+        else:
+            expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
         access_token = create_access_token(
             data={"sub": user.id, "email": user.email},
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            expires_delta=expires_delta,
         )
 
         user_response = UserResponse.model_validate(user)

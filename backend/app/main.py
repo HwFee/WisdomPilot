@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from app.database import init_db
 from app.models import ChapterProgress, LearningSession, ActivityLog  # noqa: F401 - registers models
 from app.models import Course, Chapter, Exercise  # noqa: F401 - registers course models
@@ -110,3 +112,64 @@ async def root():
 async def health():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    将 Pydantic 验证错误转换为友好的中文消息。
+
+    FastAPI 默认返回复杂的验证错误对象，前端难以解析。
+    此处理器将其转换为简单字符串，方便前端显示。
+    """
+    errors = exc.errors()
+    messages = []
+
+    # 字段名称映射（英 -> 中）
+    field_names = {
+        "email": "邮箱",
+        "username": "用户名",
+        "password": "密码",
+    }
+
+    for error in errors:
+        # 获取字段名
+        loc = error.get("loc", [])
+        field = loc[-1] if loc else "未知字段"
+        field_cn = field_names.get(field, field)
+
+        # 获取错误类型和消息
+        error_type = error.get("type", "")
+        msg = error.get("msg", "验证失败")
+        ctx = error.get("ctx", {})
+
+        # 处理不同类型的错误
+        if error_type == "string_too_short":
+            min_length = ctx.get("min_length", 8)
+            messages.append(f"{field_cn}长度至少需要{min_length}个字符")
+        elif error_type == "value_error":
+            # 自定义验证错误（如密码复杂度）
+            # 尝试从 ctx 中获取原始 ValueError 消息
+            if "error" in ctx:
+                original_msg = str(ctx["error"])
+                messages.append(f"{field_cn}: {original_msg}")
+            elif "Password must contain at least one letter" in msg:
+                messages.append(f"{field_cn}需要包含至少一个字母")
+            elif "Password must contain at least one digit" in msg:
+                messages.append(f"{field_cn}需要包含至少一个数字")
+            else:
+                # 移除 "Value error, " 前缀
+                clean_msg = msg.replace("Value error, ", "").strip()
+                messages.append(f"{field_cn}: {clean_msg}")
+        elif error_type == "value_error.email":
+            messages.append("请输入有效的邮箱地址")
+        elif "missing" in error_type:
+            messages.append(f"缺少必填字段: {field_cn}")
+        else:
+            # 默认处理
+            messages.append(f"{field_cn}: {msg}")
+
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "; ".join(messages)}
+    )

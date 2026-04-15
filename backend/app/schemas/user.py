@@ -16,11 +16,24 @@ class UserCreate(UserBase):
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        """Validate password strength"""
+        """
+        Validate password strength.
+
+        Requirements:
+        - At least 8 characters
+        - At least one letter (a-z or A-Z)
+        - At least one digit (0-9)
+        """
+        errors = []
+        if len(v) < 8:
+            errors.append("密码长度至少需要8个字符")
         if not re.search(r"[A-Za-z]", v):
-            raise ValueError("Password must contain at least one letter")
+            errors.append("密码需要包含至少一个字母")
         if not re.search(r"\d", v):
-            raise ValueError("Password must contain at least one digit")
+            errors.append("密码需要包含至少一个数字")
+
+        if errors:
+            raise ValueError("; ".join(errors))
         return v
 
 
@@ -28,6 +41,7 @@ class UserLogin(BaseModel):
     """Schema for user login"""
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 
 class UserResponse(UserBase):

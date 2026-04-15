@@ -303,18 +303,30 @@ async def get_today_stats(
     )
     today_activities = exercises_result.scalars().all()
 
-    # 去重：每道题只取最新的一次状态
-    seen_exercises = set()
-    unique_exercises = []
-    for a in today_activities:
-        ex_id = a.extra_data.get('exercise_id')
-        if ex_id and ex_id not in seen_exercises:
-            seen_exercises.add(ex_id)
-            unique_exercises.append(a)
+    # Support two data formats:
+    # 1. New format: each activity has exercise_id and is_correct (per-exercise)
+    # 2. Legacy format: activity has exercises_completed and exercises_correct (aggregated)
 
-    # Calculate stats - deduplicated count, correct based on latest attempt
-    exercises = len(unique_exercises)
-    correct = sum(1 for a in unique_exercises if a.extra_data.get('is_correct', False))
+    # Check if we have new format data (with exercise_id)
+    has_exercise_ids = any(a.extra_data.get('exercise_id') for a in today_activities)
+
+    if has_exercise_ids:
+        # New format: deduplicate by exercise_id
+        seen_exercises = set()
+        unique_exercises = []
+        for a in today_activities:
+            ex_id = a.extra_data.get('exercise_id')
+            if ex_id and ex_id not in seen_exercises:
+                seen_exercises.add(ex_id)
+                unique_exercises.append(a)
+
+        exercises = len(unique_exercises)
+        correct = sum(1 for a in unique_exercises if a.extra_data.get('is_correct', False))
+    else:
+        # Legacy format: sum aggregated counts
+        exercises = sum(a.extra_data.get('exercises_completed', 0) for a in today_activities)
+        correct = sum(a.extra_data.get('exercises_correct', 0) for a in today_activities)
+
     accuracy = round((correct / exercises) * 100, 1) if exercises > 0 else 0.0
 
     # Get learning time from sessions
