@@ -9,6 +9,7 @@ from app.models import Achievement, UserAchievement  # noqa: F401 - registers ac
 from app.models import Stage, UserStageProgress, UserWeakPoint, SpacedRepetition  # noqa: F401 - registers new models
 from app.models import Favorite, Note  # noqa: F401 - registers favorites and notes models
 from app.models import ChapterMastery, ChallengeSession, UserArenaProfile  # noqa: F401 - registers mastery and arena models
+from app.models import WrongQuestion  # noqa: F401 - registers wrong question model
 from app.middleware import RateLimitMiddleware
 from app.routers import (
     auth_router,

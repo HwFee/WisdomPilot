@@ -18,6 +18,7 @@ from app.models.note import Note
 from app.models.chapter_mastery import ChapterMastery
 from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
+from app.models.wrong_question import WrongQuestion
 
 __all__ = [
     # User & Auth
@@ -55,4 +56,6 @@ __all__ = [
     # Challenge Path System
     "ChallengeSession",
     "UserArenaProfile",
+    # Wrong Questions System
+    "WrongQuestion",
 ]
