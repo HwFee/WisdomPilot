@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     # JWT
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days (default)
+    ACCESS_TOKEN_EXPIRE_MINUTES_REMEMBER: int = 43200  # 30 days (remember me)
 
     # AI Configuration (independent module)
     AI_PROVIDER: str = "openai"

@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.course import Course
     from app.models.exercise import Exercise
     from app.models.stage import Stage
+    from app.models.chapter_base_question import ChapterBaseQuestion
 
 
 class Chapter(Base):
@@ -70,6 +71,12 @@ class Chapter(Base):
     stages: Mapped[List["Stage"]] = relationship(
         "Stage",
         back_populates="chapter",
+        lazy="noload"
+    )
+    base_questions: Mapped[List["ChapterBaseQuestion"]] = relationship(
+        "ChapterBaseQuestion",
+        back_populates="chapter",
+        order_by="ChapterBaseQuestion.order_index",
         lazy="noload"
     )
 

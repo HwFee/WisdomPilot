@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { forgotPassword } from '@/lib/api'
 import { validateEmail } from '@/lib/utils/validation'
 import { Sparkles, Mail, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
+import { CharacterGroup } from '@/components/ui/animated-characters'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -20,14 +21,14 @@ export default function ForgotPasswordPage() {
   const handleEmailChange = (value: string) => {
     setEmail(value)
     if (emailTouched) {
-      const result = validateEmail(value)
+      const result = validateEmail(value, lang)
       setEmailError(result.valid ? null : result.error || null)
     }
   }
 
   const handleEmailBlur = () => {
     setEmailTouched(true)
-    const result = validateEmail(email)
+    const result = validateEmail(email, lang)
     setEmailError(result.valid ? null : result.error || null)
   }
 
@@ -36,7 +37,7 @@ export default function ForgotPasswordPage() {
     setError('')
     setEmailTouched(true)
 
-    const result = validateEmail(email)
+    const result = validateEmail(email, lang)
     if (!result.valid) {
       setEmailError(result.error || null)
       return
@@ -68,21 +69,25 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          <div className="relative z-20 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-24 h-24 bg-primary-foreground/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Mail className="w-12 h-12 text-primary-foreground" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">{t('检查您的邮箱', 'Check Your Email')}</h2>
-              <p className="text-primary-foreground/70">{t('我们已发送密码重置链接', 'We&apos;ve sent a password reset link')}</p>
-            </div>
+          <div className="relative z-20 flex items-end justify-center h-[500px]">
+            <CharacterGroup lang={lang} />
           </div>
 
-          <div className="relative z-20 text-sm text-primary-foreground/60">
-            {t('© 2024 DSA 教学平台', '© 2024 DSA Platform')}
+          <div className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60">
+            <a href="#" className="hover:text-primary-foreground transition-colors">
+              {t('隐私政策', 'Privacy Policy')}
+            </a>
+            <a href="#" className="hover:text-primary-foreground transition-colors">
+              {t('服务条款', 'Terms of Service')}
+            </a>
+            <a href="#" className="hover:text-primary-foreground transition-colors">
+              {t('联系我们', 'Contact')}
+            </a>
           </div>
 
           <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+          <div className="absolute top-1/4 right-1/4 size-64 bg-primary-foreground/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 left-1/4 size-96 bg-primary-foreground/5 rounded-full blur-3xl" />
         </div>
 
         {/* Right success message section */}
@@ -138,21 +143,25 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
 
-        <div className="relative z-20 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-24 h-24 bg-primary-foreground/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Mail className="w-12 h-12 text-primary-foreground" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">{t('找回密码', 'Forgot Password')}</h2>
-            <p className="text-primary-foreground/70">{t('输入您的邮箱地址', 'Enter your email address')}</p>
-          </div>
+        <div className="relative z-20 flex items-end justify-center h-[500px]">
+          <CharacterGroup lang={lang} />
         </div>
 
-        <div className="relative z-20 text-sm text-primary-foreground/60">
-          {t('© 2024 DSA 教学平台', '© 2024 DSA Platform')}
+        <div className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60">
+          <a href="#" className="hover:text-primary-foreground transition-colors">
+            {t('隐私政策', 'Privacy Policy')}
+          </a>
+          <a href="#" className="hover:text-primary-foreground transition-colors">
+            {t('服务条款', 'Terms of Service')}
+          </a>
+          <a href="#" className="hover:text-primary-foreground transition-colors">
+            {t('联系我们', 'Contact')}
+          </a>
         </div>
 
         <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+        <div className="absolute top-1/4 right-1/4 size-64 bg-primary-foreground/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 size-96 bg-primary-foreground/5 rounded-full blur-3xl" />
       </div>
 
       {/* Right form section */}

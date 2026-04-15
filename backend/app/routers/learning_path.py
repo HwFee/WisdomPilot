@@ -402,12 +402,20 @@ async def start_challenge(
     session.started_at = datetime.utcnow()
     await db.commit()
 
-    # Return exercise info (without answers)
+    # Return exercise info with full content (without answers)
     exercise_list = [{
         "id": ex.id,
-        "title": ex.title,
+        "title": ex.content.get("text", "")[:50] if ex.content.get("text") else f"题目 {ex.id}",
+        "type": ex.type,
         "difficulty": ex.difficulty,
         "knowledge_points": ex.knowledge_points or [],
+        "content": {
+            "text": ex.content.get("text", ""),
+            "options": ex.content.get("options", []),
+            "code_template": ex.content.get("code_template"),
+            "description": ex.content.get("description"),
+        },
+        "test_cases": ex.test_cases if ex.type == "programming" else None,
     } for ex in selected]
 
     return ChallengeSessionResponse(
@@ -566,3 +574,178 @@ async def get_arena_leaderboard(
         entries=entries,
         user_rank=user_rank,
     )
+
+
+# ========== Mastery Quiz Endpoints (精进之路测试) ==========
+
+from app.services.mastery_quiz import mastery_quiz_service
+from app.schemas.mastery_quiz import (
+    MasteryQuizGenerateRequest,
+    MasteryQuizGenerateResponse,
+    MasteryQuizSubmitRequest,
+    MasteryQuizSubmitResponse,
+    KnowledgeContentResponse,
+)
+
+
+@router.get("/mastery/{course_id}/chapter/{chapter_id}/knowledge")
+async def get_chapter_knowledge(
+    course_id: int,
+    chapter_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取章节知识点内容（精进之路）
+
+    返回章节的知识点讲解内容，由 AI 生成。
+    """
+    result = await mastery_quiz_service.get_chapter_knowledge_content(
+        db=db,
+        chapter_id=chapter_id,
+        user_id=current_user.id
+    )
+
+    if not result:
+        raise HTTPException(status_code=404, detail="章节不存在或知识点生成失败")
+
+    return result
+
+
+@router.post("/mastery/{course_id}/generate-quiz")
+async def generate_mastery_quiz(
+    course_id: int,
+    request: MasteryQuizGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    生成精进之路测试题
+
+    根据用户画像和章节知识点，由 AI 生成个性化测试题。
+    """
+    # 确保请求中的 course_id 与路径一致
+    request.course_id = course_id
+
+    result = await mastery_quiz_service.generate_quiz(
+        db=db,
+        user_id=current_user.id,
+        request=request
+    )
+
+    return result
+
+
+@router.post("/mastery/{course_id}/submit-quiz")
+async def submit_mastery_quiz(
+    course_id: int,
+    request: MasteryQuizSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    提交精进之路测试结果
+
+    评估用户答案，更新学习进度，返回结果和建议。
+    """
+    result = await mastery_quiz_service.submit_quiz(
+        db=db,
+        user_id=current_user.id,
+        request=request
+    )
+
+    return result
+
+
+# ========== Chapter Base Question Endpoints (精进之路基础测试) ==========
+
+from app.services.chapter_base_question import chapter_base_question_service
+from app.schemas.chapter_base_question import (
+    BaseAnswersSubmitRequest,
+    BaseAnswersSubmitResponse,
+    EnhancedQuizGenerateRequest,
+    EnhancedQuizGenerateResponse,
+    EnhancedQuizSubmitRequest,
+    EnhancedQuizSubmitResponse,
+)
+
+
+@router.get("/mastery/{course_id}/chapter/{chapter_id}/base-questions")
+async def get_chapter_base_questions(
+    course_id: int,
+    chapter_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取章节基础测试题（精进之路）
+
+    返回该章节的固定基础测试题，用于学习知识点后的基础测试。
+    """
+    result = await chapter_base_question_service.get_chapter_base_questions(
+        db=db,
+        chapter_id=chapter_id,
+    )
+    return result
+
+
+@router.post("/mastery/{course_id}/chapter/{chapter_id}/submit-base", response_model=BaseAnswersSubmitResponse)
+async def submit_base_answers(
+    course_id: int,
+    chapter_id: int,
+    request: BaseAnswersSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    提交基础测试题答案（精进之路）
+
+    评估答案，识别薄弱知识点，返回分析结果。
+    """
+    result = await chapter_base_question_service.submit_base_answers(
+        db=db,
+        chapter_id=chapter_id,
+        request=request,
+    )
+    return result
+
+
+@router.post("/mastery/{course_id}/generate-enhanced", response_model=EnhancedQuizGenerateResponse)
+async def generate_enhanced_quiz(
+    course_id: int,
+    request: EnhancedQuizGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    生成强化测试题（精进之路）
+
+    根据基础测试识别的薄弱点，AI 生成个性化强化题目。
+    """
+    request.course_id = course_id
+    result = await chapter_base_question_service.generate_enhanced_quiz(
+        db=db,
+        user_id=current_user.id,
+        request=request,
+    )
+    return result
+
+
+@router.post("/mastery/{course_id}/submit-enhanced", response_model=EnhancedQuizSubmitResponse)
+async def submit_enhanced_quiz(
+    course_id: int,
+    request: EnhancedQuizSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    提交强化测试题答案（精进之路）
+
+    评估答案，更新学习进度，返回最终结果。
+    """
+    result = await chapter_base_question_service.submit_enhanced_quiz(
+        db=db,
+        user_id=current_user.id,
+        request=request,
+    )
+    return result

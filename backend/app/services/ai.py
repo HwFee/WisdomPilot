@@ -2,7 +2,7 @@
 
 import json
 import httpx
-from typing import Optional, AsyncGenerator
+from typing import Optional, AsyncGenerator, Any
 from app.config import get_settings
 from app.schemas.ai import AIProviderConfig
 
@@ -123,27 +123,37 @@ class MiniMaxProvider(AIProvider):
 
     async def _call_anthropic(self, system: str, messages: list) -> str:
         client = self._get_client()
-        response = await client.post(
-            f"{self.base_url}/v1/messages",
-            headers={
-                "x-api-key": self.config.api_key,
-                "anthropic-version": "2023-06-01",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": self.config.model,
-                "system": system,
-                "messages": messages,
-                "max_tokens": 8192,
-                "temperature": self.config.temperature,
-            },
-        )
-        response.raise_for_status()
-        # MiniMax returns thinking + text blocks; find the text block
-        for block in response.json()["content"]:
-            if block.get("type") == "text":
-                return block["text"]
-        return response.json()["content"][-1].get("text", "")
+        try:
+            response = await client.post(
+                f"{self.base_url}/v1/messages",
+                headers={
+                    "x-api-key": self.config.api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": self.config.model,
+                    "system": system,
+                    "messages": messages,
+                    "max_tokens": 8192,
+                    "temperature": self.config.temperature,
+                },
+            )
+            response.raise_for_status()
+            # MiniMax returns thinking + text blocks; find the text block
+            for block in response.json()["content"]:
+                if block.get("type") == "text":
+                    return block["text"]
+            return response.json()["content"][-1].get("text", "")
+        except httpx.HTTPStatusError as e:
+            # Print detailed error for debugging
+            print(f"[MiniMax API Error] Status: {e.response.status_code}")
+            print(f"[MiniMax API Error] URL: {e.request.url}")
+            try:
+                print(f"[MiniMax API Error] Response: {e.response.text}")
+            except:
+                pass
+            raise
 
     async def generate_explanation(self, prompt: str) -> str:
         return await self._call_anthropic(
@@ -805,6 +815,283 @@ class AIService:
         except json.JSONDecodeError:
             # Return empty list if parsing fails
             return []
+
+
+    async def generate_knowledge_content(
+        self,
+        chapter_title: str,
+        chapter_description: str,
+        course_name: str = "编程",
+        knowledge_points: Optional[list[str]] = None,
+    ) -> dict:
+        """
+        生成章节知识点内容
+
+        Args:
+            chapter_title: 章节标题
+            chapter_description: 章节描述
+            course_name: 课程名称
+            knowledge_points: 可选的知识点列表（用于扩展）
+
+        Returns:
+            包含知识点列表的字典
+        """
+        if not self.is_configured():
+            return {}
+
+        kp_context = ""
+        if knowledge_points:
+            kp_context = f"\n已有知识点提示：{', '.join(knowledge_points)}"
+
+        prompt = f"""你是一位专业的{course_name}教师。请为以下章节生成详细的知识点讲解内容：
+
+章节标题：{chapter_title}
+章节描述：{chapter_description}{kp_context}
+
+请以 JSON 格式返回，格式如下：
+```json
+{{
+  "knowledge_points": [
+    {{
+      "id": "kp_001",
+      "title": "知识点标题",
+      "content": "知识点详细讲解（Markdown格式，可以包含代码示例）",
+      "examples": ["代码示例1", "代码示例2"],
+      "difficulty": 1,
+      "related_points": ["kp_002"]
+    }}
+  ],
+  "summary": "章节总结",
+  "estimated_time": 15
+}}
+```
+
+要求：
+1. 每个知识点必须有清晰的标题和详细内容
+2. 内容使用 Markdown 格式，包含代码示例
+3. examples 列表提供可运行的代码示例
+4. difficulty 为 1-5 的难度等级
+5. related_points 可以为空或包含相关知识点ID
+6. 知识点数量根据章节复杂度，通常 3-8 个
+7. JSON 格式必须合法
+
+请直接返回 JSON，不要有其他内容："""
+
+        response = await self._provider.generate_explanation(prompt)
+
+        try:
+            # Try to extract JSON from response
+            json_start = response.find("{")
+            json_end = response.rfind("}") + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = response[json_start:json_end]
+                return json.loads(json_str)
+            else:
+                return json.loads(response)
+        except json.JSONDecodeError:
+            return {}
+
+    async def generate_personalized_quiz(
+        self,
+        chapter_title: str,
+        chapter_description: str,
+        user_profile: Optional[Any] = None,
+        question_count: int = 5,
+        question_types: list[str] = None,
+        difficulty_range: tuple[int, int] = (1, 5),
+        knowledge_points: Optional[list[str]] = None,
+    ) -> list[dict]:
+        """
+        根据用户画像生成个性化测试题
+
+        Args:
+            chapter_title: 章节标题
+            chapter_description: 章节描述
+            user_profile: 用户画像（UserProfileForQuiz）
+            question_count: 题目数量
+            question_types: 题目类型列表
+            difficulty_range: 难度范围 (min, max)
+            knowledge_points: 考查的知识点
+
+        Returns:
+            测试题列表
+        """
+        if not self.is_configured():
+            return []
+
+        if question_types is None:
+            question_types = ["choice"]
+
+        # 构建用户画像上下文
+        profile_context = ""
+        if user_profile:
+            weak_points = getattr(user_profile, 'weak_knowledge_points', []) or []
+            current_level = getattr(user_profile, 'current_level', 1.0)
+            recent_accuracy = getattr(user_profile, 'recent_accuracy', 0.5)
+
+            profile_context = f"""
+学生画像：
+- 当前水平：{current_level:.1f}/5
+- 近期正确率：{recent_accuracy:.0%}
+- 薄弱知识点：{', '.join(weak_points) if weak_points else '无'}
+"""
+            # 如果有薄弱点，优先考查
+            if weak_points:
+                knowledge_points = weak_points
+
+        # 难度标签映射
+        difficulty_labels = {1: "入门", 2: "基础", 3: "中等", 4: "较难", 5: "困难"}
+        min_diff = difficulty_labels.get(difficulty_range[0], "入门")
+        max_diff = difficulty_labels.get(difficulty_range[1], "困难")
+
+        # 题型映射
+        type_names = {
+            "choice": "选择题",
+            "programming": "编程题",
+            "fill_blank": "填空题",
+        }
+        type_str = "、".join([type_names.get(t, t) for t in question_types])
+
+        # 知识点上下文
+        kp_context = ""
+        if knowledge_points:
+            kp_context = f"\n重点考查知识点：{', '.join(knowledge_points)}"
+
+        prompt = f"""你是一位专业的编程测试题出题老师。请根据以下信息生成 {question_count} 道测试题：
+
+章节标题：{chapter_title}
+章节描述：{chapter_description}{kp_context}
+{profile_context}
+题目类型：{type_str}
+难度范围：{min_diff} 到 {max_diff}
+
+请以 JSON 数组格式返回，格式如下：
+```json
+[
+  {{
+    "id": "q_001",
+    "type": "choice",
+    "difficulty": 2,
+    "content": {{
+      "text": "题目描述",
+      "options": ["选项A", "选项B", "选项C", "选项D"]
+    }},
+    "solution": {{
+      "answer": "B",
+      "explanation": "答案解析"
+    }},
+    "knowledge_points": ["知识点1", "知识点2"],
+    "hints": ["提示1"]
+  }},
+  {{
+    "id": "q_002",
+    "type": "programming",
+    "difficulty": 3,
+    "content": {{
+      "title": "编程题标题",
+      "description": "题目详细描述",
+      "code_template": "代码模板",
+      "input_format": "输入格式说明",
+      "output_format": "输出格式说明",
+      "sample_input": "示例输入",
+      "sample_output": "示例输出"
+    }},
+    "solution": {{
+      "answer": "参考答案代码",
+      "explanation": "解题思路"
+    }},
+    "knowledge_points": ["知识点"],
+    "test_cases": [
+      {{"input": "测试输入1", "output": "期望输出1"}},
+      {{"input": "测试输入2", "output": "期望输出2"}}
+    ]
+  }}
+]
+```
+
+要求：
+1. 题目难度应在 {min_diff} 到 {max_diff} 范围内
+2. 选择题必须有 4 个选项，答案为选项字母（A/B/C/D）
+3. 编程题必须有 test_cases
+4. 每道题必须标注考查的知识点
+5. 如果学生有薄弱点，优先针对薄弱点出题
+6. JSON 格式必须合法
+7. 题目要有教育意义，不能太简单或太难
+
+请直接返回 JSON 数组，不要有其他内容："""
+
+        response = await self._provider.generate_explanation(prompt)
+
+        try:
+            # Try to extract JSON from response
+            json_start = response.find("[")
+            json_end = response.rfind("]") + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = response[json_start:json_end]
+                return json.loads(json_str)
+            else:
+                return json.loads(response)
+        except json.JSONDecodeError:
+            return []
+
+    async def generate_question_analysis(
+        self,
+        question_text: str,
+        options: list[str],
+        user_answer: str,
+        correct_answer: str,
+        is_correct: bool,
+        knowledge_points: Optional[list[str]] = None,
+    ) -> dict:
+        """
+        生成题目解析
+
+        Args:
+            question_text: 题目文本
+            options: 选项列表
+            user_answer: 用户答案
+            correct_answer: 正确答案
+            is_correct: 是否正确
+            knowledge_points: 相关知识点
+
+        Returns:
+            包含解析的字典
+        """
+        if not self.is_configured():
+            return {"analysis": "AI 服务未配置", "is_correct": is_correct}
+
+        kp_context = ""
+        if knowledge_points:
+            kp_context = f"\n相关知识点：{', '.join(knowledge_points)}"
+
+        if is_correct:
+            prompt = f"""学生答对了以下题目，请给予肯定并强化理解：
+
+题目：{question_text}
+选项：
+{chr(10).join([f"  {opt}" for opt in options])}
+学生选择：{user_answer}（正确）{kp_context}
+
+请用 2-3 句话：
+1. 肯定学生的答案
+2. 简要解释为什么这个答案正确
+3. 给出一个相关的拓展提示"""
+        else:
+            prompt = f"""学生做错了以下题目，请详细分析：
+
+题目：{question_text}
+选项：
+{chr(10).join([f"  {opt}" for opt in options])}
+学生选择：{user_answer}
+正确答案：{correct_answer}{kp_context}
+
+请：
+1. 分析学生选择 {user_answer} 的可能误解
+2. 解释为什么正确答案是 {correct_answer}
+3. 给出学习建议"""
+
+        analysis = await self._provider.generate_explanation(prompt)
+        return {"analysis": analysis, "is_correct": is_correct}
 
 
 # 全局单例 - 独立模块

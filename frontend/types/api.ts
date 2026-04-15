@@ -26,6 +26,7 @@ export interface Token {
 export interface UserLogin {
   email: string
   password: string
+  remember_me?: boolean
 }
 
 export interface UserCreate {
@@ -747,8 +748,16 @@ export interface ChallengeSessionResponse {
 export interface ChallengeExercise {
   id: number
   title: string
+  type: ExerciseType
   difficulty: number
   knowledge_points: string[]
+  content: {
+    text: string
+    options?: string[]
+    code_template?: string
+    description?: string
+  }
+  test_cases?: Array<{ input: string; expected: string }> | null
 }
 
 export interface ChallengeResultResponse {
@@ -821,4 +830,207 @@ export interface RecommendedExercise {
   knowledge_points: string[]
   recommendation_score: number
   reason: string
+}
+
+// ========================================
+// Mastery Quiz Types (精进之路测试)
+// ========================================
+
+export interface KnowledgePoint {
+  id: string
+  title: string
+  content: string
+  examples: string[]
+  difficulty: number
+  related_points?: string[]
+}
+
+export interface KnowledgeContentResponse {
+  chapter_id: number
+  chapter_title: string
+  knowledge_points: KnowledgePoint[]
+  total_points: number
+  estimated_time: number
+  prerequisites: string[] | null
+  next_chapters: number[] | null
+}
+
+export interface MasteryQuizQuestion {
+  id: string
+  type: 'choice' | 'programming' | 'fill_blank'
+  difficulty: number
+  content: {
+    text: string
+    options?: string[]
+    code_template?: string
+    test_cases?: Array<{ input: string; expected: string }>
+  }
+  solution: {
+    answer: string
+    explanation?: string
+  }
+  knowledge_points: string[]
+}
+
+export interface MasteryQuizGenerateRequest {
+  course_id: number
+  chapter_id: number
+  question_count?: number
+  question_types?: string[]
+  difficulty_range?: [number, number]
+  focus_weak_points?: boolean
+}
+
+export interface MasteryQuizGenerateResponse {
+  success: boolean
+  session_id: string
+  questions: MasteryQuizQuestion[]
+  user_profile_used: boolean
+  weak_points_addressed: string[]
+  message: string
+}
+
+export interface QuizAnswer {
+  question_id: string
+  answer: string
+  time_spent?: number
+}
+
+export interface MasteryQuizSubmitRequest {
+  session_id: string
+  answers: QuizAnswer[]
+  total_time?: number
+}
+
+export interface QuestionResult {
+  question_id: string
+  is_correct: boolean
+  user_answer: string
+  correct_answer: string
+  explanation?: string
+  knowledge_points: string[]
+}
+
+export interface MasteryQuizSubmitResponse {
+  success: boolean
+  session_id: string
+  total_questions: number
+  correct_answers: number
+  accuracy: number
+  xp_earned: number
+  mastery_points_earned: number
+  results: QuestionResult[]
+  recommendations: string[]
+  passed: boolean
+  message: string
+}
+
+// ========================================
+// Chapter Base Question Types (章节基础测试题)
+// ========================================
+
+export interface BaseQuestionResponse {
+  id: number
+  chapter_id: number
+  order_index: number
+  type: 'choice' | 'programming' | 'fill_blank'
+  text: string
+  options?: string[]
+  correct_answer?: string
+  explanation?: string
+  knowledge_points: string[]
+  difficulty: number
+  code_template?: string
+  test_cases?: Array<{ input: string; expected: string }>
+  // Alias for type field (backend returns 'type', but we also support 'question_type')
+  question_type?: 'choice' | 'programming' | 'fill_blank'
+}
+
+export interface BaseQuestionListResponse {
+  chapter_id: number
+  chapter_title: string
+  total_questions: number
+  questions: BaseQuestionResponse[]
+}
+
+export interface BaseAnswerSubmit {
+  question_id: number
+  answer: string
+  time_spent?: number
+}
+
+export interface BaseAnswersSubmitRequest {
+  answers: BaseAnswerSubmit[]
+}
+
+export interface BaseQuestionResult {
+  question_id: number
+  is_correct: boolean
+  user_answer: string
+  correct_answer: string
+  explanation?: string
+  knowledge_points: string[]
+}
+
+export interface BaseAnswersSubmitResponse {
+  total_questions: number
+  correct_answers: number
+  accuracy: number
+  results: BaseQuestionResult[]
+  weak_points: string[]
+  strong_points: string[]
+}
+
+export interface EnhancedQuizGenerateRequest {
+  course_id: number
+  chapter_id: number
+  weak_points?: string[]
+  strong_points?: string[]
+  question_count?: number
+  question_types?: string[]
+}
+
+export interface EnhancedQuizQuestion {
+  id: string
+  type: 'choice' | 'programming' | 'fill_blank'
+  difficulty: number
+  text: string
+  options?: string[]
+  code_template?: string
+  test_cases?: Array<{ input: string; expected: string }>
+  knowledge_points: string[]
+}
+
+export interface EnhancedQuizGenerateResponse {
+  success: boolean
+  session_id: string
+  questions: EnhancedQuizQuestion[]
+  weak_points_addressed: string[]
+  message: string
+}
+
+export interface EnhancedQuizSubmitRequest {
+  session_id: string
+  answers: Array<{ question_id: string; answer: string }>
+}
+
+export interface EnhancedQuizSubmitResponse {
+  success: boolean
+  session_id: string
+  total_questions: number
+  correct_answers: number
+  accuracy: number
+  xp_earned: number
+  mastery_points_earned: number
+  results: Array<{
+    question_id: string
+    is_correct: boolean
+    user_answer: string
+    correct_answer: string
+    explanation?: string
+    knowledge_points: string[]
+  }>
+  recommendations: string[]
+  passed: boolean
+  message: string
 }

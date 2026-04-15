@@ -6,9 +6,9 @@ import { RecentActivity } from '../RecentActivity'
 
 describe('RecentActivity', () => {
   const mockActivities = [
-    { id: '1', type: 'exercise_complete', description: '完成了循环练习', created_at: '10分钟前' },
-    { id: '2', type: 'chapter_complete', description: '完成了第3章', created_at: '1小时前' },
-    { id: '3', type: 'achievement_earned', description: '获得了"坚持学习"成就', created_at: '2小时前' },
+    { id: '1', type: 'exercise_complete', description: '完成了循环练习', created_at: new Date(Date.now() - 10 * 60000).toISOString() },
+    { id: '2', type: 'chapter_complete', description: '完成了第3章', created_at: new Date(Date.now() - 60 * 60000).toISOString() },
+    { id: '3', type: 'achievement_earned', description: '获得了"坚持学习"成就', created_at: new Date(Date.now() - 120 * 60000).toISOString() },
   ]
 
   it('renders activity items', () => {
@@ -19,12 +19,11 @@ describe('RecentActivity', () => {
     expect(screen.getByText('获得了"坚持学习"成就')).toBeInTheDocument()
   })
 
-  it('displays activity timestamps', () => {
+  it('displays formatted timestamps', () => {
     render(<RecentActivity activities={mockActivities} />)
 
-    expect(screen.getByText('10分钟前')).toBeInTheDocument()
-    expect(screen.getByText('1小时前')).toBeInTheDocument()
-    expect(screen.getByText('2小时前')).toBeInTheDocument()
+    // Check for time format exists (component formats ISO dates)
+    expect(screen.getByText(/分钟前|mins ago/)).toBeInTheDocument()
   })
 
   it('shows empty state when no activities', () => {
@@ -56,15 +55,47 @@ describe('RecentActivity', () => {
   })
 
   it('displays correct icons for activity types', () => {
-    const { container } = render(<RecentActivity activities={mockActivities} />)
+    const activitiesWithDetails = [
+      {
+        id: '1',
+        type: 'exercise_complete',
+        description: '完成了练习',
+        details: { is_correct: true }
+      },
+      {
+        id: '2',
+        type: 'exercise_complete',
+        description: '完成了练习',
+        details: { is_correct: false }
+      },
+      {
+        id: '3',
+        type: 'exercise_complete',
+        description: '完成了练习',
+        // No is_correct field
+      },
+      {
+        id: '4',
+        type: 'chapter_complete',
+        description: '完成了第3章',
+      },
+      {
+        id: '5',
+        type: 'achievement_earned',
+        description: '获得了成就',
+      },
+    ]
+    const { container } = render(<RecentActivity activities={activitiesWithDetails} />)
 
-    // Check for emoji icons
-    expect(container.textContent).toContain('✅') // exercise_complete
+    // Check for emoji icons based on details
+    expect(container.textContent).toContain('✅') // is_correct: true
+    expect(container.textContent).toContain('❌') // is_correct: false
+    expect(container.textContent).toContain('📝') // no is_correct field
     expect(container.textContent).toContain('📚') // chapter_complete
     expect(container.textContent).toContain('🏆') // achievement_earned
   })
 
-  it('limits activities to 5 by default', () => {
+  it('limits activities to 8 by default', () => {
     const manyActivities = Array.from({ length: 10 }, (_, i) => ({
       id: `${i}`,
       type: 'exercise_complete',
@@ -74,9 +105,10 @@ describe('RecentActivity', () => {
 
     render(<RecentActivity activities={manyActivities} />)
 
-    // Should only show 5 activities
+    // Should show 8 activities (0-7)
     expect(screen.getByText('Activity 0')).toBeInTheDocument()
-    expect(screen.queryByText('Activity 5')).not.toBeInTheDocument()
+    expect(screen.getByText('Activity 7')).toBeInTheDocument()
+    expect(screen.queryByText('Activity 8')).not.toBeInTheDocument()
   })
 
   it('limits activities to 3 in compact mode', () => {

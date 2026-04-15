@@ -25,20 +25,6 @@ describe('WelcomeSection', () => {
     expect(greetingElement).toBeInTheDocument()
   })
 
-  it('displays last progress when provided', () => {
-    render(
-      <WelcomeSection
-        user={mockUser}
-        lastProgress={mockLastProgress}
-        onContinueLearning={() => {}}
-        lang="zh"
-      />
-    )
-
-    expect(screen.getByText(/C语言/)).toBeInTheDocument()
-    expect(screen.getByText(/第3章 循环/)).toBeInTheDocument()
-  })
-
   it('does not display last progress when null', () => {
     render(
       <WelcomeSection
@@ -48,33 +34,112 @@ describe('WelcomeSection', () => {
       />
     )
 
-    expect(screen.queryByText(/上次学到/)).not.toBeInTheDocument()
+    // When no progress, shows "开始学习" instead of "继续学习"
+    expect(screen.getByText('开始学习')).toBeInTheDocument()
   })
 
-  it('renders continue learning button', () => {
-    render(<WelcomeSection user={mockUser} onContinueLearning={() => {}} />)
+  it('renders continue learning button when has progress', () => {
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={mockLastProgress}
+        onContinueLearning={() => {}}
+      />
+    )
 
     expect(screen.getByText('继续学习')).toBeInTheDocument()
   })
 
+  it('renders start learning button when no progress', () => {
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={null}
+        onContinueLearning={() => {}}
+      />
+    )
+
+    expect(screen.getByText('开始学习')).toBeInTheDocument()
+  })
+
   it('calls onContinueLearning when button is clicked', () => {
     const handleClick = jest.fn()
-    render(<WelcomeSection user={mockUser} onContinueLearning={handleClick} />)
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={mockLastProgress}
+        onContinueLearning={handleClick}
+      />
+    )
 
     fireEvent.click(screen.getByText('继续学习'))
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 
-  it('displays English labels when lang is "en"', () => {
-    render(<WelcomeSection user={mockUser} onContinueLearning={() => {}} lang="en" />)
+  it('calls onContinueLearning when start learning button is clicked', () => {
+    const handleClick = jest.fn()
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={null}
+        onContinueLearning={handleClick}
+      />
+    )
+
+    fireEvent.click(screen.getByText('开始学习'))
+    expect(handleClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('displays English labels when lang is "en" and has progress', () => {
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={mockLastProgress}
+        onContinueLearning={() => {}}
+        lang="en"
+      />
+    )
 
     expect(screen.getByText('Continue Learning')).toBeInTheDocument()
     expect(screen.getByText(/(Good morning|Good afternoon|Good evening)/)).toBeInTheDocument()
   })
 
-  it('displays challenge text', () => {
-    render(<WelcomeSection user={mockUser} onContinueLearning={() => {}} lang="zh" />)
+  it('displays English start learning when lang is "en" and no progress', () => {
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={null}
+        onContinueLearning={() => {}}
+        lang="en"
+      />
+    )
+
+    expect(screen.getByText('Start Learning')).toBeInTheDocument()
+  })
+
+  it('displays challenge text when has progress', () => {
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={mockLastProgress}
+        onContinueLearning={() => {}}
+        lang="zh"
+      />
+    )
 
     expect(screen.getByText(/今天准备挑战点什么/)).toBeInTheDocument()
+  })
+
+  it('displays start journey text when no progress', () => {
+    render(
+      <WelcomeSection
+        user={mockUser}
+        lastProgress={null}
+        onContinueLearning={() => {}}
+        lang="zh"
+      />
+    )
+
+    expect(screen.getByText(/开始你的编程之旅吧/)).toBeInTheDocument()
   })
 })

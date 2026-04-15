@@ -111,7 +111,9 @@ class TestAuthRegister:
             },
         )
         assert response.status_code == 422
-        assert "must contain at least one letter" in str(response.json())
+        # Check for either English or Chinese error message
+        response_str = str(response.json())
+        assert "letter" in response_str.lower() or "字母" in response_str
 
     @pytest.mark.asyncio
     async def test_register_password_without_digit(self, client: AsyncClient):
@@ -125,7 +127,9 @@ class TestAuthRegister:
             },
         )
         assert response.status_code == 422
-        assert "must contain at least one digit" in str(response.json())
+        # Check for either English or Chinese error message
+        response_str = str(response.json())
+        assert "digit" in response_str.lower() or "数字" in response_str
 
 
 class TestAuthLogin:
