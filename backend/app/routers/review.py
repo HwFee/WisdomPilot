@@ -12,6 +12,8 @@ from app.models.user import User
 from app.models.exercise import Exercise
 from app.models.user_weak_point import UserWeakPoint
 from app.models.spaced_repetition import SpacedRepetition
+from app.models.wrong_question import WrongQuestion
+from app.services.wrong_question import wrong_question_service
 from app.schemas.review import (
     ReviewQueueResponse,
     ReviewQueueItem,
@@ -23,6 +25,13 @@ from app.schemas.review import (
     TargetPracticeRequest,
     TargetPracticeResponse,
     ReviewStatsResponse,
+    WrongQuestionListResponse,
+    WrongQuestionResponse,
+    WeakPointAnalysisResponse,
+    KnowledgePointAnalysis,
+    EnhancedTargetPracticeRequest,
+    EnhancedTargetPracticeResponse,
+    ReviewReminderResponse,
 )
 
 router = APIRouter(prefix="/api/review", tags=["review"])
@@ -333,3 +342,378 @@ async def get_review_stats(
         weak_points_count=len(weak_points),
         mastery_distribution=mastery_dist
     )
+
+
+# ========== Wrong Questions Endpoints ==========
+
+@router.get("/wrong-questions", response_model=WrongQuestionListResponse)
+async def get_wrong_questions(
+    db: db_dependency,
+    user: auth_dependency,
+    course_id: int = None,
+    chapter_id: int = None,
+    is_resolved: bool = None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    """
+    Get list of user's wrong questions.
+
+    Supports filtering by course, chapter, and resolution status.
+    """
+    wrong_questions, total = await wrong_question_service.get_user_wrong_questions(
+        db=db,
+        user_id=user.id,
+        course_id=course_id,
+        chapter_id=chapter_id,
+        is_resolved=is_resolved,
+        limit=limit,
+        offset=offset,
+    )
+
+    unresolved_count = await wrong_question_service.get_unresolved_count(
+        db=db,
+        user_id=user.id,
+        course_id=course_id,
+    )
+
+    return WrongQuestionListResponse(
+        wrong_questions=[WrongQuestionResponse.model_validate(wq) for wq in wrong_questions],
+        total=total,
+        unresolved_count=unresolved_count,
+    )
+
+
+@router.get("/wrong-questions/{wrong_question_id}")
+async def get_wrong_question(
+    wrong_question_id: str,
+    db: db_dependency,
+    user: auth_dependency,
+):
+    """
+    Get details of a specific wrong question.
+    """
+    wrong_question = await wrong_question_service.get_wrong_question_by_id(
+        db=db,
+        wrong_question_id=wrong_question_id,
+        user_id=user.id,
+    )
+
+    if not wrong_question:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Wrong question not found"
+        )
+
+    return WrongQuestionResponse.model_validate(wrong_question)
+
+
+# ========== Analysis Endpoints ==========
+
+@router.get("/analysis/weak-points", response_model=WeakPointAnalysisResponse)
+async def get_weak_points_analysis(
+    db: db_dependency,
+    user: auth_dependency,
+    course_id: int = None,
+    limit: int = 20,
+):
+    """
+    Get analysis of weak knowledge points.
+
+    Returns:
+    - All knowledge points with error rates
+    - Weakest points (top 5)
+    - Strongest points (top 5)
+    - Overall error rate
+    """
+    query = select(UserWeakPoint).where(UserWeakPoint.user_id == user.id)
+
+    if course_id:
+        query = query.where(UserWeakPoint.course_id == course_id)
+
+    result = await db.execute(query)
+    weak_points = list(result.scalars().all())
+
+    if not weak_points:
+        return WeakPointAnalysisResponse(
+            knowledge_points=[],
+            weakest_knowledge_points=[],
+            strongest_knowledge_points=[],
+            total_knowledge_points=0,
+            overall_error_rate=0.0,
+        )
+
+    # Calculate analysis for each knowledge point
+    analyses = []
+    total_errors = sum(wp.error_count for wp in weak_points)
+    total_attempts = sum(wp.error_count + wp.review_count for wp in weak_points)
+
+    for wp in weak_points:
+        # Calculate error rate
+        attempts = wp.error_count + wp.review_count
+        error_rate = wp.error_count / attempts if attempts > 0 else 0.0
+
+        # Calculate weak score (higher = weaker)
+        error_factor = min(1.0, wp.error_count / 10)
+        mastery_factor = (6 - wp.mastery_level) / 5
+        weak_score = (error_factor + mastery_factor) / 2
+
+        analyses.append(KnowledgePointAnalysis(
+            knowledge_point=wp.knowledge_point,
+            error_count=wp.error_count,
+            total_attempts=attempts,
+            error_rate=error_rate,
+            mastery_level=wp.mastery_level,
+            weak_score=weak_score,
+            rank=0,  # Will be set after sorting
+        ))
+
+    # Sort by weak_score (descending) and assign ranks
+    analyses.sort(key=lambda x: x.weak_score, reverse=True)
+    for i, a in enumerate(analyses):
+        a.rank = i + 1
+
+    # Get weakest and strongest
+    weakest = analyses[:5] if len(analyses) >= 5 else analyses
+    strongest = analyses[-5:] if len(analyses) >= 5 else analyses
+    strongest = sorted(strongest, key=lambda x: x.weak_score, reverse=False)
+
+    overall_error_rate = total_errors / total_attempts if total_attempts > 0 else 0.0
+
+    return WeakPointAnalysisResponse(
+        knowledge_points=analyses,
+        weakest_knowledge_points=weakest,
+        strongest_knowledge_points=strongest,
+        total_knowledge_points=len(analyses),
+        overall_error_rate=overall_error_rate,
+    )
+
+
+# ========== Enhanced Practice Endpoints ==========
+
+@router.post("/practice/enhanced", response_model=EnhancedTargetPracticeResponse)
+async def enhanced_target_practice(
+    request: EnhancedTargetPracticeRequest,
+    db: db_dependency,
+    user: auth_dependency,
+):
+    """
+    Get exercises for enhanced targeted practice.
+
+    Modes:
+    - quick: 5 questions focusing on weakest points
+    - deep: 10 questions with more variety
+    - specific: Focus on specific knowledge points
+    """
+    # Determine limit based on mode
+    limit = request.limit
+    if request.mode == "quick":
+        limit = min(limit, 5)
+    elif request.mode == "deep":
+        limit = min(limit, 10)
+
+    # Get weak points to target
+    query = select(UserWeakPoint).where(UserWeakPoint.user_id == user.id)
+
+    if request.course_id:
+        query = query.where(UserWeakPoint.course_id == request.course_id)
+
+    if request.knowledge_points:
+        query = query.where(UserWeakPoint.knowledge_point.in_(request.knowledge_points))
+
+    # Order by weakness (weakest first)
+    query = query.order_by(UserWeakPoint.mastery_level, UserWeakPoint.error_count.desc())
+
+    result = await db.execute(query)
+    weak_points = list(result.scalars().all())
+
+    if not weak_points:
+        return EnhancedTargetPracticeResponse(
+            exercises=[],
+            weak_points=[],
+            mode=request.mode,
+            total=0,
+            message="No weak points found matching the criteria"
+        )
+
+    # Find exercises targeting these knowledge points
+    kp_list = [wp.knowledge_point for wp in weak_points]
+
+    # Build query for exercises
+    exercise_query = select(Exercise).where(Exercise.is_verified == True)
+
+    if request.difficulty_range:
+        min_diff, max_diff = request.difficulty_range
+        exercise_query = exercise_query.where(
+            Exercise.difficulty >= min_diff,
+            Exercise.difficulty <= max_diff
+        )
+
+    exercise_result = await db.execute(exercise_query)
+    all_exercises = list(exercise_result.scalars().all())
+
+    # Filter and prioritize by knowledge points
+    exercises = []
+    kp_coverage = {kp: [] for kp in kp_list}
+
+    for ex in all_exercises:
+        ex_kps = ex.knowledge_points or []
+        matched_kps = [kp for kp in ex_kps if kp in kp_list]
+        if matched_kps:
+            # Calculate match score based on how many weak KPs this addresses
+            match_score = len(matched_kps)
+            exercises.append({
+                "id": ex.id,
+                "type": ex.type,
+                "difficulty": ex.difficulty,
+                "content": ex.content,
+                "knowledge_points": ex.knowledge_points,
+                "match_score": match_score,
+                "matched_knowledge_points": matched_kps,
+            })
+            for kp in matched_kps:
+                kp_coverage[kp].append(ex.id)
+
+    # Sort by match score
+    exercises.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+
+    # Take top exercises ensuring variety
+    selected = []
+    covered_kps = set()
+    for ex in exercises:
+        if len(selected) >= limit:
+            break
+        # Ensure variety - don't pick too many from same KPs
+        ex_kps = ex.get("matched_knowledge_points", [])
+        if len(selected) < 3 or not any(kp in covered_kps for kp in ex_kps):
+            selected.append({
+                "id": ex["id"],
+                "type": ex["type"],
+                "difficulty": ex["difficulty"],
+                "content": ex["content"],
+                "knowledge_points": ex["knowledge_points"],
+            })
+            covered_kps.update(ex_kps)
+
+    return EnhancedTargetPracticeResponse(
+        exercises=selected,
+        weak_points=[WeakPointResponse.model_validate(wp) for wp in weak_points],
+        mode=request.mode,
+        total=len(selected),
+        message=f"Found {len(selected)} exercises for {request.mode} practice"
+    )
+
+
+# ========== Review Reminder Endpoints ==========
+
+@router.get("/reminders", response_model=ReviewReminderResponse)
+async def get_review_reminders(
+    db: db_dependency,
+    user: auth_dependency,
+):
+    """
+    Get review reminders based on Ebbinghaus forgetting curve.
+
+    Returns:
+    - Due reviews (past scheduled time)
+    - Upcoming reviews (next 30 days)
+    - Ebbinghaus schedule (1, 3, 7, 15, 30 days)
+    """
+    from app.utils.time import utc_now
+    from datetime import timedelta
+
+    now = utc_now()
+
+    # Get all repetitions
+    result = await db.execute(
+        select(SpacedRepetition).where(SpacedRepetition.user_id == user.id)
+    )
+    all_repetitions = list(result.scalars().all())
+
+    # Get exercise details
+    exercise_ids = [r.exercise_id for r in all_repetitions]
+    exercises_result = await db.execute(
+        select(Exercise).where(Exercise.id.in_(exercise_ids))
+    )
+    exercises = {e.id: e for e in exercises_result.scalars().all()}
+
+    # Get weak points
+    weak_result = await db.execute(
+        select(UserWeakPoint).where(UserWeakPoint.user_id == user.id)
+    )
+    weak_points = {wp.knowledge_point: wp for wp in weak_result.scalars().all()}
+
+    # Ebbinghaus intervals
+    ebbinghaus_intervals = [
+        {"day": 1, "label": "1天"},
+        {"day": 3, "label": "3天"},
+        {"day": 7, "label": "7天"},
+        {"day": 15, "label": "15天"},
+        {"day": 30, "label": "30天"},
+    ]
+
+    # Categorize reviews
+    due_reviews = []
+    upcoming_by_date = {}
+    schedule_counts = {eb["day"]: 0 for eb in ebbinghaus_intervals}
+
+    for rep in all_repetitions:
+        exercise = exercises.get(rep.exercise_id)
+        if not exercise:
+            continue
+
+        # Calculate priority
+        priority = 0.0
+        days_overdue = (now - rep.next_review_at).days if rep.next_review_at <= now else 0
+        priority += days_overdue * 0.5
+        for kp in exercise.knowledge_points:
+            if kp in weak_points:
+                priority += weak_points[kp].weakness_score * 2
+
+        if rep.next_review_at <= now:
+            # Due now
+            due_reviews.append(ReviewQueueItem(
+                repetition=SpacedRepetitionResponse.model_validate(rep),
+                exercise_id=exercise.id,
+                exercise_type=exercise.type,
+                exercise_difficulty=exercise.difficulty,
+                knowledge_points=exercise.knowledge_points,
+                stage_id=rep.stage_id,
+                priority=priority
+            ))
+            schedule_counts[1] += 1  # Count as due
+        else:
+            # Future - categorize by interval
+            days_until = (rep.next_review_at - now).days
+            for eb in ebbinghaus_intervals:
+                if eb["day"] - 1 <= days_until <= eb["day"] + 1:
+                    date_key = (now + timedelta(days=eb["day"])).strftime("%Y-%m-%d")
+                    if date_key not in upcoming_by_date:
+                        upcoming_by_date[date_key] = {"count": 0, "label": eb["label"]}
+                    upcoming_by_date[date_key]["count"] += 1
+                    schedule_counts[eb["day"]] += 1
+                    break
+
+    # Sort due reviews by priority
+    due_reviews.sort(key=lambda x: x.priority, reverse=True)
+
+    # Build upcoming list
+    upcoming = [
+        {"date": date, "count": data["count"], "label": data["label"]}
+        for date, data in sorted(upcoming_by_date.items())
+    ]
+
+    # Build schedule
+    schedule = [
+        {"day": eb["day"], "label": eb["label"], "count": schedule_counts[eb["day"]]}
+        for eb in ebbinghaus_intervals
+    ]
+
+    return ReviewReminderResponse(
+        due_reviews=due_reviews[:20],  # Limit to top 20
+        upcoming_reviews=upcoming,
+        ebbinghaus_schedule=schedule,
+        total_due=len(due_reviews),
+        total_upcoming=sum(u["count"] for u in upcoming),
+    )
+

@@ -11,6 +11,7 @@ from app.utils.time import utc_now
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.wrong_question import WrongQuestion
 
 
 class UserWeakPoint(Base):

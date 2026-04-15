@@ -95,3 +95,88 @@ export interface ReviewStatsResponse {
   wrong_count?: number
   mastery_distribution: Record<string, number>
 }
+
+// ========================================
+// Wrong Question Types
+// ========================================
+
+export interface WrongQuestionResponse {
+  id: string
+  user_id: string
+  exercise_id: number
+  course_id: number
+  chapter_id?: number
+  knowledge_points: string[]
+  user_answer?: Record<string, unknown>
+  correct_answer?: Record<string, unknown>
+  exercise_type: string
+  exercise_difficulty: number
+  error_count: number
+  is_resolved: boolean
+  first_error_at: string
+  last_error_at: string
+  resolved_at?: string
+  exercise_content?: Record<string, unknown>
+}
+
+export interface WrongQuestionListResponse {
+  wrong_questions: WrongQuestionResponse[]
+  total: number
+  unresolved_count: number
+}
+
+// ========================================
+// Knowledge Point Analysis Types
+// ========================================
+
+export interface KnowledgePointAnalysis {
+  knowledge_point: string
+  error_count: number
+  total_attempts: number
+  error_rate: number
+  mastery_level: number
+  weak_score: number
+  rank: number
+}
+
+export interface WeakPointAnalysisResponse {
+  knowledge_points: KnowledgePointAnalysis[]
+  weakest_knowledge_points: KnowledgePointAnalysis[]
+  strongest_knowledge_points: KnowledgePointAnalysis[]
+  total_knowledge_points: number
+  overall_error_rate: number
+}
+
+// ========================================
+// Enhanced Practice Types
+// ========================================
+
+export type PracticeMode = 'quick' | 'deep' | 'specific'
+
+export interface EnhancedTargetPracticeRequest {
+  course_id?: number
+  mode: PracticeMode
+  knowledge_points?: string[]
+  difficulty_range?: [number, number]
+  limit: number
+}
+
+export interface EnhancedTargetPracticeResponse {
+  exercises: Record<string, unknown>[]
+  weak_points: WeakPointResponse[]
+  mode: PracticeMode
+  total: number
+  message: string
+}
+
+// ========================================
+// Review Reminder Types
+// ========================================
+
+export interface ReviewReminderResponse {
+  due_reviews: ReviewQueueItem[]
+  upcoming_reviews: { date: string; count: number; label: string }[]
+  ebbinghaus_schedule: { day: number; label: string; count: number }[]
+  total_due: number
+  total_upcoming: number
+}

@@ -31,6 +31,7 @@ from app.services.leaderboard_service import (
     get_mastery_leaderboard_service,
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
+from app.services.wrong_question import wrong_question_service
 from app.schemas.exercise import ExerciseRecommendRequest
 
 
@@ -502,6 +503,28 @@ async def submit_challenge(
     old_tier = profile.tier
     arena_service = get_arena_leaderboard_service(db)
     new_tier = await arena_service.update_user_tier(current_user.id, course_id)
+
+    # Collect wrong questions
+    for answer_data in request.answers:
+        if not answer_data.get("is_correct", False):
+            exercise_id = answer_data.get("exercise_id")
+            user_answer = answer_data.get("answer")
+            if exercise_id:
+                # Get exercise details for knowledge points
+                ex_result = await db.execute(
+                    select(Exercise).where(Exercise.id == int(exercise_id))
+                )
+                exercise = ex_result.scalar_one_or_none()
+                if exercise:
+                    await wrong_question_service.collect_wrong_question(
+                        db=db,
+                        user_id=current_user.id,
+                        exercise=exercise,
+                        user_answer=user_answer,
+                        course_id=course_id,
+                        chapter_id=exercise.chapter_id,
+                        challenge_session_id=session_id,
+                    )
 
     await db.commit()
 

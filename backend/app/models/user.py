@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from app.models.favorite import Favorite
     from app.models.note import Note
     from app.models.chapter_mastery import ChapterMastery
+    from app.models.wrong_question import WrongQuestion
 
 
 class User(Base):
@@ -201,4 +202,7 @@ class User(Base):
     )
     chapter_masteries: Mapped[List["ChapterMastery"]] = relationship(
         "ChapterMastery", back_populates="user"
+    )
+    wrong_questions: Mapped[List["WrongQuestion"]] = relationship(
+        "WrongQuestion", back_populates="user"
     )

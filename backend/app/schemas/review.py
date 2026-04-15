@@ -128,3 +128,116 @@ class ReviewStatsResponse(BaseModel):
     streak_days: int
     weak_points_count: int
     mastery_distribution: dict  # {level: count}
+
+
+class WrongQuestionBase(BaseModel):
+    """Base wrong question schema"""
+    exercise_id: int
+    course_id: int
+    chapter_id: Optional[int] = None
+    knowledge_points: List[str]
+    user_answer: Optional[dict] = None
+    correct_answer: Optional[dict] = None
+    exercise_type: str = "choice"
+    exercise_difficulty: int = 1
+
+
+class WrongQuestionResponse(WrongQuestionBase):
+    """Response for wrong question"""
+    id: str
+    user_id: str
+    error_count: int = 1
+    is_resolved: bool = False
+    first_error_at: datetime
+    last_error_at: datetime
+    resolved_at: Optional[datetime] = None
+    exercise_content: Optional[dict] = None
+
+    model_config = {"from_attributes": True}
+
+    @property
+    def days_since_last_error(self) -> int:
+        """Days since last error"""
+        from app.utils.time import utc_now
+        delta = utc_now() - self.last_error_at
+        return delta.days
+
+    @property
+    def priority_score(self) -> float:
+        """Priority score for review"""
+        error_factor = min(2.0, self.error_count / 5)
+        unresolved_factor = 1.5 if not self.is_resolved else 0.5
+        days_factor = min(1.0, self.days_since_last_error / 30)
+        return error_factor * unresolved_factor * (1 + days_factor)
+
+
+class WrongQuestionListResponse(BaseModel):
+    """Response for wrong questions list"""
+    wrong_questions: List[WrongQuestionResponse]
+    total: int
+    unresolved_count: int
+
+
+class WrongQuestionStatsResponse(BaseModel):
+    """Response for wrong question statistics"""
+    total: int
+    resolved: int
+    unresolved: int
+    total_errors: int
+    mastery_distribution: dict  # {knowledge_point: {error_count, mastery_level, weak_score}}
+
+
+class KnowledgePointAnalysis(BaseModel):
+    """Analysis for a single knowledge point"""
+    knowledge_point: str
+    error_count: int
+    total_attempts: int
+    error_rate: float  # 0.0 - 1.0
+    mastery_level: int  # 1-5
+    weak_score: float  # 0.0 - 1.0 (higher = weaker)
+    rank: int  # Ranking by weakness (1 = weakest)
+
+
+class WeakPointAnalysisResponse(BaseModel):
+    """Response for weak point analysis"""
+    knowledge_points: List[KnowledgePointAnalysis]
+    weakest_knowledge_points: List[KnowledgePointAnalysis]  # Top 5
+    strongest_knowledge_points: List[KnowledgePointAnalysis]  # Top 5
+    total_knowledge_points: int
+    overall_error_rate: float
+
+
+class TargetPracticeMode(str):
+    """Practice mode types"""
+    QUICK = "quick"  # 5 questions
+    DEEP = "deep"  # 10 questions
+    SPECIFIC = "specific"  # Specific knowledge points
+
+
+class EnhancedTargetPracticeRequest(BaseModel):
+    """Enhanced request for targeted practice"""
+    course_id: Optional[int] = None
+    mode: str = Field(default="quick", description="quick, deep, or specific")
+    knowledge_points: Optional[List[str]] = None
+    difficulty_range: Optional[tuple[int, int]] = None
+    limit: int = Field(default=5, ge=1, le=20)
+
+    model_config = {"arbitrary_types_allowed": True}
+
+
+class EnhancedTargetPracticeResponse(BaseModel):
+    """Enhanced response with exercises for targeted practice"""
+    exercises: List[dict]
+    weak_points: List[WeakPointResponse]
+    mode: str
+    total: int
+    message: str
+
+
+class ReviewReminderResponse(BaseModel):
+    """Response for review reminders based on Ebbinghaus curve"""
+    due_reviews: List[ReviewQueueItem]
+    upcoming_reviews: List[dict]  # {date: str, count: int}
+    ebbinghaus_schedule: List[dict]  # {day: int, label: str, count: int}
+    total_due: int
+    total_upcoming: int
