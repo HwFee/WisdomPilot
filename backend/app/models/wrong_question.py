@@ -39,12 +39,18 @@ class WrongQuestion(Base):
         index=True,
         comment="用户ID"
     )
-    exercise_id: Mapped[int] = mapped_column(
+    exercise_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         ForeignKey("exercises.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
-        comment="练习题ID"
+        comment="练习题ID（可能为空，使用 exercise_key 作为备选标识）"
+    )
+    exercise_key: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+        comment="练习题标识（格式：chapterId-subsectionIndex-exerciseId，用于前端硬编码习题）"
     )
     course_id: Mapped[int] = mapped_column(
         Integer,

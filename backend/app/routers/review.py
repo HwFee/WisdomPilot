@@ -76,10 +76,12 @@ async def get_review_queue(
 
     # Get exercise details
     exercise_ids = [r.exercise_id for r in due_repetitions]
-    exercises_result = await db.execute(
-        select(Exercise).where(Exercise.id.in_(exercise_ids))
-    )
-    exercises = {e.id: e for e in exercises_result.scalars().all()}
+    exercises = {}
+    if exercise_ids:  # 只有在有 ID 时才查询，避免空列表查询错误
+        exercises_result = await db.execute(
+            select(Exercise).where(Exercise.id.in_(exercise_ids))
+        )
+        exercises = {e.id: e for e in exercises_result.scalars().all()}
 
     # Get weak points for priority calculation
     weak_result = await db.execute(
@@ -632,10 +634,12 @@ async def get_review_reminders(
 
     # Get exercise details
     exercise_ids = [r.exercise_id for r in all_repetitions]
-    exercises_result = await db.execute(
-        select(Exercise).where(Exercise.id.in_(exercise_ids))
-    )
-    exercises = {e.id: e for e in exercises_result.scalars().all()}
+    exercises = {}
+    if exercise_ids:  # 只有在有 ID 时才查询，避免空列表查询错误
+        exercises_result = await db.execute(
+            select(Exercise).where(Exercise.id.in_(exercise_ids))
+        )
+        exercises = {e.id: e for e in exercises_result.scalars().all()}
 
     # Get weak points
     weak_result = await db.execute(

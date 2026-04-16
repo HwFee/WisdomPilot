@@ -5,12 +5,15 @@ from datetime import datetime
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+import logging
 
 from app.models.wrong_question import WrongQuestion
 from app.models.exercise import Exercise
 from app.models.user_weak_point import UserWeakPoint
 from app.models.spaced_repetition import SpacedRepetition
 from app.utils.time import utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class WrongQuestionService:
@@ -22,6 +25,95 @@ class WrongQuestionService:
     3. 关联更新薄弱点（UserWeakPoint）
     4. 创建复习计划（SpacedRepetition）
     """
+
+    async def collect_wrong_question_by_key(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        exercise_key: str,
+        user_answer: Any,
+        course_id: int,
+        chapter_id: Optional[int] = None,
+        exercise_content: Optional[dict] = None,
+        exercise_type: str = "choice",
+        knowledge_points: Optional[List[str]] = None,
+    ) -> WrongQuestion:
+        """通过 exercise_key 收集错题（用于前端硬编码习题）
+
+        当前端使用硬编码习题（非数据库 Exercise）时，使用此方法。
+        exercise_key 格式：chapterId-subsectionIndex-exerciseId
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            exercise_key: 练习题标识（格式：chapterId-subsectionIndex-exerciseId）
+            user_answer: 用户答案
+            course_id: 课程ID
+            chapter_id: 章节ID
+            exercise_content: 题目内容快照
+            exercise_type: 题目类型
+            knowledge_points: 知识点列表
+
+        Returns:
+            WrongQuestion: 错题记录
+        """
+        logger.info(f"[collect_wrong_question_by_key] 开始收集: user_id={user_id}, exercise_key={exercise_key}, course_id={course_id}")
+
+        # 检查是否已存在相同记录（同一用户同一 exercise_key）
+        existing = await db.execute(
+            select(WrongQuestion).where(
+                and_(
+                    WrongQuestion.user_id == user_id,
+                    WrongQuestion.exercise_key == exercise_key,
+                )
+            )
+        )
+        wrong_question = existing.scalar_one_or_none()
+
+        if wrong_question:
+            # 已存在：记录新的错误
+            wrong_question.record_error()
+            # 更新答案记录（保留最近一次）
+            wrong_question.user_answer = user_answer
+            logger.info(f"[collect_wrong_question_by_key] 更新已有错题记录: id={wrong_question.id}, error_count={wrong_question.error_count}")
+        else:
+            # 不存在：创建新记录
+            wrong_question = WrongQuestion(
+                user_id=user_id,
+                exercise_id=None,  # 前端硬编码习题没有真实 ID
+                exercise_key=exercise_key,
+                course_id=course_id,
+                chapter_id=chapter_id,
+                knowledge_points=knowledge_points or [],
+                user_answer=user_answer,
+                correct_answer={},  # 前端硬编码习题没有标准答案存储
+                exercise_content=exercise_content,
+                exercise_type=exercise_type,
+                error_count=1,
+                is_resolved=False,
+            )
+            db.add(wrong_question)
+            logger.info(f"[collect_wrong_question_by_key] 创建新错题记录")
+
+        await db.flush()
+
+        # 更新薄弱点记录
+        if knowledge_points:
+            await self._update_weak_points(
+                db=db,
+                user_id=user_id,
+                knowledge_points=knowledge_points,
+                course_id=course_id,
+            )
+
+        # 创建或更新复习计划
+        await self._schedule_review(
+            db=db,
+            user_id=user_id,
+            exercise_key=exercise_key,
+        )
+
+        return wrong_question
 
     async def collect_wrong_question(
         self,
@@ -229,7 +321,8 @@ class WrongQuestionService:
         self,
         db: AsyncSession,
         user_id: str,
-        exercise_id: int,
+        exercise_id: Optional[int] = None,
+        exercise_key: Optional[str] = None,
         stage_id: Optional[int] = None,
     ) -> Optional[SpacedRepetition]:
         """创建或更新复习计划
@@ -237,20 +330,25 @@ class WrongQuestionService:
         Args:
             db: 数据库会话
             user_id: 用户ID
-            exercise_id: 练习题ID
+            exercise_id: 练习题ID（真实数据库ID）
+            exercise_key: 练习题标识（前端硬编码习题）
             stage_id: 关卡ID
 
         Returns:
             Optional[SpacedRepetition]: 复习计划记录
         """
+        # 构建查询条件
+        conditions = [SpacedRepetition.user_id == user_id]
+        if exercise_id:
+            conditions.append(SpacedRepetition.exercise_id == exercise_id)
+        elif exercise_key:
+            conditions.append(SpacedRepetition.exercise_key == exercise_key)
+        else:
+            return None  # 必须有 exercise_id 或 exercise_key
+
         # 检查是否已有复习计划
         result = await db.execute(
-            select(SpacedRepetition).where(
-                and_(
-                    SpacedRepetition.user_id == user_id,
-                    SpacedRepetition.exercise_id == exercise_id,
-                )
-            )
+            select(SpacedRepetition).where(and_(*conditions))
         )
         existing = result.scalar_one_or_none()
 
@@ -262,10 +360,15 @@ class WrongQuestionService:
             return existing
         else:
             # 创建新的复习计划
-            new_review = SpacedRepetition.create_new(
+            new_review = SpacedRepetition(
                 user_id=user_id,
                 exercise_id=exercise_id,
+                exercise_key=exercise_key,
                 stage_id=stage_id,
+                next_review_at=utc_now(),
+                review_interval=1,
+                ease_factor=2.5,
+                review_count=0
             )
             db.add(new_review)
             await db.flush()

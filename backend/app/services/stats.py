@@ -6,6 +6,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
+import logging
 
 from app.models.stats import ChapterProgress, LearningSession, ActivityLog, ProgressStatus, ActivityType
 from app.models.exercise import Exercise
@@ -17,6 +18,8 @@ from app.schemas.stats import (
     LearningStatistics,
 )
 from app.services.wrong_question import wrong_question_service
+
+logger = logging.getLogger(__name__)
 
 
 class StatsService:
@@ -182,6 +185,13 @@ class StatsService:
         merged = {**existing, **data.exercise_results}
         progress.exercise_results = merged
 
+        # Get chapter to find course_id (once for all exercises)
+        ch_result = await self.db.execute(
+            select(Chapter).where(Chapter.id == chapter_id)
+        )
+        chapter = ch_result.scalar_one_or_none()
+        course_id = chapter.course_id if chapter else 0
+
         # Find newly wrong exercises and collect them
         for exercise_key, result in data.exercise_results.items():
             # Only process new wrong answers
@@ -198,31 +208,44 @@ class StatsService:
                     subsection_index = int(parts[1])
                     exercise_id = int(parts[2])
 
-                    # Get exercise
+                    logger.info(f"[错题收集] 处理错题: key={exercise_key}, chapter_id={ex_chapter_id}, exercise_id={exercise_id}")
+
+                    # Try to find real Exercise in database
                     ex_result = await self.db.execute(
                         select(Exercise).where(Exercise.id == exercise_id)
                     )
                     exercise = ex_result.scalar_one_or_none()
 
                     if exercise:
-                        # Get chapter to find course_id
-                        ch_result = await self.db.execute(
-                            select(Chapter).where(Chapter.id == ex_chapter_id)
-                        )
-                        chapter = ch_result.scalar_one_or_none()
-                        course_id = chapter.course_id if chapter else 0
-
-                        # Collect wrong question
+                        # Found real Exercise - use standard collection
+                        logger.info(f"[错题收集] 找到真实 Exercise: id={exercise.id}, type={exercise.type}")
                         await wrong_question_service.collect_wrong_question(
                             db=self.db,
                             user_id=user_id,
                             exercise=exercise,
-                            user_answer=None,  # We don't have the actual answer here
+                            user_answer=None,
                             course_id=course_id,
                             chapter_id=ex_chapter_id,
                         )
-            except (ValueError, IndexError):
+                        logger.info(f"[错题收集] 已收集到错题本 (真实 Exercise)")
+                    else:
+                        # No real Exercise - use exercise_key based collection
+                        # This handles frontend hardcoded exercises
+                        logger.info(f"[错题收集] 未找到真实 Exercise，使用 exercise_key 方式收集")
+                        await wrong_question_service.collect_wrong_question_by_key(
+                            db=self.db,
+                            user_id=user_id,
+                            exercise_key=exercise_key,
+                            user_answer=None,
+                            course_id=course_id,
+                            chapter_id=ex_chapter_id,
+                            exercise_type="choice",  # Default to choice
+                            knowledge_points=[],
+                        )
+                        logger.info(f"[错题收集] 已收集到错题本 (exercise_key)")
+            except (ValueError, IndexError) as e:
                 # Skip invalid exercise keys
+                logger.warning(f"[错题收集] 跳过无效的 exercise_key: {exercise_key}, error={e}")
                 continue
 
     def _apply_exercise_results(self, progress: ChapterProgress, data: UpdateProgressRequest) -> None:
