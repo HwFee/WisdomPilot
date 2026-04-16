@@ -4,11 +4,13 @@
 
 import {
   FavoriteCreate,
+  FavoriteUpdate,
   FavoriteResponse,
   FavoriteListResponse,
   FavoriteCountResponse,
+  FavoriteFoldersListResponse,
 } from '@/types/api'
-import { get, post, del } from './client'
+import { get, post, patch, del } from './client'
 
 // ========================================
 // Favorites API Functions
@@ -24,13 +26,34 @@ export async function addFavorite(
 export async function getFavorites(
   token: string,
   limit: number = 50,
-  offset: number = 0
+  offset: number = 0,
+  folder?: string
 ): Promise<FavoriteListResponse> {
-  return get<FavoriteListResponse>(`/api/favorites?limit=${limit}&offset=${offset}`, token)
+  let url = `/api/favorites?limit=${limit}&offset=${offset}`
+  if (folder) {
+    url += `&folder=${encodeURIComponent(folder)}`
+  }
+  return get<FavoriteListResponse>(url, token)
 }
 
-export async function getFavoritesCount(token: string): Promise<FavoriteCountResponse> {
-  return get<FavoriteCountResponse>('/api/favorites/count', token)
+export async function getFavoritesCount(token: string, folder?: string): Promise<FavoriteCountResponse> {
+  let url = '/api/favorites/count'
+  if (folder) {
+    url += `?folder=${encodeURIComponent(folder)}`
+  }
+  return get<FavoriteCountResponse>(url, token)
+}
+
+export async function getFavoriteFolders(token: string): Promise<FavoriteFoldersListResponse> {
+  return get<FavoriteFoldersListResponse>('/api/favorites/folders', token)
+}
+
+export async function updateFavorite(
+  token: string,
+  favoriteId: string,
+  data: FavoriteUpdate
+): Promise<FavoriteResponse> {
+  return patch<FavoriteResponse>(`/api/favorites/${favoriteId}`, token, data)
 }
 
 export async function removeFavorite(
@@ -40,10 +63,19 @@ export async function removeFavorite(
   return del<{ success: boolean }>(`/api/favorites/${favoriteId}`, token)
 }
 
+export async function batchRemoveFavorites(
+  token: string,
+  favoriteIds: string[]
+): Promise<{ success: boolean; deleted_count: number }> {
+  return post<{ success: boolean; deleted_count: number }>('/api/favorites/batch-delete', token, favoriteIds)
+}
+
 // Re-export types
 export type {
   FavoriteCreate,
+  FavoriteUpdate,
   FavoriteResponse,
   FavoriteListResponse,
   FavoriteCountResponse,
+  FavoriteFoldersListResponse,
 }

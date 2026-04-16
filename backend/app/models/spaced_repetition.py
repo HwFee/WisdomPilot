@@ -57,10 +57,9 @@ class SpacedRepetition(Base):
     )
     stage_id: Mapped[Optional[int]] = mapped_column(
         Integer,
-        ForeignKey("stages.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
-        comment="关联关卡ID"
+        comment="关联关卡ID（已弃用，保留用于数据迁移）"
     )
     next_review_at: Mapped[datetime] = mapped_column(
         DateTime,

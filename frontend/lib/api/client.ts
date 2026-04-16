@@ -73,6 +73,17 @@ export async function put<T>(endpoint: string, token: string, body?: unknown): P
 }
 
 /**
+ * PATCH request with auth
+ */
+export async function patch<T>(endpoint: string, token: string, body?: unknown): Promise<T> {
+  const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, token, {
+    method: 'PATCH',
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  return response.json()
+}
+
+/**
  * DELETE request with auth
  */
 export async function del<T>(endpoint: string, token: string): Promise<T> {

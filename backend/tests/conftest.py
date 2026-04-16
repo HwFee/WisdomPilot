@@ -46,7 +46,7 @@ app_database.engine = test_engine
 # Import models
 from app.models import User, LoginSession, ChapterProgress, LearningSession, ActivityLog
 from app.models import Course, Chapter, Exercise, Challenge, UserChallenge, Achievement, UserAchievement
-from app.models import Stage, UserStageProgress, UserWeakPoint, SpacedRepetition
+from app.models import UserWeakPoint, SpacedRepetition
 from app.utils.security import get_password_hash, create_access_token
 
 # Import app.main AFTER engine replacement

@@ -1,6 +1,7 @@
 'use client'
 
 import { Lightbulb } from 'lucide-react'
+import { FavoriteButton } from './FavoriteButton'
 
 interface ProblemPanelProps {
   title: string
@@ -13,6 +14,12 @@ interface ProblemPanelProps {
   knowledgePoints?: string[]
   onHintClick?: () => void
   lang?: 'zh' | 'en'
+  // Favorite props
+  exerciseId?: number
+  chapterId?: number
+  subsectionIndex?: number
+  showFavorite?: boolean
+  onFavoriteChange?: (isFavorited: boolean) => void
 }
 
 export function ProblemPanel({
@@ -26,14 +33,33 @@ export function ProblemPanel({
   knowledgePoints = [],
   onHintClick,
   lang = 'zh',
+  // Favorite props
+  exerciseId,
+  chapterId,
+  subsectionIndex = 0,
+  showFavorite = false,
+  onFavoriteChange,
 }: ProblemPanelProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   return (
     <div className="h-full overflow-y-auto p-6 bg-card">
       <div className="max-w-2xl">
-        {/* Title */}
-        <h2 className="text-xl font-bold text-foreground mb-4">{title}</h2>
+        {/* Title with Favorite Button */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-foreground">{title}</h2>
+          {showFavorite && exerciseId && chapterId && (
+            <FavoriteButton
+              exerciseId={exerciseId}
+              chapterId={chapterId}
+              subsectionIndex={subsectionIndex}
+              size="md"
+              showLabel
+              lang={lang}
+              onFavoriteChange={onFavoriteChange}
+            />
+          )}
+        </div>
 
         {/* Description */}
         <div className="mb-6">

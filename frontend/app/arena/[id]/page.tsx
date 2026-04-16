@@ -26,6 +26,7 @@ import { CodeEditorPanel } from '@/components/exercise/CodeEditorPanel'
 import { SampleIOCard } from '@/components/exercise/SampleIOCard'
 import { CustomTestInput, TestOutputDisplay } from '@/components/exercise/CustomTestInput'
 import { LuoguTestCaseTable, LuoguTestCasesSummary } from '@/components/exercise/LuoguTestCaseTable'
+import { FavoriteButton } from '@/components/exercise/FavoriteButton'
 import { getTemplate } from '@/lib/codeTemplates'
 import type { ArenaProfileResponse, ChallengeSessionResponse, ChallengeExercise } from '@/types/api'
 
@@ -823,11 +824,20 @@ export default function ArenaPage() {
         <div className="w-[40%] ide-problem-panel bg-white flex-shrink-0" style={{ maxHeight: 'calc(100vh - 50px)', overflowY: 'auto', overflowX: 'hidden' }}>
           {currentExercise && (
             <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <span className={`px-3 py-1 rounded-lg text-xs font-bold text-white difficulty-badge difficulty-${currentExercise.difficulty}`}>
-                  {DIFFICULTY_NAMES[currentExercise.difficulty] || `难度 ${currentExercise.difficulty}`}
-                </span>
-                <span className="text-sm text-[#909399]">第 {currentIndex + 1} 题</span>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold text-white difficulty-badge difficulty-${currentExercise.difficulty}`}>
+                    {DIFFICULTY_NAMES[currentExercise.difficulty] || `难度 ${currentExercise.difficulty}`}
+                  </span>
+                  <span className="text-sm text-[#909399]">第 {currentIndex + 1} 题</span>
+                </div>
+                {/* 收藏按钮 */}
+                <FavoriteButton
+                  exerciseId={currentExercise.id}
+                  challengeSessionId={session?.session_id}
+                  size="md"
+                  showLabel
+                />
               </div>
 
               {currentExercise.content.description && (

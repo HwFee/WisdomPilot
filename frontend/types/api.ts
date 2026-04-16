@@ -608,8 +608,15 @@ export interface DailyTimeTrendResponse {
 
 export interface FavoriteCreate {
   exercise_id: number
-  chapter_id: number
+  chapter_id?: number
   subsection_index?: number
+  challenge_session_id?: string
+  folder?: string
+  note?: string
+}
+
+export interface FavoriteUpdate {
+  folder?: string
   note?: string
 }
 
@@ -617,8 +624,10 @@ export interface FavoriteResponse {
   id: string
   user_id: string
   exercise_id: number
-  chapter_id: number
+  chapter_id?: number
   subsection_index: number
+  challenge_session_id?: string
+  folder?: string
   note?: string
   created_at: string
 }
@@ -630,6 +639,15 @@ export interface FavoriteListResponse {
 
 export interface FavoriteCountResponse {
   count: number
+}
+
+export interface FavoriteFolderResponse {
+  name: string
+  count: number
+}
+
+export interface FavoriteFoldersListResponse {
+  folders: FavoriteFolderResponse[]
 }
 
 // ========================================

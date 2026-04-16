@@ -164,11 +164,16 @@ export {
   addFavorite,
   getFavorites,
   getFavoritesCount,
+  getFavoriteFolders,
+  updateFavorite,
   removeFavorite,
+  batchRemoveFavorites,
   type FavoriteCreate,
+  type FavoriteUpdate,
   type FavoriteResponse,
   type FavoriteListResponse,
   type FavoriteCountResponse,
+  type FavoriteFoldersListResponse,
 } from './favorites'
 
 // Notes

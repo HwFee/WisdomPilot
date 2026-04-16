@@ -62,10 +62,9 @@ class WrongQuestion(Base):
     )
     stage_id: Mapped[Optional[int]] = mapped_column(
         Integer,
-        ForeignKey("stages.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
-        comment="关卡ID（精进之路来源）"
+        comment="关卡ID（已弃用，保留用于数据迁移）"
     )
     challenge_session_id: Mapped[Optional[str]] = mapped_column(
         String(36),
