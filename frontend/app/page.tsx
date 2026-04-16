@@ -308,7 +308,7 @@ export default function Home() {
               return (
                 <Link
                   key={course.id}
-                  href={isLoggedIn ? `/courses/${course.id}` : '/register'}
+                  href={isLoggedIn ? `/mastery/${course.id}` : '/register'}
                   className={`group relative p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all card-interactive ${
                     index === 0 || index === 5 ? 'sm:col-span-2 lg:col-span-1' : ''
                   }`}

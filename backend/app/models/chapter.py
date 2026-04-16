@@ -11,7 +11,6 @@ from app.utils.time import utc_now
 if TYPE_CHECKING:
     from app.models.course import Course
     from app.models.exercise import Exercise
-    from app.models.stage import Stage
     from app.models.chapter_base_question import ChapterBaseQuestion
 
 
@@ -66,11 +65,6 @@ class Chapter(Base):
         "Exercise",
         back_populates="chapter",
         order_by="Exercise.difficulty",
-        lazy="noload"
-    )
-    stages: Mapped[List["Stage"]] = relationship(
-        "Stage",
-        back_populates="chapter",
         lazy="noload"
     )
     base_questions: Mapped[List["ChapterBaseQuestion"]] = relationship(

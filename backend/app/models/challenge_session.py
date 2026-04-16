@@ -58,6 +58,16 @@ class ChallengeSession(Base):
         default="pending",
         comment="pending, in_progress, completed, abandoned"
     )
+    session_type: Mapped[str] = mapped_column(
+        String(20),
+        default="challenge",
+        comment="challenge (timed mode) | infinite (endless mode)"
+    )
+    current_index: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        comment="Current exercise index (0-based) for infinite mode"
+    )
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 

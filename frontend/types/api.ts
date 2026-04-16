@@ -753,11 +753,13 @@ export interface ChallengeExercise {
   knowledge_points: string[]
   content: {
     text: string
+    title?: string
     options?: string[]
     code_template?: string
     description?: string
+    samples?: Array<{ input: string; output: string }>
   }
-  test_cases?: Array<{ input: string; expected: string }> | null
+  test_cases?: Array<{ input: string; output: string }> | null
 }
 
 export interface ChallengeResultResponse {

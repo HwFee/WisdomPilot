@@ -349,7 +349,7 @@ export default function MasteryPathPage() {
       <div className="min-h-screen bg-background">
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <Link href={`/courses/${courseId}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
               <span className="text-sm">返回</span>
             </Link>
@@ -1056,7 +1056,7 @@ export default function MasteryPathPage() {
     <div className="min-h-screen bg-background">
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href={`/courses/${courseId}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">返回</span>
           </Link>

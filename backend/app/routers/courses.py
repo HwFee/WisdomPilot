@@ -11,7 +11,6 @@ from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.exercise import Exercise
 from app.models.user import User
-from app.models.stage import Stage
 from app.schemas.course import (
     CourseListResponse,
     CourseDetailResponse,
@@ -22,7 +21,6 @@ from app.schemas.course import (
     ChapterDetailResponse,
     CourseDetail,
 )
-from app.schemas.stage import StageSummary
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
 
@@ -347,45 +345,6 @@ async def enroll_course(
         )
 
 
-@router.get("/{course_id}/stages")
-async def get_course_stages(
-    course_id: int,
-    db: db_dependency,
-    user: auth_dependency
-):
-    """
-    Get all stages for a course.
-
-    Returns stage list with progress info.
-    """
-    # Check course exists
-    result = await db.execute(
-        select(Course).where(Course.id == course_id, Course.is_active == True)
-    )
-    course = result.scalar_one_or_none()
-
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course {course_id} not found"
-        )
-
-    # Get stages
-    stages_result = await db.execute(
-        select(Stage)
-        .where(Stage.course_id == course_id, Stage.is_active == True)
-        .order_by(Stage.order_index)
-    )
-    stages = stages_result.scalars().all()
-
-    return {
-        "course_id": course_id,
-        "course_name": course.name,
-        "stages": [StageSummary.model_validate(s) for s in stages],
-        "total": len(stages)
-    }
-
-
 @router.get("/users/me/course-progress")
 async def get_user_course_progress(
     db: db_dependency,
@@ -395,13 +354,11 @@ async def get_user_course_progress(
     Get progress for all courses for the current user.
 
     Returns a list of all 8 courses with user's progress in each:
-    - Progress percentage
+    - Progress percentage (based on chapter mastery)
     - Mastery score (for 精进之路)
     - Arena tier and score (for 挑战之路)
     - Current chapter
     """
-    from app.models.stage import Stage
-    from app.models.user_stage import UserStageProgress, StageStatus
     from app.models.chapter_mastery import ChapterMastery
     from app.models.user_arena import UserArenaProfile
 
@@ -411,36 +368,21 @@ async def get_user_course_progress(
     )
     all_courses = courses_result.scalars().all()
 
-    # Get user's stage progress for all courses
-    stage_progress_result = await db.execute(
-        select(UserStageProgress, Stage)
-        .join(Stage, UserStageProgress.stage_id == Stage.id)
-        .where(UserStageProgress.user_id == current_user.id)
+    # Get total chapters per course
+    total_chapters_result = await db.execute(
+        select(Chapter.course_id, func.count(Chapter.id).label('count'))
+        .where(Chapter.is_active == True)
+        .group_by(Chapter.course_id)
     )
-    stage_progress_rows = stage_progress_result.all()
-
-    # Group stage progress by course
-    course_stages: dict[int, list] = {}
-    for progress, stage in stage_progress_rows:
-        if stage.course_id not in course_stages:
-            course_stages[stage.course_id] = []
-        course_stages[stage.course_id].append(progress)
-
-    # Get total stages per course
-    total_stages_result = await db.execute(
-        select(Stage.course_id, func.count(Stage.id).label('count'))
-        .where(Stage.is_active == True)
-        .group_by(Stage.course_id)
-    )
-    total_stages_map = {row.course_id: row.count for row in total_stages_result.all()}
+    total_chapters_map = {row.course_id: row.count for row in total_chapters_result.all()}
 
     # Get user's mastery scores per course
     mastery_result = await db.execute(
-        select(ChapterMastery.course_id, func.sum(ChapterMastery.mastery_score).label('total_mastery'))
+        select(ChapterMastery.course_id, func.sum(ChapterMastery.mastery_score).label('total_mastery'), func.count(ChapterMastery.id).label('chapter_count'))
         .where(ChapterMastery.user_id == current_user.id)
         .group_by(ChapterMastery.course_id)
     )
-    mastery_map = {row.course_id: row.total_mastery for row in mastery_result.all()}
+    mastery_map = {row.course_id: {"total": row.total_mastery, "chapters": row.chapter_count} for row in mastery_result.all()}
 
     # Get user's arena profiles per course
     arena_result = await db.execute(
@@ -448,28 +390,30 @@ async def get_user_course_progress(
     )
     arena_profiles = {p.course_id: p for p in arena_result.scalars().all()}
 
+    # Get current chapter per course (first chapter with mastery < 75)
+    current_chapter_result = await db.execute(
+        select(ChapterMastery.chapter_id, ChapterMastery.course_id, ChapterMastery.mastery_score, Chapter.title)
+        .join(Chapter, ChapterMastery.chapter_id == Chapter.id)
+        .where(ChapterMastery.user_id == current_user.id, ChapterMastery.mastery_score < 75)
+        .order_by(ChapterMastery.course_id, Chapter.order_index)
+    )
+    current_chapter_map = {}
+    for row in current_chapter_result.all():
+        if row.course_id not in current_chapter_map:
+            current_chapter_map[row.course_id] = row.title
+
     # Build response
     courses_data = []
     for course in all_courses:
-        total_stages = total_stages_map.get(course.id, 0)
-        user_stages = course_stages.get(course.id, [])
+        total_chapters = total_chapters_map.get(course.id, 0)
+        mastery_data = mastery_map.get(course.id, {"total": 0, "chapters": 0})
 
-        # Calculate progress
-        completed_stages = len([s for s in user_stages if s.status == StageStatus.COMPLETED.value])
-        progress = round((completed_stages / total_stages) * 100, 1) if total_stages > 0 else 0
-
-        # Get current chapter (first in-progress stage)
-        current_chapter = None
-        in_progress = [s for s in user_stages if s.status == StageStatus.IN_PROGRESS.value]
-        if in_progress:
-            # Get stage title
-            for p, s in stage_progress_rows:
-                if p.id == in_progress[0].id:
-                    current_chapter = s.title
-                    break
+        # Calculate progress based on mastered chapters (mastery >= 75)
+        mastered_chapters = mastery_data["chapters"] if mastery_data["total"] else 0
+        progress = round((mastered_chapters / total_chapters) * 100, 1) if total_chapters > 0 else 0
 
         # Get mastery and arena data
-        mastery_score = mastery_map.get(course.id)
+        mastery_score = round(mastery_data["total"], 2) if mastery_data["total"] else None
         arena_profile = arena_profiles.get(course.id)
 
         courses_data.append({
@@ -477,10 +421,10 @@ async def get_user_course_progress(
             "course_code": course.code,
             "course_name": course.name,
             "progress": progress,
-            "completed_stages": completed_stages,
-            "total_stages": total_stages,
-            "current_chapter": current_chapter,
-            "mastery_score": round(mastery_score, 2) if mastery_score else None,
+            "completed_stages": mastered_chapters,
+            "total_stages": total_chapters,
+            "current_chapter": current_chapter_map.get(course.id),
+            "mastery_score": mastery_score,
             "arena_tier": arena_profile.tier if arena_profile else None,
             "arena_score": arena_profile.total_score if arena_profile else None,
         })

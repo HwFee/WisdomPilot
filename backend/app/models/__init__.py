@@ -6,8 +6,6 @@ from app.models.stats import ChapterProgress, LearningSession, ActivityLog
 from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.exercise import Exercise
-from app.models.stage import Stage
-from app.models.user_stage import UserStageProgress, StageStatus
 from app.models.user_weak_point import UserWeakPoint
 from app.models.spaced_repetition import SpacedRepetition
 from app.models.challenge import Challenge, ChallengeType
@@ -20,6 +18,7 @@ from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
 from app.models.wrong_question import WrongQuestion
 from app.models.chapter_base_question import ChapterBaseQuestion
+from app.models.arena_exercise_progress import ArenaExerciseProgress
 
 __all__ = [
     # User & Auth
@@ -33,10 +32,6 @@ __all__ = [
     "Course",
     "Chapter",
     "Exercise",
-    # Stage System
-    "Stage",
-    "UserStageProgress",
-    "StageStatus",
     # Review System
     "UserWeakPoint",
     "SpacedRepetition",
@@ -61,4 +56,6 @@ __all__ = [
     "WrongQuestion",
     # Chapter Base Questions
     "ChapterBaseQuestion",
+    # Arena Progress
+    "ArenaExerciseProgress",
 ]

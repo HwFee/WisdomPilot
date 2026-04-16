@@ -300,3 +300,207 @@ export async function submitEnhancedQuiz(
     request
   )
 }
+
+// ========================================
+// Arena Infinite Mode APIs
+// ========================================
+
+export interface InfiniteSessionStartRequest {
+  difficulty_level?: number
+  initial_count?: number
+}
+
+export interface InfiniteProgressResponse {
+  session_id: string
+  current_index: number
+  total_exercises: number
+  exercises: Array<{
+    exercise_id: number
+    exercise_index: number
+    is_completed: boolean
+    is_correct: boolean
+    is_unlocked: boolean
+    saved_code: string
+    current_language: string
+    title: string
+    difficulty: number
+  }>
+  correct_count: number
+  completed_count: number
+  total_xp_earned: number
+}
+
+export interface SubmitExerciseRequest {
+  exercise_id: number
+  code: string
+  language: string
+  test_results: Array<{ passed: boolean; input: string; expected: string; actual: string }>
+}
+
+export interface SubmitExerciseResponse {
+  is_correct: boolean
+  test_results: Array<{ passed: boolean; input: string; expected: string; actual: string }>
+  xp_earned: number
+  next_unlocked: boolean
+  added_to_wrong_book: boolean
+}
+
+export interface SaveCodeRequest {
+  exercise_id: number
+  code: string
+  language: string
+}
+
+export interface SwitchExerciseRequest {
+  target_index: number
+}
+
+export interface SwitchExerciseResponse {
+  exercise_id: number
+  saved_code: string
+  current_language: string
+  is_completed: boolean
+  is_correct: boolean
+  exercise: ChallengeExercise
+}
+
+export interface AppendExercisesRequest {
+  count?: number
+}
+
+export interface AppendExercisesResponse {
+  new_exercise_ids: number[]
+  count: number
+}
+
+export interface ExitSaveRequest {
+  current_exercise_id: number
+  current_code: string
+  current_language: string
+}
+
+export interface ChallengeExercise {
+  id: number
+  title: string
+  type: string
+  difficulty: number
+  knowledge_points: string[]
+  content: {
+    text?: string
+    title?: string
+    options?: string[]
+    code_template?: string
+    description?: string
+    samples?: Array<{ input: string; output: string }>
+  }
+  test_cases?: Array<{ input: string; output: string }> | null
+}
+
+/**
+ * Start infinite mode session
+ */
+export async function startInfiniteSession(
+  courseId: number,
+  request: InfiniteSessionStartRequest,
+  token: string
+): Promise<ChallengeSessionResponse> {
+  return post<ChallengeSessionResponse>(
+    `/api/learning-path/challenge/${courseId}/infinite/start`,
+    token,
+    request
+  )
+}
+
+/**
+ * Get infinite mode progress
+ */
+export async function getInfiniteProgress(
+  courseId: number,
+  sessionId: string,
+  token: string
+): Promise<InfiniteProgressResponse> {
+  return get<InfiniteProgressResponse>(
+    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/progress`,
+    token
+  )
+}
+
+/**
+ * Submit exercise answer in infinite mode
+ */
+export async function submitInfiniteExercise(
+  courseId: number,
+  sessionId: string,
+  request: SubmitExerciseRequest,
+  token: string
+): Promise<SubmitExerciseResponse> {
+  return post<SubmitExerciseResponse>(
+    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/submit`,
+    token,
+    request
+  )
+}
+
+/**
+ * Save code for an exercise (when switching language)
+ */
+export async function saveInfiniteCode(
+  courseId: number,
+  sessionId: string,
+  request: SaveCodeRequest,
+  token: string
+): Promise<{ success: boolean }> {
+  return post<{ success: boolean }>(
+    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/save-code`,
+    token,
+    request
+  )
+}
+
+/**
+ * Switch to a different exercise
+ */
+export async function switchInfiniteExercise(
+  courseId: number,
+  sessionId: string,
+  request: SwitchExerciseRequest,
+  token: string
+): Promise<SwitchExerciseResponse> {
+  return post<SwitchExerciseResponse>(
+    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/switch`,
+    token,
+    request
+  )
+}
+
+/**
+ * Append more exercises to session
+ */
+export async function appendInfiniteExercises(
+  courseId: number,
+  sessionId: string,
+  request: AppendExercisesRequest,
+  token: string
+): Promise<AppendExercisesResponse> {
+  return post<AppendExercisesResponse>(
+    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/append`,
+    token,
+    request
+  )
+}
+
+/**
+ * Save progress and exit infinite mode
+ */
+export async function exitInfiniteSession(
+  courseId: number,
+  sessionId: string,
+  request: ExitSaveRequest,
+  token: string
+): Promise<{ success: boolean; message: string }> {
+  return post<{ success: boolean; message: string }>(
+    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/exit`,
+    token,
+    request
+  )
+}

@@ -96,44 +96,8 @@ class ArenaLeaderboardService:
         result = await self.db.execute(query)
         rows = result.all()
 
-        # If no arena profiles, return users with stage progress
+        # If no arena profiles, return empty list
         if not rows:
-            from app.models.user_stage import UserStageProgress
-            from app.models.stage import Stage
-
-            stage_query = (
-                select(UserStageProgress.user_id, func.count().label('stages_started'))
-                .join(Stage, UserStageProgress.stage_id == Stage.id)
-                .where(Stage.course_id == course_id)
-                .group_by(UserStageProgress.user_id)
-                .order_by(func.count().desc())
-                .limit(limit)
-            )
-            stage_result = await self.db.execute(stage_query)
-            stage_rows = stage_result.all()
-
-            if stage_rows:
-                user_ids = [row.user_id for row in stage_rows]
-                user_query = select(User).where(User.id.in_(user_ids))
-                user_result = await self.db.execute(user_query)
-                users = {u.id: u for u in user_result.scalars().all()}
-
-                leaderboard = []
-                for i, row in enumerate(stage_rows):
-                    user = users.get(row.user_id)
-                    if user:
-                        leaderboard.append({
-                            "rank": offset + i + 1,
-                            "user_id": user.id,
-                            "username": user.username,
-                            "total_score": 0,
-                            "tier": "bronze",
-                            "total_challenges": 0,
-                            "wins": 0,
-                            "highest_difficulty": 0,
-                        })
-                return leaderboard
-
             return []
 
         leaderboard = []
@@ -250,47 +214,8 @@ class MasteryLeaderboardService:
         # Get user info
         user_ids = [row.user_id for row in rows]
 
-        # If no mastery records yet, return users who have stages in progress for this course
+        # If no mastery records yet, return empty list
         if not user_ids:
-            # Get users with stage progress in this course
-            from app.models.user_stage import UserStageProgress
-            from app.models.stage import Stage
-
-            stage_query = (
-                select(UserStageProgress.user_id, func.count().label('stages_started'))
-                .join(Stage, UserStageProgress.stage_id == Stage.id)
-                .where(Stage.course_id == course_id)
-                .group_by(UserStageProgress.user_id)
-                .order_by(func.count().desc())
-                .limit(limit)
-            )
-            stage_result = await self.db.execute(stage_query)
-            stage_rows = stage_result.all()
-
-            if stage_rows:
-                user_ids = [row.user_id for row in stage_rows]
-                user_query = select(User).where(User.id.in_(user_ids))
-                user_result = await self.db.execute(user_query)
-                users = {u.id: u for u in user_result.scalars().all()}
-
-                leaderboard = []
-                for i, row in enumerate(stage_rows):
-                    user = users.get(row.user_id)
-                    if user:
-                        leaderboard.append({
-                            "rank": offset + i + 1,
-                            "user_id": user.id,
-                            "username": user.username,
-                            "total_mastery": 0,
-                            "avg_mastery": 0,
-                            "chapters_practiced": 0,
-                            "mastered_chapters": 0,
-                            "total_chapters": total_chapters,
-                            "progress_pct": 0,
-                            "stages_started": row.stages_started,
-                        })
-                return leaderboard
-
             return []
 
         user_query = select(User).where(User.id.in_(user_ids))
@@ -340,20 +265,9 @@ class MasteryLeaderboardService:
         result = await self.db.execute(query)
         user_ids = [row[0] for row in result.all()]
 
-        # If no mastery records, use stage progress
+        # If no mastery records, return None
         if not user_ids:
-            from app.models.user_stage import UserStageProgress
-            from app.models.stage import Stage
-
-            stage_query = (
-                select(UserStageProgress.user_id)
-                .join(Stage, UserStageProgress.stage_id == Stage.id)
-                .where(Stage.course_id == course_id)
-                .group_by(UserStageProgress.user_id)
-                .order_by(func.count().desc())
-            )
-            result = await self.db.execute(stage_query)
-            user_ids = [row[0] for row in result.all()]
+            return None
 
         try:
             return user_ids.index(user_id) + 1

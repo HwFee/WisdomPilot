@@ -102,16 +102,6 @@ export {
   type CheckinStatusResponse,
 } from './profile'
 
-// Stages
-export {
-  getStage,
-  getCourseStages,
-  startStage,
-  completePractice,
-  startVerification,
-  submitVerification,
-} from './stages'
-
 // Review
 export {
   getReviewQueue,
@@ -224,6 +214,14 @@ export {
   submitBaseAnswers,
   generateEnhancedQuiz,
   submitEnhancedQuiz,
+  // Arena Infinite Mode APIs
+  startInfiniteSession,
+  getInfiniteProgress,
+  submitInfiniteExercise,
+  saveInfiniteCode,
+  switchInfiniteExercise,
+  appendInfiniteExercises,
+  exitInfiniteSession,
   TIER_THRESHOLDS,
   TIER_ICONS,
   TIER_NAMES,

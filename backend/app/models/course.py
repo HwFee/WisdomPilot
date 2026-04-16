@@ -10,7 +10,6 @@ from app.utils.time import utc_now
 
 if TYPE_CHECKING:
     from app.models.chapter import Chapter
-    from app.models.stage import Stage
 
 
 class Course(Base):
@@ -51,12 +50,6 @@ class Course(Base):
         "Chapter",
         back_populates="course",
         order_by="Chapter.order_index",
-        lazy="noload"
-    )
-    stages: Mapped[List["Stage"]] = relationship(
-        "Stage",
-        back_populates="course",
-        order_by="Stage.order_index",
         lazy="noload"
     )
 

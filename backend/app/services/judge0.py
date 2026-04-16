@@ -121,9 +121,18 @@ class Judge0Service:
         # 使用批量创建端点
         url = f"{self.base_url}/submissions/batch?base64_encoded=true"
 
-        response = await self.client.post(url, json={"submissions": submissions})
-        response.raise_for_status()
-        tokens_data = response.json()
+        print(f"[Judge0] Creating batch submissions: {len(submissions)} test cases")
+        print(f"[Judge0] URL: {url}")
+
+        try:
+            response = await self.client.post(url, json={"submissions": submissions})
+            print(f"[Judge0] Batch create response status: {response.status_code}")
+            response.raise_for_status()
+            tokens_data = response.json()
+            print(f"[Judge0] Batch create response: {str(tokens_data)[:200]}")
+        except Exception as e:
+            print(f"[Judge0] Batch create FAILED: {e}")
+            raise
 
         # Judge0 CE 直接返回列表，不是 {"submissions": [...]}
         if isinstance(tokens_data, list):
@@ -245,6 +254,9 @@ class Judge0Service:
             )
         except Exception as e:
             # 如果批量提交失败，返回错误
+            import traceback
+            error_detail = traceback.format_exc()
+            print(f"Judge0 batch execution error: {error_detail}")
             return {
                 "token": "",
                 "status_id": 13,

@@ -8,7 +8,7 @@ from app.models import ChapterProgress, LearningSession, ActivityLog  # noqa: F4
 from app.models import Course, Chapter, Exercise  # noqa: F401 - registers course models
 from app.models import Challenge, UserChallenge  # noqa: F401 - registers challenge models
 from app.models import Achievement, UserAchievement  # noqa: F401 - registers achievement models
-from app.models import Stage, UserStageProgress, UserWeakPoint, SpacedRepetition  # noqa: F401 - registers new models
+from app.models import UserWeakPoint, SpacedRepetition  # noqa: F401 - registers new models
 from app.models import Favorite, Note  # noqa: F401 - registers favorites and notes models
 from app.models import ChapterMastery, ChallengeSession, UserArenaProfile  # noqa: F401 - registers mastery and arena models
 from app.models import WrongQuestion  # noqa: F401 - registers wrong question model
@@ -25,7 +25,6 @@ from app.routers.ai import choice_router, review_router, config_router, chat_rou
 from app.routers.challenges import router as challenges_router
 from app.routers.achievements import router as achievements_router
 from app.routers.exercises import router as exercises_router
-from app.routers.stages import router as stages_router
 from app.routers.review import router as spaced_review_router
 from app.routers.chapters import router as chapters_router
 from app.routers.favorites import router as favorites_router
@@ -95,7 +94,6 @@ app.include_router(challenges_router)
 app.include_router(achievements_router)
 app.include_router(exercises_router)
 app.include_router(chapters_router)
-app.include_router(stages_router)
 app.include_router(spaced_review_router)
 app.include_router(favorites_router)
 app.include_router(notes_router)

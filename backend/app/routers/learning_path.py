@@ -32,6 +32,7 @@ from app.services.leaderboard_service import (
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
 from app.services.wrong_question import wrong_question_service
+from app.services.arena_infinite import ArenaInfiniteService, get_arena_infinite_service
 from app.schemas.exercise import ExerciseRecommendRequest
 
 
@@ -384,9 +385,29 @@ async def start_challenge(
             detail=f"Not enough exercises available for this course"
         )
 
-    # Randomly select exercises
+    # DEBUG: First exercise is always matrix multiplication (ID: 32)
+    MATRIX_EXERCISE_ID = 32
+    matrix_exercise_result = await db.execute(
+        select(Exercise).where(Exercise.id == MATRIX_EXERCISE_ID)
+    )
+    matrix_exercise = matrix_exercise_result.scalar_one_or_none()
+
+    # Randomly select remaining exercises
     import random
-    selected = random.sample(list(all_exercises), min(request.question_count, len(all_exercises)))
+    remaining_count = request.question_count - 1
+    other_exercises = [ex for ex in all_exercises if ex.id != MATRIX_EXERCISE_ID]
+
+    if len(other_exercises) < remaining_count:
+        remaining_count = len(other_exercises)
+
+    selected_others = random.sample(other_exercises, remaining_count) if remaining_count > 0 else []
+
+    # First exercise is matrix, then the rest
+    if matrix_exercise:
+        selected = [matrix_exercise] + selected_others
+    else:
+        selected = selected_others[:request.question_count] if selected_others else random.sample(list(all_exercises), min(request.question_count, len(all_exercises)))
+
     exercise_ids = [ex.id for ex in selected]
 
     # Create session
@@ -406,15 +427,17 @@ async def start_challenge(
     # Return exercise info with full content (without answers)
     exercise_list = [{
         "id": ex.id,
-        "title": ex.content.get("text", "")[:50] if ex.content.get("text") else f"题目 {ex.id}",
+        "title": ex.content.get("title", "") or (ex.content.get("text", "")[:50] if ex.content.get("text") else f"题目 {ex.id}"),
         "type": ex.type,
         "difficulty": ex.difficulty,
         "knowledge_points": ex.knowledge_points or [],
         "content": {
             "text": ex.content.get("text", ""),
+            "title": ex.content.get("title", ""),
             "options": ex.content.get("options", []),
             "code_template": ex.content.get("code_template"),
             "description": ex.content.get("description"),
+            "samples": ex.content.get("samples", []),
         },
         "test_cases": ex.test_cases if ex.type == "programming" else None,
     } for ex in selected]
@@ -772,3 +795,266 @@ async def submit_enhanced_quiz(
         request=request,
     )
     return result
+
+
+# ========== Arena Infinite Mode Endpoints ==========
+
+class InfiniteSessionStartRequest(BaseModel):
+    """Request to start infinite mode session"""
+    difficulty_level: int = Field(default=3, ge=1, le=5)
+    initial_count: int = Field(default=10, ge=5, le=50)
+
+
+class InfiniteProgressResponse(BaseModel):
+    """Response for infinite mode progress"""
+    session_id: str
+    current_index: int
+    total_exercises: int
+    exercises: list[dict]
+    correct_count: int
+    completed_count: int
+    total_xp_earned: int
+
+
+class SubmitExerciseRequest(BaseModel):
+    """Request to submit exercise answer"""
+    exercise_id: int
+    code: str
+    language: str
+    test_results: list[dict]
+
+
+class SubmitExerciseResponse(BaseModel):
+    """Response for exercise submission"""
+    is_correct: bool
+    test_results: list[dict]
+    xp_earned: int
+    next_unlocked: bool
+    added_to_wrong_book: bool
+
+
+class SaveCodeRequest(BaseModel):
+    """Request to save code"""
+    exercise_id: int
+    code: str
+    language: str
+
+
+class SwitchExerciseRequest(BaseModel):
+    """Request to switch to a different exercise"""
+    target_index: int
+
+
+class AppendExercisesRequest(BaseModel):
+    """Request to append more exercises"""
+    count: int = Field(default=5, ge=1, le=20)
+
+
+class ExitSaveRequest(BaseModel):
+    """Request to save on exit"""
+    current_exercise_id: int
+    current_code: str
+    current_language: str
+
+
+@router.post("/challenge/{course_id}/infinite/start", response_model=ChallengeSessionResponse)
+async def start_infinite_session(
+    course_id: int,
+    request: InfiniteSessionStartRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start infinite mode session"""
+    service = get_arena_infinite_service(db)
+
+    try:
+        session, exercises = await service.start_infinite_session(
+            user_id=current_user.id,
+            course_id=course_id,
+            difficulty_level=request.difficulty_level,
+            initial_count=request.initial_count,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    exercise_list = [{
+        "id": ex.id,
+        "title": ex.content.get("title", "") or (ex.content.get("text", "")[:50] if ex.content.get("text") else f"题目 {i+1}"),
+        "type": ex.type,
+        "difficulty": ex.difficulty,
+        "knowledge_points": ex.knowledge_points or [],
+        "content": {
+            "text": ex.content.get("text", ""),
+            "title": ex.content.get("title", ""),
+            "options": ex.content.get("options", []),
+            "code_template": ex.content.get("code_template"),
+            "description": ex.content.get("description"),
+            "samples": ex.content.get("samples", []),
+        },
+        "test_cases": ex.test_cases if ex.type == "programming" else None,
+    } for i, ex in enumerate(exercises)]
+
+    return ChallengeSessionResponse(
+        session_id=session.id,
+        difficulty_level=session.difficulty_level,
+        exercises=exercise_list,
+        time_limit=0,
+        score_multiplier=session.score_multiplier,
+        status=session.status,
+    )
+
+
+@router.get("/challenge/{course_id}/infinite/{session_id}/progress", response_model=InfiniteProgressResponse)
+async def get_infinite_progress(
+    course_id: int,
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get infinite mode progress"""
+    service = get_arena_infinite_service(db)
+
+    try:
+        progress = await service.get_progress(
+            user_id=current_user.id,
+            session_id=session_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return InfiniteProgressResponse(**progress)
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/submit", response_model=SubmitExerciseResponse)
+async def submit_infinite_exercise(
+    course_id: int,
+    session_id: str,
+    request: SubmitExerciseRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Submit exercise answer in infinite mode"""
+    service = get_arena_infinite_service(db)
+
+    try:
+        result = await service.submit_exercise(
+            user_id=current_user.id,
+            session_id=session_id,
+            exercise_id=request.exercise_id,
+            code=request.code,
+            language=request.language,
+            test_results=request.test_results,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return SubmitExerciseResponse(**result)
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/save-code")
+async def save_infinite_code(
+    course_id: int,
+    session_id: str,
+    request: SaveCodeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save code for an exercise"""
+    service = get_arena_infinite_service(db)
+
+    await service.save_code(
+        user_id=current_user.id,
+        session_id=session_id,
+        exercise_id=request.exercise_id,
+        code=request.code,
+        language=request.language,
+    )
+
+    return {"success": True}
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/switch")
+async def switch_infinite_exercise(
+    course_id: int,
+    session_id: str,
+    request: SwitchExerciseRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Switch to a different exercise"""
+    service = get_arena_infinite_service(db)
+
+    try:
+        result = await service.switch_exercise(
+            user_id=current_user.id,
+            session_id=session_id,
+            target_index=request.target_index,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    exercise = result.pop("exercise", None)
+    if exercise:
+        result["exercise"] = {
+            "id": exercise.id,
+            "title": exercise.content.get("title", ""),
+            "type": exercise.type,
+            "difficulty": exercise.difficulty,
+            "knowledge_points": exercise.knowledge_points or [],
+            "content": {
+                "text": exercise.content.get("text", ""),
+                "title": exercise.content.get("title", ""),
+                "options": exercise.content.get("options", []),
+                "code_template": exercise.content.get("code_template"),
+                "description": exercise.content.get("description"),
+                "samples": exercise.content.get("samples", []),
+            },
+            "test_cases": exercise.test_cases if exercise.type == "programming" else None,
+        }
+
+    return result
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/append")
+async def append_infinite_exercises(
+    course_id: int,
+    session_id: str,
+    request: AppendExercisesRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Append more exercises to session"""
+    service = get_arena_infinite_service(db)
+
+    try:
+        new_ids = await service.append_exercises(
+            user_id=current_user.id,
+            session_id=session_id,
+            count=request.count,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {"new_exercise_ids": new_ids, "count": len(new_ids)}
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/exit")
+async def exit_infinite_session(
+    course_id: int,
+    session_id: str,
+    request: ExitSaveRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save progress and exit infinite mode"""
+    service = get_arena_infinite_service(db)
+
+    await service.save_on_exit(
+        user_id=current_user.id,
+        session_id=session_id,
+        current_exercise_id=request.current_exercise_id,
+        current_code=request.current_code,
+        current_language=request.current_language,
+    )
+
+    return {"success": True, "message": "Progress saved"}

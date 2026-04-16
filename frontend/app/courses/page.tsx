@@ -147,7 +147,7 @@ export default function CoursesPage() {
               return (
                 <Link
                   key={course.id}
-                  href={`/courses/${course.id}`}
+                  href={`/mastery/${course.id}`}
                   className="group p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all hover:-translate-y-1 hover:shadow-lg"
                 >
                   {/* Difficulty */}

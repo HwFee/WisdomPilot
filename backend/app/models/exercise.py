@@ -10,7 +10,6 @@ from app.utils.time import utc_now
 
 if TYPE_CHECKING:
     from app.models.chapter import Chapter
-    from app.models.stage import Stage
 
 
 class Exercise(Base):
@@ -19,10 +18,6 @@ class Exercise(Base):
     练习题来源：
     - tk: TK题库导入
     - ai_generated: AI生成
-
-    关联：
-    - 章节（原有）
-    - 关卡（新增）
     """
 
     __tablename__ = "exercises"
@@ -33,14 +28,7 @@ class Exercise(Base):
         ForeignKey("chapters.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
-        comment="所属章节ID（可选，关卡练习可能不需要）"
-    )
-    stage_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
-        ForeignKey("stages.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-        comment="所属关卡ID"
+        comment="所属章节ID"
     )
     source: Mapped[str] = mapped_column(
         String(20),
@@ -127,7 +115,6 @@ class Exercise(Base):
 
     # Relationships
     chapter: Mapped["Chapter"] = relationship("Chapter", back_populates="exercises")
-    stage: Mapped[Optional["Stage"]] = relationship("Stage")
 
     def __repr__(self) -> str:
         return f"<Exercise {self.id}: {self.type} (difficulty={self.difficulty}, source={self.source})>"

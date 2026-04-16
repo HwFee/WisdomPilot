@@ -10,7 +10,6 @@ from app.utils.time import utc_now
 if TYPE_CHECKING:
     from app.models.stats import ChapterProgress, LearningSession, ActivityLog
     from app.models.achievement import UserAchievement
-    from app.models.user_stage import UserStageProgress
     from app.models.user_weak_point import UserWeakPoint
     from app.models.spaced_repetition import SpacedRepetition
     from app.models.favorite import Favorite
@@ -184,9 +183,6 @@ class User(Base):
     )
     achievements: Mapped[List["UserAchievement"]] = relationship(
         "UserAchievement", back_populates="user"
-    )
-    stage_progress: Mapped[List["UserStageProgress"]] = relationship(
-        "UserStageProgress", back_populates="user"
     )
     weak_point_records: Mapped[List["UserWeakPoint"]] = relationship(
         "UserWeakPoint", back_populates="user"

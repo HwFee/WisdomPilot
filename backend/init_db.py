@@ -1,5 +1,5 @@
 """
-一键初始化脚本 - 初始化课程、章节和关卡数据
+一键初始化脚本 - 初始化课程和章节数据
 用于新用户克隆项目后快速启动
 
 使用方法：
@@ -15,7 +15,6 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal, init_db
 from app.models.course import Course
 from app.models.chapter import Chapter
-from app.models.stage import Stage
 
 
 # 8门课程数据
@@ -44,26 +43,18 @@ C_LANGUAGE_CHAPTERS = [
     {"order_index": 10, "title": "文件操作", "description": "学习文件的打开、关闭、读写操作"},
 ]
 
-# 为每个章节创建对应的关卡
-def get_stages_for_chapter(chapter_order: int, chapter_title: str) -> list:
-    """为章节生成关卡"""
-    return [
-        {"title": f"{chapter_title} - 基础练习", "description": f"掌握{chapter_title}的基础知识", "difficulty": 1, "order_index": 1},
-        {"title": f"{chapter_title} - 进阶练习", "description": f"深入理解{chapter_title}", "difficulty": 2, "order_index": 2},
-    ]
-
 
 async def init_all_data():
     """初始化所有数据"""
-    print("🚀 开始初始化数据库...")
+    print("Starting database initialization...")
 
     # 初始化数据库表结构
     await init_db()
-    print("✅ 数据库表结构初始化完成")
+    print("Database tables initialized")
 
     async with AsyncSessionLocal() as db:
         # 1. 初始化课程
-        print("\n📚 初始化课程...")
+        print("\nInitializing courses...")
         for course_data in COURSES:
             result = await db.execute(select(Course).where(Course.code == course_data["code"]))
             existing = result.scalar_one_or_none()
@@ -72,12 +63,12 @@ async def init_all_data():
                 db.add(course)
                 print(f"   + {course_data['code']}: {course_data['name']}")
             else:
-                print(f"   ✓ {course_data['code']}: 已存在")
+                print(f"   = {course_data['code']}: already exists")
 
         await db.commit()
 
-        # 2. 初始化C语言章节和关卡
-        print("\n📖 初始化C语言章节和关卡...")
+        # 2. 初始化C语言章节
+        print("\nInitializing C language chapters...")
         c_course = (await db.execute(select(Course).where(Course.code == "C"))).scalar_one_or_none()
         if c_course:
             for chapter_data in C_LANGUAGE_CHAPTERS:
@@ -94,38 +85,22 @@ async def init_all_data():
                         description=chapter_data["description"],
                     )
                     db.add(chapter)
-                    await db.flush()  # 获取 chapter.id
-
-                    # 为章节创建关卡
-                    stages = get_stages_for_chapter(chapter_data["order_index"], chapter_data["title"])
-                    for stage_data in stages:
-                        stage = Stage(
-                            course_id=c_course.id,
-                            chapter_id=chapter.id,
-                            title=stage_data["title"],
-                            description=stage_data["description"],
-                            difficulty=stage_data["difficulty"],
-                            order_index=stage_data["order_index"],
-                        )
-                        db.add(stage)
-                    print(f"   + {chapter_data['title']} (含{len(stages)}个关卡)")
+                    print(f"   + {chapter_data['title']}")
                 else:
-                    print(f"   ✓ {chapter_data['title']}: 已存在")
+                    print(f"   = {chapter_data['title']}: already exists")
 
         await db.commit()
 
         # 3. 统计数据
         courses_count = (await db.execute(select(Course))).scalars().all().__len__()
         chapters_count = (await db.execute(select(Chapter))).scalars().all().__len__()
-        stages_count = (await db.execute(select(Stage))).scalars().all().__len__()
 
         print("\n" + "="*50)
-        print("✅ 初始化完成!")
-        print(f"   📚 课程: {courses_count} 门")
-        print(f"   📖 章节: {chapters_count} 个")
-        print(f"   🎯 关卡: {stages_count} 个")
+        print("Initialization complete!")
+        print(f"   Courses: {courses_count}")
+        print(f"   Chapters: {chapters_count}")
         print("="*50)
-        print("\n💡 提示: 运行后端服务:")
+        print("\nTo start the backend server:")
         print("   cd backend")
         print("   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000")
 

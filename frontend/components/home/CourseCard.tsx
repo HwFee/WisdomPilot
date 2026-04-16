@@ -28,7 +28,7 @@ export function CourseCard({
   isLoggedIn = false,
   onClick,
 }: CourseCardProps) {
-  const href = isLoggedIn ? `/courses/${id}` : '/login'
+  const href = isLoggedIn ? `/mastery/${id}` : '/login'
 
   return (
     <Link

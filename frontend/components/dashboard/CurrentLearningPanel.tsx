@@ -1,8 +1,11 @@
 'use client'
 
-import { Trophy, Swords, ChevronRight, Crown, Medal, BookOpen, CheckCircle, XCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Trophy, Swords, ChevronRight, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { CourseSwitcher } from './CourseSwitcher'
 import { useRouter } from 'next/navigation'
+import { startChallengeSession, getArenaProfile } from '@/lib/api/learning-path'
+import { getStoredToken } from '@/lib/api'
 
 interface RecentExercise {
   stageName: string
@@ -70,6 +73,10 @@ export function CurrentLearningPanel({
   const router = useRouter()
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
+  const [isNavigating, setIsNavigating] = useState<'mastery' | 'challenge' | null>(null)
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null)
+  const [showDifficultyModal, setShowDifficultyModal] = useState(false)
+
   const currentCourse = courses.find(c => c.course_id === currentCourseId) || courses[0]
 
   if (!currentCourse) {
@@ -83,12 +90,43 @@ export function CurrentLearningPanel({
   const masteryLevel = getMasteryLevel(currentCourse.mastery_score)
   const hasProgress = currentCourse.progress > 0
 
+  // 精进之路：直接进入 mastery 页面
   const handleMasteryStart = () => {
-    router.push(`/courses/${currentCourse.course_id}`)
+    setIsNavigating('mastery')
+    router.push(`/mastery/${currentCourse.course_id}`)
   }
 
+  // 挑战之路：显示难度选择
   const handleChallengeStart = () => {
-    router.push(`/challenge/${currentCourse.course_id}`)
+    setShowDifficultyModal(true)
+  }
+
+  // 选择难度后开始挑战
+  const handleDifficultySelect = async (difficulty: number) => {
+    setSelectedDifficulty(difficulty)
+    setIsNavigating('challenge')
+
+    const token = getStoredToken()
+    if (!token) {
+      setIsNavigating(null)
+      setSelectedDifficulty(null)
+      return
+    }
+
+    try {
+      // 开始挑战会话，跳转到挑战页面
+      const session = await startChallengeSession(
+        currentCourse.course_id,
+        { difficulty_level: difficulty, question_count: 10 },
+        token
+      )
+      // 跳转到挑战页面
+      router.push(`/arena/${currentCourse.course_id}?session=${session.session_id}&difficulty=${difficulty}`)
+    } catch (error) {
+      console.error('Failed to start challenge:', error)
+      setIsNavigating(null)
+      setSelectedDifficulty(null)
+    }
   }
 
   return (
@@ -183,10 +221,17 @@ export function CurrentLearningPanel({
           {/* Action button */}
           <button
             onClick={handleMasteryStart}
-            className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-amber-500 to-amber-400 text-white hover:shadow-lg hover:shadow-amber-500/25 transition-all"
+            disabled={isNavigating === 'mastery'}
+            className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-amber-500 to-amber-400 text-white hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-70"
           >
-            {hasProgress ? t('继续精进', 'Continue') : t('开始学习', 'Start')}
-            <ChevronRight className="w-4 h-4" />
+            {isNavigating === 'mastery' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                {hasProgress ? t('继续精进', 'Continue') : t('开始学习', 'Start')}
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
 
@@ -246,13 +291,65 @@ export function CurrentLearningPanel({
           {/* Action button */}
           <button
             onClick={handleChallengeStart}
-            className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-blue-500 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all"
+            disabled={isNavigating === 'challenge'}
+            className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-blue-500 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-70"
           >
-            {t('开始挑战', 'Start Challenge')}
-            <ChevronRight className="w-4 h-4" />
+            {isNavigating === 'challenge' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                {t('开始挑战', 'Start Challenge')}
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Difficulty Selection Modal */}
+      {showDifficultyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card rounded-2xl border border-border p-6 w-80 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground mb-4 text-center">
+              {t('选择难度', 'Select Difficulty')}
+            </h3>
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <button
+                  key={level}
+                  onClick={() => handleDifficultySelect(level)}
+                  disabled={isNavigating === 'challenge'}
+                  className={`w-full py-3 rounded-xl font-medium text-sm transition-all flex items-center justify-between px-4 ${
+                    level === 1
+                      ? 'bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30'
+                      : level === 2
+                      ? 'bg-lime-500/20 text-lime-600 dark:text-lime-400 hover:bg-lime-500/30'
+                      : level === 3
+                      ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/30'
+                      : level === 4
+                      ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500/30'
+                      : 'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30'
+                  } ${isNavigating === 'challenge' ? 'opacity-50' : ''}`}
+                >
+                  <span className="flex items-center gap-2">
+                    {'⭐'.repeat(level)}
+                    {t(`${level}星难度`, `${level}-Star Difficulty`)}
+                  </span>
+                  <span className="text-xs opacity-70">
+                    {level === 1 ? '+10' : level === 2 ? '+20' : level === 3 ? '+35' : level === 4 ? '+50' : '+70'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowDifficultyModal(false)}
+              className="w-full mt-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t('取消', 'Cancel')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
