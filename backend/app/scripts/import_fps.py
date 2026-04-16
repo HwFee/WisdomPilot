@@ -374,7 +374,6 @@ def convert_to_exercise(
     # Create exercise
     exercise = Exercise(
         chapter_id=chapter_id,
-        stage_id=None,  # Will be assigned later if needed
         source="tk",
         source_id=problem.get('source', ''),
         type="programming",  # FPS format is typically programming problems

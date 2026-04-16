@@ -210,7 +210,6 @@ async def submit_exercise_answer(
     Requires authentication.
     """
     from app.models.chapter import Chapter
-    from app.models.stage import Stage
 
     exercise = await db.execute(
         select(Exercise).where(Exercise.id == exercise_id)
@@ -223,7 +222,7 @@ async def submit_exercise_answer(
             detail="Exercise not found",
         )
 
-    # Get course_id from chapter or stage
+    # Get course_id from chapter
     course_id = 0
     chapter_id = None
     if exercise.chapter_id:
@@ -234,14 +233,6 @@ async def submit_exercise_answer(
         if chapter:
             course_id = chapter.course_id
             chapter_id = chapter.id
-    elif exercise.stage_id:
-        # If exercise belongs to a stage, get course_id from stage
-        stage = await db.execute(
-            select(Stage).where(Stage.id == exercise.stage_id)
-        )
-        stage = stage.scalar_one_or_none()
-        if stage:
-            course_id = stage.course_id
 
     result = await exercise_service.check_answer(
         db=db,
@@ -250,7 +241,6 @@ async def submit_exercise_answer(
         user_answer=request.answer,
         course_id=course_id,
         chapter_id=chapter_id,
-        stage_id=exercise.stage_id,
     )
     return ExerciseSubmitResponse(**result)
 

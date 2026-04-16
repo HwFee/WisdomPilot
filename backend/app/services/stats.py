@@ -8,12 +8,15 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
 
 from app.models.stats import ChapterProgress, LearningSession, ActivityLog, ProgressStatus, ActivityType
+from app.models.exercise import Exercise
+from app.models.chapter import Chapter
 from app.schemas.stats import (
     UpdateProgressRequest,
     StartSessionRequest,
     EndSessionRequest,
     LearningStatistics,
 )
+from app.services.wrong_question import wrong_question_service
 
 
 class StatsService:
@@ -67,13 +70,19 @@ class StatsService:
     async def update_chapter_progress(
         self, user_id: str, chapter_id: int, data: UpdateProgressRequest
     ) -> ChapterProgress:
-        """Update chapter progress."""
+        """Update chapter progress and collect wrong questions."""
         progress = await self.get_or_create_progress(user_id, chapter_id)
+
+        # Track wrong exercises before applying new results
+        old_results = progress.exercise_results or {}
+
         self._apply_status(progress, data)
         self._apply_progress_percent(progress, data)
         self._apply_completed_subsections(progress, data)
         self._apply_completed_exercises_by_subsection(progress, data)
-        self._apply_exercise_results(progress, data)
+        await self._apply_exercise_results_with_wrong_collection(
+            progress, data, user_id, chapter_id, old_results
+        )
         await self.db.commit()
         await self.db.refresh(progress)
         return progress
@@ -146,6 +155,75 @@ class StatsService:
         """Handle exercise dict."""
         if data.completed_exercises_by_subsection is not None:
             progress.completed_exercises_by_subsection = data.completed_exercises_by_subsection
+
+    async def _apply_exercise_results_with_wrong_collection(
+        self,
+        progress: ChapterProgress,
+        data: UpdateProgressRequest,
+        user_id: str,
+        chapter_id: int,
+        old_results: dict,
+    ) -> None:
+        """Handle exercise results and collect wrong questions.
+
+        Exercise key format: chapterId-subsectionIndex-exerciseId
+        Result values: "correct" or "wrong"
+        """
+        if data.exercise_results is None:
+            return
+
+        # 如果是空字典，显式清除所有结果
+        if data.exercise_results == {}:
+            progress.exercise_results = {}
+            return
+
+        # Merge with existing results
+        existing = progress.exercise_results or {}
+        merged = {**existing, **data.exercise_results}
+        progress.exercise_results = merged
+
+        # Find newly wrong exercises and collect them
+        for exercise_key, result in data.exercise_results.items():
+            # Only process new wrong answers
+            if result != 'wrong':
+                continue
+            if old_results.get(exercise_key) == 'wrong':
+                continue  # Already recorded as wrong
+
+            # Parse exercise key: chapterId-subsectionIndex-exerciseId
+            try:
+                parts = exercise_key.split('-')
+                if len(parts) >= 3:
+                    ex_chapter_id = int(parts[0])
+                    subsection_index = int(parts[1])
+                    exercise_id = int(parts[2])
+
+                    # Get exercise
+                    ex_result = await self.db.execute(
+                        select(Exercise).where(Exercise.id == exercise_id)
+                    )
+                    exercise = ex_result.scalar_one_or_none()
+
+                    if exercise:
+                        # Get chapter to find course_id
+                        ch_result = await self.db.execute(
+                            select(Chapter).where(Chapter.id == ex_chapter_id)
+                        )
+                        chapter = ch_result.scalar_one_or_none()
+                        course_id = chapter.course_id if chapter else 0
+
+                        # Collect wrong question
+                        await wrong_question_service.collect_wrong_question(
+                            db=self.db,
+                            user_id=user_id,
+                            exercise=exercise,
+                            user_answer=None,  # We don't have the actual answer here
+                            course_id=course_id,
+                            chapter_id=ex_chapter_id,
+                        )
+            except (ValueError, IndexError):
+                # Skip invalid exercise keys
+                continue
 
     def _apply_exercise_results(self, progress: ChapterProgress, data: UpdateProgressRequest) -> None:
         """Handle exercise results (correct/wrong per exercise)."""
