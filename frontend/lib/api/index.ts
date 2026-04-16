@@ -96,10 +96,14 @@ export {
   addXp,
   checkin,
   getCheckinStatus,
+  getCheckinDetails,
+  getCheckinStats,
   type UserProfileResponse,
   type UpdateProfileRequest,
   type CheckinResponse,
   type CheckinStatusResponse,
+  type CheckinDetailsResponse,
+  type CheckinStatsResponse,
 } from './profile'
 
 // Stages

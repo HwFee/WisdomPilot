@@ -99,6 +99,12 @@ class User(Base):
         nullable=False,
         comment="Last activity timestamp"
     )
+    total_checkin_days: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        comment="Total check-in days (cumulative)"
+    )
     preferred_languages: Mapped[list] = mapped_column(
         JSON,
         default=list,

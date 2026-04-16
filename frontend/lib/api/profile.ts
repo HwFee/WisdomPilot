@@ -8,6 +8,8 @@ import {
   AddXpRequest,
   CheckinResponse,
   CheckinStatusResponse,
+  CheckinDetailsResponse,
+  CheckinStatsResponse,
 } from '@/types/api'
 import { get, post, put } from './client'
 
@@ -49,5 +51,24 @@ export async function getCheckinStatus(token: string): Promise<CheckinStatusResp
   return get<CheckinStatusResponse>('/api/users/checkin/status', token)
 }
 
+export async function getCheckinDetails(token: string, year?: number, month?: number, day?: number): Promise<CheckinDetailsResponse> {
+  let url = '/api/users/checkin/details'
+  if (year && month && day) {
+    url += `?year=${year}&month=${month}&day=${day}`
+  }
+  return get<CheckinDetailsResponse>(url, token)
+}
+
+export async function getCheckinStats(token: string): Promise<CheckinStatsResponse> {
+  return get<CheckinStatsResponse>('/api/users/checkin/stats', token)
+}
+
 // Re-export types
-export type { UserProfileResponse, UpdateProfileRequest, CheckinResponse, CheckinStatusResponse }
+export type {
+  UserProfileResponse,
+  UpdateProfileRequest,
+  CheckinResponse,
+  CheckinStatusResponse,
+  CheckinDetailsResponse,
+  CheckinStatsResponse
+}

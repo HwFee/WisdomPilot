@@ -235,7 +235,7 @@ class TestAchievementService:
         await achievement_service.create_default_achievements(db_session)
 
         achievements = await achievement_service.get_active_achievements(db_session)
-        assert len(achievements) == 6
+        assert len(achievements) == 9
         codes = [a.code for a in achievements]
         assert "FIRST_LESSON" in codes
         assert "FIVE_LESSONS" in codes

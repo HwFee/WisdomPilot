@@ -301,6 +301,7 @@ export interface UserProfileResponse {
   xp: number
   level: number
   streak_days: number
+  total_checkin_days: number
   last_activity_date: string
   preferred_languages: string[]
   total_exercises: number
@@ -328,12 +329,35 @@ export interface CheckinResponse {
   checked_in_today: boolean
   xp_earned: number
   last_checkin_date?: string
+  total_checkin_days: number
+  streak_multiplier: number
+  new_achievements: string[]
 }
 
 export interface CheckinStatusResponse {
   streak_days: number
   checked_in_today: boolean
   last_checkin_date?: string
+  total_checkin_days: number
+}
+
+export interface CheckinDetailsResponse {
+  date: string
+  lunar_str: string
+  solar_term_str: string
+  holiday_str: string
+  streak_days: number
+  total_checkin_days: number
+  streak_multiplier: number
+  checked_in_today: boolean
+}
+
+export interface CheckinStatsResponse {
+  streak_days: number
+  total_checkin_days: number
+  streak_multiplier: number
+  checked_in_today: boolean
+  next_tier_days: number | null
 }
 
 // ========================================

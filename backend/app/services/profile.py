@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.utils.time import utc_now
+from app.services.achievement import achievement_service
 
 
 class ProfileService:
@@ -17,6 +18,21 @@ class ProfileService:
     # Check-in XP rewards
     CHECKIN_BASE_XP = 10
     CHECKIN_STREAK_BONUS_MULTIPLIER = 2  # Bonus XP per 7-day streak
+
+    # Streak multiplier tiers (streak_days range: multiplier)
+    STREAK_TIERS = [
+        ((1, 6), 1.0),      # 1-6 days: 1x XP
+        ((7, 13), 1.2),     # 7-13 days: 1.2x XP
+        ((14, 29), 1.5),    # 14-29 days: 1.5x XP
+        ((30, float('inf')), 2.0),  # 30+ days: 2x XP
+    ]
+
+    def _get_streak_multiplier(self, streak_days: int) -> float:
+        """Get XP multiplier for current streak"""
+        for (min_days, max_days), multiplier in self.STREAK_TIERS:
+            if min_days <= streak_days <= max_days:
+                return multiplier
+        return 1.0
 
     async def get_profile(self, db: AsyncSession, user_id: str) -> User | None:
         """Get user profile"""
@@ -125,6 +141,15 @@ class ProfileService:
 
     def is_checked_in_today(self, user: User) -> bool:
         """Check if user has already checked in today"""
+        # Never checked in before - can't be checked in today
+        if user.total_checkin_days == 0:
+            return False
+
+        # Streak days must be at least 1 if total_checkin_days > 0
+        # If streak_days > total_checkin_days, data is inconsistent - trust total_checkin_days
+        if user.streak_days == 0 or user.streak_days > user.total_checkin_days:
+            return False
+
         if not user.last_activity_date:
             return False
 
@@ -143,7 +168,8 @@ class ProfileService:
         """Process daily check-in
 
         Returns:
-            dict with streak_days, checked_in_today, xp_earned, last_checkin_date
+            dict with streak_days, checked_in_today, xp_earned, last_checkin_date,
+                   total_checkin_days, streak_multiplier
         """
         now = utc_now()
         now_naive = now.replace(tzinfo=None)
@@ -156,6 +182,8 @@ class ProfileService:
                 "checked_in_today": True,
                 "xp_earned": 0,
                 "last_checkin_date": user.last_activity_date,
+                "total_checkin_days": user.total_checkin_days,
+                "streak_multiplier": self._get_streak_multiplier(user.streak_days),
             }
 
         # Calculate streak
@@ -175,8 +203,11 @@ class ProfileService:
             # First check-in ever
             user.streak_days = 1
 
-        # Calculate XP earned
-        xp_earned = self.CHECKIN_BASE_XP
+        # Calculate XP earned with streak multiplier
+        streak_multiplier = self._get_streak_multiplier(user.streak_days)
+        base_xp = self.CHECKIN_BASE_XP
+        xp_earned = int(base_xp * streak_multiplier)
+
         # Add streak bonus (every 7 days gives extra XP)
         if user.streak_days >= 7:
             streak_bonus = (user.streak_days // 7) * self.CHECKIN_STREAK_BONUS_MULTIPLIER
@@ -185,6 +216,7 @@ class ProfileService:
         # Update user
         user.last_activity_date = now_naive
         user.xp += xp_earned
+        user.total_checkin_days += 1
 
         # Check for level up
         new_level = (user.xp // self.XP_PER_LEVEL) + 1
@@ -195,12 +227,50 @@ class ProfileService:
         await db.commit()
         await db.refresh(user)
 
+        # Check and award streak achievements
+        new_achievements = await self._check_and_award_streak_achievements(db, user)
+
         return {
             "streak_days": user.streak_days,
             "checked_in_today": True,
             "xp_earned": xp_earned,
             "last_checkin_date": user.last_activity_date,
+            "total_checkin_days": user.total_checkin_days,
+            "streak_multiplier": streak_multiplier,
+            "new_achievements": new_achievements,
         }
+
+    async def _check_and_award_streak_achievements(
+        self, db: AsyncSession, user: User
+    ) -> list[str]:
+        """Check and award streak-based achievements
+
+        Returns:
+            list of newly earned achievement codes
+        """
+        earned_codes = []
+
+        # Map streak thresholds to achievement codes
+        streak_achievements = [
+            (3, "STREAK_3"),
+            (7, "STREAK_7"),
+            (14, "STREAK_14"),
+            (30, "STREAK_30"),
+            (100, "STREAK_100"),
+        ]
+
+        for threshold, code in streak_achievements:
+            if user.streak_days >= threshold:
+                try:
+                    achievement = await achievement_service.get_achievement_by_code(db, code)
+                    if achievement:
+                        await achievement_service.earn_achievement(db, user, achievement.id)
+                        earned_codes.append(code)
+                except ValueError:
+                    # Already earned, skip
+                    pass
+
+        return earned_codes
 
 
 profile_service = ProfileService()
