@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -173,4 +174,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=422,
         content={"detail": "; ".join(messages)}
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """捕获所有未处理的异常，记录日志并返回友好错误"""
+    # 打印完整堆栈到控制台
+    print(f"[ERROR] Unhandled exception on {request.method} {request.url}:")
+    traceback.print_exc()
+
+    # 返回 JSON 响应（包含 CORS 头）
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"}
     )

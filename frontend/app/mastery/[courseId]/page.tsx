@@ -1466,9 +1466,17 @@ export default function MasteryPathPage() {
               </div>
               {/* 收藏按钮 */}
               <FavoriteButton
+                exerciseKey={`mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`}
+                courseId={courseId}
                 exerciseId={currentQuestion.id}
                 chapterId={selectedChapterId || undefined}
-                source="mastery"
+                exerciseContent={{
+                  text: currentQuestion.text,
+                  options: currentQuestion.options,
+                }}
+                exerciseType={getQuestionType(currentQuestion)}
+                exerciseDifficulty={currentQuestion.difficulty}
+                knowledgePoints={currentQuestion.knowledge_points}
                 size="sm"
               />
             </div>

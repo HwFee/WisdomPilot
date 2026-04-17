@@ -11,22 +11,46 @@ import {
 import type { FavoriteCreate } from "@/types/api";
 
 interface FavoriteButtonProps {
-  exerciseId: number;
+  /** 题目标识 (格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId}) */
+  exerciseKey?: string;
+  /** 课程ID */
+  courseId: number;
+  /** 原始练习题ID */
+  exerciseId?: number;
+  /** 章节ID（精进之路来源） */
   chapterId?: number;
-  subsectionIndex?: number;
-  /** Source context: 'mastery' for 精进之路, 'arena' for 挑战之路 */
-  source?: "mastery" | "arena";
+  /** 题目内容快照 */
+  exerciseContent?: {
+    title?: string;
+    text?: string;
+    description?: string;
+    options?: string[];
+  };
+  /** 题目类型 */
+  exerciseType?: string;
+  /** 题目难度 */
+  exerciseDifficulty?: number;
+  /** 知识点 */
+  knowledgePoints?: string[];
+  /** 尺寸 */
   size?: "sm" | "md" | "lg";
+  /** 是否显示标签 */
   showLabel?: boolean;
+  /** 语言 */
   lang?: "zh" | "en";
+  /** 收藏状态变化回调 */
   onFavoriteChange?: (isFavorited: boolean) => void;
 }
 
 export function FavoriteButton({
+  exerciseKey,
+  courseId,
   exerciseId,
   chapterId,
-  subsectionIndex = 0,
-  source,
+  exerciseContent,
+  exerciseType,
+  exerciseDifficulty,
+  knowledgePoints,
   size = "md",
   showLabel = false,
   lang = "zh",
@@ -38,13 +62,7 @@ export function FavoriteButton({
 
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en);
 
-  // Determine which chapterId to use for the check/add call:
-  // - mastery path: always pass chapterId so records are distinguished per chapter
-  // - arena path: omit chapterId (NULL) so records are distinguished from mastery
-  const effectiveChapterId =
-    source === "mastery" || chapterId !== undefined ? chapterId : undefined;
-
-  // Use the dedicated /check endpoint — O(1) instead of loading all 100 favorites
+  // 检查收藏状态 - 与错题本一致
   useEffect(() => {
     let cancelled = false;
 
@@ -52,17 +70,15 @@ export function FavoriteButton({
       const token = getStoredToken();
       if (!token) return;
 
+      // 如果没有 exerciseKey 和 exerciseId，跳过检查
+      if (!exerciseKey && !exerciseId) return;
+
       try {
-        const result = await checkFavorite(
-          token,
-          exerciseId,
-          effectiveChapterId,
-        );
+        const result = await checkFavorite(token, exerciseKey, exerciseId);
         if (cancelled) return;
         setIsFavorited(result.is_favorited);
         setFavoriteId(result.favorite_id);
       } catch {
-        // Silently handle — user might not be logged in or network issue
         if (!cancelled) {
           setIsFavorited(false);
           setFavoriteId(null);
@@ -74,11 +90,14 @@ export function FavoriteButton({
     return () => {
       cancelled = true;
     };
-  }, [exerciseId, effectiveChapterId]);
+  }, [exerciseKey, exerciseId]);
 
   const handleToggleFavorite = useCallback(async () => {
     const token = getStoredToken();
     if (!token) return;
+
+    // 如果没有 exerciseKey 和 exerciseId，无法收藏
+    if (!exerciseKey && !exerciseId) return;
 
     setIsLoading(true);
     try {
@@ -88,27 +107,38 @@ export function FavoriteButton({
         setFavoriteId(null);
         onFavoriteChange?.(false);
       } else {
+        // 与错题本完全一致的请求格式
         const data: FavoriteCreate = {
+          exercise_key: exerciseKey || "",
+          course_id: courseId,
           exercise_id: exerciseId,
-          chapter_id: effectiveChapterId,
-          subsection_index: subsectionIndex,
+          chapter_id: chapterId,
+          exercise_content: exerciseContent,
+          exercise_type: exerciseType,
+          exercise_difficulty: exerciseDifficulty,
+          knowledge_points: knowledgePoints,
         };
         const response = await addFavorite(token, data);
         setIsFavorited(true);
         setFavoriteId(response.id);
         onFavoriteChange?.(true);
       }
-    } catch (error) {
-      console.error("[收藏] 操作失败:", error);
+    } catch {
+      // 静默处理错误
     } finally {
       setIsLoading(false);
     }
   }, [
     isFavorited,
     favoriteId,
+    exerciseKey,
+    courseId,
     exerciseId,
-    effectiveChapterId,
-    subsectionIndex,
+    chapterId,
+    exerciseContent,
+    exerciseType,
+    exerciseDifficulty,
+    knowledgePoints,
     onFavoriteChange,
   ]);
 

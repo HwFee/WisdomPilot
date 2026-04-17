@@ -14,10 +14,19 @@ interface ProblemPanelProps {
   knowledgePoints?: string[]
   onHintClick?: () => void
   lang?: 'zh' | 'en'
-  // Favorite props
+  // Favorite props - 与错题本一致
+  exerciseKey?: string
+  courseId?: number
   exerciseId?: number
   chapterId?: number
-  subsectionIndex?: number
+  exerciseContent?: {
+    title?: string
+    text?: string
+    description?: string
+    options?: string[]
+  }
+  exerciseType?: string
+  exerciseDifficulty?: number
   showFavorite?: boolean
   onFavoriteChange?: (isFavorited: boolean) => void
 }
@@ -34,9 +43,13 @@ export function ProblemPanel({
   onHintClick,
   lang = 'zh',
   // Favorite props
+  exerciseKey,
+  courseId,
   exerciseId,
   chapterId,
-  subsectionIndex = 0,
+  exerciseContent,
+  exerciseType,
+  exerciseDifficulty,
   showFavorite = false,
   onFavoriteChange,
 }: ProblemPanelProps) {
@@ -48,11 +61,16 @@ export function ProblemPanel({
         {/* Title with Favorite Button */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-foreground">{title}</h2>
-          {showFavorite && exerciseId && chapterId && (
+          {showFavorite && exerciseKey && courseId && (
             <FavoriteButton
+              exerciseKey={exerciseKey}
+              courseId={courseId}
               exerciseId={exerciseId}
               chapterId={chapterId}
-              subsectionIndex={subsectionIndex}
+              exerciseContent={exerciseContent}
+              exerciseType={exerciseType}
+              exerciseDifficulty={exerciseDifficulty}
+              knowledgePoints={knowledgePoints}
               size="md"
               showLabel
               lang={lang}

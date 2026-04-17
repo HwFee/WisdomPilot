@@ -112,6 +112,7 @@ export interface WrongQuestionResponse {
   exercise_key?: string // 精进之路/挑战之路错题的标识
   course_id: number
   chapter_id?: number
+  challenge_session_id?: string // 挑战之路会话ID，用于判断来源
   knowledge_points: string[]
   user_answer?: Record<string, unknown> | string  // 可以是对象或字符串
   correct_answer?: Record<string, unknown> | string

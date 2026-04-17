@@ -627,14 +627,25 @@ export interface DailyTimeTrendResponse {
 }
 
 // ========================================
-// Favorite Types
+// Favorite Types - 与错题本完全一致
 // ========================================
 
 export interface FavoriteCreate {
-  exercise_id: number
+  // 与错题本 CollectWrongQuestionRequest 一致
+  exercise_key: string  // 格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId}
+  course_id: number
   chapter_id?: number
-  subsection_index?: number
-  challenge_session_id?: string
+  exercise_id?: number
+  exercise_content?: {
+    title?: string
+    text?: string
+    description?: string
+    options?: string[]
+  }
+  exercise_type?: string
+  exercise_difficulty?: number
+  knowledge_points?: string[]
+  // 收藏夹特有
   folder?: string
   note?: string
 }
@@ -645,12 +656,24 @@ export interface FavoriteUpdate {
 }
 
 export interface FavoriteResponse {
+  // 与错题本 WrongQuestionResponse 一致
   id: string
   user_id: string
-  exercise_id: number
+  exercise_id?: number
+  exercise_key?: string
+  course_id: number
   chapter_id?: number
-  subsection_index: number
-  challenge_session_id?: string
+  knowledge_points: string[]
+  exercise_content?: {
+    title?: string
+    text?: string
+    description?: string
+    options?: string[]
+  }
+  exercise_type: string
+  exercise_difficulty: number
+  // source_type/source_label/question_title 通过 exercise_key 推断（前端计算或后端 property）
+  // 收藏夹特有
   folder?: string
   note?: string
   created_at: string

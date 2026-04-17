@@ -29,7 +29,6 @@ import {
   Sparkles, Zap, Trophy, Clock, Target,
   BookOpen, Code2, Swords,
 } from 'lucide-react'
-import type { StageWithProgress } from '@/types/stage'
 import type { ReviewStatsResponse } from '@/types/review'
 import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse } from '@/types/api'
 

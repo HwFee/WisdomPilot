@@ -1,10 +1,11 @@
-"""Router for favorites endpoints"""
+"""Router for favorites endpoints - 完全依照 WrongQuestion 格式"""
 
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import distinct, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from app.database import get_db
 from app.models.favorite import Favorite
@@ -21,6 +22,8 @@ from app.schemas.favorites import (
 )
 from app.utils.deps import get_current_active_user
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/favorites", tags=["favorites"])
 
 db_dependency = Annotated[AsyncSession, Depends(get_db)]
@@ -35,32 +38,43 @@ async def add_favorite(
 ):
     """Add an exercise to favorites
 
-    Supports:
-    - 精进之路收藏: provide chapter_id
-    - 挑战之路收藏: provide challenge_session_id
+    与错题本完全一致的存储逻辑：
+    - 如果有 exercise_key，用 exercise_key 去重
+    - 如果没有 exercise_key，用 exercise_id 去重
+    - 存储完整信息快照
     """
-    # Build query conditions based on provided fields
-    conditions = [
-        Favorite.user_id == current_user.id,
-        Favorite.exercise_id == request.exercise_id,
-    ]
+    logger.info(f"[API] 添加收藏请求: user_id={current_user.id}")
+    logger.info(f"[API] 请求数据: exercise_key={request.exercise_key}, exercise_id={request.exercise_id}, course_id={request.course_id}")
+    logger.info(f"[API] 请求数据: chapter_id={request.chapter_id}, exercise_type={request.exercise_type}, exercise_difficulty={request.exercise_difficulty}")
+    logger.info(f"[API] 请求数据: knowledge_points={request.knowledge_points}")
+    logger.info(f"[API] 请求数据: exercise_content={request.exercise_content}")
 
-    if request.chapter_id is not None:
-        conditions.append(Favorite.chapter_id == request.chapter_id)
-        conditions.append(Favorite.subsection_index == request.subsection_index)
+    # 检查是否已存在（与错题本一致的去重逻辑）
+    existing = None
+    if request.exercise_key:
+        logger.info(f"[API] 使用 exercise_key 查询: {request.exercise_key}")
+        result = await db.execute(
+            select(Favorite).where(
+                Favorite.user_id == current_user.id,
+                Favorite.exercise_key == request.exercise_key,
+            )
+        )
+        existing = result.scalar_one_or_none()
+    elif request.exercise_id:
+        logger.info(f"[API] 使用 exercise_id 查询: {request.exercise_id}")
+        result = await db.execute(
+            select(Favorite).where(
+                Favorite.user_id == current_user.id,
+                Favorite.exercise_id == request.exercise_id,
+            )
+        )
+        existing = result.scalar_one_or_none()
     else:
-        conditions.append(Favorite.chapter_id.is_(None))
-
-    if request.challenge_session_id is not None:
-        conditions.append(Favorite.challenge_session_id == request.challenge_session_id)
-    else:
-        conditions.append(Favorite.challenge_session_id.is_(None))
-
-    result = await db.execute(select(Favorite).where(*conditions))
-    existing = result.scalar_one_or_none()
+        logger.warning(f"[API] 没有 exercise_key 和 exercise_id，无法去重")
 
     if existing:
-        # Update note/folder if provided
+        logger.info(f"[API] 收藏已存在: id={existing.id}")
+        # 已存在：更新 note/folder 如果提供
         updated = False
         if request.note is not None:
             existing.note = request.note
@@ -71,21 +85,31 @@ async def add_favorite(
         if updated:
             await db.commit()
             await db.refresh(existing)
+        logger.info(f"[API] 收藏已存在，已更新: id={existing.id}")
         return existing
 
-    # Create new favorite
+    # 创建新收藏（完全依照 WrongQuestion 的字段）
+    logger.info(f"[API] 创建新收藏")
     favorite = Favorite(
         user_id=current_user.id,
+        # 与错题本一致的字段
+        exercise_key=request.exercise_key,
         exercise_id=request.exercise_id,
+        course_id=request.course_id,
         chapter_id=request.chapter_id,
-        subsection_index=request.subsection_index,
-        challenge_session_id=request.challenge_session_id,
+        knowledge_points=request.knowledge_points or [],
+        exercise_content=request.exercise_content,
+        exercise_type=request.exercise_type or "choice",
+        exercise_difficulty=request.exercise_difficulty or 1,
+        # 收藏夹特有
         folder=request.folder,
         note=request.note,
     )
     db.add(favorite)
     await db.commit()
     await db.refresh(favorite)
+
+    logger.info(f"[API] 收藏添加成功: id={favorite.id}")
     return favorite
 
 
@@ -99,31 +123,30 @@ async def get_favorites(
 ):
     """Get user's favorites list
 
-    Args:
-        folder: Optional folder name to filter by
+    与错题本完全一致：直接返回存储的信息，source_type/source_label/question_title 通过 property 计算
     """
-    # Build base query
+    # 构建查询
     base_query = select(Favorite).where(Favorite.user_id == current_user.id)
-
     if folder:
         base_query = base_query.where(Favorite.folder == folder)
 
-    # Get total count
-    count_query = select(func.count(Favorite.id)).where(
-        Favorite.user_id == current_user.id
-    )
+    # 获取总数
+    count_query = select(func.count(Favorite.id)).where(Favorite.user_id == current_user.id)
     if folder:
         count_query = count_query.where(Favorite.folder == folder)
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
 
-    # Get favorites
+    # 获取收藏列表
     result = await db.execute(
         base_query.order_by(Favorite.created_at.desc()).limit(limit).offset(offset)
     )
     favorites = list(result.scalars().all())
 
-    return FavoriteListResponse(favorites=favorites, total=total)
+    # 直接使用 FavoriteResponse 的 model_validate，property 会自动计算
+    favorite_responses = [FavoriteResponse.model_validate(fav) for fav in favorites]
+
+    return FavoriteListResponse(favorites=favorite_responses, total=total)
 
 
 @router.get("/count", response_model=FavoriteCountResponse)
@@ -132,11 +155,7 @@ async def get_favorites_count(
     current_user: auth_dependency,
     folder: Optional[str] = Query(default=None, description="Filter by folder name"),
 ):
-    """Get favorites count
-
-    Args:
-        folder: Optional folder name to filter by
-    """
+    """Get favorites count"""
     query = select(func.count(Favorite.id)).where(Favorite.user_id == current_user.id)
     if folder:
         query = query.where(Favorite.folder == folder)
@@ -190,33 +209,34 @@ async def create_folder(
 async def check_favorite(
     db: db_dependency,
     current_user: auth_dependency,
-    exercise_id: int = Query(..., description="Exercise ID to check"),
-    chapter_id: Optional[int] = Query(
-        default=None, description="Chapter ID (omit for challenge-mode favorites)"
-    ),
+    exercise_key: Optional[str] = Query(default=None, description="Exercise key to check"),
+    exercise_id: Optional[int] = Query(default=None, description="Exercise ID to check"),
 ):
     """Check whether the current user has favorited a specific exercise.
 
-    Matches on user_id + exercise_id + chapter_id (or chapter_id IS NULL when
-    chapter_id is not supplied), so 精进之路 and 挑战之路 favorites are kept
-    distinct from one another.
+    与错题本一致：支持 exercise_key 或 exercise_id 查询
 
     Returns:
         is_favorited: True if a matching favorite record exists.
         favorite_id:  The UUID string of that record, or null when not found.
     """
-    conditions = [
-        Favorite.user_id == current_user.id,
-        Favorite.exercise_id == exercise_id,
-    ]
-
-    if chapter_id is not None:
-        conditions.append(Favorite.chapter_id == chapter_id)
-    else:
-        conditions.append(Favorite.chapter_id.is_(None))
-
-    result = await db.execute(select(Favorite).where(*conditions))
-    favorite = result.scalar_one_or_none()
+    favorite = None
+    if exercise_key:
+        result = await db.execute(
+            select(Favorite).where(
+                Favorite.user_id == current_user.id,
+                Favorite.exercise_key == exercise_key,
+            )
+        )
+        favorite = result.scalar_one_or_none()
+    elif exercise_id:
+        result = await db.execute(
+            select(Favorite).where(
+                Favorite.user_id == current_user.id,
+                Favorite.exercise_id == exercise_id,
+            )
+        )
+        favorite = result.scalar_one_or_none()
 
     return {
         "is_favorited": favorite is not None,

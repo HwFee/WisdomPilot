@@ -21,14 +21,6 @@ export async function fetchWithAuth(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
-  // [DEBUG] API 请求日志
-  console.log("[API] 发起请求:", {
-    url,
-    method: options.method || "GET",
-    hasToken: !!token,
-    tokenPreview: token ? `${token.substring(0, 10)}...` : "null",
-  });
-
   try {
     const response = await fetch(url, {
       ...options,
@@ -40,39 +32,31 @@ export async function fetchWithAuth(
       },
     });
 
-    // [DEBUG] API 响应日志
-    console.log("[API] 响应状态:", {
-      url,
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-    });
-
     if (!response.ok) {
-      const data = await response.json();
-      console.error("[API] 请求失败:", {
-        url,
-        status: response.status,
-        error: data,
-      });
-      const error = new Error(
-        (data as ApiError).detail || "API request failed",
-      );
+      // 尝试解析错误响应体
+      let data: unknown = {};
+      try {
+        const text = await response.text();
+        if (text) {
+          data = JSON.parse(text);
+        }
+      } catch {
+        // 响应体不是有效的 JSON，保持空对象
+      }
+
+      const errorDetail =
+        (data as ApiError)?.detail ||
+        response.statusText ||
+        `API request failed with status ${response.status}`;
+      const error = new Error(errorDetail);
       (error as Error & { status?: number }).status = response.status;
       throw error;
     }
 
     return response;
   } catch (error) {
-    // [DEBUG] 网络错误日志
     if (error instanceof Error && error.name === "AbortError") {
-      console.error("[API] 请求超时:", { url, timeout: REQUEST_TIMEOUT });
-    } else if (error instanceof TypeError && error.message.includes("fetch")) {
-      console.error("[API] 网络错误 - 无法连接到后端:", {
-        url,
-        API_BASE_URL,
-        hint: "请确认后端是否正在运行 (python -m uvicorn app.main:app --host 0.0.0.0 --port 8000)",
-      });
+      throw new Error(`Request timeout after ${requestTimeout}ms`);
     }
     throw error;
   } finally {
@@ -164,10 +148,23 @@ export async function postPublic<T>(
     body: JSON.stringify(body),
   });
 
-  const data = await response.json();
+  // 尝试解析响应体
+  let data: unknown = {};
+  try {
+    const text = await response.text();
+    if (text) {
+      data = JSON.parse(text);
+    }
+  } catch {
+    // 响应体不是有效的 JSON，保持空对象
+  }
 
   if (!response.ok) {
-    throw new Error((data as ApiError).detail || "Request failed");
+    const errorDetail =
+      (data as ApiError)?.detail ||
+      response.statusText ||
+      `Request failed with status ${response.status}`;
+    throw new Error(errorDetail);
   }
 
   return data as T;
@@ -193,8 +190,8 @@ export function postKeepalive(
         Authorization: `Bearer ${token}`,
       },
       body: body ? JSON.stringify(body) : undefined,
-    }).catch((err) => {
-      console.warn("[API keepalive] request silently failed:", err);
+    }).catch(() => {
+      // Best-effort — silently ignore
     });
   } catch {
     // Best-effort — silently ignore

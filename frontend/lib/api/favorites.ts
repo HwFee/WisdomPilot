@@ -34,19 +34,21 @@ export async function addFavorite(
 
 /**
  * Check if a specific exercise is already favorited.
- * For mastery path: pass chapterId.
- * For challenge path: omit chapterId (or pass undefined).
- * Uses the dedicated /check endpoint — much faster than loading all favorites.
+ * 与错题本一致：支持 exercise_key 或 exercise_id 查询
  */
 export async function checkFavorite(
   token: string,
-  exerciseId: number,
-  chapterId?: number,
+  exerciseKey?: string,
+  exerciseId?: number,
 ): Promise<FavoriteCheckResponse> {
-  let url = `/api/favorites/check?exercise_id=${exerciseId}`;
-  if (chapterId !== undefined && chapterId !== null) {
-    url += `&chapter_id=${chapterId}`;
+  const params = new URLSearchParams();
+  if (exerciseKey) {
+    params.append("exercise_key", exerciseKey);
   }
+  if (exerciseId) {
+    params.append("exercise_id", String(exerciseId));
+  }
+  const url = `/api/favorites/check?${params.toString()}`;
   return get<FavoriteCheckResponse>(url, token);
 }
 
@@ -106,7 +108,7 @@ export async function batchRemoveFavorites(
   );
 }
 
-// Re-export types
+// Re-export types (excluding FavoriteCheckResponse which is defined here)
 export type {
   FavoriteCreate,
   FavoriteUpdate,
@@ -114,5 +116,4 @@ export type {
   FavoriteListResponse,
   FavoriteCountResponse,
   FavoriteFoldersListResponse,
-  FavoriteCheckResponse,
 };

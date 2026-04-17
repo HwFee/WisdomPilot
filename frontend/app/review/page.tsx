@@ -69,9 +69,7 @@ function ReviewPageContent() {
   useEffect(() => {
     const token = localStorage.getItem('token')
 
-    // [DEBUG] 检查认证状态
     if (!token) {
-      console.error('[错题本] 未登录，跳转到登录页')
       router.push('/login')
       return
     }
@@ -80,56 +78,24 @@ function ReviewPageContent() {
   }, [router])
 
   const fetchData = async () => {
-    console.log('[错题本] 开始获取数据...')
     try {
       setLoading(true)
       const token = localStorage.getItem('token')
 
-      // [DEBUG] 检查 token
       if (!token) {
-        console.error('[错题本] 未找到 token，跳转到登录页')
         router.push('/login')
         return
       }
-      console.log('[错题本] Token 已获取:', token.substring(0, 10) + '...')
 
       // 并行获取数据 - 使用封装好的 API 函数
-      console.log('[错题本] 并行请求 6 个 API...')
       const [queueData, weakData, statsData, wrongData, analysisData, remindersData] = await Promise.all([
-        getReviewQueue(token).catch(err => {
-          console.error('[错题本] queue API 失败:', err)
-          return { items: [], total_due: 0, total_scheduled: 0 }
-        }),
-        getWeakPoints(token).catch(err => {
-          console.error('[错题本] weak-points API 失败:', err)
-          return { weak_points: [], total: 0 }
-        }),
-        getReviewStats(token).catch(err => {
-          console.error('[错题本] stats API 失败:', err)
-          return null
-        }),
-        getWrongQuestions(token).catch(err => {
-          console.error('[错题本] wrong-questions API 失败:', err)
-          return { wrong_questions: [], total: 0, unresolved_count: 0 }
-        }),
-        getWeakPointsAnalysis(token).catch(err => {
-          console.error('[错题本] analysis API 失败:', err)
-          return null
-        }),
-        getReviewReminders(token).catch(err => {
-          console.error('[错题本] reminders API 失败:', err)
-          return null
-        }),
+        getReviewQueue(token).catch(() => ({ items: [], total_due: 0, total_scheduled: 0 })),
+        getWeakPoints(token).catch(() => ({ weak_points: [], total: 0 })),
+        getReviewStats(token).catch(() => null),
+        getWrongQuestions(token).catch(() => ({ wrong_questions: [], total: 0, unresolved_count: 0 })),
+        getWeakPointsAnalysis(token).catch(() => null),
+        getReviewReminders(token).catch(() => null),
       ])
-
-      console.log('[错题本] API 数据获取完成:', {
-        queue: queueData ? 'OK' : 'FAIL',
-        weakPoints: weakData ? 'OK' : 'FAIL',
-        stats: statsData ? 'OK' : 'FAIL',
-        wrongQuestions: wrongData ? 'OK' : 'FAIL',
-        analysis: analysisData ? 'OK' : 'FAIL',
-        reminders: remindersData ? 'OK' : 'FAIL',
-      })
 
       setReviewQueue(queueData.items || [])
       setWeakPoints(weakData.weak_points || [])
@@ -137,10 +103,8 @@ function ReviewPageContent() {
       setWrongQuestions(wrongData.wrong_questions || [])
       setAnalysisData(analysisData)
       setReviewReminders(remindersData)
-    } catch (error) {
-      console.error('[错题本] 获取数据失败:', error)
-      const errorMessage = error instanceof Error ? error.message : '未知错误'
-      setError(`获取错题本数据失败: ${errorMessage}\n\n请确认后端是否正在运行 (端口 8000)`)
+    } catch {
+      setError('获取错题本数据失败，请确认后端是否正在运行 (端口 8000)')
     } finally {
       setLoading(false)
     }
@@ -194,8 +158,8 @@ function ReviewPageContent() {
           router.push(`/exercise/${data.exercises[0].id}?mode=target`)
         }
       }
-    } catch (error) {
-      console.error('Failed to start target practice:', error)
+    } catch {
+      // 静默处理错误
     }
   }
 
@@ -592,12 +556,20 @@ function ReviewPageContent() {
                           </div>
                           
                           <div className="flex flex-col items-end gap-2">
-                            {/* 收藏按钮 */}
+                            {/* 收藏按钮 - 直接传错题本的数据 */}
                             <FavoriteButton
-                              exerciseId={parseInt(questionIdFromKey)}
-                              chapterId={sourceType === 'mastery' && wq.chapter_id ? wq.chapter_id : undefined}
-                              source={sourceType as 'mastery' | 'arena'}
+                              exerciseKey={wq.exercise_key || undefined}
+                              courseId={wq.course_id}
+                              exerciseId={wq.exercise_id ?? undefined}
+                              chapterId={wq.chapter_id ?? undefined}
+                              exerciseContent={wq.exercise_content as { title?: string; text?: string; description?: string; options?: string[] } | undefined}
+                              exerciseType={wq.exercise_type}
+                              exerciseDifficulty={wq.exercise_difficulty}
+                              knowledgePoints={wq.knowledge_points}
                               size="sm"
+                              onFavoriteChange={() => {
+                                // 收藏状态已更新
+                              }}
                             />
 
                             {/* 复习按钮 */}
@@ -621,8 +593,7 @@ function ReviewPageContent() {
                                     // 没有活跃会话，跳转到仪表盘让用户开始新挑战
                                     router.push('/dashboard?tab=challenge')
                                   }
-                                } catch (error) {
-                                  console.error('获取挑战会话失败:', error)
+                                } catch {
                                   router.push('/dashboard?tab=challenge')
                                 }
                               } else if (sourceType === 'mastery' && wq.course_id) {

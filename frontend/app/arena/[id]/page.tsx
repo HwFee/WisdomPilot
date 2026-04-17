@@ -399,6 +399,7 @@ export default function ArenaPage() {
 
   // Arena state
   const [profile, setProfile] = useState<ArenaProfileResponse | null>(null);
+  const [sessionId, setSessionId] = useState<string>("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>(
     [],
@@ -551,6 +552,10 @@ export default function ArenaPage() {
   // 处理进度数据的辅助函数
   const processProgressData = (progressData: any, difficulty: number) => {
     setCurrentIndex(progressData.current_index || 0);
+    // 保存 session_id 用于收藏
+    if (progressData.session_id) {
+      setSessionId(progressData.session_id);
+    }
 
     // 转换练习题格式
     const exerciseList: Exercise[] = progressData.exercises.map((ex: any) => {
@@ -1240,8 +1245,17 @@ export default function ArenaPage() {
                 </div>
                 {/* 收藏按钮 */}
                 <FavoriteButton
+                  exerciseKey={`arena-${courseId}-${currentExercise.id}`}
+                  courseId={courseId}
                   exerciseId={currentExercise.id}
-                  source="arena"
+                  exerciseContent={{
+                    title: currentExercise.content.title,
+                    text: currentExercise.content.text,
+                    description: currentExercise.content.description,
+                  }}
+                  exerciseType={currentExercise.type}
+                  exerciseDifficulty={currentExercise.difficulty}
+                  knowledgePoints={currentExercise.knowledge_points}
                   size="md"
                   showLabel
                 />
