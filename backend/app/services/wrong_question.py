@@ -26,6 +26,48 @@ class WrongQuestionService:
     4. 创建复习计划（SpacedRepetition）
     """
 
+    def _extract_base_exercise_key(self, exercise_key: str) -> str:
+        """从 exercise_key 中提取基础标识用于去重
+
+        exercise_key 格式 (新格式):
+        - 精进之路: mastery-${courseId}-${chapterId}-${exerciseId}
+        - 强化测试: enhanced-${courseId}-${sessionId}-${exerciseId}
+        - 挑战之路: arena-${courseId}-${exerciseId}  (新格式，已去掉sessionId)
+
+        exercise_key 格式 (旧格式，兼容):
+        - 挑战之路: arena-${sessionId}-${exerciseId}
+
+        去重逻辑: 同一道题无论在哪个会话中，都应该合并记录
+        - 精进之路: 使用完整 key (包含章节信息)
+        - 挑战之路: 只使用 courseId 和 exerciseId (去掉 sessionId)
+        - 强化测试: 只使用 courseId 和 exerciseId
+        """
+        parts = exercise_key.split('-')
+        if len(parts) < 3:
+            return exercise_key
+
+        prefix = parts[0]
+        if prefix == 'arena':
+            # 新格式: arena-${courseId}-${exerciseId} -> 保持不变
+            # 旧格式: arena-${sessionId}-${exerciseId} -> arena-${exerciseId}
+            if len(parts) == 3:
+                # 新格式，已经是去重后的格式
+                return exercise_key
+            else:
+                # 旧格式，需要去掉 sessionId
+                exercise_id = parts[-1]
+                return f"arena-{exercise_id}"
+        elif prefix == 'enhanced':
+            # enhanced-${courseId}-${sessionId}-${exerciseId} -> enhanced-${courseId}-${exerciseId}
+            if len(parts) >= 4:
+                course_id = parts[1]
+                exercise_id = parts[-1]
+                return f"enhanced-{course_id}-{exercise_id}"
+            return exercise_key
+        else:
+            # mastery 或其他格式保持不变
+            return exercise_key
+
     async def collect_wrong_question_by_key(
         self,
         db: AsyncSession,
@@ -59,12 +101,16 @@ class WrongQuestionService:
         """
         logger.info(f"[collect_wrong_question_by_key] 开始收集: user_id={user_id}, exercise_key={exercise_key}, course_id={course_id}")
 
-        # 检查是否已存在相同记录（同一用户同一 exercise_key）
+        # 提取基础标识用于去重（去掉 sessionId）
+        base_key = self._extract_base_exercise_key(exercise_key)
+        logger.info(f"[collect_wrong_question_by_key] 原始key={exercise_key}, 去重key={base_key}")
+
+        # 检查是否已存在相同记录（同一用户同一基础标识）
         existing = await db.execute(
             select(WrongQuestion).where(
                 and_(
                     WrongQuestion.user_id == user_id,
-                    WrongQuestion.exercise_key == exercise_key,
+                    WrongQuestion.exercise_key == base_key,
                 )
             )
         )
@@ -75,13 +121,16 @@ class WrongQuestionService:
             wrong_question.record_error()
             # 更新答案记录（保留最近一次）
             wrong_question.user_answer = user_answer
+            # 更新题目内容快照（可能题目已更新）
+            if exercise_content:
+                wrong_question.exercise_content = exercise_content
             logger.info(f"[collect_wrong_question_by_key] 更新已有错题记录: id={wrong_question.id}, error_count={wrong_question.error_count}")
         else:
-            # 不存在：创建新记录
+            # 不存在：创建新记录（使用去重后的 base_key）
             wrong_question = WrongQuestion(
                 user_id=user_id,
                 exercise_id=None,  # 前端硬编码习题没有真实 ID
-                exercise_key=exercise_key,
+                exercise_key=base_key,  # 存储去重后的 key
                 course_id=course_id,
                 chapter_id=chapter_id,
                 knowledge_points=knowledge_points or [],
@@ -106,11 +155,11 @@ class WrongQuestionService:
                 course_id=course_id,
             )
 
-        # 创建或更新复习计划
+        # 创建或更新复习计划（使用去重后的 base_key）
         await self._schedule_review(
             db=db,
             user_id=user_id,
-            exercise_key=exercise_key,
+            exercise_key=base_key,
         )
 
         return wrong_question

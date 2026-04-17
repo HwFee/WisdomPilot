@@ -19,6 +19,7 @@ from app.models.user import User
 from app.models.chapter_mastery import ChapterMastery
 from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
+from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.exercise import Exercise
@@ -135,6 +136,9 @@ async def get_mastery_overview(
     db: AsyncSession = Depends(get_db),
 ):
     """Get user's mastery path overview for a course"""
+    from app.models.mastery_exercise_progress import MasteryExerciseProgress
+    from app.models.chapter_base_question import ChapterBaseQuestion
+
     # Get all chapters for the course
     chapters_result = await db.execute(
         select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order_index)
@@ -153,7 +157,7 @@ async def get_mastery_overview(
             chapters=[],
         )
 
-    # Get user's mastery records
+    # Get user's mastery records (from completed quizzes)
     mastery_result = await db.execute(
         select(ChapterMastery).where(
             ChapterMastery.user_id == current_user.id,
@@ -161,6 +165,37 @@ async def get_mastery_overview(
         )
     )
     masteries = {m.chapter_id: m for m in mastery_result.scalars().all()}
+
+    # Also get per-question progress for chapters without a ChapterMastery record
+    # This ensures partial progress is visible even if the user hasn't completed the full quiz
+    exercise_progress_result = await db.execute(
+        select(MasteryExerciseProgress).where(
+            MasteryExerciseProgress.user_id == current_user.id,
+            MasteryExerciseProgress.course_id == course_id,
+            MasteryExerciseProgress.question_type == "base",
+        )
+    )
+    exercise_progress_list = exercise_progress_result.scalars().all()
+
+    # Group exercise progress by chapter_id
+    chapter_exercise_progress = {}
+    for p in exercise_progress_list:
+        if p.chapter_id not in chapter_exercise_progress:
+            chapter_exercise_progress[p.chapter_id] = []
+        chapter_exercise_progress[p.chapter_id].append(p)
+
+    # Get base question counts per chapter (for calculating partial progress)
+    chapter_ids = [ch.id for ch in chapters]
+    base_questions_result = await db.execute(
+        select(
+            ChapterBaseQuestion.chapter_id,
+            func.count(ChapterBaseQuestion.id)
+        ).where(
+            ChapterBaseQuestion.chapter_id.in_(chapter_ids),
+            ChapterBaseQuestion.is_active == True,
+        ).group_by(ChapterBaseQuestion.chapter_id)
+    )
+    chapter_question_counts = {row[0]: row[1] for row in base_questions_result.fetchall()}
 
     # Calculate stats
     total_mastery_points = sum(m.mastery_score for m in masteries.values())
@@ -173,20 +208,63 @@ async def get_mastery_overview(
             current_chapter = ch.order_index
             break
 
-    # Build chapter list
+    # Build chapter list with partial progress fallback
     chapter_list = []
     for ch in chapters:
         m = masteries.get(ch.id)
-        chapter_list.append({
-            "chapter_id": ch.id,
-            "order_index": ch.order_index,
-            "title": ch.title,
-            "mastery_score": m.mastery_score if m else 0,
-            "mastery_level": m.mastery_level if m else "入门",
-            "can_advance": m.mastery_score >= 75 if m else False,
-        })
+        if m:
+            # Use ChapterMastery data (from completed quiz)
+            chapter_list.append({
+                "chapter_id": ch.id,
+                "order_index": ch.order_index,
+                "title": ch.title,
+                "mastery_score": m.mastery_score,
+                "mastery_level": m.mastery_level,
+                "can_advance": m.mastery_score >= 75,
+            })
+        else:
+            # Fallback: calculate partial progress from exercise progress
+            progress_list = chapter_exercise_progress.get(ch.id, [])
+            total_q = chapter_question_counts.get(ch.id, 0)
+            if progress_list and total_q > 0:
+                completed = sum(1 for p in progress_list if p.is_completed)
+                correct = sum(1 for p in progress_list if p.is_correct)
+                # Partial mastery score based on completion and accuracy
+                partial_score = (correct / total_q) * 100
+                partial_level = (
+                    "入门" if partial_score < 20 else
+                    "学习" if partial_score < 40 else
+                    "练习" if partial_score < 60 else
+                    "熟练" if partial_score < 80 else
+                    "精通"
+                )
+                total_mastery_points += partial_score
+                if partial_score >= 85:
+                    mastered_count += 1
+                chapter_list.append({
+                    "chapter_id": ch.id,
+                    "order_index": ch.order_index,
+                    "title": ch.title,
+                    "mastery_score": round(partial_score, 2),
+                    "mastery_level": partial_level,
+                    "can_advance": partial_score >= 75,
+                })
+            else:
+                chapter_list.append({
+                    "chapter_id": ch.id,
+                    "order_index": ch.order_index,
+                    "title": ch.title,
+                    "mastery_score": 0,
+                    "mastery_level": "入门",
+                    "can_advance": False,
+                })
 
-    avg_mastery = total_mastery_points / len(masteries) if masteries else 0
+    # Recalculate avg_mastery with partial progress included
+    chapters_with_progress = len(masteries) + len([
+        ch_id for ch_id in chapter_exercise_progress
+        if ch_id not in masteries and chapter_exercise_progress[ch_id]
+    ])
+    avg_mastery = total_mastery_points / chapters_with_progress if chapters_with_progress > 0 else 0
 
     return MasteryOverviewResponse(
         course_id=course_id,
@@ -714,6 +792,13 @@ from app.schemas.chapter_base_question import (
     EnhancedQuizSubmitRequest,
     EnhancedQuizSubmitResponse,
 )
+from app.services.mastery_progress import mastery_progress_service
+from app.schemas.mastery_progress import (
+    MasteryExerciseProgressSaveRequest,
+    MasteryExerciseProgressResponse,
+    MasteryChapterProgressResponse,
+    MasteryQuizCompleteRequest,
+)
 
 
 @router.get("/mastery/{course_id}/chapter/{chapter_id}/base-questions")
@@ -797,6 +882,120 @@ async def submit_enhanced_quiz(
     return result
 
 
+# ========== Mastery Progress Endpoints (精进之路进度) ==========
+
+@router.post("/mastery/progress/exercise", response_model=MasteryExerciseProgressResponse)
+async def save_mastery_exercise_progress(
+    request: MasteryExerciseProgressSaveRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    保存精进之路做题进度
+
+    当用户完成一道题（交卷）时调用。
+    """
+    result = await mastery_progress_service.save_exercise_progress(
+        db=db,
+        user_id=current_user.id,
+        request=request,
+    )
+    return result
+
+
+@router.get("/mastery/{course_id}/{chapter_id}/progress", response_model=MasteryChapterProgressResponse)
+async def get_mastery_chapter_progress(
+    course_id: int,
+    chapter_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取精进之路章节进度
+
+    返回用户在某个章节的完成情况。
+    """
+    result = await mastery_progress_service.get_chapter_progress(
+        db=db,
+        user_id=current_user.id,
+        course_id=course_id,
+        chapter_id=chapter_id,
+    )
+    return result
+
+
+@router.get("/mastery/{course_id}/{chapter_id}/progress/detail")
+async def get_mastery_chapter_detail_progress(
+    course_id: int,
+    chapter_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取精进之路章节详细进度
+
+    返回用户在某个章节的详细完成情况，包含每道题的进度信息。
+    """
+    result = await mastery_progress_service.get_chapter_detail_progress(
+        db=db,
+        user_id=current_user.id,
+        course_id=course_id,
+        chapter_id=chapter_id,
+    )
+    return result
+
+
+@router.post("/mastery/progress/complete-quiz")
+async def complete_mastery_quiz(
+    request: MasteryQuizCompleteRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    完成章节quiz时更新ChapterMastery
+
+    当用户完成整个章节测试后调用，用于更新章节掌握度。
+    """
+    success = await mastery_progress_service.complete_chapter_quiz(
+        db=db,
+        user_id=current_user.id,
+        request=request,
+    )
+    return {"success": success, "message": "章节进度已更新" if success else "更新失败"}
+
+
+@router.get("/mastery/progress/exercise/{exercise_key}")
+async def get_mastery_progress_by_key(
+    exercise_key: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    根据exercise_key获取做题进度（用于错题本跳转定位）
+
+    返回进度信息，包括题目ID、章节ID等。
+    """
+    progress = await mastery_progress_service.get_progress_by_exercise_key(
+        db=db,
+        user_id=current_user.id,
+        exercise_key=exercise_key,
+    )
+    if not progress:
+        return {"found": False, "message": "未找到进度记录"}
+
+    return {
+        "found": True,
+        "progress": {
+            "course_id": progress.course_id,
+            "chapter_id": progress.chapter_id,
+            "question_id": progress.question_id,
+            "question_index": progress.question_index,
+            "is_completed": progress.is_completed,
+            "is_correct": progress.is_correct,
+        }
+    }
+
+
 # ========== Arena Infinite Mode Endpoints ==========
 
 class InfiniteSessionStartRequest(BaseModel):
@@ -857,6 +1056,19 @@ class ExitSaveRequest(BaseModel):
     current_language: str
 
 
+# ========================================
+# Challenge Path APIs (No Session Concept)
+# ========================================
+
+class ChallengePathResponse(BaseModel):
+    """Response for challenge path"""
+    exercises: list[dict]
+    total_exercises: int
+    completed_count: int
+    correct_count: int
+    current_index: int
+
+
 @router.post("/challenge/{course_id}/infinite/start", response_model=ChallengeSessionResponse)
 async def start_infinite_session(
     course_id: int,
@@ -864,11 +1076,11 @@ async def start_infinite_session(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Start infinite mode session"""
+    """Start or get challenge path for a course (no session concept)"""
     service = get_arena_infinite_service(db)
 
     try:
-        session, exercises = await service.start_infinite_session(
+        exercises, is_new = await service.get_or_create_challenge_path(
             user_id=current_user.id,
             course_id=course_id,
             difficulty_level=request.difficulty_level,
@@ -894,52 +1106,50 @@ async def start_infinite_session(
         "test_cases": ex.test_cases if ex.type == "programming" else None,
     } for i, ex in enumerate(exercises)]
 
+    # Use course_id as pseudo session_id for backward compatibility
+    pseudo_session_id = f"challenge-{course_id}"
+
     return ChallengeSessionResponse(
-        session_id=session.id,
-        difficulty_level=session.difficulty_level,
+        session_id=pseudo_session_id,
+        difficulty_level=request.difficulty_level,
         exercises=exercise_list,
         time_limit=0,
-        score_multiplier=session.score_multiplier,
-        status=session.status,
+        score_multiplier=1.0,
+        status="in_progress",
     )
 
 
-@router.get("/challenge/{course_id}/infinite/{session_id}/progress", response_model=InfiniteProgressResponse)
-async def get_infinite_progress(
+@router.get("/challenge/{course_id}/progress")
+async def get_challenge_path_progress(
     course_id: int,
-    session_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get infinite mode progress"""
+    """Get challenge path progress (no session_id needed)"""
     service = get_arena_infinite_service(db)
 
-    try:
-        progress = await service.get_progress(
-            user_id=current_user.id,
-            session_id=session_id,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    progress = await service.get_progress(
+        user_id=current_user.id,
+        course_id=course_id,
+    )
 
-    return InfiniteProgressResponse(**progress)
+    return progress
 
 
-@router.post("/challenge/{course_id}/infinite/{session_id}/submit", response_model=SubmitExerciseResponse)
-async def submit_infinite_exercise(
+@router.post("/challenge/{course_id}/submit")
+async def submit_challenge_exercise(
     course_id: int,
-    session_id: str,
     request: SubmitExerciseRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Submit exercise answer in infinite mode"""
+    """Submit exercise answer in challenge path"""
     service = get_arena_infinite_service(db)
 
     try:
         result = await service.submit_exercise(
             user_id=current_user.id,
-            session_id=session_id,
+            course_id=course_id,
             exercise_id=request.exercise_id,
             code=request.code,
             language=request.language,
@@ -948,13 +1158,12 @@ async def submit_infinite_exercise(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return SubmitExerciseResponse(**result)
+    return result
 
 
-@router.post("/challenge/{course_id}/infinite/{session_id}/save-code")
-async def save_infinite_code(
+@router.post("/challenge/{course_id}/save-code")
+async def save_challenge_code(
     course_id: int,
-    session_id: str,
     request: SaveCodeRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -962,32 +1171,31 @@ async def save_infinite_code(
     """Save code for an exercise"""
     service = get_arena_infinite_service(db)
 
-    await service.save_code(
+    success = await service.save_code(
         user_id=current_user.id,
-        session_id=session_id,
+        course_id=course_id,
         exercise_id=request.exercise_id,
         code=request.code,
         language=request.language,
     )
 
-    return {"success": True}
+    return {"success": success}
 
 
-@router.post("/challenge/{course_id}/infinite/{session_id}/switch")
-async def switch_infinite_exercise(
+@router.post("/challenge/{course_id}/switch")
+async def switch_challenge_exercise(
     course_id: int,
-    session_id: str,
     request: SwitchExerciseRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Switch to a different exercise"""
+    """Switch to a different exercise by index"""
     service = get_arena_infinite_service(db)
 
     try:
         result = await service.switch_exercise(
             user_id=current_user.id,
-            session_id=session_id,
+            course_id=course_id,
             target_index=request.target_index,
         )
     except ValueError as e:
@@ -1015,21 +1223,20 @@ async def switch_infinite_exercise(
     return result
 
 
-@router.post("/challenge/{course_id}/infinite/{session_id}/append")
-async def append_infinite_exercises(
+@router.post("/challenge/{course_id}/append")
+async def append_challenge_exercises(
     course_id: int,
-    session_id: str,
     request: AppendExercisesRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Append more exercises to session"""
+    """Append more exercises to challenge path"""
     service = get_arena_infinite_service(db)
 
     try:
         new_ids = await service.append_exercises(
             user_id=current_user.id,
-            session_id=session_id,
+            course_id=course_id,
             count=request.count,
         )
     except ValueError as e:
@@ -1038,23 +1245,185 @@ async def append_infinite_exercises(
     return {"new_exercise_ids": new_ids, "count": len(new_ids)}
 
 
+@router.post("/challenge/{course_id}/exit")
+async def exit_challenge_path(
+    course_id: int,
+    request: ExitSaveRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save progress and exit challenge path"""
+    service = get_arena_infinite_service(db)
+
+    success = await service.save_code(
+        user_id=current_user.id,
+        course_id=course_id,
+        exercise_id=request.current_exercise_id,
+        code=request.current_code,
+        language=request.current_language,
+    )
+
+    return {"success": success, "message": "Progress saved"}
+
+
+@router.get("/challenge/{course_id}/exercise/{exercise_id}")
+async def get_challenge_exercise(
+    course_id: int,
+    exercise_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get specific exercise info for wrong question book / favorites navigation"""
+    service = get_arena_infinite_service(db)
+
+    result = await service.get_exercise_by_id(
+        user_id=current_user.id,
+        course_id=course_id,
+        exercise_id=exercise_id,
+    )
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Exercise not found in challenge path")
+
+    # Get all progress to find index
+    progress = await service.get_progress(current_user.id, course_id)
+
+    return {
+        "exercise": result.get("exercise"),
+        "exercise_index": result["exercise_index"],
+        "is_unlocked": result["is_unlocked"],
+        "is_completed": result["is_completed"],
+        "is_correct": result["is_correct"],
+        "saved_code": result["saved_code"],
+        "current_language": result["current_language"],
+        "total_exercises": progress["total_exercises"],
+    }
+
+
+# ========================================
+# Legacy APIs (for backward compatibility)
+# ========================================
+
+@router.get("/challenge/{course_id}/infinite/{session_id}/progress", response_model=InfiniteProgressResponse)
+async def get_infinite_progress_legacy(
+    course_id: int,
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Legacy API - redirects to new progress endpoint"""
+    service = get_arena_infinite_service(db)
+    progress = await service.get_progress(
+        user_id=current_user.id,
+        course_id=course_id,
+    )
+    progress["session_id"] = session_id
+    return InfiniteProgressResponse(**progress)
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/submit", response_model=SubmitExerciseResponse)
+async def submit_infinite_exercise_legacy(
+    course_id: int,
+    session_id: str,
+    request: SubmitExerciseRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Legacy API - redirects to new submit endpoint"""
+    return await submit_challenge_exercise(course_id, request, current_user, db)
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/save-code")
+async def save_infinite_code_legacy(
+    course_id: int,
+    session_id: str,
+    request: SaveCodeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Legacy API - redirects to new save-code endpoint"""
+    return await save_challenge_code(course_id, request, current_user, db)
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/switch")
+async def switch_infinite_exercise_legacy(
+    course_id: int,
+    session_id: str,
+    request: SwitchExerciseRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Legacy API - redirects to new switch endpoint"""
+    return await switch_challenge_exercise(course_id, request, current_user, db)
+
+
+@router.post("/challenge/{course_id}/infinite/{session_id}/append")
+async def append_infinite_exercises_legacy(
+    course_id: int,
+    session_id: str,
+    request: AppendExercisesRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Legacy API - redirects to new append endpoint"""
+    return await append_challenge_exercises(course_id, request, current_user, db)
+
+
 @router.post("/challenge/{course_id}/infinite/{session_id}/exit")
-async def exit_infinite_session(
+async def exit_infinite_session_legacy(
     course_id: int,
     session_id: str,
     request: ExitSaveRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Save progress and exit infinite mode"""
+    """Legacy API - redirects to new exit endpoint"""
+    return await exit_challenge_path(course_id, request, current_user, db)
+
+
+@router.get("/challenge/{course_id}/active-session")
+async def get_active_challenge_session(
+    course_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取用户某门课的挑战之路信息（用于错题本跳转）
+
+    由于移除了会话概念，现在直接返回课程维度的题目信息
+    """
     service = get_arena_infinite_service(db)
 
-    await service.save_on_exit(
+    # Get all progress for this course
+    progress = await service.get_progress(
         user_id=current_user.id,
-        session_id=session_id,
-        current_exercise_id=request.current_exercise_id,
-        current_code=request.current_code,
-        current_language=request.current_language,
+        course_id=course_id,
     )
 
-    return {"success": True, "message": "Progress saved"}
+    if not progress["exercises"]:
+        return {"session": None, "exercise_map": {}, "message": "No challenge path found"}
+
+    # Build exercise map
+    exercise_map = {
+        ex["exercise_id"]: {
+            "exercise_index": ex["exercise_index"],
+            "is_completed": ex["is_completed"],
+            "is_correct": ex["is_correct"],
+            "is_unlocked": ex["is_unlocked"],
+        }
+        for ex in progress["exercises"]
+    }
+
+    # Return pseudo session for backward compatibility
+    pseudo_session_id = f"challenge-{course_id}"
+
+    return {
+        "session": {
+            "id": pseudo_session_id,
+            "course_id": course_id,
+            "status": "in_progress",
+            "current_index": progress["current_index"],
+            "total_exercises": progress["total_exercises"],
+            "exercise_ids": [ex["exercise_id"] for ex in progress["exercises"]],
+        },
+        "exercise_map": exercise_map,
+    }

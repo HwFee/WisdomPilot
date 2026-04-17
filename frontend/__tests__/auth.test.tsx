@@ -100,6 +100,7 @@ describe('Register Page', () => {
   it('submits form with valid data', async () => {
     mockRegister.mockResolvedValueOnce({
       access_token: 'test-token',
+      token_type: 'bearer',
       user: {
         id: '1',
         email: 'test@example.com',

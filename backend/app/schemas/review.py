@@ -1,7 +1,7 @@
 """Review API Schemas - 复习相关数据传输对象"""
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 
 
@@ -132,12 +132,13 @@ class ReviewStatsResponse(BaseModel):
 
 class WrongQuestionBase(BaseModel):
     """Base wrong question schema"""
-    exercise_id: int
+    exercise_id: Optional[int] = None
+    exercise_key: Optional[str] = None
     course_id: int
     chapter_id: Optional[int] = None
     knowledge_points: List[str]
-    user_answer: Optional[dict] = None
-    correct_answer: Optional[dict] = None
+    user_answer: Optional[Any] = None  # 可以是 dict 或 str
+    correct_answer: Optional[Any] = None  # 可以是 dict 或 str
     exercise_type: str = "choice"
     exercise_difficulty: int = 1
 
@@ -169,6 +170,46 @@ class WrongQuestionResponse(WrongQuestionBase):
         unresolved_factor = 1.5 if not self.is_resolved else 0.5
         days_factor = min(1.0, self.days_since_last_error / 30)
         return error_factor * unresolved_factor * (1 + days_factor)
+
+    @property
+    def source_type(self) -> str:
+        """题目来源类型: mastery(精进之路), arena(挑战之路), enhanced(强化测试)"""
+        if not self.exercise_key:
+            return "unknown"
+        if self.exercise_key.startswith("mastery-"):
+            return "mastery"
+        elif self.exercise_key.startswith("arena-"):
+            return "arena"
+        elif self.exercise_key.startswith("enhanced-"):
+            return "enhanced"
+        return "unknown"
+
+    @property
+    def source_label(self) -> str:
+        """题目来源中文标签"""
+        labels = {
+            "mastery": "精进之路",
+            "arena": "挑战之路",
+            "enhanced": "强化测试",
+            "unknown": "未知来源"
+        }
+        return labels.get(self.source_type, "未知来源")
+
+    @property
+    def question_title(self) -> str:
+        """题目标题/摘要"""
+        if not self.exercise_content:
+            return f"{self.exercise_type}题"
+        # 尝试从 content 中提取标题
+        if "title" in self.exercise_content:
+            return self.exercise_content["title"]
+        if "text" in self.exercise_content:
+            text = self.exercise_content["text"]
+            # 截取前50个字符作为标题
+            if len(text) > 50:
+                return text[:50] + "..."
+            return text
+        return f"{self.exercise_type}题"
 
 
 class WrongQuestionListResponse(BaseModel):
@@ -241,3 +282,23 @@ class ReviewReminderResponse(BaseModel):
     ebbinghaus_schedule: List[dict]  # {day: int, label: str, count: int}
     total_due: int
     total_upcoming: int
+
+
+class CollectWrongQuestionRequest(BaseModel):
+    """Request to collect a wrong question (for frontend hardcoded exercises)"""
+    exercise_key: str = Field(..., description="练习题标识，格式：chapterId-subsectionIndex-exerciseId")
+    user_answer: Any = Field(..., description="用户答案")
+    course_id: int = Field(..., description="课程ID")
+    chapter_id: Optional[int] = Field(None, description="章节ID")
+    exercise_content: Optional[dict] = Field(None, description="题目内容快照")
+    exercise_type: str = Field(default="choice", description="题目类型")
+    knowledge_points: Optional[List[str]] = Field(None, description="知识点列表")
+
+
+class CollectWrongQuestionResponse(BaseModel):
+    """Response after collecting a wrong question"""
+    id: str
+    exercise_key: str
+    error_count: int
+    is_resolved: bool
+    message: str

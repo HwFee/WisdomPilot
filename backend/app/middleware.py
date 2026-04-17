@@ -91,10 +91,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if limiter and rate_key and not limiter.is_allowed(rate_key):
             logger.warning("Rate limit exceeded for key=%s path=%s", rate_key, path)
-            return JSONResponse(
-                status_code=429,
-                content={"detail": "Rate limit exceeded. Try again later."},
-            )
+            # In DEBUG mode, just log warning but don't block
+            if settings.DEBUG:
+                logger.info("DEBUG mode: allowing rate-limited request")
+            else:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Rate limit exceeded. Try again later."},
+                )
 
         return await call_next(request)
 

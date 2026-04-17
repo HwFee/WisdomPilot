@@ -3,75 +3,24 @@
 import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Brain, Clock, Target, TrendingDown, ChevronRight, CheckCircle, XCircle, Flame, BookOpen, BarChart3, AlertTriangle } from 'lucide-react'
-
-// Wrong Question interface
-interface WrongQuestion {
-  id: string
-  exercise_id: number
-  course_id: number
-  chapter_id?: number
-  knowledge_points: string[]
-  user_answer?: Record<string, unknown>
-  correct_answer?: Record<string, unknown>
-  exercise_type: string
-  exercise_difficulty: number
-  error_count: number
-  is_resolved: boolean
-  first_error_at: string
-  last_error_at: string
-  resolved_at?: string
-  exercise_content?: Record<string, unknown>
-}
-
-// Knowledge Point Analysis interface
-interface KnowledgePointAnalysis {
-  knowledge_point: string
-  error_count: number
-  total_attempts: number
-  error_rate: number
-  mastery_level: number
-  weak_score: number
-  rank: number
-}
-
-// Review Reminder interface
-interface ReviewReminder {
-  due_reviews: ReviewItem[]
-  upcoming_reviews: { date: string; count: number; label: string }[]
-  ebbinghaus_schedule: { day: number; label: string; count: number }[]
-  total_due: number
-  total_upcoming: number
-}
-
-interface ReviewItem {
-  exercise_id: number
-  exercise_type: string
-  exercise_difficulty: number
-  knowledge_points: string[]
-  priority: number
-  repetition: {
-    review_count: number
-    days_overdue: number
-    is_due: boolean
-  }
-}
-
-interface WeakPoint {
-  id: string
-  knowledge_point: string
-  error_count: number
-  mastery_level: number
-  weakness_score: number
-}
-
-interface ReviewStats {
-  total_due: number
-  total_scheduled: number
-  reviewed_today: number
-  streak_days: number
-  weak_points_count: number
-}
+import { ArrowLeft, Brain, Clock, Target, TrendingDown, ChevronRight, CheckCircle, XCircle, Flame, BookOpen, BarChart3, AlertTriangle, Star } from 'lucide-react'
+import { FavoriteButton } from '@/components/exercise/FavoriteButton'
+import {
+  getReviewQueue,
+  getWeakPoints,
+  getReviewStats,
+  getWrongQuestions,
+  getWeakPointsAnalysis,
+  getReviewReminders,
+  type ReviewQueueItem as ReviewItem,
+  type WeakPointResponse as WeakPoint,
+  type WrongQuestionResponse as WrongQuestion,
+  type KnowledgePointAnalysis,
+  type ReviewReminderResponse as ReviewReminder,
+  type ReviewStatsResponse as ReviewStats,
+  type WeakPointAnalysisResponse,
+} from '@/lib/api/review'
+import { getActiveChallengeSession } from '@/lib/api/learning-path'
 
 export default function ReviewPage() {
   return (
@@ -96,6 +45,7 @@ function ReviewPageContent() {
   const [weakPoints, setWeakPoints] = useState<WeakPoint[]>([])
   const [stats, setStats] = useState<ReviewStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'queue' | 'weak' | 'wrong' | 'analysis'>('queue')
   const [wrongQuestions, setWrongQuestions] = useState<WrongQuestion[]>([])
   const [analysisData, setAnalysisData] = useState<{
@@ -118,7 +68,10 @@ function ReviewPageContent() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
+
+    // [DEBUG] 检查认证状态
     if (!token) {
+      console.error('[错题本] 未登录，跳转到登录页')
       router.push('/login')
       return
     }
@@ -127,66 +80,95 @@ function ReviewPageContent() {
   }, [router])
 
   const fetchData = async () => {
+    console.log('[错题本] 开始获取数据...')
     try {
       setLoading(true)
       const token = localStorage.getItem('token')
 
-      // 并行获取数据
-      const [queueRes, weakRes, statsRes, wrongRes, analysisRes, remindersRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/queue`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+      // [DEBUG] 检查 token
+      if (!token) {
+        console.error('[错题本] 未找到 token，跳转到登录页')
+        router.push('/login')
+        return
+      }
+      console.log('[错题本] Token 已获取:', token.substring(0, 10) + '...')
+
+      // 并行获取数据 - 使用封装好的 API 函数
+      console.log('[错题本] 并行请求 6 个 API...')
+      const [queueData, weakData, statsData, wrongData, analysisData, remindersData] = await Promise.all([
+        getReviewQueue(token).catch(err => {
+          console.error('[错题本] queue API 失败:', err)
+          return { items: [], total_due: 0, total_scheduled: 0 }
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/weak-points`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        getWeakPoints(token).catch(err => {
+          console.error('[错题本] weak-points API 失败:', err)
+          return { weak_points: [], total: 0 }
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/stats`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        getReviewStats(token).catch(err => {
+          console.error('[错题本] stats API 失败:', err)
+          return null
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/wrong-questions`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        getWrongQuestions(token).catch(err => {
+          console.error('[错题本] wrong-questions API 失败:', err)
+          return { wrong_questions: [], total: 0, unresolved_count: 0 }
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/analysis/weak-points`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        getWeakPointsAnalysis(token).catch(err => {
+          console.error('[错题本] analysis API 失败:', err)
+          return null
         }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/reminders`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+        getReviewReminders(token).catch(err => {
+          console.error('[错题本] reminders API 失败:', err)
+          return null
+        }),
       ])
 
-      if (queueRes.ok) {
-        const data = await queueRes.json()
-        setReviewQueue(data.items || [])
-      }
+      console.log('[错题本] API 数据获取完成:', {
+        queue: queueData ? 'OK' : 'FAIL',
+        weakPoints: weakData ? 'OK' : 'FAIL',
+        stats: statsData ? 'OK' : 'FAIL',
+        wrongQuestions: wrongData ? 'OK' : 'FAIL',
+        analysis: analysisData ? 'OK' : 'FAIL',
+        reminders: remindersData ? 'OK' : 'FAIL',
+      })
 
-      if (weakRes.ok) {
-        const data = await weakRes.json()
-        setWeakPoints(data.weak_points || [])
-      }
-
-      if (statsRes.ok) {
-        const data = await statsRes.json()
-        setStats(data)
-      }
-
-      if (wrongRes.ok) {
-        const data = await wrongRes.json()
-        setWrongQuestions(data.wrong_questions || [])
-      }
-
-      if (analysisRes.ok) {
-        const data = await analysisRes.json()
-        setAnalysisData(data)
-      }
-
-      if (remindersRes.ok) {
-        const data = await remindersRes.json()
-        setReviewReminders(data)
-      }
+      setReviewQueue(queueData.items || [])
+      setWeakPoints(weakData.weak_points || [])
+      setStats(statsData)
+      setWrongQuestions(wrongData.wrong_questions || [])
+      setAnalysisData(analysisData)
+      setReviewReminders(remindersData)
     } catch (error) {
-      console.error('Failed to fetch review data:', error)
+      console.error('[错题本] 获取数据失败:', error)
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      setError(`获取错题本数据失败: ${errorMessage}\n\n请确认后端是否正在运行 (端口 8000)`)
     } finally {
       setLoading(false)
     }
+  }
+
+  // 错误状态显示
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center p-8 max-w-md">
+          <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">网络错误</h3>
+          <p className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap">{error}</p>
+          <button
+            onClick={() => {
+              setError(null)
+              setLoading(true)
+              fetchData()
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            重试
+          </button>
+        </div>
+      </div>
+    )
   }
 
   const handleStartReview = (exerciseId: number) => {
@@ -522,45 +504,147 @@ function ReviewPageContent() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {wrongQuestions.map((wq) => (
-                    <div
-                      key={wq.id}
-                      className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className={`w-4 h-4 ${wq.is_resolved ? 'text-green-500' : 'text-red-500'}`} />
-                            <span className="font-medium text-foreground">{getTypeLabel(wq.exercise_type)}</span>
-                            <span className="text-xs px-2 py-0.5 bg-muted rounded-full">难度 {wq.exercise_difficulty}</span>
-                            {wq.is_resolved && (
-                              <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-500 rounded-full">已掌握</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <XCircle className="w-3 h-3 text-red-500" />
-                              错误 {wq.error_count} 次
-                            </span>
-                            <span>最近 {new Date(wq.last_error_at).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex gap-1 mt-2">
-                            {wq.knowledge_points.slice(0, 3).map((kp, i) => (
-                              <span key={i} className="text-xs px-2 py-0.5 bg-primary/5 text-primary rounded-full">
-                                {kp}
+                  {wrongQuestions.map((wq) => {
+                    // 解析来源信息
+                    const sourceType = wq.source_type || (wq.exercise_key?.startsWith('arena-') ? 'arena' :
+                      wq.exercise_key?.startsWith('mastery-') ? 'mastery' :
+                      wq.exercise_key?.startsWith('enhanced-') ? 'enhanced' : 'unknown')
+                    const sourceLabel = wq.source_label || (sourceType === 'arena' ? '挑战之路' :
+                      sourceType === 'mastery' ? '精进之路' :
+                      sourceType === 'enhanced' ? '强化测试' : '未知来源')
+
+                    // 提取题目标题
+                    const textContent = wq.exercise_content?.text
+                    const textStr = typeof textContent === 'string' ? textContent : ''
+                    const titleFromContent = wq.exercise_content?.title
+                    const titleStr = typeof titleFromContent === 'string' ? titleFromContent : ''
+                    const questionTitle: string = wq.question_title || titleStr ||
+                      (textStr ?
+                        (textStr.length > 50 ?
+                          textStr.substring(0, 50) + '...' :
+                          textStr) :
+                        getTypeLabel(wq.exercise_type))
+
+                    // 从 exercise_key 提取 question_id 用于跳转
+                    // 格式: mastery-{courseId}-{chapterId}-{questionId} 或 arena-{courseId}-{questionId}
+                    const keyParts = wq.exercise_key?.split('-') || []
+                    let questionIdFromKey = ''
+                    let chapterIdFromKey = wq.chapter_id || ''
+
+                    if (sourceType === 'mastery' && keyParts.length >= 4) {
+                      // mastery-{courseId}-{chapterId}-{questionId}
+                      chapterIdFromKey = keyParts[2]
+                      questionIdFromKey = keyParts[3]
+                    } else if (sourceType === 'arena' && keyParts.length >= 3) {
+                      // arena-{courseId}-{questionId}
+                      questionIdFromKey = keyParts[2]
+                    } else if (sourceType === 'enhanced' && keyParts.length >= 4) {
+                      // enhanced-{courseId}-{sessionId}-{questionId}
+                      questionIdFromKey = keyParts[3]
+                    }
+
+                    return (
+                      <div
+                        key={wq.id}
+                        className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            {/* 标题行 */}
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <AlertTriangle className={`w-4 h-4 flex-shrink-0 ${wq.is_resolved ? 'text-green-500' : 'text-red-500'}`} />
+                              <span className="font-medium text-foreground truncate">{questionTitle}</span>
+                            </div>
+
+                            {/* 来源和状态标签 */}
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                sourceType === 'arena' ? 'bg-purple-500/10 text-purple-500' :
+                                sourceType === 'mastery' ? 'bg-blue-500/10 text-blue-500' :
+                                'bg-muted text-muted-foreground'
+                              }`}>
+                                {sourceLabel}
                               </span>
-                            ))}
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{getTypeLabel(wq.exercise_type)}</span>
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded-full">难度 {wq.exercise_difficulty}</span>
+                              {wq.is_resolved && (
+                                <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-500 rounded-full">已掌握</span>
+                              )}
+                            </div>
+
+                            {/* 错误次数和时间 */}
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                              <span className="flex items-center gap-1">
+                                <XCircle className="w-3 h-3 text-red-500" />
+                                错误 {wq.error_count} 次
+                              </span>
+                              <span>最近 {new Date(wq.last_error_at).toLocaleDateString()}</span>
+                            </div>
+
+                            {/* 知识点 */}
+                            <div className="flex gap-1 flex-wrap">
+                              {wq.knowledge_points.slice(0, 3).map((kp, i) => (
+                                <span key={i} className="text-xs px-2 py-0.5 bg-primary/5 text-primary rounded-full">
+                                  {kp}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-2">
+                            {/* 收藏按钮 */}
+                            <FavoriteButton
+                              exerciseId={parseInt(questionIdFromKey)}
+                              chapterId={sourceType === 'mastery' && wq.chapter_id ? wq.chapter_id : undefined}
+                              source={sourceType as 'mastery' | 'arena'}
+                              size="sm"
+                            />
+
+                            {/* 复习按钮 */}
+                            <button
+                            onClick={async () => {
+                              const token = localStorage.getItem('token')
+                              // 根据来源类型跳转到不同页面
+                              if (sourceType === 'arena' && wq.course_id && token) {
+                                // 挑战之路: 跳转到挑战之路页面（路由参数是 courseId）
+                                // exerciseIndex 用于定位到具体题目
+                                try {
+                                  const result = await getActiveChallengeSession(wq.course_id, token)
+                                  if (result.session) {
+                                    // 找到该题目在练习列表中的索引
+                                    const questionIdNum = parseInt(questionIdFromKey)
+                                    const exerciseInfo = result.exercise_map[questionIdNum]
+                                    const targetIndex = exerciseInfo?.exercise_index ?? result.session.current_index
+                                    // 路由是 /arena/[courseId]，不是 session.id
+                                    router.push(`/arena/${wq.course_id}?exerciseIndex=${targetIndex}`)
+                                  } else {
+                                    // 没有活跃会话，跳转到仪表盘让用户开始新挑战
+                                    router.push('/dashboard?tab=challenge')
+                                  }
+                                } catch (error) {
+                                  console.error('获取挑战会话失败:', error)
+                                  router.push('/dashboard?tab=challenge')
+                                }
+                              } else if (sourceType === 'mastery' && wq.course_id) {
+                                // 精进之路: 跳转到具体章节和题目（跳过知识点直接进入测试）
+                                // exercise 参数是 question_id，精进之路页面会找到对应的索引
+                                const chapterParam = chapterIdFromKey || wq.chapter_id || ''
+                                const questionParam = questionIdFromKey || ''
+                                router.push(`/mastery/${wq.course_id}?chapter=${chapterParam}&exercise=${questionParam}&skip=1`)
+                              } else if (wq.course_id) {
+                                // 其他情况: 跳转到精进之路
+                                router.push(`/mastery/${wq.course_id}`)
+                              }
+                            }}
+                            className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-all flex-shrink-0"
+                          >
+                            复习
+                          </button>
                           </div>
                         </div>
-                        <button
-                          onClick={() => router.push(`/exercise/${wq.exercise_id}?mode=review`)}
-                          className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-all"
-                        >
-                          复习
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </>

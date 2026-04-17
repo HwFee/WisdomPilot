@@ -5,7 +5,8 @@
 import { ApiError } from '@/types/api'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const REQUEST_TIMEOUT = 30000 // 30 seconds
+const REQUEST_TIMEOUT = 30000 // 30 seconds for regular requests
+const CODE_EXECUTION_TIMEOUT = 60000 // 60 seconds for code execution (Judge0 can be slow)
 
 /**
  * Fetch with authentication header and timeout
@@ -13,10 +14,20 @@ const REQUEST_TIMEOUT = 30000 // 30 seconds
 export async function fetchWithAuth(
   url: string,
   token: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  timeout?: number
 ): Promise<Response> {
+  const requestTimeout = timeout || REQUEST_TIMEOUT
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+  const timeoutId = setTimeout(() => controller.abort(), requestTimeout)
+
+  // [DEBUG] API 请求日志
+  console.log('[API] 发起请求:', {
+    url,
+    method: options.method || 'GET',
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 10)}...` : 'null',
+  })
 
   try {
     const response = await fetch(url, {
@@ -29,14 +40,39 @@ export async function fetchWithAuth(
       },
     })
 
+    // [DEBUG] API 响应日志
+    console.log('[API] 响应状态:', {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+    })
+
     if (!response.ok) {
       const data = await response.json()
+      console.error('[API] 请求失败:', {
+        url,
+        status: response.status,
+        error: data,
+      })
       const error = new Error((data as ApiError).detail || 'API request failed')
       ;(error as Error & { status?: number }).status = response.status
       throw error
     }
 
     return response
+  } catch (error) {
+    // [DEBUG] 网络错误日志
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[API] 请求超时:', { url, timeout: REQUEST_TIMEOUT })
+    } else if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('[API] 网络错误 - 无法连接到后端:', {
+        url,
+        API_BASE_URL,
+        hint: '请确认后端是否正在运行 (python -m uvicorn app.main:app --host 0.0.0.0 --port 8000)',
+      })
+    }
+    throw error
   } finally {
     clearTimeout(timeoutId)
   }
@@ -53,11 +89,11 @@ export async function get<T>(endpoint: string, token: string): Promise<T> {
 /**
  * POST request with auth
  */
-export async function post<T>(endpoint: string, token: string, body?: unknown): Promise<T> {
+export async function post<T>(endpoint: string, token: string, body?: unknown, timeout?: number): Promise<T> {
   const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, token, {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,
-  })
+  }, timeout)
   return response.json()
 }
 

@@ -1,6 +1,4 @@
 export { WelcomeSection } from './WelcomeSection'
-export { CheckInCard } from './CheckInCard'
 export { TodayStats } from './TodayStats'
 export { MyCoursesGrid } from './MyCoursesGrid'
 export { KnowledgeMastery } from './KnowledgeMastery'
-export { PeerRankingList } from './PeerRankingList'

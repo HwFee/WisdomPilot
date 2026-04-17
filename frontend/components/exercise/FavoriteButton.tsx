@@ -10,7 +10,8 @@ interface FavoriteButtonProps {
   exerciseId: number
   chapterId?: number
   subsectionIndex?: number
-  challengeSessionId?: string
+  /** Source context: 'mastery' for 精进之路, 'arena' for 挑战之路 */
+  source?: 'mastery' | 'arena'
   size?: 'sm' | 'md' | 'lg'
   showLabel?: boolean
   lang?: 'zh' | 'en'
@@ -21,7 +22,7 @@ export function FavoriteButton({
   exerciseId,
   chapterId,
   subsectionIndex = 0,
-  challengeSessionId,
+  source,
   size = 'md',
   showLabel = false,
   lang = 'zh',
@@ -41,16 +42,24 @@ export function FavoriteButton({
 
       try {
         const data = await getFavorites(token, 100, 0)
-        const existing = data.favorites.find(
-          (f: FavoriteResponse) =>
-            f.exercise_id === exerciseId &&
-            f.chapter_id === chapterId &&
-            f.subsection_index === subsectionIndex &&
-            f.challenge_session_id === challengeSessionId
-        )
+        // Match by exercise_id and source context
+        const existing = data.favorites.find((f: FavoriteResponse) => {
+          if (f.exercise_id !== exerciseId) return false
+
+          if (source === 'mastery' || chapterId !== undefined) {
+            // 精进之路: match by chapter_id
+            return f.chapter_id === chapterId
+          } else {
+            // 挑战之路 or generic: match by exercise_id only (no chapter_id)
+            return f.chapter_id == null || f.chapter_id === undefined
+          }
+        })
         if (existing) {
           setIsFavorited(true)
           setFavoriteId(existing.id)
+        } else {
+          setIsFavorited(false)
+          setFavoriteId(null)
         }
       } catch {
         // Silently handle error - user might not be logged in
@@ -58,7 +67,7 @@ export function FavoriteButton({
     }
 
     checkFavoriteStatus()
-  }, [exerciseId, chapterId, subsectionIndex, challengeSessionId])
+  }, [exerciseId, chapterId, subsectionIndex, source])
 
   const handleToggleFavorite = useCallback(async () => {
     const token = getStoredToken()
@@ -80,19 +89,18 @@ export function FavoriteButton({
           exercise_id: exerciseId,
           chapter_id: chapterId,
           subsection_index: subsectionIndex,
-          challenge_session_id: challengeSessionId,
         }
         const response = await addFavorite(token, data)
         setIsFavorited(true)
         setFavoriteId(response.id)
         onFavoriteChange?.(true)
       }
-    } catch {
-      // Handle error silently
+    } catch (error) {
+      console.error('[收藏] 操作失败:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [isFavorited, favoriteId, exerciseId, chapterId, subsectionIndex, challengeSessionId, onFavoriteChange])
+  }, [isFavorited, favoriteId, exerciseId, chapterId, subsectionIndex, onFavoriteChange])
 
   const sizeClasses = {
     sm: 'w-6 h-6',
@@ -108,11 +116,14 @@ export function FavoriteButton({
 
   return (
     <button
-      onClick={handleToggleFavorite}
+      onClick={(e) => {
+        e.stopPropagation()
+        handleToggleFavorite()
+      }}
       disabled={isLoading}
       className={`
         flex items-center justify-center rounded-lg transition-all duration-200
-        ${sizeClasses[size]}
+        ${showLabel ? 'px-2.5 gap-1' : sizeClasses[size]}
         ${
           isFavorited
             ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30'
@@ -126,7 +137,7 @@ export function FavoriteButton({
         className={`${iconSizes[size]} ${isFavorited ? 'fill-yellow-500 text-yellow-500' : ''}`}
       />
       {showLabel && (
-        <span className="ml-1.5 text-sm">{isFavorited ? t('已收藏', 'Favorited') : t('收藏', 'Favorite')}</span>
+        <span className="text-sm">{isFavorited ? t('已收藏', 'Favorited') : t('收藏', 'Favorite')}</span>
       )}
     </button>
   )

@@ -12,13 +12,13 @@ describe('WelcomeSection', () => {
   }
 
   it('renders greeting with username', () => {
-    render(<WelcomeSection user={mockUser} onContinueLearning={() => {}} />)
+    render(<WelcomeSection user={mockUser} lastProgress={null} onContinueLearning={() => {}} />)
 
     expect(screen.getByText('TestUser！')).toBeInTheDocument()
   })
 
   it('shows a greeting (morning/afternoon/evening based on time)', () => {
-    render(<WelcomeSection user={mockUser} onContinueLearning={() => {}} lang="zh" />)
+    render(<WelcomeSection user={mockUser} lastProgress={null} onContinueLearning={() => {}} lang="zh" />)
 
     // One of these greetings should be present based on current time
     const greetingElement = screen.getByText(/(早上好|下午好|晚上好)/)

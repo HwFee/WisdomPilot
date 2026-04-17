@@ -6,6 +6,7 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from datetime import datetime
+import logging
 
 from app.database import get_db
 from app.models.user import User
@@ -32,7 +33,22 @@ from app.schemas.review import (
     EnhancedTargetPracticeRequest,
     EnhancedTargetPracticeResponse,
     ReviewReminderResponse,
+    CollectWrongQuestionRequest,
+    CollectWrongQuestionResponse,
 )
+
+logger = logging.getLogger(__name__)
+
+# Helper to ensure datetime is timezone-aware (for comparing with utc_now())
+def _make_aware(dt):
+    """Convert naive datetime to UTC-aware datetime"""
+    from datetime import timezone
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        # Assume naive datetime is UTC
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -62,17 +78,16 @@ async def get_review_queue(
 
     now = utc_now()
 
-    # Get all due repetitions
-    result = await db.execute(
-        select(SpacedRepetition)
-        .where(
-            SpacedRepetition.user_id == user.id,
-            SpacedRepetition.next_review_at <= now
-        )
-        .order_by(SpacedRepetition.next_review_at)
-        .limit(limit)
+    # Get all repetitions for this user
+    all_result = await db.execute(
+        select(SpacedRepetition).where(SpacedRepetition.user_id == user.id)
     )
-    due_repetitions = result.scalars().all()
+    all_repetitions = all_result.scalars().all()
+
+    # Filter due items (timezone-aware comparison)
+    due_repetitions = [r for r in all_repetitions if _make_aware(r.next_review_at) <= now]
+    due_repetitions.sort(key=lambda r: r.next_review_at)
+    due_repetitions = due_repetitions[:limit]
 
     # Get exercise details
     exercise_ids = [r.exercise_id for r in due_repetitions]
@@ -99,7 +114,7 @@ async def get_review_queue(
         # Calculate priority
         priority = 0.0
         # Overdue factor
-        days_overdue = (now - rep.next_review_at).days
+        days_overdue = (now - _make_aware(rep.next_review_at)).days
         priority += days_overdue * 0.5
         # Weak point factor
         for kp in exercise.knowledge_points:
@@ -120,13 +135,8 @@ async def get_review_queue(
     items.sort(key=lambda x: x.priority, reverse=True)
 
     # Get total counts
-    total_result = await db.execute(
-        select(SpacedRepetition)
-        .where(SpacedRepetition.user_id == user.id)
-    )
-    all_repetitions = total_result.scalars().all()
     total_scheduled = len(all_repetitions)
-    total_due = len([r for r in all_repetitions if r.next_review_at <= now])
+    total_due = len([r for r in all_repetitions if _make_aware(r.next_review_at) <= now])
 
     return ReviewQueueResponse(
         items=items,
@@ -314,14 +324,14 @@ async def get_review_stats(
     )
     all_repetitions = result.scalars().all()
 
-    # Calculate stats
-    total_due = len([r for r in all_repetitions if r.next_review_at <= now])
+    # Calculate stats (use _make_aware for timezone-aware comparison)
+    total_due = len([r for r in all_repetitions if _make_aware(r.next_review_at) <= now])
     total_scheduled = len(all_repetitions)
 
     # Reviewed today
     reviewed_today = len([
         r for r in all_repetitions
-        if r.last_review_at and r.last_review_at >= today_start
+        if _make_aware(r.last_review_at) and _make_aware(r.last_review_at) >= today_start
     ])
 
     # Get weak points count
@@ -363,27 +373,35 @@ async def get_wrong_questions(
 
     Supports filtering by course, chapter, and resolution status.
     """
-    wrong_questions, total = await wrong_question_service.get_user_wrong_questions(
-        db=db,
-        user_id=user.id,
-        course_id=course_id,
-        chapter_id=chapter_id,
-        is_resolved=is_resolved,
-        limit=limit,
-        offset=offset,
-    )
+    logger.info(f"[API] 获取错题列表: user_id={user.id}, course_id={course_id}, chapter_id={chapter_id}, is_resolved={is_resolved}")
 
-    unresolved_count = await wrong_question_service.get_unresolved_count(
-        db=db,
-        user_id=user.id,
-        course_id=course_id,
-    )
+    try:
+        wrong_questions, total = await wrong_question_service.get_user_wrong_questions(
+            db=db,
+            user_id=user.id,
+            course_id=course_id,
+            chapter_id=chapter_id,
+            is_resolved=is_resolved,
+            limit=limit,
+            offset=offset,
+        )
 
-    return WrongQuestionListResponse(
-        wrong_questions=[WrongQuestionResponse.model_validate(wq) for wq in wrong_questions],
-        total=total,
-        unresolved_count=unresolved_count,
-    )
+        unresolved_count = await wrong_question_service.get_unresolved_count(
+            db=db,
+            user_id=user.id,
+            course_id=course_id,
+        )
+
+        logger.info(f"[API] 错题列表结果: total={total}, unresolved={unresolved_count}, 返回 {len(wrong_questions)} 条")
+
+        return WrongQuestionListResponse(
+            wrong_questions=[WrongQuestionResponse.model_validate(wq) for wq in wrong_questions],
+            total=total,
+            unresolved_count=unresolved_count,
+        )
+    except Exception as e:
+        logger.error(f"[API] 获取错题列表失败: {e}", exc_info=True)
+        raise
 
 
 @router.get("/wrong-questions/{wrong_question_id}")
@@ -408,6 +426,94 @@ async def get_wrong_question(
         )
 
     return WrongQuestionResponse.model_validate(wrong_question)
+
+
+@router.post("/wrong-questions/collect", response_model=CollectWrongQuestionResponse)
+async def collect_wrong_question(
+    request: CollectWrongQuestionRequest,
+    db: db_dependency,
+    user: auth_dependency,
+):
+    """
+    Collect a wrong question (for frontend hardcoded exercises).
+
+    当前端使用硬编码习题（非数据库 Exercise）时，使用此端点收集错题。
+    exercise_key 格式：chapterId-subsectionIndex-exerciseId
+    """
+    logger.info(f"[API] 收集错题: user_id={user.id}, exercise_key={request.exercise_key}, course_id={request.course_id}")
+
+    try:
+        wrong_question = await wrong_question_service.collect_wrong_question_by_key(
+            db=db,
+            user_id=user.id,
+            exercise_key=request.exercise_key,
+            user_answer=request.user_answer,
+            course_id=request.course_id,
+            chapter_id=request.chapter_id,
+            exercise_content=request.exercise_content,
+            exercise_type=request.exercise_type,
+            knowledge_points=request.knowledge_points,
+        )
+
+        await db.commit()
+
+        logger.info(f"[API] 错题收集成功: id={wrong_question.id}, error_count={wrong_question.error_count}")
+
+        return CollectWrongQuestionResponse(
+            id=wrong_question.id,
+            exercise_key=request.exercise_key,
+            error_count=wrong_question.error_count,
+            is_resolved=wrong_question.is_resolved,
+            message="错题已记录" if wrong_question.error_count == 1 else f"错题已更新，累计错误 {wrong_question.error_count} 次",
+        )
+    except Exception as e:
+        logger.error(f"[API] 收集错题失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"收集错题失败: {str(e)}",
+        )
+
+
+@router.post("/wrong-questions/{exercise_id}/resolve")
+async def resolve_wrong_question(
+    exercise_id: int,
+    db: db_dependency,
+    user: auth_dependency,
+):
+    """
+    Mark a wrong question as resolved (when user answers correctly).
+
+    当用户答对曾经错过的题目时调用此端点。
+    """
+    logger.info(f"[API] 标记错题已解决: user_id={user.id}, exercise_id={exercise_id}")
+
+    try:
+        wrong_question = await wrong_question_service.mark_resolved(
+            db=db,
+            user_id=user.id,
+            exercise_id=exercise_id,
+        )
+
+        if not wrong_question:
+            # 没有找到对应的错题记录，但这不是错误（可能用户第一次答这道题）
+            logger.info(f"[API] 未找到错题记录，无需标记: exercise_id={exercise_id}")
+            return {"success": True, "message": "未找到错题记录"}
+
+        await db.commit()
+
+        logger.info(f"[API] 错题已标记解决: id={wrong_question.id}")
+
+        return {
+            "success": True,
+            "wrong_question": WrongQuestionResponse.model_validate(wrong_question),
+            "message": "错题已标记为已掌握",
+        }
+    except Exception as e:
+        logger.error(f"[API] 标记错题解决失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"标记失败: {str(e)}",
+        )
 
 
 # ========== Analysis Endpoints ==========
@@ -666,15 +772,16 @@ async def get_review_reminders(
         if not exercise:
             continue
 
-        # Calculate priority
+        # Calculate priority (use _make_aware for timezone-aware comparison)
+        next_review_aware = _make_aware(rep.next_review_at)
         priority = 0.0
-        days_overdue = (now - rep.next_review_at).days if rep.next_review_at <= now else 0
+        days_overdue = (now - next_review_aware).days if next_review_aware <= now else 0
         priority += days_overdue * 0.5
         for kp in exercise.knowledge_points:
             if kp in weak_points:
                 priority += weak_points[kp].weakness_score * 2
 
-        if rep.next_review_at <= now:
+        if next_review_aware <= now:
             # Due now
             due_reviews.append(ReviewQueueItem(
                 repetition=SpacedRepetitionResponse.model_validate(rep),
@@ -688,7 +795,7 @@ async def get_review_reminders(
             schedule_counts[1] += 1  # Count as due
         else:
             # Future - categorize by interval
-            days_until = (rep.next_review_at - now).days
+            days_until = (next_review_aware - now).days
             for eb in ebbinghaus_intervals:
                 if eb["day"] - 1 <= days_until <= eb["day"] + 1:
                     date_key = (now + timedelta(days=eb["day"])).strftime("%Y-%m-%d")

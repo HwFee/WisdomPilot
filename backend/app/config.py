@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
     # Rate limiting
     AUTH_RATE_PER_MINUTE: int = 10
-    CODE_EXEC_RATE_PER_MINUTE: int = 5
+    CODE_EXEC_RATE_PER_MINUTE: int = 30  # Reasonable limit for code execution
 
     @field_validator("SECRET_KEY")
     @classmethod

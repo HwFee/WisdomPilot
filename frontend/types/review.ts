@@ -17,6 +17,8 @@ export interface WeakPointResponse {
   last_error_at?: string
   review_count: number
   last_review_at?: string
+  // 计算属性
+  weakness_score: number
 }
 
 // ========================================
@@ -34,6 +36,9 @@ export interface SpacedRepetitionResponse {
   review_count: number
   last_review_at?: string
   last_review_result?: boolean
+  // 计算属性
+  is_due: boolean
+  days_overdue: number
 }
 
 // ========================================
@@ -103,12 +108,13 @@ export interface ReviewStatsResponse {
 export interface WrongQuestionResponse {
   id: string
   user_id: string
-  exercise_id: number
+  exercise_id?: number  // 可选，精进之路/挑战之路错题可能没有
+  exercise_key?: string // 精进之路/挑战之路错题的标识
   course_id: number
   chapter_id?: number
   knowledge_points: string[]
-  user_answer?: Record<string, unknown>
-  correct_answer?: Record<string, unknown>
+  user_answer?: Record<string, unknown> | string  // 可以是对象或字符串
+  correct_answer?: Record<string, unknown> | string
   exercise_type: string
   exercise_difficulty: number
   error_count: number
@@ -117,6 +123,10 @@ export interface WrongQuestionResponse {
   last_error_at: string
   resolved_at?: string
   exercise_content?: Record<string, unknown>
+  // 计算属性（后端返回）
+  source_type?: string // mastery, arena, enhanced, unknown
+  source_label?: string // 精进之路, 挑战之路, 强化测试
+  question_title?: string // 题目标题/摘要
 }
 
 export interface WrongQuestionListResponse {

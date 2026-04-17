@@ -1,12 +1,13 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, BookOpen, ChevronRight, CheckCircle, XCircle,
-  Trophy, Target, Clock, Zap, AlertTriangle
+  Trophy, Target, Clock, Zap, AlertTriangle, Star
 } from 'lucide-react'
+import { FavoriteButton } from '@/components/exercise/FavoriteButton'
 
 import {
   getMasteryOverview,
@@ -19,6 +20,13 @@ import {
   MASTERY_LEVEL_COLORS,
   getChapterKnowledgeContent,
 } from '@/lib/api'
+import {
+  saveMasteryExerciseProgress,
+  completeMasteryQuiz,
+  getMasteryChapterDetailProgress,
+  type MasteryExerciseProgressItem,
+} from '@/lib/api/learning-path'
+import { collectWrongQuestion } from '@/lib/api/wrong-question'
 import type {
   MasteryOverviewResponse,
   MasteryLevel,
@@ -48,6 +56,7 @@ const DIFFICULTY_COLORS: Record<number, string> = {
 export default function MasteryPathPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const courseId = Number(params.courseId)
 
   const [loading, setLoading] = useState(true)
@@ -66,6 +75,10 @@ export default function MasteryPathPage() {
   const [submitted, setSubmitted] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
 
+  // Per-question completion tracking (question_id -> is_correct)
+  // Used to restore submitted state when re-entering a chapter
+  const [completedQuestionsMap, setCompletedQuestionsMap] = useState<Map<number, boolean>>(new Map())
+
   // Analysis state
   const [baseResult, setBaseResult] = useState<BaseAnswersSubmitResponse | null>(null)
 
@@ -81,6 +94,9 @@ export default function MasteryPathPage() {
   // Knowledge content state
   const [knowledgeContent, setKnowledgeContent] = useState<KnowledgeContentResponse | null>(null)
   const [knowledgeLoading, setKnowledgeLoading] = useState(false)
+
+  // Track whether the jump from wrong question book has been handled
+  const jumpHandledRef = useRef(false)
 
   const fetchOverview = useCallback(async () => {
     const token = getStoredToken()
@@ -103,6 +119,143 @@ export default function MasteryPathPage() {
   useEffect(() => {
     fetchOverview()
   }, [fetchOverview])
+
+  // Handle query params for jump from wrong question book
+  useEffect(() => {
+    // Only handle jump once — prevent re-triggering after exit
+    if (jumpHandledRef.current) return
+
+    const chapterParam = searchParams.get('chapter')
+    const exerciseParam = searchParams.get('exercise')
+    const skipKnowledge = searchParams.get('skip') === '1'
+
+    if (chapterParam && overview?.chapters) {
+      const chapterId = parseInt(chapterParam)
+      const chapter = overview.chapters.find(c => c.chapter_id === chapterId)
+
+      if (chapter) {
+        // Mark as handled so it won't re-trigger after exit
+        jumpHandledRef.current = true
+
+        // exerciseParam 是 question_id，需要在获取题目列表后找到对应索引
+        const targetQuestionId = exerciseParam ? parseInt(exerciseParam) : 0
+
+        // Select the chapter
+        handleSelectChapterForJump(chapterId, chapter.title, targetQuestionId, skipKnowledge)
+      }
+    }
+  }, [searchParams, overview])
+
+  // Handle chapter selection - load knowledge content first (with optional question ID for jump)
+  const handleSelectChapterForJump = async (chapterId: number, chapterTitle: string, targetQuestionId: number = 0, skipKnowledge: boolean = false) => {
+    const token = getStoredToken()
+    if (!token) return
+
+    setSelectedChapterId(chapterId)
+    setSelectedChapterTitle(chapterTitle)
+
+    if (skipKnowledge) {
+      // Skip knowledge step, go directly to quiz at specific question
+      await startQuizAtQuestion(chapterId, targetQuestionId)
+    } else {
+      // Normal flow - show knowledge first
+      setKnowledgeLoading(true)
+      setStep('knowledge')
+
+      try {
+        const knowledgeData = await getChapterKnowledgeContent(courseId, chapterId, token)
+        setKnowledgeContent(knowledgeData)
+      } catch (error) {
+        console.error('Failed to fetch knowledge content:', error)
+        setKnowledgeContent(null)
+      } finally {
+        setKnowledgeLoading(false)
+      }
+    }
+  }
+
+  // Start base quiz at a specific question (for jump from wrong question book)
+  // targetQuestionId: 目标题目的 question_id，如果为 0 则从头开始或恢复进度
+  const startQuizAtQuestion = async (chapterId: number, targetQuestionId: number = 0) => {
+    const token = getStoredToken()
+    if (!token) return
+
+    setBaseQuestionLoading(true)
+    setStep('base_quiz')
+
+    try {
+      // 并行获取题目和进度
+      const [data, progressData] = await Promise.all([
+        getChapterBaseQuestions(courseId, chapterId, token),
+        getMasteryChapterDetailProgress(courseId, chapterId, token).catch(() => null),
+      ])
+      setBaseQuestions(data.questions)
+
+      // 构建进度映射并恢复答案和完成状态
+      const restoredAnswers = new Map<number, string>()
+      const completedMap = new Map<number, boolean>()
+      if (progressData?.progress_items) {
+        for (const item of progressData.progress_items) {
+          if (item.user_answer) {
+            restoredAnswers.set(item.question_id, item.user_answer)
+          }
+          if (item.is_completed) {
+            completedMap.set(item.question_id, item.is_correct)
+          }
+        }
+      }
+      setBaseAnswers(restoredAnswers)
+      setCompletedQuestionsMap(completedMap)
+
+      // 根据 targetQuestionId 找到正确的题目索引
+      let startIndex = 0
+      if (targetQuestionId > 0) {
+        // 从错题本跳转，找到该 question_id 对应的索引
+        const foundIndex = data.questions.findIndex(q => q.id === targetQuestionId)
+        if (foundIndex >= 0) {
+          startIndex = foundIndex
+          console.log(`[精进之路] 从错题本跳转: 找到题目 ID=${targetQuestionId}, 索引=${foundIndex + 1}`)
+        } else {
+          console.warn(`[精进之路] 从错题本跳转: 未找到题目 ID=${targetQuestionId}，从头开始`)
+        }
+      } else {
+        // 正常进入，检查是否有进度可恢复
+        let firstUncompletedIndex = -1
+        for (let i = 0; i < data.questions.length; i++) {
+          const q = data.questions[i]
+          const progress = progressData?.progress_items?.find(p => p.question_id === q.id)
+          if (!progress?.is_completed && firstUncompletedIndex === -1) {
+            firstUncompletedIndex = i
+          }
+        }
+        if (firstUncompletedIndex >= 0) {
+          startIndex = firstUncompletedIndex
+          console.log(`[精进之路] 恢复进度: 从第 ${firstUncompletedIndex + 1} 题继续`)
+        }
+      }
+
+      setCurrentQuestionIndex(startIndex)
+
+      // 恢复起始题目的提交状态
+      const startQuestion = data.questions[startIndex]
+      if (startQuestion && completedMap.has(startQuestion.id)) {
+        setSubmitted(true)
+        setIsCorrect(completedMap.get(startQuestion.id) || false)
+      } else {
+        setSubmitted(false)
+        setIsCorrect(false)
+      }
+
+      console.log(`[精进之路] 开始答题: 起始题目=${startIndex + 1}, 总题数=${data.questions.length}, 已恢复答案=${restoredAnswers.size}个, 已完成=${completedMap.size}个`)
+
+    } catch (error) {
+      console.error('Failed to fetch base questions:', error)
+      alert('加载测试题失败，请稍后重试')
+      setStep('select_chapter')
+    } finally {
+      setBaseQuestionLoading(false)
+    }
+  }
 
   // Handle chapter selection - load knowledge content first
   const handleSelectChapter = async (chapterId: number, chapterTitle: string) => {
@@ -128,7 +281,8 @@ export default function MasteryPathPage() {
   }
 
   // Start base quiz after viewing knowledge
-  const handleStartBaseQuiz = async () => {
+  // targetQuestionId: 目标题目的 question_id，如果为 0 则从头开始或恢复进度
+  const handleStartBaseQuiz = async (targetQuestionId: number = 0) => {
     const token = getStoredToken()
     if (!token || !selectedChapterId) return
 
@@ -136,10 +290,83 @@ export default function MasteryPathPage() {
     setStep('base_quiz')
 
     try {
-      const data = await getChapterBaseQuestions(courseId, selectedChapterId, token)
+      // 并行获取题目和进度
+      const [data, progressData] = await Promise.all([
+        getChapterBaseQuestions(courseId, selectedChapterId, token),
+        getMasteryChapterDetailProgress(courseId, selectedChapterId, token).catch(() => null),
+      ])
       setBaseQuestions(data.questions)
-      setCurrentQuestionIndex(0)
-      setBaseAnswers(new Map())
+
+      // 构建进度映射
+      const progressMap = new Map<number, MasteryExerciseProgressItem>()
+      if (progressData?.progress_items) {
+        for (const item of progressData.progress_items) {
+          progressMap.set(item.question_id, item)
+        }
+      }
+
+      // 恢复答案状态和完成状态
+      const restoredAnswers = new Map<number, string>()
+      const completedMap = new Map<number, boolean>()
+      for (let i = 0; i < data.questions.length; i++) {
+        const q = data.questions[i]
+        const progress = progressMap.get(q.id)
+        if (progress?.user_answer) {
+          restoredAnswers.set(q.id, progress.user_answer)
+        }
+        if (progress?.is_completed) {
+          completedMap.set(q.id, progress.is_correct)
+        }
+      }
+      setBaseAnswers(restoredAnswers)
+      setCompletedQuestionsMap(completedMap)
+
+      // 确定起始题目索引
+      let startIndex = 0
+      if (targetQuestionId > 0) {
+        // 指定了目标题目 ID，找到对应索引
+        const foundIndex = data.questions.findIndex(q => q.id === targetQuestionId)
+        if (foundIndex >= 0) {
+          startIndex = foundIndex
+        }
+      } else {
+        // 正常进入，检查是否有进度可恢复
+        let firstUncompletedIndex = -1
+        let lastCompletedIndex = -1
+
+        for (let i = 0; i < data.questions.length; i++) {
+          const q = data.questions[i]
+          const progress = progressMap.get(q.id)
+
+          if (!progress?.is_completed && firstUncompletedIndex === -1) {
+            firstUncompletedIndex = i
+          }
+          if (progress?.is_completed) {
+            lastCompletedIndex = i
+          }
+        }
+
+        if (firstUncompletedIndex >= 0) {
+          startIndex = firstUncompletedIndex
+        } else if (lastCompletedIndex >= 0 && lastCompletedIndex < data.questions.length - 1) {
+          startIndex = lastCompletedIndex + 1
+        }
+      }
+
+      setCurrentQuestionIndex(startIndex)
+
+      // 恢复起始题目的提交状态
+      const startQuestion = data.questions[startIndex]
+      if (startQuestion && completedMap.has(startQuestion.id)) {
+        setSubmitted(true)
+        setIsCorrect(completedMap.get(startQuestion.id) || false)
+      } else {
+        setSubmitted(false)
+        setIsCorrect(false)
+      }
+
+      console.log(`[精进之路] 开始答题: 起始题目=${startIndex + 1}, 总题数=${data.questions.length}, 已恢复答案=${restoredAnswers.size}个, 已完成=${completedMap.size}个`)
+
     } catch (error) {
       console.error('Failed to fetch base questions:', error)
       alert('加载测试题失败，请稍后重试')
@@ -150,7 +377,7 @@ export default function MasteryPathPage() {
   }
 
   // Handle base answer submission
-  const handleSubmitBaseAnswer = () => {
+  const handleSubmitBaseAnswer = async () => {
     const currentQuestion = baseQuestions[currentQuestionIndex]
     const answer = baseAnswers.get(currentQuestion.id)
     if (!answer) return
@@ -178,14 +405,79 @@ export default function MasteryPathPage() {
 
     setIsCorrect(correct)
     setSubmitted(true)
+
+    // 更新完成状态映射
+    setCompletedQuestionsMap(prev => {
+      const newMap = new Map(prev)
+      newMap.set(currentQuestion.id, correct)
+      return newMap
+    })
+
+    // Save progress to backend
+    const token = getStoredToken()
+    if (token && selectedChapterId) {
+      try {
+        const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`
+        await saveMasteryExerciseProgress({
+          course_id: courseId,
+          chapter_id: selectedChapterId,
+          question_id: currentQuestion.id,
+          question_type: 'base',
+          exercise_key: exerciseKey,
+          is_completed: true,
+          is_correct: correct,
+          user_answer: answer,
+          correct_answer: currentQuestion.correct_answer || '',
+          attempt_count: 1,
+        }, token)
+        console.log('[精进之路] 进度保存成功')
+      } catch (error) {
+        console.error('[精进之路] 进度保存失败:', error)
+      }
+    }
+
+    // Collect wrong question if incorrect
+    if (!correct) {
+      if (token && selectedChapterId) {
+        try {
+          // Use question ID as exercise_key
+          const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`
+          await collectWrongQuestion(token, {
+            exercise_key: exerciseKey,
+            user_answer: answer,
+            course_id: courseId,
+            chapter_id: selectedChapterId,
+            exercise_content: {
+              text: currentQuestion.text,
+              options: currentQuestion.options,
+              type: questionType,
+            },
+            exercise_type: questionType,
+            knowledge_points: currentQuestion.knowledge_points || [],
+          })
+          console.log('[精进之路] 错题收集成功')
+        } catch (error) {
+          console.error('[精进之路] 错题收集失败:', error)
+        }
+      }
+    }
   }
 
   // Move to next question or submit all
   const handleNextQuestion = async () => {
     if (currentQuestionIndex < baseQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1)
-      setSubmitted(false)
-      setIsCorrect(false)
+      const nextIndex = currentQuestionIndex + 1
+      setCurrentQuestionIndex(nextIndex)
+
+      // 检查下一题是否已经完成，如果是则恢复提交状态
+      const nextQuestion = baseQuestions[nextIndex]
+      if (nextQuestion && completedQuestionsMap.has(nextQuestion.id)) {
+        setSubmitted(true)
+        setIsCorrect(completedQuestionsMap.get(nextQuestion.id) || false)
+      } else {
+        setSubmitted(false)
+        setIsCorrect(false)
+      }
     } else {
       // Submit all answers
       await handleSubmitAllBaseAnswers()
@@ -208,6 +500,28 @@ export default function MasteryPathPage() {
 
       const result = await submitBaseAnswers(courseId, selectedChapterId, { answers: answersArray }, token)
       setBaseResult(result)
+
+      // Update ChapterMastery with quiz completion
+      if (selectedChapterId) {
+        const resultsForCompletion = result.results.map(r => ({
+          question_id: r.question_id,
+          is_correct: r.is_correct,
+          user_answer: r.user_answer,
+          correct_answer: r.correct_answer,
+        }))
+
+        try {
+          await completeMasteryQuiz({
+            course_id: courseId,
+            chapter_id: selectedChapterId,
+            results: resultsForCompletion,
+          }, token)
+          console.log('[精进之路] 章节进度更新成功')
+        } catch (error) {
+          console.error('[精进之路] 章节进度更新失败:', error)
+        }
+      }
+
       setStep('analysis')
     } catch (error) {
       console.error('Failed to submit base answers:', error)
@@ -267,12 +581,40 @@ export default function MasteryPathPage() {
   }
 
   // Submit enhanced answer
-  const handleSubmitEnhancedAnswer = () => {
+  const handleSubmitEnhancedAnswer = async () => {
     const currentQuestion = enhancedQuestions[currentQuestionIndex]
     const answer = enhancedAnswers.get(currentQuestion.id)
     if (!answer) return
 
+    // Check if correct
+    const correct = answer.toUpperCase() === currentQuestion.correct_answer?.toUpperCase()
+
     setSubmitted(true)
+
+    // Collect wrong question if incorrect
+    if (!correct) {
+      const token = getStoredToken()
+      if (token) {
+        try {
+          const exerciseKey = `enhanced-${courseId}-${enhancedSessionId}-${currentQuestion.id}`
+          await collectWrongQuestion(token, {
+            exercise_key: exerciseKey,
+            user_answer: answer,
+            course_id: courseId,
+            exercise_content: {
+              text: currentQuestion.text,
+              options: currentQuestion.options,
+              type: 'choice',
+            },
+            exercise_type: 'choice',
+            knowledge_points: currentQuestion.knowledge_points || [],
+          })
+          console.log('[强化测试] 错题收集成功')
+        } catch (error) {
+          console.error('[强化测试] 错题收集失败:', error)
+        }
+      }
+    }
   }
 
   // Move to next enhanced question or submit all
@@ -320,11 +662,19 @@ export default function MasteryPathPage() {
     setSelectedChapterId(null)
     setBaseQuestions([])
     setBaseAnswers(new Map())
+    setCompletedQuestionsMap(new Map())
     setBaseResult(null)
     setEnhancedQuestions([])
     setEnhancedAnswers(new Map())
     setFinalResult(null)
     setKnowledgeContent(null)
+
+    // Clear URL params to prevent re-triggering jump from wrong question book
+    const hasJumpParams = searchParams.get('chapter') || searchParams.get('exercise') || searchParams.get('skip')
+    if (hasJumpParams) {
+      router.replace(`/mastery/${courseId}`, { scroll: false })
+    }
+
     fetchOverview()
   }
 
@@ -531,7 +881,7 @@ export default function MasteryPathPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
           <div className="max-w-3xl mx-auto px-4 py-4">
             <button
-              onClick={handleStartBaseQuiz}
+              onClick={() => handleStartBaseQuiz()}
               disabled={baseQuestionLoading}
               className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
             >
@@ -816,20 +1166,24 @@ export default function MasteryPathPage() {
               <span className="font-semibold">{selectedChapterTitle}</span>
             </div>
             <div className="flex items-center gap-1">
-              {baseQuestions.map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i < currentQuestionIndex
-                      ? baseAnswers.get(baseQuestions[i]?.id) === baseQuestions[i]?.correct_answer
-                        ? 'bg-emerald-400'
-                        : 'bg-red-400'
-                      : i === currentQuestionIndex
-                        ? 'bg-primary'
-                        : 'bg-muted'
-                  }`}
-                />
-              ))}
+              {baseQuestions.map((q, i) => {
+                const isCompleted = completedQuestionsMap.has(q.id)
+                const wasCorrect = completedQuestionsMap.get(q.id) || false
+                return (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      isCompleted
+                        ? wasCorrect
+                          ? 'bg-emerald-400'
+                          : 'bg-red-400'
+                        : i === currentQuestionIndex
+                          ? 'bg-primary'
+                          : 'bg-muted'
+                    }`}
+                  />
+                )
+              })}
             </div>
           </div>
         </header>
@@ -837,13 +1191,22 @@ export default function MasteryPathPage() {
         <main className="pt-20 pb-24 px-4">
           <div className="max-w-2xl mx-auto">
             {/* Question header */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium">
-                {currentQuestionIndex + 1} / {baseQuestions.length}
-              </span>
-              <span className={`px-3 py-1 rounded-lg text-xs font-medium border ${DIFFICULTY_COLORS[currentQuestion.difficulty]}`}>
-                {currentQuestion.difficulty === 1 ? '入门' : '基础'}
-              </span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium">
+                  {currentQuestionIndex + 1} / {baseQuestions.length}
+                </span>
+                <span className={`px-3 py-1 rounded-lg text-xs font-medium border ${DIFFICULTY_COLORS[currentQuestion.difficulty]}`}>
+                  {currentQuestion.difficulty === 1 ? '入门' : '基础'}
+                </span>
+              </div>
+              {/* 收藏按钮 */}
+              <FavoriteButton
+                exerciseId={currentQuestion.id}
+                chapterId={selectedChapterId || undefined}
+                source="mastery"
+                size="sm"
+              />
             </div>
 
             {/* Question type indicator */}

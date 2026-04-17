@@ -106,6 +106,7 @@ describe('Login Page', () => {
   it('submits form with valid data', async () => {
     mockLogin.mockResolvedValueOnce({
       access_token: 'test-token',
+      token_type: 'bearer',
       user: {
         id: '1',
         email: 'test@example.com',
@@ -135,6 +136,7 @@ describe('Login Page', () => {
   it('submits form with remember me checked', async () => {
     mockLogin.mockResolvedValueOnce({
       access_token: 'test-token',
+      token_type: 'bearer',
       user: {
         id: '1',
         email: 'test@example.com',
@@ -184,6 +186,7 @@ describe('Login Page', () => {
   it('redirects admin users to admin page', async () => {
     mockLogin.mockResolvedValueOnce({
       access_token: 'test-token',
+      token_type: 'bearer',
       user: {
         id: '1',
         email: 'admin@example.com',

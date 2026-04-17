@@ -14,11 +14,11 @@ import 'katex/dist/katex.min.css'
 import {
   getArenaProfile,
   startInfiniteSession,
-  getInfiniteProgress,
-  submitInfiniteExercise,
-  saveInfiniteCode,
-  switchInfiniteExercise,
-  exitInfiniteSession,
+  getChallengeProgress,
+  submitChallengeExercise,
+  saveChallengeCode,
+  switchChallengeExercise,
+  appendChallengeExercises,
   TIER_ICONS, TIER_NAMES
 } from '@/lib/api'
 import { executeCode, executeCodeBatch } from '@/lib/api/code'
@@ -182,28 +182,147 @@ interface ExerciseNavigationProps {
 }
 
 function ExerciseNavigation({ exercises, currentIndex, onSwitch }: ExerciseNavigationProps) {
+  // 显示5个题目，当前题始终在第3个位置（索引2，即中间）
+  const MAX_VISIBLE = 5
+  const CENTER_INDEX = 2 // 当前题目在显示区的中间位置
+
+  // 计算显示范围的起始位置
+  // currentIndex = start + CENTER_INDEX => start = currentIndex - CENTER_INDEX
+  let start = currentIndex - CENTER_INDEX
+  let end = start + MAX_VISIBLE
+
+  // 边界处理：开头不够时
+  if (start < 0) {
+    start = 0
+    end = Math.min(exercises.length, MAX_VISIBLE)
+  }
+
+  // 边界处理：结尾不够时
+  if (end > exercises.length) {
+    end = exercises.length
+    start = Math.max(0, end - MAX_VISIBLE)
+  }
+
+  const visibleExercises = exercises.slice(start, end)
+
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      {exercises.map((ex, index) => (
-        <button
-          key={ex.exercise_id}
-          onClick={() => ex.is_unlocked && onSwitch(index)}
-          disabled={!ex.is_unlocked}
-          className={`w-8 h-8 rounded-lg text-xs font-medium transition-all ${
-            index === currentIndex
-              ? 'bg-[#3498DB] text-white'
-              : ex.is_correct
-              ? 'bg-[#52C41A]/20 text-[#52C41A] border border-[#52C41A]/30'
-              : ex.is_completed
-              ? 'bg-[#E74C3C]/20 text-[#E74C3C] border border-[#E74C3C]/30'
-              : ex.is_unlocked
-              ? 'bg-white text-[#606266] border border-[#E4E7ED] hover:border-[#3498DB]'
-              : 'bg-[#F5F7FA] text-[#C0C4CC] border border-[#E4E7ED] cursor-not-allowed'
-          }`}
-        >
-          {ex.is_correct ? '✓' : ex.is_completed ? '✗' : index + 1}
-        </button>
-      ))}
+    <div className="flex items-center gap-1.5">
+      {visibleExercises.map((ex, idx) => {
+        const globalIndex = start + idx
+        const isCurrent = globalIndex === currentIndex
+
+        return (
+          <button
+            key={ex.exercise_id}
+            onClick={() => ex.is_unlocked && onSwitch(globalIndex)}
+            disabled={!ex.is_unlocked}
+            title={`第 ${globalIndex + 1} 题: ${ex.title || '未命名'}`}
+            className={`rounded-lg text-xs font-bold transition-all duration-300 ease-out ${
+              isCurrent
+                ? 'w-10 h-10 bg-[#3498DB] text-white scale-110 shadow-lg z-10'
+                : ex.is_correct
+                ? 'w-8 h-8 bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]'
+                : ex.is_completed
+                ? 'w-8 h-8 bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]'
+                : ex.is_unlocked
+                ? 'w-8 h-8 bg-white text-[#606266] border border-[#E4E7ED] hover:border-[#3498DB]'
+                : 'w-8 h-8 bg-[#F5F7FA] text-[#C0C4CC] border border-[#E4E7ED] cursor-not-allowed'
+            }`}
+          >
+            {globalIndex + 1}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ========================================
+// Exercise List Modal Component - 显示所有做过的题目
+// ========================================
+
+interface ExerciseListModalProps {
+  isOpen: boolean
+  onClose: () => void
+  exercises: ExerciseProgress[]
+  currentIndex: number
+  onSwitch: (index: number) => void
+}
+
+function ExerciseListModal({ isOpen, onClose, exercises, currentIndex, onSwitch }: ExerciseListModalProps) {
+  if (!isOpen) return null
+
+  const handleSwitch = (index: number) => {
+    if (exercises[index]?.is_unlocked) {
+      onSwitch(index)
+      onClose()
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-[#303133]">题目列表</h3>
+          <button onClick={onClose} className="text-[#909399] hover:text-[#606266]">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 space-y-2">
+          {exercises.map((ex, index) => (
+            <button
+              key={ex.exercise_id}
+              onClick={() => handleSwitch(index)}
+              disabled={!ex.is_unlocked}
+              className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${
+                index === currentIndex
+                  ? 'bg-[#3498DB]/10 border border-[#3498DB]'
+                  : ex.is_unlocked
+                  ? 'hover:bg-[#F5F7FA] border border-transparent'
+                  : 'opacity-50 cursor-not-allowed border border-transparent'
+              }`}
+            >
+              <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                index === currentIndex
+                  ? 'bg-[#3498DB] text-white'
+                  : ex.is_correct
+                  ? 'bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]'
+                  : ex.is_completed
+                  ? 'bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]'
+                  : ex.is_unlocked
+                  ? 'bg-[#E4E7ED] text-[#606266]'
+                  : 'bg-[#F5F7FA] text-[#C0C4CC]'
+              }`}>
+                {index + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-[#303133] truncate">
+                  {ex.title || `第 ${index + 1} 题`}
+                </div>
+                <div className="text-xs text-[#909399]">
+                  难度: {'★'.repeat(ex.difficulty || 1)}
+                  {ex.is_completed && (
+                    <span className={`ml-2 ${ex.is_correct ? 'text-[#52C41A]' : 'text-[#E74C3C]'}`}>
+                      {ex.is_correct ? '已答对' : '已答错'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {!ex.is_unlocked && (
+                <span className="text-xs text-[#C0C4CC]">🔒 未解锁</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-[#E4E7ED] text-center text-sm text-[#909399]">
+          已完成 {exercises.filter(e => e.is_completed).length} 题
+        </div>
+      </div>
     </div>
   )
 }
@@ -218,10 +337,10 @@ export default function ArenaPage() {
   const searchParams = useSearchParams()
   const courseId = parseInt(params.id as string)
   const difficultyFromDashboard = searchParams.get('difficulty')
+  const exerciseIndexFromReview = searchParams.get('exerciseIndex') // 从错题本跳转时的题目索引
 
   // Arena state
   const [profile, setProfile] = useState<ArenaProfileResponse | null>(null)
-  const [session, setSession] = useState<ChallengeSessionResponse | null>(null)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -249,6 +368,9 @@ export default function ArenaPage() {
   // Result modal state
   const [showResultModal, setShowResultModal] = useState(false)
   const [modalResult, setModalResult] = useState<{ isCorrect: boolean; passedCount: number; totalCount: number; xpEarned: number } | null>(null)
+
+  // Exercise list modal state
+  const [showExerciseList, setShowExerciseList] = useState(false)
 
   // XP tracking
   const [xpEarned, setXpEarned] = useState(0)
@@ -284,75 +406,34 @@ export default function ArenaPage() {
     try {
       setLoading(true)
 
+      // 获取用户档案
       const profileData = await getArenaProfile(courseId, token)
       if (!mountedRef.current) return
       setProfile(profileData)
 
-      const sessionData = await startInfiniteSession(courseId, {
-        difficulty_level: difficulty,
-        initial_count: 10
-      }, token)
+      // 获取挑战之路进度（无 session 概念）
+      const progressData = await getChallengeProgress(courseId, token)
 
       if (!mountedRef.current) return
 
-      setSession(sessionData)
-      setCurrentIndex(0)
+      // 如果没有练习题，创建新的挑战之路
+      if (!progressData.exercises || progressData.exercises.length === 0) {
+        // 初始化挑战之路
+        await startInfiniteSession(courseId, {
+          difficulty_level: difficulty,
+          initial_count: 10
+        }, token)
 
-      // Convert session exercises to our format
-      const exerciseList: Exercise[] = sessionData.exercises.map((ex: ChallengeExercise) => {
-        const testCases = ex.test_cases || []
-        const samples = ex.content?.samples || []
-        const sampleInput = samples[0]?.input || testCases[0]?.input || ''
-        const sampleOutput = samples[0]?.output || testCases[0]?.output || ''
-        return {
-          id: ex.id,
-          type: 'programming' as const,
-          difficulty: ex.difficulty || difficulty,
-          content: {
-            text: ex.content?.text || ex.title,
-            title: ex.title,
-            description: ex.content?.description || ex.content?.text || ex.title,
-            code_template: ex.content?.code_template || getTemplate('python'),
-            sample_input: sampleInput,
-            sample_output: sampleOutput,
-            samples: samples,
-          },
-          knowledge_points: ex.knowledge_points || [],
-          test_cases: testCases.map((tc) => ({
-            input: tc.input || '',
-            output: tc.output || '',
-          })),
-        }
-      })
+        // 重新获取进度
+        const newProgressData = await getChallengeProgress(courseId, token)
+        if (!mountedRef.current) return
 
-      setExercises(exerciseList)
-
-      // Initialize progress - first exercise is unlocked
-      const initialProgress: ExerciseProgress[] = exerciseList.map((ex, index) => ({
-        exercise_id: ex.id,
-        exercise_index: index,
-        is_completed: false,
-        is_correct: false,
-        is_unlocked: index === 0,
-        saved_code: '',
-        current_language: 'python',
-        title: ex.content.title || `题目 ${index + 1}`,
-        difficulty: ex.difficulty,
-      }))
-      setExerciseProgress(initialProgress)
-
-      // Initialize saved codes
-      const initialCodes: Record<number, Record<string, string>> = {}
-      exerciseList.forEach(ex => {
-        initialCodes[ex.id] = { python: ex.content.code_template || getTemplate('python') }
-      })
-      setSavedCodes(initialCodes)
-
-      if (exerciseList.length > 0) {
-        setCode(exerciseList[0].content.code_template || getTemplate('python'))
+        processProgressData(newProgressData, difficulty)
+      } else {
+        processProgressData(progressData, difficulty)
       }
 
-      // Set language based on preference
+      // 设置语言
       const savedLanguage = localStorage.getItem('preferred_language')
       if (savedLanguage && LANGUAGE_MAP[savedLanguage]) {
         setLanguage(savedLanguage)
@@ -369,6 +450,78 @@ export default function ArenaPage() {
       }
     }
   }, [courseId, router, difficultyFromDashboard])
+
+  // 处理进度数据的辅助函数
+  const processProgressData = (progressData: any, difficulty: number) => {
+    setCurrentIndex(progressData.current_index || 0)
+
+    // 转换练习题格式
+    const exerciseList: Exercise[] = progressData.exercises.map((ex: any) => {
+      const testCases = ex.test_cases || []
+      const samples = ex.content?.samples || []
+      const sampleInput = samples[0]?.input || testCases[0]?.input || ''
+      const sampleOutput = samples[0]?.output || testCases[0]?.output || ''
+      return {
+        id: ex.exercise_id,
+        type: 'programming' as const,
+        difficulty: ex.difficulty || difficulty,
+        content: {
+          text: ex.content?.text || ex.title,
+          title: ex.title,
+          description: ex.content?.description || ex.content?.text || ex.title,
+          code_template: ex.content?.code_template || getTemplate('python'),
+          sample_input: sampleInput,
+          sample_output: sampleOutput,
+          samples: samples,
+        },
+        knowledge_points: ex.knowledge_points || [],
+        test_cases: testCases.map((tc: any) => ({
+          input: tc.input || '',
+          output: tc.output || '',
+        })),
+      }
+    })
+
+    setExercises(exerciseList)
+
+    // 设置进度信息
+    const initialProgress: ExerciseProgress[] = progressData.exercises.map((ex: any) => ({
+      exercise_id: ex.exercise_id,
+      exercise_index: ex.exercise_index,
+      is_completed: ex.is_completed,
+      is_correct: ex.is_correct,
+      is_unlocked: ex.is_unlocked,
+      saved_code: ex.saved_code || '',
+      current_language: ex.current_language || 'python',
+      title: ex.title || `题目 ${ex.exercise_index + 1}`,
+      difficulty: ex.difficulty,
+    }))
+    setExerciseProgress(initialProgress)
+
+    // 初始化保存的代码
+    const initialCodes: Record<number, Record<string, string>> = {}
+    progressData.exercises.forEach((ex: any) => {
+      initialCodes[ex.exercise_id] = {
+        python: ex.saved_code || ex.content?.code_template || getTemplate('python')
+      }
+    })
+    setSavedCodes(initialCodes)
+
+    // 处理从错题本跳转的情况
+    const targetIndex = exerciseIndexFromReview ? parseInt(exerciseIndexFromReview) : progressData.current_index || 0
+    const validIndex = Math.min(Math.max(0, targetIndex), exerciseList.length - 1)
+
+    if (exerciseList.length > 0) {
+      setCurrentIndex(validIndex)
+      const savedCode = initialCodes[exerciseList[validIndex].id]?.[language] ||
+        exerciseList[validIndex].content.code_template ||
+        getTemplate(language)
+      setCode(savedCode)
+    }
+
+    // 设置累计 XP
+    setXpEarned(progressData.total_xp_earned || 0)
+  }
 
   useEffect(() => {
     initChallenge()
@@ -407,10 +560,10 @@ export default function ArenaPage() {
       setCode(getTemplate(newLang))
     }
 
-    // Save to backend
+    // Save to backend (无 session 概念)
     const token = localStorage.getItem('token')
-    if (token && session) {
-      saveInfiniteCode(courseId, session.session_id, {
+    if (token) {
+      saveChallengeCode(courseId, {
         exercise_id: currentExercise.id,
         code: codeRef.current,
         language: language
@@ -551,37 +704,36 @@ export default function ArenaPage() {
       const allPassed = batchResult.passed_count === batchResult.total_count
       setFeedbackState(allPassed ? 'correct' : 'wrong')
 
-      // Submit to backend
-      if (session) {
-        await submitInfiniteExercise(courseId, session.session_id, {
-          exercise_id: currentExercise.id,
-          code: code,
-          language: language,
-          test_results: results
-        }, token)
+      // Submit to backend (无 session 概念)
+      await submitChallengeExercise(courseId, {
+        exercise_id: currentExercise.id,
+        code: code,
+        language: language,
+        test_results: results
+      }, token)
 
-        // Update progress
-        setExerciseProgress(prev => {
-          const newProgress = [...prev]
-          const idx = newProgress.findIndex(p => p.exercise_id === currentExercise.id)
-          if (idx >= 0) {
-            newProgress[idx] = {
-              ...newProgress[idx],
-              is_completed: true,
-              is_correct: allPassed,
-              is_unlocked: true
-            }
+      // Update progress
+      setExerciseProgress(prev => {
+        const newProgress = [...prev]
+        const idx = newProgress.findIndex(p => p.exercise_id === currentExercise.id)
+        if (idx >= 0) {
+          newProgress[idx] = {
+            ...newProgress[idx],
+            is_completed: true,
+            is_correct: allPassed,
+            is_unlocked: true
           }
-          // Unlock next exercise
-          if (allPassed && idx < newProgress.length - 1) {
-            newProgress[idx + 1] = { ...newProgress[idx + 1], is_unlocked: true }
-          } else if (!allPassed && idx < newProgress.length - 1) {
-            // Also unlock next on wrong answer
-            newProgress[idx + 1] = { ...newProgress[idx + 1], is_unlocked: true }
+
+          // Unlock next exercise based on exercise_index (not array index)
+          // This ensures correct sequential unlocking even if array order differs
+          const currentExerciseIndex = newProgress[idx].exercise_index
+          const nextExercise = newProgress.find(p => p.exercise_index === currentExerciseIndex + 1)
+          if (nextExercise && !nextExercise.is_unlocked) {
+            nextExercise.is_unlocked = true
           }
-          return newProgress
-        })
-      }
+        }
+        return newProgress
+      })
 
       // Save code for this language
       setSavedCodes(prev => ({
@@ -595,6 +747,7 @@ export default function ArenaPage() {
       if (allPassed) {
         setXpEarned(prev => prev + 10)
       }
+      // 错题收集已在后端 submitChallengeExercise 中处理，前端不再重复调用
 
       // Show modal for correct answers
       if (allPassed) {
@@ -605,6 +758,61 @@ export default function ArenaPage() {
           xpEarned: 10
         })
         setShowResultModal(true)
+      }
+
+      // Auto-append more exercises when approaching the end
+      // Trigger when: current exercise is within last 3 exercises and is completed
+      const currentExerciseIdx = exerciseProgress.findIndex(p => p.exercise_id === currentExercise.id)
+      const remainingUncompleted = exerciseProgress.slice(currentExerciseIdx + 1).filter(p => !p.is_completed).length
+
+      if (remainingUncompleted < 3) {
+        console.log('[挑战之路] 接近末尾，自动追加更多题目...')
+        try {
+          const appendResult = await appendChallengeExercises(courseId, { count: 5 }, token)
+          if (appendResult.new_exercise_ids.length > 0) {
+            console.log(`[挑战之路] 追加了 ${appendResult.count} 道新题目`)
+            // Refresh progress to get new exercises
+            const newProgressData = await getChallengeProgress(courseId, token)
+
+            // Append new exercises to the list
+            const newExercises: Exercise[] = newProgressData.exercises
+              .filter((ex: ExerciseProgress) => !exercises.find(e => e.id === ex.exercise_id))
+              .map((ex: ExerciseProgress) => {
+                const fullEx: any = newProgressData.exercises.find((e: any) => e.exercise_id === ex.exercise_id)
+                return {
+                  id: ex.exercise_id,
+                  type: 'programming' as const,
+                  difficulty: ex.difficulty,
+                  content: {
+                    title: fullEx?.title || `题目 ${ex.exercise_index + 1}`,
+                    description: fullEx?.content?.description || fullEx?.content?.text || '',
+                    code_template: fullEx?.content?.code_template || getTemplate('python'),
+                    samples: fullEx?.content?.samples || [],
+                  },
+                  knowledge_points: fullEx?.knowledge_points || [],
+                  test_cases: fullEx?.test_cases || [],
+                }
+              })
+
+            setExercises(prev => [...prev, ...newExercises])
+            setExerciseProgress(prev => [...prev, ...newProgressData.exercises.filter(
+              (ex: ExerciseProgress) => !prev.find(p => p.exercise_id === ex.exercise_id)
+            )])
+
+            // Initialize saved codes for new exercises
+            const newSavedCodes: Record<number, Record<string, string>> = {}
+            newProgressData.exercises.forEach((ex: ExerciseProgress) => {
+              if (!savedCodes[ex.exercise_id]) {
+                newSavedCodes[ex.exercise_id] = {
+                  python: ex.saved_code || getTemplate('python')
+                }
+              }
+            })
+            setSavedCodes(prev => ({ ...prev, ...newSavedCodes }))
+          }
+        } catch (error) {
+          console.error('[挑战之路] 追加题目失败:', error)
+        }
       }
 
     } catch (error) {
@@ -693,18 +901,18 @@ export default function ArenaPage() {
     const token = localStorage.getItem('token')
     const currentExercise = exercises[currentIndex]
 
-    if (token && session && currentExercise) {
+    if (token && currentExercise) {
       try {
-        await exitInfiniteSession(courseId, session.session_id, {
-          current_exercise_id: currentExercise.id,
-          current_code: codeRef.current,
-          current_language: language
+        await saveChallengeCode(courseId, {
+          exercise_id: currentExercise.id,
+          code: codeRef.current,
+          language: language
         }, token)
       } catch (error) {
         console.error('Failed to save on exit:', error)
       }
     }
-  }, [courseId, session, exercises, currentIndex, language])
+  }, [courseId, exercises, currentIndex, language])
 
   const handleExit = async () => {
     await handleExitSave()
@@ -730,7 +938,7 @@ export default function ArenaPage() {
   // Loading State
   // ========================================
 
-  if (loading && !session) {
+  if (loading && exercises.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white to-[#F7F8FA] flex flex-col">
         <header className="h-[50px] bg-white border-b border-[#E4E7ED] flex items-center justify-between px-4">
@@ -781,7 +989,7 @@ export default function ArenaPage() {
   // Main IDE View
   // ========================================
 
-  if (!session || exercises.length === 0) return null
+  if (exercises.length === 0) return null
 
   const currentExercise = exercises[currentIndex]
   const currentProgress = exerciseProgress.find(p => p.exercise_id === currentExercise.id)
@@ -807,6 +1015,14 @@ export default function ArenaPage() {
               currentIndex={currentIndex}
               onSwitch={switchToExercise}
             />
+
+            {/* 题目列表按钮 */}
+            <button
+              onClick={() => setShowExerciseList(true)}
+              className="px-3 py-1.5 bg-white border border-[#E4E7ED] rounded-lg text-xs text-[#606266] hover:border-[#3498DB] hover:text-[#3498DB] transition-colors flex items-center gap-1.5"
+            >
+              <span>题目列表</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -834,7 +1050,7 @@ export default function ArenaPage() {
                 {/* 收藏按钮 */}
                 <FavoriteButton
                   exerciseId={currentExercise.id}
-                  challengeSessionId={session?.session_id}
+                  source="arena"
                   size="md"
                   showLabel
                 />
@@ -1148,6 +1364,15 @@ export default function ArenaPage() {
           canGoNext={canGoNext}
         />
       )}
+
+      {/* 题目列表模态框 */}
+      <ExerciseListModal
+        isOpen={showExerciseList}
+        onClose={() => setShowExerciseList(false)}
+        exercises={exerciseProgress}
+        currentIndex={currentIndex}
+        onSwitch={switchToExercise}
+      />
     </div>
   )
 }

@@ -4,18 +4,22 @@
 
 import {
   ReviewQueueResponse,
+  ReviewQueueItem,
   CompleteReviewRequest,
   CompleteReviewResponse,
   TargetPracticeRequest,
   TargetPracticeResponse,
   WeakPointListResponse,
+  WeakPointResponse,
   ReviewStatsResponse,
   WrongQuestionListResponse,
   WrongQuestionResponse,
   WeakPointAnalysisResponse,
+  KnowledgePointAnalysis,
   EnhancedTargetPracticeRequest,
   EnhancedTargetPracticeResponse,
   ReviewReminderResponse,
+  SpacedRepetitionResponse,
 } from '@/types/review'
 import { get, post } from './client'
 
@@ -146,14 +150,18 @@ export async function getReviewReminders(
 // Re-export types
 export type {
   ReviewQueueResponse,
+  ReviewQueueItem,
   CompleteReviewResponse,
   TargetPracticeResponse,
   WeakPointListResponse,
+  WeakPointResponse,
   ReviewStatsResponse,
   WrongQuestionListResponse,
   WrongQuestionResponse,
   WeakPointAnalysisResponse,
+  KnowledgePointAnalysis,
   EnhancedTargetPracticeRequest,
   EnhancedTargetPracticeResponse,
   ReviewReminderResponse,
+  SpacedRepetitionResponse,
 }

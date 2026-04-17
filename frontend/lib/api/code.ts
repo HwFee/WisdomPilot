@@ -9,6 +9,9 @@ import {
 } from '@/types/api'
 import { get, post } from './client'
 
+// Longer timeout for code execution (Judge0 can be slow)
+const CODE_EXECUTION_TIMEOUT = 60000 // 60 seconds
+
 // ========================================
 // Types
 // ========================================
@@ -53,14 +56,14 @@ export async function executeCode(
   request: CodeExecutionRequest,
   token: string
 ): Promise<CodeExecutionResponse> {
-  return post<CodeExecutionResponse>('/api/code/execute', token, request)
+  return post<CodeExecutionResponse>('/api/code/execute', token, request, CODE_EXECUTION_TIMEOUT)
 }
 
 export async function executeCodeBatch(
   request: BatchCodeExecutionRequest,
   authToken: string
 ): Promise<BatchCodeExecutionResponse> {
-  return post<BatchCodeExecutionResponse>('/api/code/execute-batch', authToken, request)
+  return post<BatchCodeExecutionResponse>('/api/code/execute-batch', authToken, request, CODE_EXECUTION_TIMEOUT)
 }
 
 export async function getSupportedLanguages(token: string): Promise<LanguageInfo[]> {

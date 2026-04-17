@@ -412,7 +412,107 @@ export async function startInfiniteSession(
 }
 
 /**
- * Get infinite mode progress
+ * Get challenge path progress (no session_id needed)
+ */
+export async function getChallengeProgress(
+  courseId: number,
+  token: string
+): Promise<InfiniteProgressResponse> {
+  return get<InfiniteProgressResponse>(
+    `/api/learning-path/challenge/${courseId}/progress`,
+    token
+  )
+}
+
+/**
+ * Submit exercise answer in challenge path
+ */
+export async function submitChallengeExercise(
+  courseId: number,
+  request: SubmitExerciseRequest,
+  token: string
+): Promise<SubmitExerciseResponse> {
+  return post<SubmitExerciseResponse>(
+    `/api/learning-path/challenge/${courseId}/submit`,
+    token,
+    request
+  )
+}
+
+/**
+ * Save code for an exercise
+ */
+export async function saveChallengeCode(
+  courseId: number,
+  request: SaveCodeRequest,
+  token: string
+): Promise<{ success: boolean }> {
+  return post<{ success: boolean }>(
+    `/api/learning-path/challenge/${courseId}/save-code`,
+    token,
+    request
+  )
+}
+
+/**
+ * Switch to a different exercise by index
+ */
+export async function switchChallengeExercise(
+  courseId: number,
+  request: SwitchExerciseRequest,
+  token: string
+): Promise<SwitchExerciseResponse> {
+  return post<SwitchExerciseResponse>(
+    `/api/learning-path/challenge/${courseId}/switch`,
+    token,
+    request
+  )
+}
+
+/**
+ * Append more exercises to challenge path
+ */
+export async function appendChallengeExercises(
+  courseId: number,
+  request: AppendExercisesRequest,
+  token: string
+): Promise<AppendExercisesResponse> {
+  return post<AppendExercisesResponse>(
+    `/api/learning-path/challenge/${courseId}/append`,
+    token,
+    request
+  )
+}
+
+/**
+ * Get specific exercise info (for wrong question book / favorites)
+ */
+export async function getChallengeExercise(
+  courseId: number,
+  exerciseId: number,
+  token: string
+): Promise<{
+  exercise: ChallengeExercise
+  exercise_index: number
+  is_unlocked: boolean
+  is_completed: boolean
+  is_correct: boolean
+  saved_code: string
+  current_language: string
+  total_exercises: number
+}> {
+  return get(
+    `/api/learning-path/challenge/${courseId}/exercise/${exerciseId}`,
+    token
+  )
+}
+
+// ========================================
+// Legacy APIs (for backward compatibility)
+// ========================================
+
+/**
+ * Get infinite mode progress (legacy - use getChallengeProgress)
  */
 export async function getInfiniteProgress(
   courseId: number,
@@ -426,7 +526,7 @@ export async function getInfiniteProgress(
 }
 
 /**
- * Submit exercise answer in infinite mode
+ * Submit exercise answer in infinite mode (legacy - use submitChallengeExercise)
  */
 export async function submitInfiniteExercise(
   courseId: number,
@@ -442,7 +542,7 @@ export async function submitInfiniteExercise(
 }
 
 /**
- * Save code for an exercise (when switching language)
+ * Save code for an exercise (legacy - use saveChallengeCode)
  */
 export async function saveInfiniteCode(
   courseId: number,
@@ -458,7 +558,7 @@ export async function saveInfiniteCode(
 }
 
 /**
- * Switch to a different exercise
+ * Switch to a different exercise (legacy - use switchChallengeExercise)
  */
 export async function switchInfiniteExercise(
   courseId: number,
@@ -474,7 +574,7 @@ export async function switchInfiniteExercise(
 }
 
 /**
- * Append more exercises to session
+ * Append more exercises to session (legacy - use appendChallengeExercises)
  */
 export async function appendInfiniteExercises(
   courseId: number,
@@ -502,5 +602,202 @@ export async function exitInfiniteSession(
     `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/exit`,
     token,
     request
+  )
+}
+
+/**
+ * 获取用户某门课的活跃挑战会话（用于错题本跳转）
+ */
+export async function getActiveChallengeSession(
+  courseId: number,
+  token: string
+): Promise<{
+  session: {
+    id: string
+    course_id: number
+    status: string
+    current_index: number
+    total_exercises: number
+    exercise_ids: number[]
+  } | null
+  exercise_map: Record<number, {
+    exercise_index: number
+    is_completed: boolean
+    is_correct: boolean
+    is_unlocked: boolean
+  }>
+  message?: string
+}> {
+  return get<{
+    session: {
+      id: string
+      course_id: number
+      status: string
+      current_index: number
+      total_exercises: number
+      exercise_ids: number[]
+    } | null
+    exercise_map: Record<number, {
+      exercise_index: number
+      is_completed: boolean
+      is_correct: boolean
+      is_unlocked: boolean
+    }>
+    message?: string
+  }>(
+    `/api/learning-path/challenge/${courseId}/active-session`,
+    token
+  )
+}
+
+// ========================================
+// Mastery Progress APIs (精进之路进度)
+// ========================================
+
+export interface SaveMasteryExerciseProgressRequest {
+  course_id: number
+  chapter_id: number
+  question_id: number
+  question_type?: 'base' | 'enhanced'
+  exercise_key?: string
+  is_completed: boolean
+  is_correct: boolean
+  user_answer?: string
+  correct_answer?: string
+  attempt_count?: number
+}
+
+export interface SaveMasteryExerciseProgressResponse {
+  success: boolean
+  progress_id?: string
+  message: string
+}
+
+export interface MasteryChapterProgressResponse {
+  chapter_id: number
+  total_questions: number
+  completed_questions: number
+  correct_questions: number
+  mastery_score: number
+  is_passed: boolean
+}
+
+export interface MasteryQuizCompleteRequest {
+  course_id: number
+  chapter_id: number
+  results: Array<{
+    question_id: number
+    is_correct: boolean
+    user_answer: string
+    correct_answer: string
+  }>
+}
+
+export interface MasteryProgressByKeyResponse {
+  found: boolean
+  progress?: {
+    course_id: number
+    chapter_id: number
+    question_id: number
+    question_index: number
+    is_completed: boolean
+    is_correct: boolean
+  }
+  message?: string
+}
+
+/**
+ * 保存精进之路做题进度
+ */
+export async function saveMasteryExerciseProgress(
+  request: SaveMasteryExerciseProgressRequest,
+  token: string
+): Promise<SaveMasteryExerciseProgressResponse> {
+  return post<SaveMasteryExerciseProgressResponse>(
+    '/api/learning-path/mastery/progress/exercise',
+    token,
+    request
+  )
+}
+
+/**
+ * 获取精进之路章节进度
+ */
+export async function getMasteryChapterProgress(
+  courseId: number,
+  chapterId: number,
+  token: string
+): Promise<MasteryChapterProgressResponse> {
+  return get<MasteryChapterProgressResponse>(
+    `/api/learning-path/mastery/${courseId}/${chapterId}/progress`,
+    token
+  )
+}
+
+/**
+ * 完成章节quiz时更新ChapterMastery
+ */
+export async function completeMasteryQuiz(
+  request: MasteryQuizCompleteRequest,
+  token: string
+): Promise<{ success: boolean; message: string }> {
+  return post<{ success: boolean; message: string }>(
+    '/api/learning-path/mastery/progress/complete-quiz',
+    token,
+    request
+  )
+}
+
+/**
+ * 根据exercise_key获取做题进度（用于错题本跳转定位）
+ */
+export async function getMasteryProgressByKey(
+  exerciseKey: string,
+  token: string
+): Promise<MasteryProgressByKeyResponse> {
+  return get<MasteryProgressByKeyResponse>(
+    `/api/learning-path/mastery/progress/exercise/${exerciseKey}`,
+    token
+  )
+}
+
+// ========================================
+// Mastery Chapter Detail Progress APIs
+// ========================================
+
+export interface MasteryExerciseProgressItem {
+  question_id: number
+  question_index: number
+  question_type: string
+  is_completed: boolean
+  is_correct: boolean
+  user_answer?: string
+  correct_answer?: string
+  saved_code?: string
+  current_language: string
+  attempt_count: number
+}
+
+export interface MasteryChapterDetailProgressResponse {
+  chapter_id: number
+  total_questions: number
+  completed_questions: number
+  correct_questions: number
+  mastery_score: number
+  is_passed: boolean
+  progress_items: MasteryExerciseProgressItem[]
+}
+
+/**
+ * 获取精进之路章节详细进度 - 包含每道题的进度信息
+ */
+export async function getMasteryChapterDetailProgress(
+  courseId: number,
+  chapterId: number,
+  token: string
+): Promise<MasteryChapterDetailProgressResponse> {
+  return get<MasteryChapterDetailProgressResponse>(
+    `/api/learning-path/mastery/${courseId}/${chapterId}/progress/detail`,
+    token
   )
 }

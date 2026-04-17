@@ -1016,6 +1016,7 @@ export interface EnhancedQuizQuestion {
   difficulty: number
   text: string
   options?: string[]
+  correct_answer?: string // 正确答案
   code_template?: string
   test_cases?: Array<{ input: string; expected: string }>
   knowledge_points: string[]

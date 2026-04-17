@@ -219,7 +219,7 @@ export {
   submitBaseAnswers,
   generateEnhancedQuiz,
   submitEnhancedQuiz,
-  // Arena Infinite Mode APIs
+  // Arena Infinite Mode APIs (Legacy with session_id)
   startInfiniteSession,
   getInfiniteProgress,
   submitInfiniteExercise,
@@ -227,6 +227,15 @@ export {
   switchInfiniteExercise,
   appendInfiniteExercises,
   exitInfiniteSession,
+  getActiveChallengeSession,
+  // New Challenge Path APIs (no session concept)
+  getChallengeProgress,
+  submitChallengeExercise,
+  saveChallengeCode,
+  switchChallengeExercise,
+  appendChallengeExercises,
+  getChallengeExercise,
+  // Constants
   TIER_THRESHOLDS,
   TIER_ICONS,
   TIER_NAMES,
