@@ -743,7 +743,53 @@ export type LearningPathType = 'mastery' | 'challenge'
 
 export type MasteryLevel = '入门' | '学习' | '练习' | '熟练' | '精通'
 
-export type Tier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'
+// 王者荣耀风格段位系统
+export type TierRank = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master' | 'king'
+
+// 段位配置
+export interface TierConfig {
+  rank: TierRank
+  name: string           // 中文名称
+  sub_tiers: number      // 小段位数量
+  stars_per_tier: number // 每小段位星星数
+  color: string          // 颜色
+  icon: string           // 图标
+  protection_count: number // 保护次数
+}
+
+// 段位信息
+export interface TierInfo {
+  tier: TierRank
+  tier_name: string
+  sub_tier: number       // 小段位 (1=I, 2=II, 3=III, 4=IV, 5=V)
+  sub_tier_name: string  // 罗马数字
+  full_name: string      // 完整名称如"黄金III"
+  stars: number          // 当前星星数
+  stars_needed: number   // 升级所需星星
+  protection_remaining: number // 剩余保护次数
+  color: string
+  icon: string
+  highest_tier?: TierRank
+  highest_sub_tier?: number
+  highest_full_name?: string
+}
+
+// 更新星星结果
+export interface UpdateStarsResult {
+  tier: TierRank
+  sub_tier: number
+  stars: number
+  stars_change: number
+  promoted: boolean
+  demoted: boolean
+  used_protection: boolean
+  protection_remaining: number
+  full_name: string
+  message: string
+}
+
+// 兼容旧版Tier类型
+export type Tier = TierRank
 
 // Mastery Path Types
 export interface MasteryOverviewResponse {

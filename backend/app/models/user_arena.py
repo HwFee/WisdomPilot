@@ -46,6 +46,13 @@ class UserArenaProfile(Base):
     tier: Mapped[str] = mapped_column(String(20), default="bronze", comment="Current tier")
     rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="Current rank in leaderboard")
 
+    # Tier system (王者荣耀风格段位)
+    sub_tier: Mapped[int] = mapped_column(Integer, default=4, comment="Sub-tier (1=I, 2=II, 3=III, 4=IV, 5=V)")
+    stars: Mapped[int] = mapped_column(Integer, default=0, comment="Current stars")
+    protection_remaining: Mapped[int] = mapped_column(Integer, default=3, comment="Remaining tier protection uses")
+    highest_tier: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="Historical highest tier")
+    highest_sub_tier: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="Historical highest sub-tier")
+
     # Challenge statistics
     total_challenges: Mapped[int] = mapped_column(Integer, default=0)
     wins: Mapped[int] = mapped_column(Integer, default=0, comment="Challenges with >= 80% correct")

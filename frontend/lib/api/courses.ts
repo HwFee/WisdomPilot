@@ -24,6 +24,7 @@ export interface CourseProgress {
   completed_stages: number
   total_stages: number
   current_chapter: string | null
+  current_section: string | null
   mastery_score: number | null
   arena_tier: string | null
   arena_score: number | null

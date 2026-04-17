@@ -9,6 +9,8 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models.course import Course
 from app.models.chapter import Chapter
+from app.models.section import Section
+from app.models.section_progress import SectionProgress
 from app.models.exercise import Exercise
 from app.models.user import User
 from app.schemas.course import (
@@ -21,6 +23,16 @@ from app.schemas.course import (
     ChapterDetailResponse,
     CourseDetail,
 )
+from app.schemas.section import (
+    SectionSummary,
+    SectionDetail,
+    SectionListResponse,
+    SectionDetailResponse,
+    SaveSectionProgressRequest,
+    SectionProgressResponse,
+    CurrentPositionResponse,
+)
+from app.utils.time import utc_now
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
 
@@ -358,6 +370,7 @@ async def get_user_course_progress(
     - Mastery score (for 精进之路)
     - Arena tier and score (for 挑战之路)
     - Current chapter
+    - Current section (within current chapter)
     """
     from app.models.chapter_mastery import ChapterMastery
     from app.models.user_arena import UserArenaProfile
@@ -398,9 +411,25 @@ async def get_user_course_progress(
         .order_by(ChapterMastery.course_id, Chapter.order_index)
     )
     current_chapter_map = {}
+    current_chapter_id_map = {}
     for row in current_chapter_result.all():
         if row.course_id not in current_chapter_map:
             current_chapter_map[row.course_id] = row.title
+            current_chapter_id_map[row.course_id] = row.chapter_id
+
+    # Get current section per course (first section of current chapter, or based on progress)
+    current_section_map = {}
+    for course_id, chapter_id in current_chapter_id_map.items():
+        # Get first section of the current chapter (simplified approach)
+        section_result = await db.execute(
+            select(Section)
+            .where(Section.chapter_id == chapter_id, Section.is_active == True)
+            .order_by(Section.order_index)
+            .limit(1)
+        )
+        first_section = section_result.scalar_one_or_none()
+        if first_section:
+            current_section_map[course_id] = first_section.title
 
     # Build response
     courses_data = []
@@ -424,6 +453,7 @@ async def get_user_course_progress(
             "completed_stages": mastered_chapters,
             "total_stages": total_chapters,
             "current_chapter": current_chapter_map.get(course.id),
+            "current_section": current_section_map.get(course.id),
             "mastery_score": mastery_score,
             "arena_tier": arena_profile.tier if arena_profile else None,
             "arena_score": arena_profile.total_score if arena_profile else None,
@@ -470,3 +500,247 @@ async def init_courses(db: db_dependency, user: auth_dependency):
         "message": f"Created {len(created)} new courses",
         "created": created
     }
+
+
+# ========== Section Endpoints ==========
+
+@router.get("/chapters/{chapter_id}/sections", response_model=SectionListResponse)
+async def get_chapter_sections(
+    chapter_id: int,
+    db: db_dependency,
+    current_user: auth_dependency
+):
+    """
+    Get all sections for a chapter with user's completion status.
+    """
+    # Get chapter
+    chapter_result = await db.execute(
+        select(Chapter).where(Chapter.id == chapter_id)
+    )
+    chapter = chapter_result.scalar_one_or_none()
+    if not chapter:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Chapter {chapter_id} not found"
+        )
+
+    # Get all sections for this chapter
+    sections_result = await db.execute(
+        select(Section)
+        .where(Section.chapter_id == chapter_id, Section.is_active == True)
+        .order_by(Section.order_index)
+    )
+    sections = sections_result.scalars().all()
+
+    # Get user's progress for these sections
+    section_ids = [s.id for s in sections]
+    progress_result = await db.execute(
+        select(SectionProgress).where(
+            SectionProgress.user_id == current_user.id,
+            SectionProgress.section_id.in_(section_ids)
+        )
+    )
+    progress_map = {p.section_id: p for p in progress_result.scalars().all()}
+
+    # Build response
+    section_summaries = []
+    for section in sections:
+        progress = progress_map.get(section.id)
+        section_summaries.append(SectionSummary(
+            id=section.id,
+            chapter_id=section.chapter_id,
+            title=section.title,
+            description=section.description,
+            order_index=section.order_index,
+            estimated_minutes=section.estimated_minutes,
+            is_completed=progress.is_completed if progress else False,
+        ))
+
+    return SectionListResponse(sections=section_summaries, total=len(section_summaries))
+
+
+@router.get("/sections/{section_id}", response_model=SectionDetailResponse)
+async def get_section(
+    section_id: int,
+    db: db_dependency,
+    current_user: auth_dependency
+):
+    """
+    Get section details including content.
+    """
+    # Get section
+    result = await db.execute(
+        select(Section).where(Section.id == section_id)
+    )
+    section = result.scalar_one_or_none()
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Section {section_id} not found"
+        )
+
+    # Get user's progress
+    progress_result = await db.execute(
+        select(SectionProgress).where(
+            SectionProgress.user_id == current_user.id,
+            SectionProgress.section_id == section_id
+        )
+    )
+    progress = progress_result.scalar_one_or_none()
+
+    section_detail = SectionDetail(
+        id=section.id,
+        chapter_id=section.chapter_id,
+        title=section.title,
+        description=section.description,
+        content=section.content,
+        order_index=section.order_index,
+        estimated_minutes=section.estimated_minutes,
+        learning_objectives=section.learning_objectives,
+        is_completed=progress.is_completed if progress else False,
+        last_position=progress.last_position if progress else "content",
+    )
+
+    return SectionDetailResponse(section=section_detail)
+
+
+@router.post("/sections/{section_id}/progress", response_model=SectionProgressResponse)
+async def save_section_progress(
+    section_id: int,
+    request: SaveSectionProgressRequest,
+    db: db_dependency,
+    current_user: auth_dependency
+):
+    """
+    Save user's learning progress for a section.
+    """
+    # Verify section exists
+    section_result = await db.execute(
+        select(Section).where(Section.id == section_id)
+    )
+    section = section_result.scalar_one_or_none()
+    if not section:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Section {section_id} not found"
+        )
+
+    # Get or create progress record
+    progress_result = await db.execute(
+        select(SectionProgress).where(
+            SectionProgress.user_id == current_user.id,
+            SectionProgress.section_id == section_id
+        )
+    )
+    progress = progress_result.scalar_one_or_none()
+
+    if not progress:
+        progress = SectionProgress(
+            user_id=current_user.id,
+            section_id=section_id,
+            last_position=request.position,
+            is_completed=request.is_completed,
+        )
+        if request.is_completed:
+            progress.completed_at = utc_now()
+        db.add(progress)
+    else:
+        progress.last_position = request.position
+        if request.is_completed and not progress.is_completed:
+            progress.is_completed = True
+            progress.completed_at = utc_now()
+
+    await db.commit()
+    await db.refresh(progress)
+
+    return SectionProgressResponse(
+        section_id=progress.section_id,
+        is_completed=progress.is_completed,
+        last_position=progress.last_position,
+        completed_at=progress.completed_at,
+    )
+
+
+@router.get("/{course_id}/current-position", response_model=CurrentPositionResponse)
+async def get_current_position(
+    course_id: int,
+    db: db_dependency,
+    current_user: auth_dependency
+):
+    """
+    Get user's current learning position for a course.
+    Returns the first incomplete section, or the last completed section.
+    """
+
+    # Get all chapters for this course
+    chapters_result = await db.execute(
+        select(Chapter)
+        .where(Chapter.course_id == course_id, Chapter.is_active == True)
+        .order_by(Chapter.order_index)
+    )
+    chapters = chapters_result.scalars().all()
+
+    if not chapters:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No chapters found for course {course_id}"
+        )
+
+    # Get all sections for these chapters
+    chapter_ids = [c.id for c in chapters]
+    sections_result = await db.execute(
+        select(Section)
+        .where(Section.chapter_id.in_(chapter_ids), Section.is_active == True)
+        .order_by(Section.chapter_id, Section.order_index)
+    )
+    sections = sections_result.scalars().all()
+
+    if not sections:
+        # No sections, return first chapter
+        return CurrentPositionResponse(
+            course_id=course_id,
+            chapter_id=chapters[0].id,
+            section_id=0,
+            position="content",
+            chapter_title=chapters[0].title,
+            section_title=None,
+        )
+
+    # Get user's progress for all sections
+    section_ids = [s.id for s in sections]
+    progress_result = await db.execute(
+        select(SectionProgress).where(
+            SectionProgress.user_id == current_user.id,
+            SectionProgress.section_id.in_(section_ids)
+        )
+    )
+    progress_map = {p.section_id: p for p in progress_result.scalars().all()}
+
+    # Find first incomplete section
+    for section in sections:
+        progress = progress_map.get(section.id)
+        if not progress or not progress.is_completed:
+            # Found incomplete section
+            chapter = next((c for c in chapters if c.id == section.chapter_id), None)
+            return CurrentPositionResponse(
+                course_id=course_id,
+                chapter_id=section.chapter_id,
+                section_id=section.id,
+                position=progress.last_position if progress else "content",
+                chapter_title=chapter.title if chapter else None,
+                section_title=section.title,
+            )
+
+    # All sections completed, return last section
+    last_section = sections[-1]
+    last_chapter = next((c for c in chapters if c.id == last_section.chapter_id), None)
+    last_progress = progress_map.get(last_section.id)
+
+    return CurrentPositionResponse(
+        course_id=course_id,
+        chapter_id=last_section.chapter_id,
+        section_id=last_section.id,
+        position=last_progress.last_position if last_progress else "content",
+        chapter_title=last_chapter.title if last_chapter else None,
+        section_title=last_section.title,
+    )

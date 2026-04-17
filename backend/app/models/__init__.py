@@ -5,6 +5,7 @@ from app.models.session import LoginSession
 from app.models.stats import ChapterProgress, LearningSession, ActivityLog
 from app.models.course import Course
 from app.models.chapter import Chapter
+from app.models.section import Section
 from app.models.exercise import Exercise
 from app.models.user_weak_point import UserWeakPoint
 from app.models.spaced_repetition import SpacedRepetition
@@ -20,6 +21,8 @@ from app.models.wrong_question import WrongQuestion
 from app.models.chapter_base_question import ChapterBaseQuestion
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.mastery_exercise_progress import MasteryExerciseProgress
+from app.models.section import Section
+from app.models.section_progress import SectionProgress
 
 __all__ = [
     # User & Auth
@@ -32,6 +35,7 @@ __all__ = [
     # Course Structure
     "Course",
     "Chapter",
+    "Section",
     "Exercise",
     # Review System
     "UserWeakPoint",
@@ -61,4 +65,8 @@ __all__ = [
     "ArenaExerciseProgress",
     # Mastery Exercise Progress
     "MasteryExerciseProgress",
+    # Section
+    "Section",
+    # Section Progress
+    "SectionProgress",
 ]

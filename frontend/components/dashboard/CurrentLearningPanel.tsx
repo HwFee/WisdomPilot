@@ -21,6 +21,7 @@ interface Course {
   completed_stages: number
   total_stages: number
   current_chapter: string | null
+  current_section: string | null
   mastery_score: number | null
   arena_tier: string | null
   arena_score: number | null
@@ -158,12 +159,22 @@ export function CurrentLearningPanel({
           {hasProgress ? (
             <>
               {/* Current chapter */}
-              <div className="mb-3 flex-1">
-                <p className="text-xs text-muted-foreground mb-1">{t('当前章节', 'Current Chapter')}</p>
+              <div className="mb-2">
+                <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
                 <p className="text-sm font-medium text-foreground truncate">
                   {currentCourse.current_chapter || t('准备开始', 'Ready to start')}
                 </p>
               </div>
+
+              {/* Current section */}
+              {currentCourse.current_section && (
+                <div className="mb-3">
+                  <p className="text-xs text-muted-foreground mb-0.5">{t('当前小节', 'Current Section')}</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 truncate">
+                    {currentCourse.current_section}
+                  </p>
+                </div>
+              )}
 
               {/* Progress bar */}
               <div className="mb-3">

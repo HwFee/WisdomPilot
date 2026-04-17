@@ -31,6 +31,7 @@ from app.routers.chapters import router as chapters_router
 from app.routers.favorites import router as favorites_router
 from app.routers.notes import router as notes_router
 from app.routers.learning_path import router as learning_path_router
+from app.routers.tier import router as tier_router
 
 
 @asynccontextmanager
@@ -102,6 +103,7 @@ app.include_router(spaced_review_router)
 app.include_router(favorites_router)
 app.include_router(notes_router)
 app.include_router(learning_path_router)
+app.include_router(tier_router)
 
 
 @app.get("/")

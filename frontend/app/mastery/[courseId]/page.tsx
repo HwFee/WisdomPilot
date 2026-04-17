@@ -386,7 +386,7 @@ export default function MasteryPathPage() {
     }
   };
 
-  // Handle chapter selection - load knowledge content first
+  // Handle chapter selection - navigate to section selection page
   const handleSelectChapter = async (
     chapterId: number,
     chapterTitle: string,
@@ -394,27 +394,16 @@ export default function MasteryPathPage() {
     const token = getStoredToken();
     if (!token) return;
 
-    await startTrackedSession(chapterId);
-    setSelectedChapterId(chapterId);
-    setSelectedChapterTitle(chapterTitle);
-    setKnowledgeLoading(true);
-    setStep("knowledge");
+    // Store chapter info for section page
+    localStorage.setItem('current_chapter_info', JSON.stringify({
+      id: chapterId,
+      title: chapterTitle,
+      course_id: courseId,
+      course_name: overview?.chapters[0]?.title || ''
+    }));
 
-    try {
-      // First load knowledge content
-      const knowledgeData = await getChapterKnowledgeContent(
-        courseId,
-        chapterId,
-        token,
-      );
-      setKnowledgeContent(knowledgeData);
-    } catch (error) {
-      console.error("Failed to fetch knowledge content:", error);
-      // If knowledge fails, still allow to proceed with quiz
-      setKnowledgeContent(null);
-    } finally {
-      setKnowledgeLoading(false);
-    }
+    // Navigate to section selection page
+    router.push(`/mastery/${courseId}/chapter/${chapterId}`);
   };
 
   // Start base quiz after viewing knowledge
@@ -851,12 +840,15 @@ export default function MasteryPathPage() {
     setFinalResult(null);
     setKnowledgeContent(null);
 
-    // Clear URL params to prevent re-triggering jump from wrong question book
-    const hasJumpParams =
-      searchParams.get("chapter") ||
-      searchParams.get("exercise") ||
-      searchParams.get("skip");
-    if (hasJumpParams) {
+    // Check if we came from a section (小节)
+    const fromSection = searchParams.get("fromSection");
+    const chapterParam = searchParams.get("chapter");
+
+    if (fromSection && chapterParam) {
+      // Came from section, return to section selection page
+      router.replace(`/mastery/${courseId}/chapter/${chapterParam}`, { scroll: false });
+    } else if (searchParams.get("chapter") || searchParams.get("exercise") || searchParams.get("skip")) {
+      // Came from wrong question book or favorites, return to chapter selection
       router.replace(`/mastery/${courseId}`, { scroll: false });
     }
 

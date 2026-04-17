@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.course import Course
     from app.models.exercise import Exercise
     from app.models.chapter_base_question import ChapterBaseQuestion
+    from app.models.section import Section
 
 
 class Chapter(Base):
@@ -61,6 +62,12 @@ class Chapter(Base):
 
     # Relationships - use lazy="noload" to prevent automatic loading
     course: Mapped["Course"] = relationship("Course", back_populates="chapters")
+    sections: Mapped[List["Section"]] = relationship(
+        "Section",
+        back_populates="chapter",
+        order_by="Section.order_index",
+        lazy="noload"
+    )
     exercises: Mapped[List["Exercise"]] = relationship(
         "Exercise",
         back_populates="chapter",

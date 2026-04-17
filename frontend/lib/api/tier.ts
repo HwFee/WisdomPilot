@@ -1,0 +1,174 @@
+/**
+ * Tier API - 段位系统相关API调用
+ */
+
+import { getStoredToken } from './index'
+import type { TierConfig, TierInfo, TierRank, UpdateStarsResult } from '@/types/api'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+/**
+ * 获取所有段位配置
+ */
+export async function getTierConfigs(): Promise<{ tiers: TierConfig[] }> {
+  const token = getStoredToken()
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${API_URL}/api/tier/config`, {
+    headers,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || '获取段位配置失败')
+  }
+
+  return response.json()
+}
+
+/**
+ * 获取用户在指定课程的段位信息
+ */
+export async function getTierInfo(courseId: number): Promise<TierInfo> {
+  const token = getStoredToken()
+  if (!token) {
+    throw new Error('未登录')
+  }
+
+  const response = await fetch(`${API_URL}/api/tier/profile/${courseId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || '获取段位信息失败')
+  }
+
+  return response.json()
+}
+
+/**
+ * 更新用户星星数
+ */
+export async function updateStars(
+  courseId: number,
+  starsChange: number,
+  accuracy?: number,
+  difficulty?: number
+): Promise<UpdateStarsResult> {
+  const token = getStoredToken()
+  if (!token) {
+    throw new Error('未登录')
+  }
+
+  const response = await fetch(`${API_URL}/api/tier/profile/${courseId}/stars`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      stars_change: starsChange,
+      accuracy,
+      difficulty,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || '更新星星失败')
+  }
+
+  return response.json()
+}
+
+/**
+ * 段位名称映射
+ */
+export const TIER_NAMES: Record<TierRank, string> = {
+  bronze: '青铜',
+  silver: '白银',
+  gold: '黄金',
+  platinum: '铂金',
+  diamond: '钻石',
+  master: '星耀',
+  king: '王者',
+}
+
+/**
+ * 段位颜色映射
+ */
+export const TIER_COLORS: Record<TierRank, string> = {
+  bronze: '#CD7F32',
+  silver: '#C0C0C0',
+  gold: '#FFD700',
+  platinum: '#E5E4E2',
+  diamond: '#B9F2FF',
+  master: '#9370DB',
+  king: '#FF4500',
+}
+
+/**
+ * 段位图标映射（使用emoji作为简单图标）
+ */
+export const TIER_ICONS: Record<TierRank, string> = {
+  bronze: '🥉',
+  silver: '🥈',
+  gold: '🥇',
+  platinum: '💎',
+  diamond: '💠',
+  master: '⭐',
+  king: '👑',
+}
+
+/**
+ * 获取完整段位名称
+ */
+export function getFullTierName(tier: TierRank, subTier: number): string {
+  if (tier === 'king') {
+    return '王者'
+  }
+  const tierName = TIER_NAMES[tier] || tier
+  const subTierName = getSubTierName(subTier)
+  return `${tierName}${subTierName}`
+}
+
+/**
+ * 获取小段位罗马数字名称
+ */
+export function getSubTierName(subTier: number): string {
+  const roman: Record<number, string> = {
+    1: 'I',
+    2: 'II',
+    3: 'III',
+    4: 'IV',
+    5: 'V',
+  }
+  return roman[subTier] || String(subTier)
+}
+
+/**
+ * 获取段位顺序（用于比较）
+ */
+export function getTierOrder(tier: TierRank): number {
+  const order: Record<TierRank, number> = {
+    bronze: 0,
+    silver: 1,
+    gold: 2,
+    platinum: 3,
+    diamond: 4,
+    master: 5,
+    king: 6,
+  }
+  return order[tier] ?? 0
+}
