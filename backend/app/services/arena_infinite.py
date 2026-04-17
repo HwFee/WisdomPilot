@@ -17,16 +17,21 @@ Design:
 import random
 from datetime import datetime
 from typing import Optional
+
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
 
 from app.models.arena_exercise_progress import ArenaExerciseProgress
-from app.models.exercise import Exercise
 from app.models.chapter import Chapter
+from app.models.exercise import Exercise
+from app.models.stats import ActivityLog
 from app.models.user import User
+from app.services.adaptive_recommendation import (
+    DIFFICULTY_LABELS,
+    AdaptiveRecommendationService,
+)
 from app.services.wrong_question import wrong_question_service
-from app.services.adaptive_recommendation import AdaptiveRecommendationService, DIFFICULTY_LABELS
 
 
 class ChallengePathService:
@@ -72,10 +77,12 @@ class ChallengePathService:
     ) -> list[ArenaExerciseProgress]:
         """Get all progress records for user's challenge path in a course"""
         result = await self.db.execute(
-            select(ArenaExerciseProgress).where(
+            select(ArenaExerciseProgress)
+            .where(
                 ArenaExerciseProgress.user_id == user_id,
                 ArenaExerciseProgress.course_id == course_id,
-            ).order_by(ArenaExerciseProgress.exercise_index)
+            )
+            .order_by(ArenaExerciseProgress.exercise_index)
         )
         return list(result.scalars().all())
 
@@ -94,7 +101,11 @@ class ChallengePathService:
         exercises_map = {ex.id: ex for ex in result.scalars().all()}
 
         # Return in order of exercise_index
-        return [exercises_map[p.exercise_id] for p in progress_records if p.exercise_id in exercises_map]
+        return [
+            exercises_map[p.exercise_id]
+            for p in progress_records
+            if p.exercise_id in exercises_map
+        ]
 
     async def _create_initial_exercises(
         self,
@@ -105,9 +116,7 @@ class ChallengePathService:
     ) -> list[Exercise]:
         """Create initial exercise set for a new challenge path using adaptive recommendation"""
         # Get user for adaptive recommendation
-        user_result = await self.db.execute(
-            select(User).where(User.id == user_id)
-        )
+        user_result = await self.db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
 
         if user:
@@ -123,7 +132,9 @@ class ChallengePathService:
             )
 
             # Extract exercise IDs from recommendations
-            recommended_ids = [rec["exercise_id"] for rec in recommendation.get("recommendations", [])]
+            recommended_ids = [
+                rec["exercise_id"] for rec in recommendation.get("recommendations", [])
+            ]
 
             if recommended_ids:
                 # Fetch recommended exercises
@@ -132,7 +143,11 @@ class ChallengePathService:
                 )
                 exercises_map = {ex.id: ex for ex in result.scalars().all()}
                 # Preserve recommendation order
-                selected = [exercises_map[eid] for eid in recommended_ids if eid in exercises_map]
+                selected = [
+                    exercises_map[eid]
+                    for eid in recommended_ids
+                    if eid in exercises_map
+                ]
 
                 if len(selected) >= count:
                     # Create progress records
@@ -159,18 +174,20 @@ class ChallengePathService:
             raise ValueError("No chapters available for this course")
 
         exercises_result = await self.db.execute(
-            select(Exercise).where(
+            select(Exercise)
+            .where(
                 Exercise.chapter_id.in_(chapter_ids),
-                Exercise.difficulty == difficulty_level
-            ).limit(count * 3)
+                Exercise.difficulty == difficulty_level,
+            )
+            .limit(count * 3)
         )
         all_exercises = exercises_result.scalars().all()
 
         if len(all_exercises) < count:
             exercises_result = await self.db.execute(
-                select(Exercise).where(
-                    Exercise.chapter_id.in_(chapter_ids)
-                ).limit(count * 3)
+                select(Exercise)
+                .where(Exercise.chapter_id.in_(chapter_ids))
+                .limit(count * 3)
             )
             all_exercises = exercises_result.scalars().all()
 
@@ -236,35 +253,47 @@ class ChallengePathService:
         for p in progress_records:
             ex = exercises.get(p.exercise_id)
             if ex:
-                progress_list.append({
-                    "exercise_id": p.exercise_id,
-                    "exercise_index": p.exercise_index,
-                    "is_completed": p.is_completed,
-                    "is_correct": p.is_correct,
-                    "is_unlocked": p.is_unlocked,
-                    "saved_code": (p.saved_codes or {}).get(p.current_language, ""),
-                    "current_language": p.current_language,
-                    "title": (ex.content or {}).get("title", f"题目 {p.exercise_index + 1}"),
-                    "difficulty": ex.difficulty,
-                    # 完整题目内容
-                    "content": {
-                        "text": (ex.content or {}).get("text", ""),
-                        "title": (ex.content or {}).get("title", ""),
-                        "description": (ex.content or {}).get("description", ""),
-                        "options": (ex.content or {}).get("options", []),
-                        "code_template": (ex.content or {}).get("code_template", ""),
-                        "input_format": (ex.content or {}).get("input_format", ""),
-                        "output_format": (ex.content or {}).get("output_format", ""),
-                        "sample_input": (ex.content or {}).get("sample_input", ""),
-                        "sample_output": (ex.content or {}).get("sample_output", ""),
-                        "samples": (ex.content or {}).get("samples", []),
-                        "time_limit": (ex.content or {}).get("time_limit", 1000),
-                        "memory_limit": (ex.content or {}).get("memory_limit", 256),
-                    },
-                    "knowledge_points": ex.knowledge_points or [],
-                    "test_cases": ex.test_cases if ex.type == "programming" else None,
-                    "type": ex.type,
-                })
+                progress_list.append(
+                    {
+                        "exercise_id": p.exercise_id,
+                        "exercise_index": p.exercise_index,
+                        "is_completed": p.is_completed,
+                        "is_correct": p.is_correct,
+                        "is_unlocked": p.is_unlocked,
+                        "saved_code": (p.saved_codes or {}).get(p.current_language, ""),
+                        "current_language": p.current_language,
+                        "title": (ex.content or {}).get(
+                            "title", f"题目 {p.exercise_index + 1}"
+                        ),
+                        "difficulty": ex.difficulty,
+                        # 完整题目内容
+                        "content": {
+                            "text": (ex.content or {}).get("text", ""),
+                            "title": (ex.content or {}).get("title", ""),
+                            "description": (ex.content or {}).get("description", ""),
+                            "options": (ex.content or {}).get("options", []),
+                            "code_template": (ex.content or {}).get(
+                                "code_template", ""
+                            ),
+                            "input_format": (ex.content or {}).get("input_format", ""),
+                            "output_format": (ex.content or {}).get(
+                                "output_format", ""
+                            ),
+                            "sample_input": (ex.content or {}).get("sample_input", ""),
+                            "sample_output": (ex.content or {}).get(
+                                "sample_output", ""
+                            ),
+                            "samples": (ex.content or {}).get("samples", []),
+                            "time_limit": (ex.content or {}).get("time_limit", 1000),
+                            "memory_limit": (ex.content or {}).get("memory_limit", 256),
+                        },
+                        "knowledge_points": ex.knowledge_points or [],
+                        "test_cases": ex.test_cases
+                        if ex.type == "programming"
+                        else None,
+                        "type": ex.type,
+                    }
+                )
 
         # Calculate stats
         correct_count = sum(1 for p in progress_records if p.is_correct)
@@ -311,9 +340,13 @@ class ChallengePathService:
             "is_completed": progress.is_completed,
             "is_correct": progress.is_correct,
             "is_unlocked": progress.is_unlocked,
-            "saved_code": (progress.saved_codes or {}).get(progress.current_language, ""),
+            "saved_code": (progress.saved_codes or {}).get(
+                progress.current_language, ""
+            ),
             "current_language": progress.current_language,
-            "title": (exercise.content or {}).get("title", f"题目 {progress.exercise_index + 1}"),
+            "title": (exercise.content or {}).get(
+                "title", f"题目 {progress.exercise_index + 1}"
+            ),
             "difficulty": exercise.difficulty,
             "exercise": exercise,
         }
@@ -386,27 +419,50 @@ class ChallengePathService:
         if all_passed and not progress.correct_at:
             progress.correct_at = now
 
+        exercise_result = await self.db.execute(
+            select(Exercise).where(Exercise.id == exercise_id)
+        )
+        exercise = exercise_result.scalar_one_or_none()
+
         # Collect wrong question if incorrect
         added_to_wrong_book = False
-        if not all_passed:
-            exercise_result = await self.db.execute(
-                select(Exercise).where(Exercise.id == exercise_id)
+        if not all_passed and exercise:
+            # Use exercise_key format: arena-{courseId}-{exerciseId}
+            exercise_key = f"arena-{course_id}-{exercise_id}"
+            await wrong_question_service.collect_wrong_question_by_key(
+                db=self.db,
+                user_id=user_id,
+                exercise_key=exercise_key,
+                user_answer=code,
+                course_id=course_id,
+                exercise_content=exercise.content,
+                exercise_type=exercise.type,
+                knowledge_points=exercise.knowledge_points,
             )
-            exercise = exercise_result.scalar_one_or_none()
-            if exercise:
-                # Use exercise_key format: arena-{courseId}-{exerciseId}
-                exercise_key = f"arena-{course_id}-{exercise_id}"
-                await wrong_question_service.collect_wrong_question_by_key(
-                    db=self.db,
-                    user_id=user_id,
-                    exercise_key=exercise_key,
-                    user_answer=code,
-                    course_id=course_id,
-                    exercise_content=exercise.content,
-                    exercise_type=exercise.type,
-                    knowledge_points=exercise.knowledge_points,
-                )
-                added_to_wrong_book = True
+            added_to_wrong_book = True
+
+        if exercise:
+            exercise_title = (
+                (exercise.content or {}).get("title")
+                or (exercise.content or {}).get("text")
+                or f"挑战题目 {progress.exercise_index + 1}"
+            )
+            activity = ActivityLog(
+                user_id=user_id,
+                activity_type="exercise_complete",
+                chapter_id=exercise.chapter_id,
+                description=f"挑战之路完成练习：{exercise_title}",
+                extra_data={
+                    "learning_path": "challenge",
+                    "learning_path_label": "挑战之路",
+                    "course_id": course_id,
+                    "exercise_id": exercise_id,
+                    "exercise_index": progress.exercise_index,
+                    "exercise_title": exercise_title,
+                    "is_correct": all_passed,
+                },
+            )
+            self.db.add(activity)
 
         # Unlock next exercise
         next_unlocked = False
@@ -469,7 +525,9 @@ class ChallengePathService:
         """Switch to a different exercise by index"""
         # Get total count
         count_result = await self.db.execute(
-            select(func.count()).select_from(ArenaExerciseProgress).where(
+            select(func.count())
+            .select_from(ArenaExerciseProgress)
+            .where(
                 ArenaExerciseProgress.user_id == user_id,
                 ArenaExerciseProgress.course_id == course_id,
             )
@@ -503,7 +561,9 @@ class ChallengePathService:
 
         return {
             "exercise_id": progress.exercise_id,
-            "saved_code": (progress.saved_codes or {}).get(progress.current_language, ""),
+            "saved_code": (progress.saved_codes or {}).get(
+                progress.current_language, ""
+            ),
             "current_language": progress.current_language,
             "is_completed": progress.is_completed,
             "is_correct": progress.is_correct,
@@ -537,9 +597,7 @@ class ChallengePathService:
         existing_ids = list(set(row[0] for row in existing_result.fetchall()))
 
         # Get user for adaptive recommendation
-        user_result = await self.db.execute(
-            select(User).where(User.id == user_id)
-        )
+        user_result = await self.db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
 
         selected = []
@@ -557,14 +615,20 @@ class ChallengePathService:
                 exclude_ids=existing_ids,
             )
 
-            recommended_ids = [rec["exercise_id"] for rec in recommendation.get("recommendations", [])]
+            recommended_ids = [
+                rec["exercise_id"] for rec in recommendation.get("recommendations", [])
+            ]
 
             if recommended_ids:
                 result = await self.db.execute(
                     select(Exercise).where(Exercise.id.in_(recommended_ids))
                 )
                 exercises_map = {ex.id: ex for ex in result.scalars().all()}
-                selected = [exercises_map[eid] for eid in recommended_ids if eid in exercises_map]
+                selected = [
+                    exercises_map[eid]
+                    for eid in recommended_ids
+                    if eid in exercises_map
+                ]
 
         # Fallback: traditional random selection if adaptive fails
         if len(selected) < count:
@@ -576,27 +640,34 @@ class ChallengePathService:
             all_exclude = existing_ids + [ex.id for ex in selected]
 
             exercises_result = await self.db.execute(
-                select(Exercise).where(
+                select(Exercise)
+                .where(
                     Exercise.chapter_id.in_(chapter_ids),
                     Exercise.difficulty == difficulty_level,
                     ~Exercise.id.in_(all_exclude),
-                ).limit(count * 2)
+                )
+                .limit(count * 2)
             )
             all_exercises = exercises_result.scalars().all()
 
             if len(all_exercises) < count - len(selected):
                 exercises_result = await self.db.execute(
-                    select(Exercise).where(
+                    select(Exercise)
+                    .where(
                         Exercise.chapter_id.in_(chapter_ids),
                         ~Exercise.id.in_(all_exclude),
-                    ).limit(count * 2)
+                    )
+                    .limit(count * 2)
                 )
                 all_exercises = exercises_result.scalars().all()
 
-            remaining = random.sample(
-                list(all_exercises),
-                min(count - len(selected), len(all_exercises))
-            ) if all_exercises else []
+            remaining = (
+                random.sample(
+                    list(all_exercises), min(count - len(selected), len(all_exercises))
+                )
+                if all_exercises
+                else []
+            )
             selected.extend(remaining)
 
         if not selected:
@@ -613,7 +684,9 @@ class ChallengePathService:
                 )
             )
             last_progress = last_result.scalar_one_or_none()
-            last_exercise_completed = last_progress.is_completed if last_progress else False
+            last_exercise_completed = (
+                last_progress.is_completed if last_progress else False
+            )
 
         new_ids = []
         for i, ex in enumerate(selected):

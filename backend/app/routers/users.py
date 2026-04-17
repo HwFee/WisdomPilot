@@ -1,11 +1,20 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
 from app.models import User
 from app.schemas import UserResponse
-from app.schemas.profile import UserProfileResponse, UpdateProfileRequest, CheckinResponse, CheckinStatusResponse, CheckinDetailsResponse, CheckinStatsResponse
+from app.schemas.profile import (
+    CheckinDetailsResponse,
+    CheckinResponse,
+    CheckinStatsResponse,
+    CheckinStatusResponse,
+    UpdateProfileRequest,
+    UserProfileResponse,
+)
 from app.services.profile import profile_service
 from app.utils.deps import get_current_active_user
 
@@ -18,6 +27,7 @@ auth_dependency = Annotated[User, Depends(get_current_active_user)]
 # IMPORTANT: Specific routes MUST come BEFORE /{user_id} catch-all
 # Otherwise /profile, /me/profile, /me/activities, /xp, etc. get matched as user_id="profile"
 
+
 @router.get("/me/profile", response_model=UserProfileResponse)
 async def get_my_profile(
     db: db_dependency,
@@ -27,8 +37,7 @@ async def get_my_profile(
     user = await profile_service.get_profile(db, current_user.id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return user
 
@@ -43,8 +52,7 @@ async def update_my_profile(
     user = await profile_service.get_profile(db, current_user.id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     if request.preferred_languages is not None:
@@ -79,13 +87,19 @@ async def get_my_activities(
                 "id": a.id,
                 "type": a.activity_type,
                 "description": a.description,
-                "details": a.extra_data,
+                "details": {
+                    **(a.extra_data or {}),
+                    "learning_path": (a.extra_data or {}).get("learning_path"),
+                    "learning_path_label": (a.extra_data or {}).get(
+                        "learning_path_label"
+                    ),
+                },
                 # 添加 UTC 时区标识，确保前端正确解析
                 "timestamp": a.created_at.isoformat() + "Z" if a.created_at else None,
             }
             for a in activities
         ],
-        "total": len(activities)
+        "total": len(activities),
     }
 
 
@@ -124,6 +138,7 @@ async def get_checkin_details(
 ):
     """Get check-in details with lunar calendar info for a specific date"""
     from datetime import date as date_type
+
     from app.utils.lunar import get_checkin_details_full
 
     if year and month and day:
@@ -131,7 +146,9 @@ async def get_checkin_details(
     else:
         target_date = date_type.today()
 
-    details = get_checkin_details_full(target_date.year, target_date.month, target_date.day)
+    details = get_checkin_details_full(
+        target_date.year, target_date.month, target_date.day
+    )
     streak_multiplier = profile_service._get_streak_multiplier(current_user.streak_days)
 
     return CheckinDetailsResponse(
@@ -184,15 +201,14 @@ async def add_xp(
     user = await profile_service.get_profile(db, current_user.id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     user = await profile_service.add_xp(db, user, xp_amount)
     return {
         "xp": user.xp,
         "level": user.level,
-        "xp_for_next_level": profile_service.get_xp_for_next_level(user)
+        "xp_for_next_level": profile_service.get_xp_for_next_level(user),
     }
 
 
@@ -206,8 +222,7 @@ async def get_my_profile_alias(
     user = await profile_service.get_profile(db, current_user.id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return user
 
@@ -222,8 +237,7 @@ async def update_my_profile_alias(
     user = await profile_service.get_profile(db, current_user.id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     if request.preferred_languages is not None:
@@ -244,15 +258,14 @@ async def add_xp_alias(
     user = await profile_service.get_profile(db, current_user.id)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     user = await profile_service.add_xp(db, user, xp_amount)
     return {
         "xp": user.xp,
         "level": user.level,
-        "xp_for_next_level": profile_service.get_xp_for_next_level(user)
+        "xp_for_next_level": profile_service.get_xp_for_next_level(user),
     }
 
 
@@ -276,4 +289,3 @@ async def get_user(
         )
 
     return UserResponse.model_validate(user)
-

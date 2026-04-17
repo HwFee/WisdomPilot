@@ -1,30 +1,31 @@
 """Router for learning statistics endpoints"""
 
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.utils.deps import get_current_active_user
 from app.models.user import User
 from app.schemas.stats import (
-    ChapterProgressResponse,
-    UpdateProgressRequest,
-    LearningSessionResponse,
-    StartSessionRequest,
-    EndSessionRequest,
-    UpdateSubsectionRequest,
-    LearningStatistics,
     ActivityResponse,
     ChapterExerciseAnswersResponse,
-    DailyExercisesTrendResponse,
+    ChapterProgressResponse,
     DailyAccuracyTrendResponse,
+    DailyExercisesTrendResponse,
     DailyTimeTrendResponse,
+    EndSessionRequest,
+    LearningSessionResponse,
+    LearningStatistics,
+    StartSessionRequest,
+    UpdateProgressRequest,
+    UpdateSubsectionRequest,
 )
 from app.services.stats import StatsService
 from app.services.stats_service import stats_service
+from app.utils.deps import get_current_active_user
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
@@ -86,11 +87,17 @@ async def end_session(
     current_user: Annotated[User, Depends(get_current_active_user)],
     service: StatsService = Depends(get_stats_service),
 ):
-    """End current active session"""
+    """End current active session.
+    If no active session found and chapter_id is provided, creates and immediately
+    completes a session to preserve the recorded time.
+    """
     active_session = await service.get_active_session(current_user.id)
     if active_session is None:
-        raise HTTPException(status_code=404, detail="No active session found")
-
+        # No active session found — create a completed one to preserve the time
+        chapter_id = data.chapter_id or 0
+        return await service.create_completed_session(
+            current_user.id, chapter_id, data.duration_seconds
+        )
     return await service.end_session(current_user.id, active_session.id, data)
 
 
@@ -159,7 +166,9 @@ async def get_activities(
     return await service.get_activities(current_user.id, limit)
 
 
-@router.get("/exercises/answers/{chapter_id}", response_model=ChapterExerciseAnswersResponse)
+@router.get(
+    "/exercises/answers/{chapter_id}", response_model=ChapterExerciseAnswersResponse
+)
 async def get_chapter_exercise_answers(
     chapter_id: int,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -233,6 +242,7 @@ async def get_my_recent_activity(
 # Trend Endpoints
 # ========================================
 
+
 @router.get("/trends/exercises", response_model=DailyExercisesTrendResponse)
 async def get_exercises_trend(
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -270,6 +280,7 @@ async def get_time_trend(
 # Today Stats API
 # ========================================
 
+
 @router.get("/today")
 async def get_today_stats(
     db: db_dependency,
@@ -279,62 +290,83 @@ async def get_today_stats(
     Get today's learning statistics.
 
     Returns:
-    - exercises: Number of exercises completed today (deduplicated)
-    - correct: Number of correct answers today (based on latest attempt)
-    - accuracy: Accuracy rate today (percentage)
-    - time_minutes: Total learning time today in minutes
+    - exercises: Number of challenge-path exercises completed today
+    - correct: Number of correct challenge-path answers today
+    - accuracy: Challenge-path accuracy rate today (percentage)
+    - time_minutes: Total learning time today in minutes across all paths
     """
     from datetime import datetime, timezone
+
     from app.models.stats import ActivityLog, LearningSession
 
     # Use UTC time for consistency with database storage
     utc_now = datetime.now(timezone.utc)
     today_start = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Get today's exercises from activity log
+    # Get today's exercise activities
     exercises_result = await db.execute(
         select(ActivityLog)
         .where(
             ActivityLog.user_id == current_user.id,
             ActivityLog.created_at >= today_start,
-            ActivityLog.activity_type == 'exercise_complete'
+            ActivityLog.activity_type == "exercise_complete",
         )
-        .order_by(ActivityLog.created_at.desc())  # 按时间倒序，最新的在前面
+        .order_by(ActivityLog.created_at.desc())
     )
     today_activities = exercises_result.scalars().all()
 
-    # Support two data formats:
-    # 1. New format: each activity has exercise_id and is_correct (per-exercise)
-    # 2. Legacy format: activity has exercises_completed and exercises_correct (aggregated)
+    # Only count challenge-path exercises here.
+    # Rules:
+    # - Explicit mastery logs are excluded
+    # - Explicit challenge logs are included
+    # - Legacy logs without learning_path are treated as challenge logs
+    challenge_activities = [
+        a
+        for a in today_activities
+        if (a.extra_data or {}).get("learning_path") != "mastery"
+    ]
 
-    # Check if we have new format data (with exercise_id)
-    has_exercise_ids = any(a.extra_data.get('exercise_id') for a in today_activities)
+    per_exercise_activities = [
+        a for a in challenge_activities if (a.extra_data or {}).get("exercise_id")
+    ]
+    aggregated_activities = [
+        a for a in challenge_activities if not (a.extra_data or {}).get("exercise_id")
+    ]
 
-    if has_exercise_ids:
-        # New format: deduplicate by exercise_id
+    exercises = 0
+    correct = 0
+
+    if per_exercise_activities:
         seen_exercises = set()
-        unique_exercises = []
-        for a in today_activities:
-            ex_id = a.extra_data.get('exercise_id')
-            if ex_id and ex_id not in seen_exercises:
-                seen_exercises.add(ex_id)
-                unique_exercises.append(a)
+        for activity in per_exercise_activities:
+            exercise_id = (activity.extra_data or {}).get("exercise_id")
+            if exercise_id in seen_exercises:
+                continue
+            seen_exercises.add(exercise_id)
+            exercises += 1
+            if (activity.extra_data or {}).get("is_correct", False):
+                correct += 1
 
-        exercises = len(unique_exercises)
-        correct = sum(1 for a in unique_exercises if a.extra_data.get('is_correct', False))
-    else:
-        # Legacy format: sum aggregated counts
-        exercises = sum(a.extra_data.get('exercises_completed', 0) for a in today_activities)
-        correct = sum(a.extra_data.get('exercises_correct', 0) for a in today_activities)
+    if aggregated_activities:
+        exercises += sum(
+            (a.extra_data or {}).get("exercises_completed", 1)
+            for a in aggregated_activities
+        )
+        correct += sum(
+            (a.extra_data or {}).get(
+                "exercises_correct",
+                1 if (a.extra_data or {}).get("is_correct", False) else 0,
+            )
+            for a in aggregated_activities
+        )
 
     accuracy = round((correct / exercises) * 100, 1) if exercises > 0 else 0.0
 
-    # Get learning time from sessions
+    # Get total learning time from all sessions across both paths
     sessions_result = await db.execute(
-        select(LearningSession)
-        .where(
+        select(LearningSession).where(
             LearningSession.user_id == current_user.id,
-            LearningSession.started_at >= today_start
+            LearningSession.started_at >= today_start,
         )
     )
     today_sessions = sessions_result.scalars().all()

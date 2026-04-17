@@ -1,24 +1,25 @@
 """Router for favorites endpoints"""
 
 from typing import Annotated, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, distinct
 
 from app.database import get_db
-from app.utils.deps import get_current_active_user
-from app.models.user import User
 from app.models.favorite import Favorite
+from app.models.user import User
 from app.schemas.favorites import (
-    FavoriteCreate,
-    FavoriteUpdate,
-    FavoriteResponse,
-    FavoriteListResponse,
     FavoriteCountResponse,
+    FavoriteCreate,
     FavoriteFolderCreate,
     FavoriteFolderResponse,
     FavoriteFoldersListResponse,
+    FavoriteListResponse,
+    FavoriteResponse,
+    FavoriteUpdate,
 )
+from app.utils.deps import get_current_active_user
 
 router = APIRouter(prefix="/api/favorites", tags=["favorites"])
 
@@ -108,7 +109,9 @@ async def get_favorites(
         base_query = base_query.where(Favorite.folder == folder)
 
     # Get total count
-    count_query = select(func.count(Favorite.id)).where(Favorite.user_id == current_user.id)
+    count_query = select(func.count(Favorite.id)).where(
+        Favorite.user_id == current_user.id
+    )
     if folder:
         count_query = count_query.where(Favorite.folder == folder)
     count_result = await db.execute(count_query)
@@ -116,10 +119,7 @@ async def get_favorites(
 
     # Get favorites
     result = await db.execute(
-        base_query
-        .order_by(Favorite.created_at.desc())
-        .limit(limit)
-        .offset(offset)
+        base_query.order_by(Favorite.created_at.desc()).limit(limit).offset(offset)
     )
     favorites = list(result.scalars().all())
 
@@ -153,10 +153,7 @@ async def get_favorite_folders(
     """Get user's favorite folders with counts"""
     # Get distinct folders with counts
     result = await db.execute(
-        select(
-            Favorite.folder,
-            func.count(Favorite.id).label('count')
-        )
+        select(Favorite.folder, func.count(Favorite.id).label("count"))
         .where(Favorite.user_id == current_user.id)
         .where(Favorite.folder.isnot(None))
         .group_by(Favorite.folder)
@@ -164,10 +161,7 @@ async def get_favorite_folders(
     )
     rows = result.all()
 
-    folders = [
-        FavoriteFolderResponse(name=row.folder, count=row.count)
-        for row in rows
-    ]
+    folders = [FavoriteFolderResponse(name=row.folder, count=row.count) for row in rows]
 
     # Add "默认" folder for ungrouped favorites
     default_count_result = await db.execute(
@@ -190,6 +184,44 @@ async def create_folder(
 ):
     """Create a new favorite folder (just returns the name, folders are created on-demand)"""
     return FavoriteFolderResponse(name=request.name, count=0)
+
+
+@router.get("/check")
+async def check_favorite(
+    db: db_dependency,
+    current_user: auth_dependency,
+    exercise_id: int = Query(..., description="Exercise ID to check"),
+    chapter_id: Optional[int] = Query(
+        default=None, description="Chapter ID (omit for challenge-mode favorites)"
+    ),
+):
+    """Check whether the current user has favorited a specific exercise.
+
+    Matches on user_id + exercise_id + chapter_id (or chapter_id IS NULL when
+    chapter_id is not supplied), so 精进之路 and 挑战之路 favorites are kept
+    distinct from one another.
+
+    Returns:
+        is_favorited: True if a matching favorite record exists.
+        favorite_id:  The UUID string of that record, or null when not found.
+    """
+    conditions = [
+        Favorite.user_id == current_user.id,
+        Favorite.exercise_id == exercise_id,
+    ]
+
+    if chapter_id is not None:
+        conditions.append(Favorite.chapter_id == chapter_id)
+    else:
+        conditions.append(Favorite.chapter_id.is_(None))
+
+    result = await db.execute(select(Favorite).where(*conditions))
+    favorite = result.scalar_one_or_none()
+
+    return {
+        "is_favorited": favorite is not None,
+        "favorite_id": str(favorite.id) if favorite is not None else None,
+    }
 
 
 @router.patch("/{favorite_id}", response_model=FavoriteResponse)

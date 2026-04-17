@@ -8,18 +8,20 @@ Mastery Progress Service - 精进之路进度服务
 """
 
 from datetime import datetime
-from typing import Optional, List
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, update
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from typing import List, Optional
 
-from app.models.mastery_exercise_progress import MasteryExerciseProgress
-from app.models.chapter_mastery import ChapterMastery
+from sqlalchemy import and_, select, update
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.chapter_base_question import ChapterBaseQuestion
+from app.models.chapter_mastery import ChapterMastery
+from app.models.mastery_exercise_progress import MasteryExerciseProgress
+from app.models.stats import ActivityLog
 from app.schemas.mastery_progress import (
-    MasteryExerciseProgressSaveRequest,
-    MasteryExerciseProgressResponse,
     MasteryChapterProgressResponse,
+    MasteryExerciseProgressResponse,
+    MasteryExerciseProgressSaveRequest,
     MasteryQuizCompleteRequest,
 )
 from app.utils.time import utc_now
@@ -96,18 +98,46 @@ class MasteryProgressService:
                 )
                 db.add(progress)
 
+            question_result = await db.execute(
+                select(ChapterBaseQuestion).where(
+                    ChapterBaseQuestion.id == request.question_id
+                )
+            )
+            question = question_result.scalar_one_or_none()
+            question_title = (
+                f"基础题 {question.order_index}"
+                if question and question.order_index
+                else f"题目 {request.question_id}"
+            )
+
+            activity = ActivityLog(
+                user_id=user_id,
+                activity_type="exercise_complete",
+                chapter_id=request.chapter_id,
+                description=f"精进之路完成{question_title}",
+                extra_data={
+                    "learning_path": "mastery",
+                    "learning_path_label": "精进之路",
+                    "exercise_id": request.question_id,
+                    "exercise_title": question_title,
+                    "question_type": request.question_type,
+                    "is_correct": request.is_correct,
+                    "course_id": request.course_id,
+                    "chapter_id": request.chapter_id,
+                    "exercise_key": request.exercise_key,
+                },
+            )
+            db.add(activity)
+
             await db.commit()
             return MasteryExerciseProgressResponse(
-                success=True,
-                progress_id=progress.id,
-                message="进度保存成功"
+                success=True, progress_id=progress.id, message="进度保存成功"
             )
 
         except Exception as e:
             await db.rollback()
             return MasteryExerciseProgressResponse(
-                success=False,
-                message=f"保存失败: {str(e)}"
+                success=False, message=f"保存失败: {str(e)}"
             )
 
     async def get_chapter_progress(
@@ -237,9 +267,12 @@ class MasteryProgressService:
                 mastery.total_exercises += total_count
                 mastery.correct_exercises += correct_count
                 if mastery.total_exercises > 0:
-                    mastery.accuracy_score = (mastery.correct_exercises / mastery.total_exercises) * 100
+                    mastery.accuracy_score = (
+                        mastery.correct_exercises / mastery.total_exercises
+                    ) * 100
                 mastery.mastery_score = min(100, mastery.mastery_score + (accuracy * 5))
                 from app.services.chapter_mastery import ChapterMasteryService
+
                 service = ChapterMasteryService(None)
                 mastery.mastery_level = service.get_mastery_level(mastery.mastery_score)
                 mastery.last_practiced_at = utc_now()
@@ -248,6 +281,7 @@ class MasteryProgressService:
             else:
                 # 创建新记录
                 from app.services.chapter_mastery import ChapterMasteryService
+
                 service = ChapterMasteryService(None)
                 mastery = ChapterMastery(
                     user_id=user_id,
@@ -316,10 +350,12 @@ class MasteryProgressService:
 
         # 获取章节总题数
         questions_result = await db.execute(
-            select(ChapterBaseQuestion).where(
+            select(ChapterBaseQuestion)
+            .where(
                 ChapterBaseQuestion.chapter_id == chapter_id,
                 ChapterBaseQuestion.is_active == True,
-            ).order_by(ChapterBaseQuestion.id)
+            )
+            .order_by(ChapterBaseQuestion.id)
         )
         questions = questions_result.scalars().all()
         total_questions = len(questions)
@@ -344,30 +380,36 @@ class MasteryProgressService:
         for idx, question in enumerate(questions):
             progress = progress_map.get(question.id)
             if progress:
-                progress_items.append(MasteryExerciseProgressItem(
-                    question_id=question.id,
-                    question_index=idx,
-                    question_type=progress.question_type or "base",
-                    is_completed=progress.is_completed,
-                    is_correct=progress.is_correct,
-                    user_answer=progress.user_answer,
-                    correct_answer=progress.correct_answer,
-                    saved_code=progress.saved_code,
-                    current_language=progress.current_language or "python",
-                    attempt_count=progress.attempt_count,
-                ))
+                progress_items.append(
+                    MasteryExerciseProgressItem(
+                        question_id=question.id,
+                        question_index=idx,
+                        question_type=progress.question_type or "base",
+                        is_completed=progress.is_completed,
+                        is_correct=progress.is_correct,
+                        user_answer=progress.user_answer,
+                        correct_answer=progress.correct_answer,
+                        saved_code=progress.saved_code,
+                        current_language=progress.current_language or "python",
+                        attempt_count=progress.attempt_count,
+                    )
+                )
             else:
-                progress_items.append(MasteryExerciseProgressItem(
-                    question_id=question.id,
-                    question_index=idx,
-                    question_type="base",
-                    is_completed=False,
-                    is_correct=False,
-                ))
+                progress_items.append(
+                    MasteryExerciseProgressItem(
+                        question_id=question.id,
+                        question_index=idx,
+                        question_type="base",
+                        is_completed=False,
+                        is_correct=False,
+                    )
+                )
 
         completed_questions = sum(1 for p in progress_items if p.is_completed)
         correct_questions = sum(1 for p in progress_items if p.is_correct)
-        mastery_score = (correct_questions / total_questions * 100) if total_questions > 0 else 0
+        mastery_score = (
+            (correct_questions / total_questions * 100) if total_questions > 0 else 0
+        )
 
         return MasteryChapterDetailProgressResponse(
             chapter_id=chapter_id,

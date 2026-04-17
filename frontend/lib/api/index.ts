@@ -14,7 +14,7 @@ export {
   isAuthenticated,
   type User,
   type Token,
-} from './auth'
+} from "./auth";
 
 // Courses
 export {
@@ -30,7 +30,7 @@ export {
   type CourseProgress,
   type CourseProgressResponse,
   type TodayStatsResponse,
-} from './courses'
+} from "./courses";
 
 // Exercises
 export {
@@ -42,7 +42,7 @@ export {
   type ExerciseSummary,
   type ExerciseDetail,
   type ExerciseSubmitResponse,
-} from './exercises'
+} from "./exercises";
 
 // Challenges
 export {
@@ -53,7 +53,7 @@ export {
   type ChallengeSummary,
   type ChallengeDetail,
   type UserChallengeDetail,
-} from './challenges'
+} from "./challenges";
 
 // Achievements
 export {
@@ -65,7 +65,7 @@ export {
   getUserRank,
   type AchievementSummary,
   type AchievementDetail,
-} from './achievements'
+} from "./achievements";
 
 // Stats
 export {
@@ -73,6 +73,7 @@ export {
   getChapterProgress,
   updateChapterProgress,
   startLearningSession,
+  startStageSession,
   endLearningSession,
   getActiveSession,
   updateSessionSubsection,
@@ -87,7 +88,7 @@ export {
   type UpdateProgressRequest,
   type ExerciseAnswer,
   type ChapterExerciseAnswers,
-} from './stats'
+} from "./stats";
 
 // Profile
 export {
@@ -104,7 +105,7 @@ export {
   type CheckinStatusResponse,
   type CheckinDetailsResponse,
   type CheckinStatsResponse,
-} from './profile'
+} from "./profile";
 
 // Review
 export {
@@ -113,7 +114,7 @@ export {
   getWeakPoints,
   getTargetPractice,
   getReviewStats,
-} from './review'
+} from "./review";
 
 // AI
 export {
@@ -142,7 +143,7 @@ export {
   type AIStatusResponse,
   type TestConnectionRequest,
   type TestConnectionResponse,
-} from './ai'
+} from "./ai";
 
 // Code Execution
 export {
@@ -151,7 +152,7 @@ export {
   type CodeExecutionRequest,
   type CodeExecutionResponse,
   type LanguageInfo,
-} from './code'
+} from "./code";
 
 // Trends
 export {
@@ -161,7 +162,7 @@ export {
   type DailyExercisesTrendResponse,
   type DailyAccuracyTrendResponse,
   type DailyTimeTrendResponse,
-} from './trends'
+} from "./trends";
 
 // Favorites
 export {
@@ -178,7 +179,9 @@ export {
   type FavoriteListResponse,
   type FavoriteCountResponse,
   type FavoriteFoldersListResponse,
-} from './favorites'
+  type FavoriteCheckResponse,
+  checkFavorite,
+} from "./favorites";
 
 // Notes
 export {
@@ -192,10 +195,18 @@ export {
   type NoteResponse,
   type NoteListResponse,
   type NoteCountResponse,
-} from './notes'
+} from "./notes";
 
 // Client utilities
-export { fetchWithAuth, get, post, put, del, API_BASE_URL } from './client'
+export {
+  fetchWithAuth,
+  get,
+  post,
+  put,
+  del,
+  postKeepalive,
+  API_BASE_URL,
+} from "./client";
 
 // Vector Match
 export {
@@ -203,7 +214,7 @@ export {
   type ExerciseRecommendItem,
   type ExerciseRecommendRequest,
   type ExerciseRecommendResponse,
-} from './vector'
+} from "./vector";
 
 // Learning Path
 export {
@@ -244,4 +255,4 @@ export {
   TIER_ICONS,
   TIER_NAMES,
   MASTERY_LEVEL_COLORS,
-} from './learning-path'
+} from "./learning-path";
