@@ -123,106 +123,117 @@ export function QuickTools({
         )
       })}
 
-      {/* 打卡模块 - 两层嵌套 */}
+      {/* 打卡模块 - 根据打卡状态显示不同内容 */}
       <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border border-orange-500/20 overflow-hidden">
-        {/* 第一层：打卡概览（可点击展开） */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full p-4 flex items-center justify-between hover:bg-orange-500/5 transition-colors"
-        >
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-orange-500" />
-            <span className="text-xs text-muted-foreground">{dateStr}</span>
-          </div>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-orange-500" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-orange-500" />
-          )}
-        </button>
-
-        {/* 第一层内容 */}
-        <div className="px-4 pb-4">
-          {/* Lunar/Solar term/Holiday display */}
-          {(lunarStr || solarTerm || holiday) && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {lunarStr && (
-                <span className="text-xs text-muted-foreground">{lunarStr}</span>
-              )}
-              {solarTerm && (
-                <span className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 rounded-full">
-                  {solarTerm}
-                </span>
-              )}
-              {holiday && (
-                <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-600 rounded-full">
-                  {holiday}
-                </span>
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Flame className={`w-4 h-4 ${streakDays > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
-              <span className="text-lg font-bold text-foreground">{streakDays}</span>
-              <span className="text-xs text-muted-foreground">{t('天', 'd')}</span>
-              {multiplierBadge && (
-                <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs ${multiplierBadge.color}`}>
-                  <Sparkles className="w-2.5 h-2.5" />
-                  {multiplierBadge.text}
+        {/* 打卡前：只显示日期 */}
+        {!isCheckedIn && (
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-orange-500" />
+                <span className="text-xs text-muted-foreground">{dateStr}</span>
+              </div>
+              {(lunarStr || solarTerm || holiday) && (
+                <div className="flex flex-wrap gap-1">
+                  {lunarStr && (
+                    <span className="text-xs text-muted-foreground">{lunarStr}</span>
+                  )}
+                  {solarTerm && (
+                    <span className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 rounded-full">
+                      {solarTerm}
+                    </span>
+                  )}
+                  {holiday && (
+                    <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-600 rounded-full">
+                      {holiday}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
-            {isCheckedIn ? (
+            <button
+              onClick={onCheckIn}
+              className="w-full mt-3 px-3 py-1.5 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition-colors"
+            >
+              {t('打卡', 'Check')}
+            </button>
+            {/* 占位内容，让打卡前高度与打卡后一致 */}
+            <div className="mt-3">
+              {totalCheckinDays > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t('累计打卡', 'Total')}{totalCheckinDays}{t('天', 'd')}
+                </p>
+              )}
+              {nextTierInfo && (
+                <div className="space-y-1 mt-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Trophy className="w-3 h-3 text-amber-500" />
+                      <span>{t('距离', 'Next')}{nextTierInfo.tier}</span>
+                    </div>
+                    <span className="font-medium text-foreground">{nextTierInfo.days}{t('天', 'd')}</span>
+                  </div>
+                  <div className="w-full bg-orange-500/20 rounded-full h-1.5">
+                    <div
+                      className="bg-orange-500 h-1.5 rounded-full"
+                      style={{
+                        width: `${Math.min(100, (streakDays / nextTierInfo.days) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              {streakMultiplier > 1 && (
+                <div className="text-xs text-muted-foreground bg-orange-500/10 rounded-lg p-2 mt-2">
+                  <p className="font-medium text-orange-600">{t('连续打卡加成', 'Streak Bonus')}</p>
+                  <p>{t('连续打卡', 'Streak')}{streakDays}{t('天', 'd')} {t('可获得', 'can earn')} {streakMultiplier}x {t('经验值加成', 'XP bonus')}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 打卡后：显示完整内容 */}
+        {isCheckedIn && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-orange-500" />
+                <span className="text-xs text-muted-foreground">{dateStr}</span>
+              </div>
               <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 text-emerald-600 rounded-full text-xs font-medium">
                 <Check className="w-3 h-3" />
                 {t('已打卡', 'Done')}
               </div>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onCheckIn?.()
-                }}
-                className="px-3 py-1.5 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition-colors"
-              >
-                {t('打卡', 'Check')}
-              </button>
-            )}
-          </div>
-
-          {totalCheckinDays > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('累计打卡', 'Total')}{totalCheckinDays}{t('天', 'd')}
-            </p>
-          )}
-        </div>
-
-        {/* 第二层：详细信息（展开后显示） */}
-        {isExpanded && (
-          <div className="border-t border-orange-500/20 p-4 bg-orange-500/5 space-y-3">
-            {/* 打卡详情标题 */}
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Calendar className="w-4 h-4 text-orange-500" />
-              {t('打卡详情', 'Check-in Details')}
             </div>
 
-            {/* XP 奖励信息 */}
-            {xpEarnedToday > 0 && (
-              <div className="flex items-center gap-2 text-sm">
-                <Gift className="w-4 h-4 text-emerald-500" />
-                <span className="text-muted-foreground">{t('今日获得', 'Earned')}</span>
-                <span className="font-medium text-emerald-600">+{xpEarnedToday} XP</span>
-                {streakMultiplier > 1 && (
-                  <span className="text-xs text-orange-500">({streakMultiplier}x {t('加成', 'bonus')})</span>
+            {(lunarStr || solarTerm || holiday) && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {lunarStr && (
+                  <span className="text-xs text-muted-foreground">{lunarStr}</span>
+                )}
+                {solarTerm && (
+                  <span className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 rounded-full">
+                    {solarTerm}
+                  </span>
+                )}
+                {holiday && (
+                  <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-600 rounded-full">
+                    {holiday}
+                  </span>
                 )}
               </div>
             )}
 
-            {/* 连续打卡进度 */}
+            {totalCheckinDays > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('累计打卡', 'Total')}{totalCheckinDays}{t('天', 'd')}
+              </p>
+            )}
+
+            {/* 成就进度 */}
             {nextTierInfo && (
-              <div className="space-y-1">
+              <div className="space-y-1 mt-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Trophy className="w-3 h-3 text-amber-500" />
@@ -241,20 +252,11 @@ export function QuickTools({
               </div>
             )}
 
-            {/* 打卡历史提示 */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Clock className="w-3 h-3" />
-              <span>
-                {t('连续打卡', 'Streak')}{streakDays}{t('天', 'd')}，
-                {t('再接再厉', 'Keep going')}！
-              </span>
-            </div>
-
             {/* 打卡加成说明 */}
             {streakMultiplier > 1 && (
-              <div className="text-xs text-muted-foreground bg-orange-500/10 rounded-lg p-2">
-                <p className="font-medium text-orange-600 mb-1">{t('连续打卡加成', 'Streak Bonus')}</p>
-                <p>{t('连续打卡', 'Streak')}{streakDays}{t('天', 'd')}{t('可获得', 'can earn')} {streakMultiplier}x {t('经验值加成', 'XP bonus')}</p>
+              <div className="text-xs text-muted-foreground bg-orange-500/10 rounded-lg p-2 mt-3">
+                <p className="font-medium text-orange-600">{t('连续打卡加成', 'Streak Bonus')}</p>
+                <p>{t('连续打卡', 'Streak')}{streakDays}{t('天', 'd')} {t('可获得', 'can earn')} {streakMultiplier}x {t('经验值加成', 'XP bonus')}</p>
               </div>
             )}
           </div>

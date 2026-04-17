@@ -29,6 +29,7 @@ import {
   Sparkles, Zap, Trophy, Clock, Target,
   BookOpen, Code2, Swords,
 } from 'lucide-react'
+import type { StageWithProgress } from '@/types/stage'
 import type { ReviewStatsResponse } from '@/types/review'
 import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse } from '@/types/api'
 
@@ -336,10 +337,10 @@ export default function DashboardPage() {
   // Get current course for welcome section
   const currentCourse = coursesProgress.find(c => c.course_id === currentCourseId)
 
-  // Handle continue learning - go directly to mastery
+  // Handle continue learning
   const handleContinueLearning = () => {
     if (currentCourseId) {
-      router.push(`/mastery/${currentCourseId}`)
+      router.push(`/courses/${currentCourseId}`)
     } else {
       router.push('/courses')
     }
@@ -529,7 +530,7 @@ export default function DashboardPage() {
                 <KnowledgeMastery
                   courseName={currentCourse?.course_name || 'C语言'}
                   knowledgePoints={knowledgePoints}
-                  onLearnClick={(courseId) => router.push(`/mastery/${courseId || currentCourseId || 1}`)}
+                  onLearnClick={(courseId) => router.push(`/courses/${courseId || currentCourseId || 1}`)}
                   lang={lang}
                   compact
                 />
