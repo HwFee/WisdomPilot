@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models import User
 from app.schemas import UserResponse
-from app.schemas.profile import UserProfileResponse, UpdateProfileRequest, CheckinResponse, CheckinStatusResponse
+from app.schemas.profile import UserProfileResponse, UpdateProfileRequest, CheckinResponse, CheckinStatusResponse, CheckinDetailsResponse, CheckinStatsResponse
 from app.services.profile import profile_service
 from app.utils.deps import get_current_active_user
 
@@ -110,6 +110,67 @@ async def get_checkin_status(
         streak_days=current_user.streak_days,
         checked_in_today=checked_in,
         last_checkin_date=current_user.last_activity_date,
+        total_checkin_days=current_user.total_checkin_days,
+    )
+
+
+@router.get("/checkin/details", response_model=CheckinDetailsResponse)
+async def get_checkin_details(
+    db: db_dependency,
+    current_user: auth_dependency,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
+):
+    """Get check-in details with lunar calendar info for a specific date"""
+    from datetime import date as date_type
+    from app.utils.lunar import get_checkin_details_full
+
+    if year and month and day:
+        target_date = date_type(year, month, day)
+    else:
+        target_date = date_type.today()
+
+    details = get_checkin_details_full(target_date.year, target_date.month, target_date.day)
+    streak_multiplier = profile_service._get_streak_multiplier(current_user.streak_days)
+
+    return CheckinDetailsResponse(
+        date=details["date"],
+        lunar_str=details["lunar_str"],
+        solar_term_str=details["solar_term_str"],
+        holiday_str=details["holiday_str"],
+        streak_days=current_user.streak_days,
+        total_checkin_days=current_user.total_checkin_days,
+        streak_multiplier=streak_multiplier,
+        checked_in_today=profile_service.is_checked_in_today(current_user),
+    )
+
+
+@router.get("/checkin/stats", response_model=CheckinStatsResponse)
+async def get_checkin_stats(
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """Get check-in statistics"""
+    streak_multiplier = profile_service._get_streak_multiplier(current_user.streak_days)
+
+    # Calculate next tier
+    next_tier = None
+    if current_user.streak_days < 7:
+        next_tier = 7 - current_user.streak_days
+    elif current_user.streak_days < 14:
+        next_tier = 14 - current_user.streak_days
+    elif current_user.streak_days < 30:
+        next_tier = 30 - current_user.streak_days
+    elif current_user.streak_days < 100:
+        next_tier = 100 - current_user.streak_days
+
+    return CheckinStatsResponse(
+        streak_days=current_user.streak_days,
+        total_checkin_days=current_user.total_checkin_days,
+        streak_multiplier=streak_multiplier,
+        checked_in_today=profile_service.is_checked_in_today(current_user),
+        next_tier_days=next_tier,
     )
 
 

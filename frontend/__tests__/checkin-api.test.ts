@@ -21,6 +21,9 @@ describe('Checkin API Functions', () => {
         checked_in_today: true,
         xp_earned: 10,
         last_checkin_date: '2024-01-15T10:30:00Z',
+        total_checkin_days: 15,
+        streak_multiplier: 1.0,
+        new_achievements: [],
       }
 
       ;(fetch as jest.Mock).mockResolvedValueOnce({
@@ -47,6 +50,9 @@ describe('Checkin API Functions', () => {
         checked_in_today: true,
         xp_earned: 0,
         last_checkin_date: '2024-01-15T10:30:00Z',
+        total_checkin_days: 15,
+        streak_multiplier: 1.0,
+        new_achievements: [],
       }
 
       ;(fetch as jest.Mock).mockResolvedValueOnce({
@@ -75,6 +81,7 @@ describe('Checkin API Functions', () => {
         streak_days: 7,
         checked_in_today: false,
         last_checkin_date: '2024-01-14T08:00:00Z',
+        total_checkin_days: 20,
       }
 
       ;(fetch as jest.Mock).mockResolvedValueOnce({

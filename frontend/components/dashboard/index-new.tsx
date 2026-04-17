@@ -12,6 +12,8 @@ import {
   getReviewStats,
   checkin,
   getCheckinStatus,
+  getCheckinDetails,
+  getCheckinStats,
   getFavoritesCount,
   getNotesCount,
   getMasteryLeaderboard,
@@ -28,7 +30,7 @@ import {
   BookOpen, Code2, Swords,
 } from 'lucide-react'
 import type { ReviewStatsResponse } from '@/types/review'
-import type { UserProfileResponse, LeaderboardEntry } from '@/types/api'
+import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse } from '@/types/api'
 
 // Dashboard components
 import { WelcomeSection } from './WelcomeSection'
@@ -79,6 +81,10 @@ export default function DashboardPage() {
   const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [favoritesCount, setFavoritesCount] = useState(0)
   const [notesCount, setNotesCount] = useState(0)
+
+  // Enhanced check-in details state
+  const [checkinDetails, setCheckinDetails] = useState<CheckinDetailsResponse | null>(null)
+  const [checkinStats, setCheckinStats] = useState<CheckinStatsResponse | null>(null)
 
   // Dual leaderboard state (for current course)
   const [masteryLeaderboard, setMasteryLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -163,6 +169,18 @@ export default function DashboardPage() {
       try {
         const checkinStatus = await getCheckinStatus(token)
         setIsCheckedIn(checkinStatus.checked_in_today)
+      } catch { /* ignore */ }
+
+      // Get checkin details (with lunar/solar term info)
+      try {
+        const details = await getCheckinDetails(token)
+        setCheckinDetails(details)
+      } catch { /* ignore */ }
+
+      // Get checkin stats (with next tier info)
+      try {
+        const stats = await getCheckinStats(token)
+        setCheckinStats(stats)
       } catch { /* ignore */ }
 
       // Get favorites and notes count
@@ -443,12 +461,18 @@ export default function DashboardPage() {
             favoritesCount={favoritesCount}
             notesCount={notesCount}
             streakDays={profile?.streak_days ?? 0}
+            totalCheckinDays={checkinDetails?.total_checkin_days ?? 0}
             isCheckedIn={isCheckedIn}
             onWrongClick={() => router.push('/review?type=wrong')}
             onFavoritesClick={() => router.push('/favorites')}
             onNotesClick={() => router.push('/notes')}
             onCheckIn={handleCheckIn}
             lang={lang}
+            lunarStr={checkinDetails?.lunar_str}
+            solarTerm={checkinDetails?.solar_term_str?.split(' (')[0]}
+            holiday={checkinDetails?.holiday_str?.split(' (')[0]}
+            streakMultiplier={checkinDetails?.streak_multiplier ?? 1.0}
+            nextTierDays={checkinStats?.next_tier_days ?? null}
           />
         </section>
 
