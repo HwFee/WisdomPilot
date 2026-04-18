@@ -55,6 +55,13 @@ async def lifespan(app: FastAPI):
         is_local_first=settings.AI_LOCAL_FIRST,
     )
     ai_service.configure(ai_config)
+
+    # Configure MiniMax for enhanced quiz generation
+    if settings.MINIMAX_API_KEY:
+        ai_service.configure_minimax(
+            api_key=settings.MINIMAX_API_KEY,
+            model=settings.MINIMAX_MODEL,
+        )
     yield
     # Shutdown: cleanup if needed
 

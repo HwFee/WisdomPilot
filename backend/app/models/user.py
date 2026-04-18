@@ -78,13 +78,20 @@ class User(Base):
         Integer,
         default=0,
         nullable=False,
-        comment="Experience points"
+        comment="Experience points (from check-in, etc.)"
     )
-    level: Mapped[int] = mapped_column(
+    # Mastery path fields
+    mastery_xp: Mapped[int] = mapped_column(
         Integer,
-        default=1,
+        default=0,
         nullable=False,
-        comment="Current level"
+        comment="Mastery path experience points (from quizzes)"
+    )
+    mastery_level: Mapped[str] = mapped_column(
+        String(20),
+        default="入门",
+        nullable=False,
+        comment="Mastery level: 入门/学习/练习/熟练/精通"
     )
     streak_days: Mapped[int] = mapped_column(
         Integer,

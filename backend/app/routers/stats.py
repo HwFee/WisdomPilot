@@ -78,7 +78,17 @@ async def start_session(
     service: StatsService = Depends(get_stats_service),
 ):
     """Start a new learning session"""
-    return await service.start_session(current_user.id, data)
+    import logging
+    logger = logging.getLogger(__name__)
+
+    logger.info(f"[学习时长-API] ========== POST /sessions/start ==========")
+    logger.info(f"[学习时长-API] user_id: {current_user.id}")
+    logger.info(f"[学习时长-API] chapter_id: {data.chapter_id}")
+    logger.info(f"[学习时长-API] subsection_index: {data.subsection_index}")
+
+    result = await service.start_session(current_user.id, data)
+    logger.info(f"[学习时长-API] 会话已创建, session_id: {result.id}")
+    return result
 
 
 @router.post("/sessions/end", response_model=LearningSessionResponse)
@@ -91,14 +101,30 @@ async def end_session(
     If no active session found and chapter_id is provided, creates and immediately
     completes a session to preserve the recorded time.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    logger.info(f"[学习时长-API] ========== POST /sessions/end ==========")
+    logger.info(f"[学习时长-API] user_id: {current_user.id}")
+    logger.info(f"[学习时长-API] duration_seconds: {data.duration_seconds}")
+    logger.info(f"[学习时长-API] chapter_id: {data.chapter_id}")
+
     active_session = await service.get_active_session(current_user.id)
+    logger.info(f"[学习时长-API] active_session: {active_session.id if active_session else None}")
+
     if active_session is None:
         # No active session found — create a completed one to preserve the time
+        logger.info("[学习时长-API] 没有找到活跃会话，创建已完成会话")
         chapter_id = data.chapter_id or 0
-        return await service.create_completed_session(
+        result = await service.create_completed_session(
             current_user.id, chapter_id, data.duration_seconds
         )
-    return await service.end_session(current_user.id, active_session.id, data)
+    else:
+        logger.info(f"[学习时长-API] 找到活跃会话 {active_session.id}，结束它")
+        result = await service.end_session(current_user.id, active_session.id, data)
+
+    logger.info(f"[学习时长-API] 会话结束完成, session_id: {result.id if result else None}")
+    return result
 
 
 @router.get("/sessions/active", response_model=LearningSessionResponse | None)
@@ -296,12 +322,20 @@ async def get_today_stats(
     - time_minutes: Total learning time today in minutes across all paths
     """
     from datetime import datetime, timezone
+    import logging
 
     from app.models.stats import ActivityLog, LearningSession
+
+    logger = logging.getLogger(__name__)
 
     # Use UTC time for consistency with database storage
     utc_now = datetime.now(timezone.utc)
     today_start = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    logger.info(f"[学习时长-Today] ========== 查询今日统计 ==========")
+    logger.info(f"[学习时长-Today] user_id: {current_user.id}")
+    logger.info(f"[学习时长-Today] 当前UTC时间: {utc_now}")
+    logger.info(f"[学习时长-Today] 今日起始时间: {today_start}")
 
     # Get today's exercise activities
     exercises_result = await db.execute(
@@ -314,6 +348,7 @@ async def get_today_stats(
         .order_by(ActivityLog.created_at.desc())
     )
     today_activities = exercises_result.scalars().all()
+    logger.info(f"[学习时长-Today] 今日活动记录数: {len(today_activities)}")
 
     # Only count challenge-path exercises here.
     # Rules:
@@ -370,8 +405,20 @@ async def get_today_stats(
         )
     )
     today_sessions = sessions_result.scalars().all()
+    logger.info(f"[学习时长-Today] 今日会话记录数: {len(today_sessions)}")
+
+    for i, s in enumerate(today_sessions):
+        logger.info(f"[学习时长-Today]   会话 {i+1}: id={s.id}, duration={s.duration_seconds}秒, started_at={s.started_at}, ended_at={s.ended_at}, is_active={s.is_active}")
+
     time_seconds = sum(s.duration_seconds or 0 for s in today_sessions)
     time_minutes = round(time_seconds / 60, 1)
+
+    logger.info(f"[学习时长-Today] ========== 结果 ==========")
+    logger.info(f"[学习时长-Today] exercises: {exercises}")
+    logger.info(f"[学习时长-Today] correct: {correct}")
+    logger.info(f"[学习时长-Today] accuracy: {accuracy}%")
+    logger.info(f"[学习时长-Today] time_seconds: {time_seconds}")
+    logger.info(f"[学习时长-Today] time_minutes: {time_minutes}")
 
     return {
         "exercises": exercises,

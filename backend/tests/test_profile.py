@@ -19,7 +19,8 @@ class TestProfileEndpoints:
 
         data = response.json()
         assert "xp" in data
-        assert "level" in data
+        assert "mastery_xp" in data  # New field
+        assert "mastery_level" in data  # New field
         assert "streak_days" in data
         assert "preferred_languages" in data
         assert "total_exercises" in data
@@ -36,10 +37,9 @@ class TestProfileEndpoints:
         assert response.json()["preferred_languages"] == ["Python", "C++"]
 
     async def test_add_xp(self, client, auth_headers):
-        """Should add XP and potentially level up"""
+        """Should add XP"""
         initial = await client.get("/api/users/me/profile", headers=auth_headers)
         initial_xp = initial.json()["xp"]
-        initial_level = initial.json()["level"]
 
         response = await client.post(
             "/api/users/me/xp?xp_amount=50",
@@ -48,8 +48,8 @@ class TestProfileEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["xp"] == initial_xp + 50
-        assert "level" in data
-        assert "xp_for_next_level" in data
+        assert "mastery_xp" in data
+        assert "mastery_level" in data
 
 
 @pytest.mark.asyncio
@@ -61,27 +61,12 @@ class TestProfileService:
         from app.services.profile import profile_service
 
         auth_user.xp = 0
-        auth_user.level = 1
         await db_session.commit()
 
         await profile_service.add_xp(db_session, auth_user, 50)
         await db_session.refresh(auth_user)
 
         assert auth_user.xp == 50
-
-    async def test_add_xp_triggers_level_up(self, db_session, auth_user):
-        """Should level up when XP threshold reached"""
-        from app.services.profile import profile_service
-
-        auth_user.xp = 90
-        auth_user.level = 1
-        await db_session.commit()
-
-        await profile_service.add_xp(db_session, auth_user, 20)
-        await db_session.refresh(auth_user)
-
-        assert auth_user.xp == 110
-        assert auth_user.level == 2
 
     async def test_update_exercise_correct(self, db_session, auth_user):
         """Should update exercise statistics for correct answer"""
@@ -124,13 +109,19 @@ class TestProfileService:
 
         assert auth_user.preferred_languages == ["Python", "JavaScript"]
 
-    async def test_get_xp_for_next_level(self, db_session, auth_user):
-        """Should calculate XP needed for next level"""
+    async def test_mastery_xp_separate_from_user_xp(self, db_session, auth_user):
+        """Mastery XP should be separate from user XP"""
         from app.services.profile import profile_service
 
-        auth_user.xp = 50
-        auth_user.level = 1
+        auth_user.xp = 100
+        auth_user.mastery_xp = 0
         await db_session.commit()
 
-        xp_needed = profile_service.get_xp_for_next_level(auth_user)
-        assert xp_needed == 50  # Level 2 starts at 100 XP
+        # Add mastery XP
+        await profile_service.add_mastery_xp(db_session, auth_user, 50)
+        await db_session.refresh(auth_user)
+
+        # User XP should remain unchanged
+        assert auth_user.xp == 100
+        # Mastery XP should increase
+        assert auth_user.mastery_xp == 50

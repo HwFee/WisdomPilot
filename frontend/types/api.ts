@@ -920,8 +920,10 @@ export interface LeaderboardEntry {
   total_chapters?: number
   progress_pct?: number
   // Arena leaderboard fields
-  total_score?: number
+  total_score?: number  // Keep for backward compatibility
+  stars?: number  // New: stars count
   tier?: Tier
+  sub_tier?: number  // New: sub-tier (I, II, III, IV, V)
   total_challenges?: number
   wins?: number
   highest_difficulty?: number
@@ -1109,7 +1111,8 @@ export interface EnhancedQuizQuestion {
   difficulty: number
   text: string
   options?: string[]
-  correct_answer?: string // 正确答案
+  correct_answer: string // 正确答案
+  explanation?: string // 答案解析
   code_template?: string
   test_cases?: Array<{ input: string; expected: string }>
   knowledge_points: string[]

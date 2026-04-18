@@ -94,6 +94,18 @@ class Exercise(Base):
         nullable=True,
         comment="Vector embedding (JSON array of floats) for semantic search"
     )
+    # Extracted structured tags for hybrid recommendation
+    extracted_tags: Mapped[Optional[dict]] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="AI-extracted structured tags: {knowledge_points, algorithm_type, data_structures, difficulty_signals, prerequisite_skills, problem_pattern, time_complexity, keywords, estimated_difficulty}"
+    )
+    # Tag embedding for hybrid recommendation (separate from content embedding)
+    tag_embedding: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Vector embedding of extracted tags for hybrid recommendation"
+    )
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
         default=False,

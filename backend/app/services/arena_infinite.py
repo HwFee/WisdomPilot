@@ -14,6 +14,7 @@ Design:
 - Uses AdaptiveRecommendationService for intelligent exercise matching based on user profile
 """
 
+import logging
 import random
 from datetime import datetime
 from typing import Optional
@@ -27,11 +28,19 @@ from app.models.chapter import Chapter
 from app.models.exercise import Exercise
 from app.models.stats import ActivityLog
 from app.models.user import User
+from app.models.user_arena import UserArenaProfile
 from app.services.adaptive_recommendation import (
     DIFFICULTY_LABELS,
     AdaptiveRecommendationService,
 )
+from app.services.hybrid_recommendation import HybridRecommendationService
+from app.services.user_profile import UserProfileService
 from app.services.wrong_question import wrong_question_service
+from app.services.tier_service import tier_service
+from app.core.tier_config import TierRank, tier_from_string
+
+# 创建日志器
+logger = logging.getLogger(__name__)
 
 
 class ChallengePathService:
@@ -49,7 +58,7 @@ class ChallengePathService:
         user_id: str,
         course_id: int,
         difficulty_level: int = 3,
-        initial_count: int = 10,
+        initial_count: int = 5,
     ) -> tuple[list[Exercise], bool]:
         """Get existing exercises or create initial set
 
@@ -114,13 +123,53 @@ class ChallengePathService:
         difficulty_level: int,
         count: int,
     ) -> list[Exercise]:
-        """Create initial exercise set for a new challenge path using adaptive recommendation"""
+        """Create initial exercise set for a new challenge path using hybrid recommendation"""
         # Get user for adaptive recommendation
         user_result = await self.db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
 
         if user:
-            # Use adaptive recommendation service for intelligent matching
+            # Try hybrid recommendation first (if user has behavior data)
+            hybrid_service = HybridRecommendationService(self.db)
+            recommendations = await hybrid_service.get_recommendations(
+                user_id=user_id,
+                course_id=course_id,
+                limit=count,
+                min_difficulty=max(1, difficulty_level - 1),
+                max_difficulty=min(8, difficulty_level + 1),
+            )
+
+            if recommendations:
+                recommended_ids = [rec["exercise_id"] for rec in recommendations]
+
+                # Fetch recommended exercises
+                result = await self.db.execute(
+                    select(Exercise).where(Exercise.id.in_(recommended_ids))
+                )
+                exercises_map = {ex.id: ex for ex in result.scalars().all()}
+                # Preserve recommendation order
+                selected = [
+                    exercises_map[eid]
+                    for eid in recommended_ids
+                    if eid in exercises_map
+                ]
+
+                if len(selected) >= count:
+                    # Create progress records
+                    for i, ex in enumerate(selected[:count]):
+                        progress = ArenaExerciseProgress(
+                            user_id=user_id,
+                            course_id=course_id,
+                            exercise_id=ex.id,
+                            exercise_index=i,
+                            is_unlocked=(i == 0),
+                        )
+                        self.db.add(progress)
+
+                    await self.db.flush()
+                    return selected[:count]
+
+            # Fallback: Use adaptive recommendation service for intelligent matching
             adaptive_service = AdaptiveRecommendationService(self.db)
             recommendation = await adaptive_service.get_recommendations(
                 user=user,
@@ -227,7 +276,7 @@ class ChallengePathService:
                 "exercises": [],
                 "correct_count": 0,
                 "completed_count": 0,
-                "total_xp_earned": 0,
+                "total_stars_earned": 0,
                 "current_index": 0,
             }
 
@@ -298,13 +347,15 @@ class ChallengePathService:
         # Calculate stats
         correct_count = sum(1 for p in progress_records if p.is_correct)
         completed_count = sum(1 for p in progress_records if p.is_completed)
+        # Sum up all stars earned (positive=earned, negative=lost)
+        total_stars_earned = sum(p.stars_awarded for p in progress_records)
 
         return {
             "total_exercises": len(progress_records),
             "exercises": progress_list,
             "correct_count": correct_count,
             "completed_count": completed_count,
-            "total_xp_earned": correct_count * 10,
+            "total_stars_earned": total_stars_earned,
             "current_index": current_index,
         }
 
@@ -383,8 +434,21 @@ class ChallengePathService:
         code: str,
         language: str,
         test_results: list[dict],
+        time_spent: Optional[int] = None,
+        hint_used: bool = False,
     ) -> dict:
-        """Submit exercise answer and update progress"""
+        """Submit exercise answer and update progress
+
+        Args:
+            user_id: User ID
+            course_id: Course ID
+            exercise_id: Exercise ID
+            code: Submitted code
+            language: Programming language
+            test_results: Test results from Judge0
+            time_spent: Time spent on exercise in seconds (for hybrid recommendation)
+            hint_used: Whether user used hints (for hybrid recommendation)
+        """
         # Get progress record
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
@@ -418,6 +482,15 @@ class ChallengePathService:
 
         if all_passed and not progress.correct_at:
             progress.correct_at = now
+
+        # Record behavior data for hybrid recommendation
+        if time_spent is not None:
+            progress.time_spent = time_spent
+        if hint_used:
+            progress.hint_used = True
+        # Record first attempt correctness
+        if progress.attempt_count == 1:
+            progress.first_attempt_correct = all_passed
 
         exercise_result = await self.db.execute(
             select(Exercise).where(Exercise.id == exercise_id)
@@ -464,28 +537,200 @@ class ChallengePathService:
             )
             self.db.add(activity)
 
-        # Unlock next exercise
+        # Unlock next exercise (find next exercise with higher index, not necessarily +1)
         next_unlocked = False
         next_result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
                 ArenaExerciseProgress.course_id == course_id,
-                ArenaExerciseProgress.exercise_index == progress.exercise_index + 1,
-            )
+                ArenaExerciseProgress.exercise_index > progress.exercise_index,
+            ).order_by(ArenaExerciseProgress.exercise_index).limit(1)
         )
         next_progress = next_result.scalar_one_or_none()
         if next_progress and not next_progress.is_unlocked:
             next_progress.is_unlocked = True
             next_unlocked = True
 
+        # Update tier and stars (段位和星星更新)
+        # 新逻辑：每次提交都会计算星星变化
+        stars_earned = 0
+        tier_changed = False
+        new_tier = None
+        new_sub_tier = None
+        new_stars = 0
+        promoted = False
+        demoted = False
+
+        # Get or create user arena profile
+        profile_result = await self.db.execute(
+            select(UserArenaProfile).where(
+                UserArenaProfile.user_id == user_id,
+                UserArenaProfile.course_id == course_id,
+            )
+        )
+        profile = profile_result.scalar_one_or_none()
+
+        if not profile:
+            profile = UserArenaProfile(
+                user_id=user_id,
+                course_id=course_id,
+            )
+            self.db.add(profile)
+            await self.db.flush()
+            logger.info(f"[STARS] Created new profile for user {user_id[:8]}... course {course_id}")
+
+        # Get current tier info (always needed for response)
+        current_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE
+        current_sub_tier = profile.sub_tier if profile.sub_tier else 4
+        current_stars = profile.stars if profile.stars else 0
+
+        # Get stars_deducted for this exercise (use getattr for backward compatibility)
+        stars_deducted = getattr(progress, 'stars_deducted', None)
+        if stars_deducted is None:
+            # Fallback: calculate from stars_awarded if stars_deducted doesn't exist
+            # stars_awarded negative means deducted, but we need separate tracking
+            stars_deducted = abs(min(0, progress.stars_awarded)) if progress.stars_awarded < 0 else 0
+
+        logger.info(f"[STARS] === Submit Exercise ===")
+        logger.info(f"[STARS] User: {user_id[:8]}..., Course: {course_id}, Exercise: {exercise_id}")
+        logger.info(f"[STARS] is_correct: {all_passed}, attempt_count: {progress.attempt_count}, difficulty: {exercise.difficulty if exercise else '?'}")
+        logger.info(f"[STARS] stars_awarded: {progress.stars_awarded}, stars_deducted: {stars_deducted}")
+        logger.info(f"[STARS] Current profile - tier: {current_tier.value}, sub_tier: {current_sub_tier}, stars: {current_stars}")
+
+        # 检查是否已经做对过（已经获得正的星星奖励）
+        already_correct = progress.stars_awarded > 0
+
+        if already_correct:
+            # 已经做对过了，不再处理星星
+            new_tier = current_tier
+            new_sub_tier = current_sub_tier
+            new_stars = current_stars
+            logger.info(f"[STARS] Already correct before (stars_awarded={progress.stars_awarded}), no change")
+        else:
+            # 还没做对过，计算星星
+            if all_passed:
+                # 做对了！只给基础奖励
+                base_reward = tier_service.get_base_reward(exercise.difficulty) if exercise else 1
+                stars_earned = base_reward
+                logger.info(f"[STARS] CORRECT! base_reward={base_reward}, total=+{stars_earned}")
+            else:
+                # 做错了，检查是否扣星
+                stars_earned = tier_service.calculate_stars_earned(
+                    accuracy=0.0,
+                    difficulty=exercise.difficulty if exercise else 1,
+                    attempt_count=progress.attempt_count,
+                    total_deducted=stars_deducted,
+                )
+                logger.info(f"[STARS] WRONG. attempt_count={progress.attempt_count}, stars_deducted={stars_deducted}, result={stars_earned}")
+
+            # 记录星星变化
+            progress.stars_awarded = stars_earned
+
+            # 如果扣星了，更新 stars_deducted
+            if stars_earned < 0 and hasattr(progress, 'stars_deducted'):
+                progress.stars_deducted = stars_deducted + abs(stars_earned)
+                logger.info(f"[STARS] Updated stars_deducted to {progress.stars_deducted}")
+
+            if stars_earned > 0:
+                # Add stars
+                result = tier_service.add_stars(
+                    tier=current_tier,
+                    sub_tier=current_sub_tier,
+                    current_stars=current_stars,
+                    stars_earned=stars_earned,
+                )
+                new_tier = result.tier
+                new_sub_tier = result.sub_tier
+                new_stars = result.stars
+                promoted = result.promoted
+                logger.info(f"[STARS] Add stars result - new_tier: {new_tier.value}, new_sub_tier: {new_sub_tier}, new_stars: {new_stars}, promoted: {promoted}")
+            elif stars_earned < 0:
+                # Remove stars
+                result = tier_service.remove_stars(
+                    tier=current_tier,
+                    sub_tier=current_sub_tier,
+                    current_stars=current_stars,
+                    stars_lost=abs(stars_earned),
+                    protection_remaining=profile.protection_remaining or 0,
+                )
+                new_tier = result.tier
+                new_sub_tier = result.sub_tier
+                new_stars = result.stars
+                demoted = result.demoted
+                logger.info(f"[STARS] Remove stars result - new_tier: {new_tier.value}, new_sub_tier: {new_sub_tier}, new_stars: {new_stars}, demoted: {demoted}")
+
+                # Update protection remaining
+                profile.protection_remaining = result.protection_remaining
+            else:
+                # No change
+                new_tier = current_tier
+                new_sub_tier = current_sub_tier
+                new_stars = current_stars
+                logger.info(f"[STARS] No stars change (stars_earned == 0)")
+
+            # Update profile
+            profile.tier = new_tier.value
+            profile.sub_tier = new_sub_tier
+            profile.stars = new_stars
+            logger.info(f"[STARS] Updated profile - tier: {profile.tier}, sub_tier: {profile.sub_tier}, stars: {profile.stars}")
+
+            # Update highest tier if promoted
+            if promoted:
+                highest_tier, highest_sub = tier_service.update_highest_tier(
+                    profile.highest_tier,
+                    profile.highest_sub_tier,
+                    new_tier,
+                    new_sub_tier,
+                )
+                profile.highest_tier = highest_tier.value if isinstance(highest_tier, TierRank) else highest_tier
+                profile.highest_sub_tier = highest_sub
+
+            tier_changed = (new_tier != current_tier or new_sub_tier != current_sub_tier)
+            new_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE
+            new_sub_tier = profile.sub_tier if profile.sub_tier else 4
+            new_stars = profile.stars if profile.stars else 0
+
+        # Update UserArenaProfile statistics (for quick lookup) - BEFORE commit
+        try:
+            await self._update_arena_profile_stats(profile, user_id, course_id)
+        except Exception as e:
+            logger.warning(f"Failed to update arena profile stats: {e}")
+
         await self.db.commit()
+        logger.info(f"[STARS] After commit - profile.stars: {profile.stars}")
+
+        # Update user profile embedding for hybrid recommendation (async, non-blocking)
+        try:
+            profile_service = UserProfileService(self.db)
+            await profile_service.update_after_exercise(
+                user_id=user_id,
+                course_id=course_id,
+                exercise_id=exercise_id,
+                is_correct=all_passed,
+                time_spent=time_spent,
+                hint_used=hint_used,
+                first_attempt_correct=(progress.attempt_count == 1 and all_passed),
+            )
+        except Exception as e:
+            # Log but don't fail the submission
+            logger.warning(f"Failed to update user profile: {e}")
+
+        logger.info(f"[STARS] === Returning result ===")
+        logger.info(f"[STARS] stars_earned: {stars_earned}, tier_changed: {tier_changed}")
+        logger.info(f"[STARS] new_tier: {new_tier.value if new_tier else None}, new_sub_tier: {new_sub_tier}, new_stars: {new_stars}")
 
         return {
             "is_correct": all_passed,
             "test_results": test_results,
-            "xp_earned": 10 if all_passed else 0,
+            "stars_earned": stars_earned,
             "next_unlocked": next_unlocked,
             "added_to_wrong_book": added_to_wrong_book,
+            "tier_changed": tier_changed,
+            "new_tier": new_tier.value if new_tier else None,
+            "new_sub_tier": new_sub_tier,
+            "new_stars": new_stars,
+            "promoted": promoted,
+            "demoted": demoted,
         }
 
     async def save_code(
@@ -702,6 +947,36 @@ class ChallengePathService:
 
         await self.db.commit()
         return new_ids
+
+    async def _update_arena_profile_stats(
+        self,
+        profile: UserArenaProfile,
+        user_id: str,
+        course_id: int,
+    ) -> None:
+        """Update UserArenaProfile statistics from ArenaExerciseProgress records."""
+        # Get all progress records for this user/course
+        result = await self.db.execute(
+            select(ArenaExerciseProgress).where(
+                ArenaExerciseProgress.user_id == user_id,
+                ArenaExerciseProgress.course_id == course_id,
+            )
+        )
+        progresses = list(result.scalars().all())
+
+        total = len(progresses)
+        if total == 0:
+            return
+
+        # Calculate statistics
+        correct = sum(1 for p in progresses if p.is_correct)
+        total_attempts = sum(p.attempt_count for p in progresses)
+        times_spent = [p.time_spent for p in progresses if p.time_spent]
+
+        # Update profile
+        profile.total_submissions = total_attempts
+        profile.avg_accuracy = correct / total if total > 0 else 0.0
+        profile.avg_time_spent = sum(times_spent) / len(times_spent) if times_spent else 0.0
 
     async def get_stats(
         self,

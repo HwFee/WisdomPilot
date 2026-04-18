@@ -27,7 +27,8 @@ export interface CourseProgress {
   current_section: string | null
   mastery_score: number | null
   arena_tier: string | null
-  arena_score: number | null
+  arena_sub_tier: number | null
+  arena_stars: number | null
 }
 
 export interface CourseProgressResponse {

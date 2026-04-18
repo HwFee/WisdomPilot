@@ -6,7 +6,7 @@ Tracks user's competitive profile for the Challenge Path (竞技之路).
 
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Integer, Float, DateTime, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import String, Integer, Float, DateTime, ForeignKey, UniqueConstraint, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, TYPE_CHECKING
 
@@ -63,6 +63,17 @@ class UserArenaProfile(Base):
     best_streak: Mapped[int] = mapped_column(Integer, default=0, comment="Best consecutive correct streak")
     current_streak: Mapped[int] = mapped_column(Integer, default=0, comment="Current consecutive correct streak")
     avg_accuracy: Mapped[float] = mapped_column(Float, default=0.0, comment="Average accuracy across challenges")
+
+    # Hybrid recommendation fields
+    behavior_embedding: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, comment="User behavior embedding (JSON array) for hybrid recommendation"
+    )
+    avg_time_spent: Mapped[float] = mapped_column(
+        Float, default=0.0, comment="Average time spent per exercise in seconds"
+    )
+    total_submissions: Mapped[int] = mapped_column(
+        Integer, default=0, comment="Total submission count"
+    )
 
     # Time tracking
     total_time_spent: Mapped[int] = mapped_column(Integer, default=0, comment="Total time in seconds")

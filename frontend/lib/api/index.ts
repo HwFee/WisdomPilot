@@ -256,3 +256,11 @@ export {
   TIER_NAMES,
   MASTERY_LEVEL_COLORS,
 } from "./learning-path";
+
+// Tier
+export {
+  getTierConfigs,
+  getTierInfo,
+  updateStars,
+  TIER_COLORS,
+} from "./tier";

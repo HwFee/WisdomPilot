@@ -27,10 +27,11 @@ import {
 } from '@/lib/api'
 import {
   Sparkles, Zap, Trophy, Clock, Target,
-  BookOpen, Code2, Swords,
+  BookOpen, Code2, Swords, FlaskConical,
 } from 'lucide-react'
 import type { ReviewStatsResponse } from '@/types/review'
-import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse } from '@/types/api'
+import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse, Tier } from '@/types/api'
+import { getRecentArenaExercises, RecentArenaExercise, TIER_ICONS, TIER_NAMES } from '@/lib/api/learning-path'
 
 // Dashboard components
 import { WelcomeSection } from './WelcomeSection'
@@ -46,7 +47,7 @@ interface KnowledgePoint {
   courseId?: number
 }
 
-// 最近练习记录接口
+// 最近练习记录接口（挑战之路）
 interface RecentExercise {
   stageName: string
   isCorrect: boolean
@@ -199,27 +200,6 @@ export default function DashboardPage() {
         setTodayStats(todayData)
       } catch { /* ignore */ }
 
-      // 从活动记录中提取最近练习记录（用于精进之路卡片显示）
-      if (activitiesResponse.activities && activitiesResponse.activities.length > 0) {
-        // 提取最近练习记录
-        const exerciseActivities = activitiesResponse.activities
-          .filter((a: any) => a.type === 'exercise_complete' || a.activity_type === 'exercise_complete')
-          .slice(0, 5) // 取最近5条
-
-        const recentExList: RecentExercise[] = exerciseActivities.map((a: any) => {
-          const details = a.details || a.extra_data || {}
-          return {
-            // 优先显示具体练习题名称，其次显示关卡名称
-            stageName: details.exercise_title || details.stage_name || '练习',
-            isCorrect: details.is_correct === true,
-            time: a.timestamp || a.created_at,
-          }
-        })
-        setRecentExercises(recentExList)
-      } else {
-        setRecentExercises([])
-      }
-
     } catch { /* ignore */ }
     finally { if (!isMounted.current) return; setIsLoading(false) }
   }, [])
@@ -240,6 +220,21 @@ export default function DashboardPage() {
         setUserArenaRank(arenaData.user_rank)
       }
     } catch { /* ignore */ }
+  }, [])
+
+  // Fetch recent arena exercises for challenge path
+  const fetchRecentArenaExercises = useCallback(async (courseId: number, token: string) => {
+    try {
+      const recentExercises = await getRecentArenaExercises(courseId, token, 3)
+      // 转换为组件需要的格式
+      const formatted: RecentExercise[] = recentExercises.map(ex => ({
+        stageName: ex.title,
+        isCorrect: ex.is_correct,
+      }))
+      setRecentExercises(formatted)
+    } catch {
+      setRecentExercises([])
+    }
   }, [])
 
   // Fetch knowledge points for current course
@@ -268,8 +263,9 @@ export default function DashboardPage() {
     if (currentCourseId && token) {
       fetchLeaderboards(currentCourseId, token)
       fetchKnowledgePoints(currentCourseId, token)
+      fetchRecentArenaExercises(currentCourseId, token)
     }
-  }, [currentCourseId, fetchLeaderboards, fetchKnowledgePoints])
+  }, [currentCourseId, fetchLeaderboards, fetchKnowledgePoints, fetchRecentArenaExercises])
 
   useEffect(() => {
     if (hasFetched.current) return
@@ -291,17 +287,18 @@ export default function DashboardPage() {
       const token = getStoredToken()
       if (token) {
         fetchData(token)
-        // 同时刷新排行榜和知识点
+        // 同时刷新排行榜、知识点和最近练习
         if (currentCourseId) {
           fetchLeaderboards(currentCourseId, token)
           fetchKnowledgePoints(currentCourseId, token)
+          fetchRecentArenaExercises(currentCourseId, token)
         }
       }
     }
 
     window.addEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh)
     return () => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh)
-  }, [fetchData, currentCourseId, fetchLeaderboards, fetchKnowledgePoints])
+  }, [fetchData, currentCourseId, fetchLeaderboards, fetchKnowledgePoints, fetchRecentArenaExercises])
 
   // 保底机制：页面可见时刷新数据（用户返回仪表盘时）
   useEffect(() => {
@@ -314,6 +311,7 @@ export default function DashboardPage() {
           if (currentCourseId) {
             fetchLeaderboards(currentCourseId, token)
             fetchKnowledgePoints(currentCourseId, token)
+            fetchRecentArenaExercises(currentCourseId, token)
           }
         }
       }
@@ -321,7 +319,7 @@ export default function DashboardPage() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [fetchData, currentCourseId, fetchLeaderboards, fetchKnowledgePoints])
+  }, [fetchData, currentCourseId, fetchLeaderboards, fetchKnowledgePoints, fetchRecentArenaExercises])
 
   const handleLogout = () => { logout(); router.push('/login') }
 
@@ -427,6 +425,16 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-2 pl-2 border-l border-border">
+                {/* Test page link - only visible in development */}
+                {process.env.NODE_ENV === 'development' && (
+                  <button
+                    onClick={() => router.push('/test/hybrid-recommendation')}
+                    className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                    title="混合推荐测试"
+                  >
+                    <FlaskConical className="w-4 h-4" />
+                  </button>
+                )}
                 <span className="text-xs text-muted-foreground hidden lg:block">{user?.username}</span>
                 <button onClick={handleLogout}
                   className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
@@ -524,8 +532,8 @@ export default function DashboardPage() {
 
             {/* 右栏 40%：知识掌握度 + 最近动态 */}
             <div className="lg:col-span-2 flex flex-col gap-6" style={{ minHeight: '500px' }}>
-              {/* 知识掌握度 - 占60%高度 */}
-              <div className="flex-[6] min-h-0">
+              {/* 知识掌握度 */}
+              <div>
                 <KnowledgeMastery
                   courseName={currentCourse?.course_name || 'C语言'}
                   knowledgePoints={knowledgePoints}
@@ -534,8 +542,8 @@ export default function DashboardPage() {
                   compact
                 />
               </div>
-              {/* 最近动态 - 占40%高度 */}
-              <div className="flex-[4] min-h-0">
+              {/* 最近动态 */}
+              <div>
                 <RecentActivity
                   activities={activities}
                   onStartLearning={() => router.push('/courses')}
@@ -639,11 +647,20 @@ function DualLeaderboardPreview({
                     <span className="text-xs text-primary ml-1">({t('你', 'You')})</span>
                   )}
                 </span>
-                <span className="text-sm font-medium text-foreground">
-                  {activeTab === 'mastery'
-                    ? entry.total_mastery?.toFixed(0)
-                    : entry.total_score?.toFixed(0)}
-                </span>
+                {activeTab === 'mastery' ? (
+                  <span className="text-sm font-medium text-foreground">
+                    {entry.total_mastery?.toFixed(0)}
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-1 text-sm flex-shrink-0">
+                    <span className="text-base">{TIER_ICONS[entry.tier as Tier] || '🏅'}</span>
+                    <span className="font-medium">{TIER_NAMES[entry.tier as Tier] || entry.tier}</span>
+                    {entry.sub_tier && (
+                      <span>{['I','II','III','IV','V'][entry.sub_tier - 1]}</span>
+                    )}
+                    <span className="ml-1">⭐{entry.stars ?? 0}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -658,7 +675,7 @@ function DualLeaderboardPreview({
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">
-            {activeTab === 'mastery' ? t('章节掌握排名', 'Chapter mastery ranking') : t('挑战积分排名', 'Challenge score ranking')}
+            {activeTab === 'mastery' ? t('章节掌握排名', 'Chapter mastery ranking') : t('挑战之星排名', 'Challenge stars ranking')}
           </span>
         )}
         {onViewAll && (

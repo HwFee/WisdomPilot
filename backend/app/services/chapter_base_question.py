@@ -99,6 +99,7 @@ class ChapterBaseQuestionService:
         db: AsyncSession,
         chapter_id: int,
         request: BaseAnswersSubmitRequest,
+        user_id: str = None,
     ) -> BaseAnswersSubmitResponse:
         """
         提交基础题答案并分析薄弱点
@@ -107,10 +108,14 @@ class ChapterBaseQuestionService:
             db: 数据库会话
             chapter_id: 章节ID
             request: 答案提交请求
+            user_id: 用户ID（可选，用于更新 mastery_xp）
 
         Returns:
             包含结果分析和薄弱点识别的响应
         """
+        from app.models.user import User
+        from app.services.profile import profile_service
+
         # 获取题目
         questions_result = await db.execute(
             select(ChapterBaseQuestion)
@@ -165,6 +170,16 @@ class ChapterBaseQuestionService:
             elif kp_accuracy >= 0.8:
                 strong_points.append(kp)
 
+        # 更新用户 mastery_xp（基础测试：根据正确率计算 XP）
+        if user_id:
+            user_result = await db.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = user_result.scalar_one_or_none()
+            if user:
+                base_xp = int(accuracy * 20)  # 基础测试最高 20 XP
+                await profile_service.add_mastery_xp(db, user, base_xp)
+
         return BaseAnswersSubmitResponse(
             total_questions=total_questions,
             correct_answers=correct_count,
@@ -181,7 +196,7 @@ class ChapterBaseQuestionService:
         request: EnhancedQuizGenerateRequest,
     ) -> EnhancedQuizGenerateResponse:
         """
-        生成个性化强化测试题
+        生成个性化强化测试题，并持久化到数据库
 
         Args:
             db: 数据库会话
@@ -191,6 +206,8 @@ class ChapterBaseQuestionService:
         Returns:
             包含强化测试题的响应
         """
+        from app.models.mastery_exercise_progress import MasteryExerciseProgress
+
         # 获取章节信息
         chapter_result = await db.execute(
             select(Chapter).where(Chapter.id == request.chapter_id)
@@ -216,22 +233,87 @@ class ChapterBaseQuestionService:
                 message="AI 服务暂时不可用，请稍后重试",
             )
 
-        # 创建会话
+        # 获取当前章节题目的最大 order_index
+        max_order_result = await db.execute(
+            select(ChapterBaseQuestion.order_index)
+            .where(ChapterBaseQuestion.chapter_id == request.chapter_id)
+            .order_by(ChapterBaseQuestion.order_index.desc())
+            .limit(1)
+        )
+        max_order = max_order_result.scalar() or 0
+
+        # 持久化题目到数据库，并创建进度记录（未完成状态）
+        db_questions = []
+        for i, q in enumerate(questions):
+            db_question = ChapterBaseQuestion(
+                chapter_id=request.chapter_id,
+                question_source="精进之路",
+                order_index=max_order + i + 1,
+                question_type=q.type,
+                question_text=q.text,
+                options=q.options,
+                correct_answer=q.correct_answer if hasattr(q, 'correct_answer') else "",
+                explanation=q.explanation if hasattr(q, 'explanation') else None,
+                knowledge_points=q.knowledge_points,
+                difficulty=q.difficulty,
+                code_template=q.code_template if hasattr(q, 'code_template') else None,
+                test_cases=q.test_cases if hasattr(q, 'test_cases') else None,
+            )
+            db.add(db_question)
+            db_questions.append(db_question)
+
+        await db.commit()
+
+        # 刷新获取生成的ID
+        for q in db_questions:
+            await db.refresh(q)
+
+        # 为每道题创建进度记录（未完成状态），方便错题本跳转
+        for db_q in db_questions:
+            progress = MasteryExerciseProgress(
+                user_id=user_id,
+                course_id=request.course_id,
+                chapter_id=request.chapter_id,
+                question_id=db_q.id,
+                is_completed=False,
+                is_correct=False,
+            )
+            db.add(progress)
+
+        await db.commit()
+
+        # 构建返回的题目列表（带数据库ID）
+        persisted_questions = []
+        for db_q, q in zip(db_questions, questions):
+            persisted_questions.append(EnhancedQuizQuestion(
+                id=str(db_q.id),  # 使用数据库ID
+                type=db_q.question_type,
+                difficulty=db_q.difficulty,
+                text=db_q.question_text,
+                options=db_q.options,
+                correct_answer=db_q.correct_answer,
+                explanation=db_q.explanation,
+                knowledge_points=db_q.knowledge_points,
+                code_template=db_q.code_template,
+                test_cases=db_q.test_cases,
+            ))
+
+        # 创建会话（用于提交时的验证）
         session_id = str(uuid.uuid4())
         self._enhanced_sessions[session_id] = EnhancedQuizSession(
             session_id=session_id,
             user_id=user_id,
             chapter_id=request.chapter_id,
             course_id=request.course_id,
-            questions=[q.model_dump() for q in questions],
+            questions=[q.model_dump() for q in persisted_questions],
         )
 
         return EnhancedQuizGenerateResponse(
             success=True,
             session_id=session_id,
-            questions=questions,
+            questions=persisted_questions,
             weak_points_addressed=request.weak_points,
-            message=f"成功生成 {len(questions)} 道强化测试题",
+            message=f"成功生成 {len(persisted_questions)} 道强化测试题",
         )
 
     async def submit_enhanced_quiz(
@@ -243,6 +325,12 @@ class ChapterBaseQuestionService:
         """
         提交强化测试题答案
 
+        不再依赖内存会话，而是从数据库读取题目信息。
+        进度已经在每道题答完后保存，这里主要用于：
+        1. 计算最终结果
+        2. 更新 XP
+        3. 生成建议
+
         Args:
             db: 数据库会话
             user_id: 用户ID
@@ -251,63 +339,115 @@ class ChapterBaseQuestionService:
         Returns:
             测试结果
         """
-        # 获取会话
-        session = self._enhanced_sessions.get(request.session_id)
-        if not session or session.user_id != user_id:
+        from app.models.user import User
+        from app.services.profile import profile_service
+        from app.models.mastery_exercise_progress import MasteryExerciseProgress
+
+        # 从答案中提取 question_id 列表
+        question_ids = []
+        for answer in request.answers:
+            qid = answer.get("question_id")
+            if qid:
+                try:
+                    question_ids.append(int(qid))
+                except (ValueError, TypeError):
+                    continue
+
+        if not question_ids:
             return EnhancedQuizSubmitResponse(
                 success=False,
                 session_id=request.session_id,
                 total_questions=0,
                 correct_answers=0,
                 accuracy=0,
-                message="会话不存在或已过期",
+                message="没有有效的答案",
             )
 
+        # 从数据库获取题目信息
+        questions_result = await db.execute(
+            select(ChapterBaseQuestion).where(
+                ChapterBaseQuestion.id.in_(question_ids)
+            )
+        )
+        questions = questions_result.scalars().all()
+        questions_map = {q.id: q for q in questions}
+
+        # 获取用户对这些题目的进度（用于获取 chapter_id 和 course_id）
+        progress_result = await db.execute(
+            select(MasteryExerciseProgress).where(
+                MasteryExerciseProgress.user_id == user_id,
+                MasteryExerciseProgress.question_id.in_(question_ids),
+            )
+        )
+        progresses = progress_result.scalars().all()
+
+        # 确定 chapter_id 和 course_id
+        chapter_id = None
+        course_id = None
+        if progresses:
+            chapter_id = progresses[0].chapter_id
+            course_id = progresses[0].course_id
+
         # 评估答案
-        questions_map = {q["id"]: q for q in session.questions}
         results = []
         correct_count = 0
 
         for answer in request.answers:
             question_id = answer.get("question_id")
             user_answer = answer.get("answer", "")
-            question = questions_map.get(question_id)
 
+            try:
+                qid_int = int(question_id)
+            except (ValueError, TypeError):
+                continue
+
+            question = questions_map.get(qid_int)
             if not question:
                 continue
 
             # 获取正确答案
-            correct_answer = question.get("correct_answer", "")
+            correct_answer = question.correct_answer or ""
             is_correct = str(user_answer).strip().upper() == str(correct_answer).strip().upper()
 
             if is_correct:
                 correct_count += 1
 
             results.append({
-                "question_id": question_id,
+                "question_id": str(question_id),
                 "is_correct": is_correct,
                 "user_answer": user_answer,
                 "correct_answer": correct_answer,
-                "explanation": question.get("explanation", ""),
-                "knowledge_points": question.get("knowledge_points", []),
+                "explanation": question.explanation or "",
+                "knowledge_points": question.knowledge_points or [],
             })
 
-        total_questions = len(session.questions)
+        total_questions = len(question_ids)
         accuracy = correct_count / total_questions if total_questions > 0 else 0
         xp_earned = int(accuracy * 30)
         mastery_points_earned = int(accuracy * 15)
 
-        # 更新用户进度
-        await self._update_user_progress(
-            db=db,
-            user_id=user_id,
-            chapter_id=session.chapter_id,
-            correct_count=correct_count,
-            total_count=total_questions,
-            course_id=session.course_id,
+        # 更新用户 mastery_xp
+        user_result = await db.execute(
+            select(User).where(User.id == user_id)
         )
+        user = user_result.scalar_one_or_none()
+        if user:
+            await profile_service.add_mastery_xp(db, user, xp_earned)
 
-        # 清理会话
+        # 进度已经在每道题答完后保存了，这里不需要再更新
+
+        # 更新用户章节掌握度
+        if chapter_id and course_id:
+            await self._update_user_progress(
+                db=db,
+                user_id=user_id,
+                chapter_id=chapter_id,
+                correct_count=correct_count,
+                total_count=total_questions,
+                course_id=course_id,
+            )
+
+        # 清理会话（如果存在）
         self._enhanced_sessions.pop(request.session_id, None)
 
         return EnhancedQuizSubmitResponse(
@@ -331,8 +471,15 @@ class ChapterBaseQuestionService:
         question_count: int,
         question_types: List[str],
     ) -> List[EnhancedQuizQuestion]:
-        """使用 AI 生成强化测试题"""
-        if not ai_service.is_configured():
+        """使用 AI 生成强化测试题 (优先使用 MiniMax)"""
+        # 优先使用 MiniMax provider，否则使用主 AI provider
+        provider = None
+        if ai_service.is_minimax_configured():
+            provider = ai_service.minimax_provider
+        elif ai_service.is_configured():
+            provider = ai_service.provider
+
+        if provider is None:
             return []
 
         # 构建提示
@@ -382,7 +529,7 @@ class ChapterBaseQuestionService:
 
         try:
             # 调用 AI 服务
-            response = await ai_service.provider.generate_explanation(prompt)
+            response = await provider.generate_explanation(prompt)
 
             # 解析 JSON
             import json
@@ -404,6 +551,8 @@ class ChapterBaseQuestionService:
                     difficulty=q.get("difficulty", 2),
                     text=q.get("text", ""),
                     options=q.get("options"),
+                    correct_answer=q.get("correct_answer", ""),
+                    explanation=q.get("explanation"),
                     code_template=q.get("code_template"),
                     test_cases=q.get("test_cases"),
                     knowledge_points=q.get("knowledge_points", []),
@@ -411,7 +560,8 @@ class ChapterBaseQuestionService:
                 for i, q in enumerate(questions_data)
             ]
         except Exception as e:
-            print(f"Failed to generate enhanced questions: {e}")
+            import logging
+            logging.error(f"Failed to generate enhanced questions: {e}")
             return []
 
     async def _update_user_progress(

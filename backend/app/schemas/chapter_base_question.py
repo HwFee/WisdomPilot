@@ -103,6 +103,8 @@ class EnhancedQuizQuestion(BaseModel):
     difficulty: int
     text: str
     options: Optional[List[str]] = None
+    correct_answer: str = Field(default="", description="正确答案")
+    explanation: Optional[str] = Field(default=None, description="答案解析")
     code_template: Optional[str] = None
     test_cases: Optional[List[dict]] = None
     knowledge_points: List[str] = Field(default_factory=list)

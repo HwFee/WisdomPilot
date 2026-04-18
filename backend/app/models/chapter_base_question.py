@@ -1,7 +1,7 @@
-"""Chapter Base Question model - 章节基础测试题
+"""Chapter Base Question model - 章节基础测试题和强化测试题
 
-每章节的固定基础测试题，由 AI 生成后存储。
-用于在用户学习完知识点后进行基础测试。
+基础测试题：每章节固定数量，由 AI 预先生成存储
+强化测试题：根据用户薄弱点 AI 实时生成，也存储到同一表中
 """
 
 from datetime import datetime
@@ -17,11 +17,12 @@ if TYPE_CHECKING:
 
 
 class ChapterBaseQuestion(Base):
-    """章节基础测试题
+    """章节测试题（基础题 + 强化题）
 
-    每章节有固定数量的基础题（如 3-5 道）。
-    题目由 AI 生成，超级基础，仅测试知识点掌握。
-    生成后固定存储，用于客观评估用户水平。
+    基础测试题：每章节有固定数量（如 5 道），question_source='base'
+    强化测试题：根据薄弱点 AI 生成，question_source='enhanced'
+
+    两者共用同一个表，方便错题本统一处理。
     """
 
     __tablename__ = "chapter_base_questions"
@@ -33,6 +34,13 @@ class ChapterBaseQuestion(Base):
         nullable=False,
         index=True,
         comment="所属章节ID"
+    )
+    question_source: Mapped[str] = mapped_column(
+        String(20),
+        default="精进之路",
+        nullable=False,
+        index=True,
+        comment="题目来源: 精进之路 / 挑战之路"
     )
     order_index: Mapped[int] = mapped_column(
         Integer,
@@ -103,13 +111,14 @@ class ChapterBaseQuestion(Base):
     chapter: Mapped["Chapter"] = relationship("Chapter", back_populates="base_questions")
 
     def __repr__(self) -> str:
-        return f"<ChapterBaseQuestion {self.id}: Chapter {self.chapter_id} Q{self.order_index}>"
+        return f"<ChapterBaseQuestion {self.id}: Chapter {self.chapter_id} {self.question_source} Q{self.order_index}>"
 
     def to_dict(self) -> dict:
         """转换为字典格式（用于 API 响应）"""
         return {
             "id": self.id,
             "chapter_id": self.chapter_id,
+            "question_source": self.question_source,
             "order_index": self.order_index,
             "type": self.question_type,
             "text": self.question_text,

@@ -29,6 +29,17 @@ class Settings(BaseSettings):
     AI_LOCAL_FIRST: bool = False
     AI_LOCAL_BASE_URL: str | None = None
 
+    # MiniMax Configuration (for enhanced quiz generation)
+    MINIMAX_API_KEY: str = ""
+    MINIMAX_MODEL: str = "MiniMax-M2.7"
+
+    # Embedding Configuration (for vector matching)
+    EMBEDDING_PROVIDER: str = "siliconflow"
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_BASE_URL: str = "https://api.siliconflow.cn/v1"
+    EMBEDDING_MODEL: str = "BAAI/bge-large-zh-v1.5"
+    EMBEDDING_DIMENSIONS: int = 1024
+
     # External services
     JUDGE0_BASE_URL: str = "https://ce.judge0.com"
 

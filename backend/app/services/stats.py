@@ -315,6 +315,11 @@ class StatsService:
         self, user_id: str, data: StartSessionRequest
     ) -> LearningSession:
         """Start a new learning session, ending any existing active one"""
+        logger.info(f"[学习时长] ========== 开始新会话 ==========")
+        logger.info(f"[学习时长] user_id: {user_id}")
+        logger.info(f"[学习时长] chapter_id: {data.chapter_id}")
+        logger.info(f"[学习时长] subsection_index: {data.subsection_index}")
+
         # End any existing active sessions
         await self.end_all_active_sessions(user_id)
 
@@ -327,12 +332,20 @@ class StatsService:
         self.db.add(session)
         await self.db.commit()
         await self.db.refresh(session)
+
+        logger.info(f"[学习时长] 会话已创建, session_id: {session.id}")
+        logger.info(f"[学习时长] started_at: {session.started_at}")
         return session
 
     async def end_session(
         self, user_id: str, session_id: str, data: EndSessionRequest
     ) -> Optional[LearningSession]:
         """End a learning session"""
+        logger.info(f"[学习时长] ========== 结束会话 ==========")
+        logger.info(f"[学习时长] user_id: {user_id}")
+        logger.info(f"[学习时长] session_id: {session_id}")
+        logger.info(f"[学习时长] duration_seconds: {data.duration_seconds} 秒 ({data.duration_seconds / 60:.1f} 分钟)")
+
         # Expire any cached session data to force fresh read
         self.db.expire_all()
 
@@ -349,6 +362,12 @@ class StatsService:
             session.duration_seconds = data.duration_seconds
             await self.db.commit()
             await self.db.refresh(session)
+            logger.info(f"[学习时长] 会话已更新:")
+            logger.info(f"[学习时长]   - started_at: {session.started_at}")
+            logger.info(f"[学习时长]   - ended_at: {session.ended_at}")
+            logger.info(f"[学习时长]   - duration_seconds: {session.duration_seconds}")
+        else:
+            logger.warning(f"[学习时长] 未找到会话 session_id={session_id}")
 
         return session
 
@@ -377,6 +396,11 @@ class StatsService:
         """Create and immediately complete a session to record time.
         Used as fallback when end_session is called but no active session exists.
         """
+        logger.info(f"[学习时长] ========== 创建已完成会话（fallback）==========")
+        logger.info(f"[学习时长] user_id: {user_id}")
+        logger.info(f"[学习时长] chapter_id: {chapter_id}")
+        logger.info(f"[学习时长] duration_seconds: {duration_seconds} 秒 ({duration_seconds / 60:.1f} 分钟)")
+
         now = utc_now()
         session = LearningSession(
             user_id=user_id,
@@ -390,6 +414,12 @@ class StatsService:
         self.db.add(session)
         await self.db.commit()
         await self.db.refresh(session)
+
+        logger.info(f"[学习时长] 会话已创建, session_id: {session.id}")
+        logger.info(f"[学习时长]   - started_at: {session.started_at}")
+        logger.info(f"[学习时长]   - ended_at: {session.ended_at}")
+        logger.info(f"[学习时长]   - duration_seconds: {session.duration_seconds}")
+
         return session
 
     async def get_active_session(self, user_id: str) -> Optional[LearningSession]:

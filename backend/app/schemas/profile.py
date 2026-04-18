@@ -11,7 +11,8 @@ class UserProfileResponse(BaseModel):
     email: str
     username: str
     xp: int
-    level: int
+    mastery_xp: int = 0
+    mastery_level: str = "入门"
     streak_days: int
     total_checkin_days: int = 0
     last_activity_date: datetime

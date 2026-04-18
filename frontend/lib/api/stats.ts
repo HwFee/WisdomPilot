@@ -48,6 +48,7 @@ export async function startLearningSession(
   chapterId: number,
   subsectionIndex: number = 0,
 ): Promise<LearningSession> {
+  console.log("[学习时长-API] startLearningSession 调用, chapterId =", chapterId);
   return post<LearningSession>("/api/stats/sessions/start", token, {
     chapter_id: chapterId,
     subsection_index: subsectionIndex,
@@ -58,6 +59,7 @@ export async function startStageSession(
   token: string,
   stageId: number,
 ): Promise<LearningSession> {
+  console.log("[学习时长-API] startStageSession 调用, stageId =", stageId);
   return post<LearningSession>("/api/stats/sessions/start", token, {
     chapter_id: stageId, // 使用 stageId 作为 chapter_id
     subsection_index: 0,
@@ -69,6 +71,7 @@ export async function endLearningSession(
   durationSeconds: number,
   chapterId?: number,
 ): Promise<LearningSession> {
+  console.log("[学习时长-API] endLearningSession 调用, duration =", durationSeconds, "秒, chapterId =", chapterId);
   return post<LearningSession>("/api/stats/sessions/end", token, {
     duration_seconds: durationSeconds,
     chapter_id: chapterId ?? null,
@@ -85,10 +88,19 @@ export function endLearningSessionKeepalive(
   durationSeconds: number,
   chapterId?: number,
 ): void {
+  console.log("[学习时长-API] endLearningSessionKeepalive 调用");
+  console.log("[学习时长-API] duration =", durationSeconds, "秒");
+  console.log("[学习时长-API] chapterId =", chapterId);
+
   import("./client").then(({ postKeepalive }) => {
+    console.log("[学习时长-API] 调用 postKeepalive 发送请求...");
     postKeepalive("/api/stats/sessions/end", token, {
       duration_seconds: durationSeconds,
       chapter_id: chapterId ?? null,
+    }).then(() => {
+      console.log("[学习时长-API] postKeepalive 请求已发送");
+    }).catch((err) => {
+      console.error("[学习时长-API] postKeepalive 请求失败:", err);
     });
   });
 }

@@ -170,7 +170,9 @@ export const TIER_ICONS: Record<string, string> = {
   silver: '🥈',
   gold: '🥇',
   platinum: '💎',
-  diamond: '👑',
+  diamond: '💠',
+  master: '⭐',
+  king: '👑',
 }
 
 export const TIER_NAMES: Record<string, string> = {
@@ -179,6 +181,8 @@ export const TIER_NAMES: Record<string, string> = {
   gold: '黄金',
   platinum: '铂金',
   diamond: '钻石',
+  master: '星耀',
+  king: '王者',
 }
 
 export const MASTERY_LEVEL_COLORS: Record<string, string> = {
@@ -327,7 +331,7 @@ export interface InfiniteProgressResponse {
   }>
   correct_count: number
   completed_count: number
-  total_xp_earned: number
+  total_stars_earned: number
 }
 
 export interface SubmitExerciseRequest {
@@ -340,9 +344,17 @@ export interface SubmitExerciseRequest {
 export interface SubmitExerciseResponse {
   is_correct: boolean
   test_results: Array<{ passed: boolean; input: string; expected: string; actual: string }>
-  xp_earned: number
+  stars_earned: number
   next_unlocked: boolean
   added_to_wrong_book: boolean
+  tier_changed: boolean
+  new_tier: string | null
+  new_sub_tier: number | null
+  new_stars: number
+  promoted: boolean
+  demoted: boolean
+  first_time_correct: boolean
+  first_time_wrong: boolean
 }
 
 export interface SaveCodeRequest {
@@ -798,6 +810,31 @@ export async function getMasteryChapterDetailProgress(
 ): Promise<MasteryChapterDetailProgressResponse> {
   return get<MasteryChapterDetailProgressResponse>(
     `/api/learning-path/mastery/${courseId}/${chapterId}/progress/detail`,
+    token
+  )
+}
+
+// ========================================
+// Recent Arena Exercises API (最近挑战练习)
+// ========================================
+
+export interface RecentArenaExercise {
+  exercise_id: number
+  title: string
+  is_correct: boolean
+  difficulty: number
+}
+
+/**
+ * 获取挑战之路最近练习的题目（含正确情况）
+ */
+export async function getRecentArenaExercises(
+  courseId: number,
+  token: string,
+  limit: number = 3
+): Promise<RecentArenaExercise[]> {
+  return get<RecentArenaExercise[]>(
+    `/api/learning-path/challenge/${courseId}/recent?limit=${limit}`,
     token
   )
 }

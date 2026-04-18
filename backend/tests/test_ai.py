@@ -342,6 +342,175 @@ class TestMiniMaxProvider:
         assert provider.base_url == "https://api.minimaxi.com/anthropic"
 
 
+class TestAIServiceMiniMaxConfig:
+    """Test AIService MiniMax configuration"""
+
+    def test_configure_minimax_provider(self):
+        """AIService can configure MiniMax provider independently"""
+        service = AIService()
+        # Configure main provider first
+        config = AIProviderConfig(
+            provider="openai",
+            api_key="test-key",
+            model="gpt-4o-mini",
+            temperature=0.7,
+        )
+        service.configure(config)
+        assert service.is_configured()
+        assert not service.is_minimax_configured()
+
+        # Configure MiniMax
+        service.configure_minimax(api_key="minimax-test-key")
+        assert service.is_minimax_configured()
+        assert isinstance(service.minimax_provider, MiniMaxProvider)
+
+    def test_configure_minimax_empty_key_disables(self):
+        """Empty API key disables MiniMax provider"""
+        service = AIService()
+        service.configure_minimax(api_key="")
+        assert not service.is_minimax_configured()
+        assert service.minimax_provider is None
+
+    def test_configure_minimax_custom_model(self):
+        """Can configure MiniMax with custom model"""
+        service = AIService()
+        service.configure_minimax(
+            api_key="test-key",
+            model="MiniMax-M2.7-Pro",
+            temperature=0.5,
+        )
+        assert service.is_minimax_configured()
+        assert service.minimax_provider.config.model == "MiniMax-M2.7-Pro"
+        assert service.minimax_provider.config.temperature == 0.5
+
+
+class TestEnhancedQuizGeneration:
+    """Test enhanced quiz generation with MiniMax"""
+
+    @pytest.mark.asyncio
+    async def test_generate_enhanced_quiz_uses_minimax(self):
+        """Enhanced quiz generation uses MiniMax when configured"""
+        from app.services.chapter_base_question import ChapterBaseQuestionService
+        from app.models.chapter import Chapter
+
+        # Create mock chapter
+        chapter = Chapter(
+            id=1,
+            course_id=1,
+            title="变量与数据类型",
+            description="学习C语言中的变量和数据类型",
+            order_index=1,
+        )
+
+        # Create service instance
+        service = ChapterBaseQuestionService()
+
+        # Mock MiniMax response with valid JSON
+        mock_response = '''```json
+[
+  {
+    "id": "eq_001",
+    "type": "choice",
+    "difficulty": 2,
+    "text": "以下哪个是合法的变量名？",
+    "options": ["1var", "var_name", "var-name", "var name"],
+    "correct_answer": "B",
+    "explanation": "变量名可以包含字母、数字和下划线，但不能以数字开头",
+    "knowledge_points": ["变量命名规则"]
+  }
+]
+```'''
+
+        # Mock the internal provider instance
+        mock_provider = AsyncMock()
+        mock_provider.generate_explanation = AsyncMock(return_value=mock_response)
+
+        with patch.object(ai_service, 'is_minimax_configured', return_value=True):
+            with patch.object(ai_service, '_minimax_provider', mock_provider):
+                result = await service._generate_enhanced_questions_with_ai(
+                    chapter=chapter,
+                    weak_points=["变量命名规则"],
+                    question_count=1,
+                    question_types=["choice"],
+                )
+
+        assert len(result) == 1
+        assert result[0].type == "choice"
+        assert result[0].text == "以下哪个是合法的变量名？"
+        assert result[0].options == ["1var", "var_name", "var-name", "var name"]
+
+    @pytest.mark.asyncio
+    async def test_generate_enhanced_quiz_fallback_to_main_provider(self):
+        """Enhanced quiz generation falls back to main provider when MiniMax not configured"""
+        from app.services.chapter_base_question import ChapterBaseQuestionService
+        from app.models.chapter import Chapter
+
+        chapter = Chapter(
+            id=1,
+            course_id=1,
+            title="变量与数据类型",
+            description="学习C语言中的变量和数据类型",
+            order_index=1,
+        )
+
+        service = ChapterBaseQuestionService()
+
+        mock_response = '''[
+          {
+            "id": "eq_001",
+            "type": "choice",
+            "difficulty": 2,
+            "text": "测试题目",
+            "options": ["A", "B", "C", "D"],
+            "correct_answer": "A",
+            "explanation": "解释",
+            "knowledge_points": ["知识点"]
+          }
+        ]'''
+
+        mock_provider = AsyncMock()
+        mock_provider.generate_explanation = AsyncMock(return_value=mock_response)
+
+        with patch.object(ai_service, 'is_minimax_configured', return_value=False):
+            with patch.object(ai_service, 'is_configured', return_value=True):
+                with patch.object(ai_service, '_provider', mock_provider):
+                    result = await service._generate_enhanced_questions_with_ai(
+                        chapter=chapter,
+                        weak_points=[],
+                        question_count=1,
+                        question_types=["choice"],
+                    )
+
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_generate_enhanced_quiz_no_provider(self):
+        """Enhanced quiz generation returns empty when no provider configured"""
+        from app.services.chapter_base_question import ChapterBaseQuestionService
+        from app.models.chapter import Chapter
+
+        chapter = Chapter(
+            id=1,
+            course_id=1,
+            title="变量与数据类型",
+            description="学习C语言中的变量和数据类型",
+            order_index=1,
+        )
+
+        service = ChapterBaseQuestionService()
+
+        with patch.object(ai_service, 'is_minimax_configured', return_value=False):
+            with patch.object(ai_service, 'is_configured', return_value=False):
+                result = await service._generate_enhanced_questions_with_ai(
+                    chapter=chapter,
+                    weak_points=[],
+                    question_count=1,
+                    question_types=["choice"],
+                )
+
+        assert result == []
+
+
 class TestChoiceAnalysis:
     """Test AI choice analysis endpoint (refactored from choice-explanation)"""
 

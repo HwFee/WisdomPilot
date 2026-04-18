@@ -456,7 +456,8 @@ async def get_user_course_progress(
             "current_section": current_section_map.get(course.id),
             "mastery_score": mastery_score,
             "arena_tier": arena_profile.tier if arena_profile else None,
-            "arena_score": arena_profile.total_score if arena_profile else None,
+            "arena_sub_tier": arena_profile.sub_tier if arena_profile else None,
+            "arena_stars": arena_profile.stars if arena_profile else None,
         })
 
     return {"courses": courses_data}
@@ -744,3 +745,254 @@ async def get_current_position(
         chapter_title=last_chapter.title if last_chapter else None,
         section_title=last_section.title,
     )
+
+
+# ========================================
+# Hybrid Recommendation API
+# ========================================
+
+from app.services.hybrid_recommendation import HybridRecommendationService
+from app.services.user_profile import UserProfileService
+from app.services.embedding import get_embedding_service, get_exercise_embedding_service
+from app.services.tag_extraction import get_tag_extraction_service
+from app.models.user_arena import UserArenaProfile
+from app.models.chapter_mastery import ChapterMastery
+
+
+class HybridRecommendationRequest:
+    """Request model for hybrid recommendation"""
+    course_id: int
+    limit: int = 10
+    min_difficulty: int = 1
+    max_difficulty: int = 8
+
+
+class EmbeddingConfigRequest:
+    """Request model for updating embedding configuration"""
+    provider: str = "openai"
+    model: str = "text-embedding-3-small"
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+
+
+@router.get("/{course_id}/hybrid-recommendations")
+async def get_hybrid_recommendations(
+    course_id: int,
+    db: db_dependency,
+    current_user: auth_dependency,
+    limit: int = 10,
+    min_difficulty: int = 1,
+    max_difficulty: int = 8,
+):
+    """
+    Get personalized exercise recommendations using hybrid algorithm.
+
+    Combines:
+    - 40% Behavior-based scoring
+    - 35% Embedding similarity
+    - 25% Difficulty matching (ZPD)
+    """
+    service = HybridRecommendationService(db)
+    recommendations = await service.get_recommendations(
+        user_id=current_user.id,
+        course_id=course_id,
+        limit=limit,
+        min_difficulty=min_difficulty,
+        max_difficulty=max_difficulty,
+    )
+
+    return {
+        "course_id": course_id,
+        "recommendations": recommendations,
+        "algorithm": {
+            "name": "Hybrid Recommendation",
+            "weights": {
+                "behavior": 0.40,
+                "embedding": 0.35,
+                "difficulty": 0.25,
+            },
+        },
+    }
+
+
+@router.get("/{course_id}/user-profile")
+async def get_user_profile_stats(
+    course_id: int,
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """
+    Get user profile statistics for hybrid recommendation.
+    """
+    service = UserProfileService(db)
+    stats = await service.get_user_stats(current_user.id, course_id)
+
+    return {
+        "course_id": course_id,
+        "user_stats": stats,
+    }
+
+
+@router.post("/{course_id}/recalculate-profile")
+async def recalculate_user_profile(
+    course_id: int,
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """
+    Recalculate user profile embedding from all exercise history.
+    """
+    service = UserProfileService(db)
+    result = await service.recalculate_full_embedding(current_user.id, course_id)
+
+    return {
+        "course_id": course_id,
+        "result": result,
+    }
+
+
+@router.post("/exercises/{exercise_id}/extract-tags")
+async def extract_exercise_tags(
+    exercise_id: int,
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """
+    Extract structured tags from an exercise using AI.
+    """
+    # Get exercise
+    result = await db.execute(
+        select(Exercise).where(Exercise.id == exercise_id)
+    )
+    exercise = result.scalar_one_or_none()
+
+    if not exercise:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Exercise {exercise_id} not found"
+        )
+
+    # Extract tags
+    service = get_tag_extraction_service()
+    content = exercise.content or {}
+    tags = await service.extract_tags(
+        question_text=content.get("text", "") or content.get("description", ""),
+        exercise_type=exercise.type,
+        options=content.get("options"),
+        code_template=content.get("code_template"),
+        existing_knowledge_points=exercise.knowledge_points,
+    )
+
+    # Save to exercise
+    exercise.extracted_tags = tags.to_dict()
+    await db.commit()
+
+    return {
+        "exercise_id": exercise_id,
+        "extracted_tags": tags.to_dict(),
+        "embedding_text": tags.to_embedding_text(),
+    }
+
+
+@router.post("/exercises/{exercise_id}/generate-embedding")
+async def generate_exercise_embedding(
+    exercise_id: int,
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """
+    Generate embedding for an exercise.
+    """
+    service = get_exercise_embedding_service(db)
+    embedding = await service.generate_and_store_embedding(exercise_id)
+
+    if embedding is None:
+        return {
+            "exercise_id": exercise_id,
+            "success": False,
+            "message": "Failed to generate embedding. Check AI API configuration.",
+        }
+
+    return {
+        "exercise_id": exercise_id,
+        "success": True,
+        "embedding_dimensions": len(embedding),
+    }
+
+
+@router.post("/batch-update-embeddings")
+async def batch_update_embeddings(
+    db: db_dependency,
+    current_user: auth_dependency,
+    limit: int = 50,
+):
+    """
+    Batch update embeddings for exercises without embeddings.
+    """
+    service = get_exercise_embedding_service(db)
+    result = await service.batch_update_embeddings(limit=limit)
+
+    return {
+        "result": result,
+    }
+
+
+@router.get("/recommendation-debug/{course_id}")
+async def debug_recommendation_system(
+    course_id: int,
+    db: db_dependency,
+    current_user: auth_dependency,
+    min_difficulty: int = 1,
+    max_difficulty: int = 8,
+):
+    """
+    Debug endpoint to see all components of the hybrid recommendation system.
+    """
+    # Get user stats
+    profile_service = UserProfileService(db)
+    user_stats = await profile_service.get_user_stats(current_user.id, course_id)
+
+    # Get recommendations
+    hybrid_service = HybridRecommendationService(db)
+    recommendations = await hybrid_service.get_recommendations(
+        user_id=current_user.id,
+        course_id=course_id,
+        limit=5,
+        min_difficulty=min_difficulty,
+        max_difficulty=max_difficulty,
+    )
+
+    # Get exercises with embeddings count
+    exercises_with_embedding = await db.execute(
+        select(func.count()).select_from(Exercise).where(
+            Exercise.is_verified == True,
+            Exercise.embedding.isnot(None),
+        )
+    )
+    total_with_embedding = exercises_with_embedding.scalar() or 0
+
+    # Get total exercises
+    total_exercises = await db.execute(
+        select(func.count()).select_from(Exercise).where(Exercise.is_verified == True)
+    )
+    total = total_exercises.scalar() or 0
+
+    # Check embedding service configuration
+    from app.config import get_settings
+    settings = get_settings()
+    embedding_configured = bool(settings.EMBEDDING_API_KEY)
+
+    return {
+        "course_id": course_id,
+        "user_stats": user_stats,
+        "recommendations": recommendations,
+        "system_status": {
+            "total_exercises": total,
+            "exercises_with_embedding": total_with_embedding,
+            "embedding_coverage": f"{(total_with_embedding / total * 100):.1f}%" if total > 0 else "N/A",
+            "embedding_service_configured": embedding_configured,
+            "embedding_provider": settings.EMBEDDING_PROVIDER,
+            "embedding_model": settings.EMBEDDING_MODEL,
+        },
+        "fusion_weights": hybrid_service.get_fusion_weights(),
+    }

@@ -137,6 +137,8 @@ export default function MasteryPathPage() {
   const sessionStartedAtRef = useRef<number | null>(null);
   const activeSessionChapterIdRef = useRef<number | null>(null);
   const isEndingSessionRef = useRef(false);
+  const sessionInitializedRef = useRef(false); // 防止 StrictMode 重复初始化
+  const sessionEndedRef = useRef(false); // 防止 StrictMode 重复结束
 
   const fetchOverview = useCallback(async () => {
     const token = getStoredToken();
@@ -195,10 +197,37 @@ export default function MasteryPathPage() {
     const token = getStoredToken();
     if (!token) return;
 
+    console.log("[精进之路-学习时长] startTrackedSession 调用, chapterId =", chapterId);
+    console.log("[精进之路-学习时长] activeSessionChapterIdRef =", activeSessionChapterIdRef.current);
+    console.log("[精进之路-学习时长] sessionStartedAtRef =", sessionStartedAtRef.current);
+
+    // 检查是否有从其他页面转移过来的会话
+    const continueSession = searchParams.get("continueSession") === "1";
+    if (continueSession) {
+      const savedSession = localStorage.getItem('masterySession');
+      if (savedSession) {
+        try {
+          const sessionData = JSON.parse(savedSession);
+          console.log("[精进之路-学习时长] 检测到继续会话，从 localStorage 恢复:", sessionData);
+          activeSessionChapterIdRef.current = sessionData.chapterId;
+          sessionStartedAtRef.current = sessionData.startedAt;
+          sessionInitializedRef.current = true;
+          sessionEndedRef.current = false;
+          // 清除 localStorage 中的会话数据
+          localStorage.removeItem('masterySession');
+          console.log("[精进之路-学习时长] 会话已恢复，开始时间:", new Date(sessionData.startedAt).toLocaleString());
+          return;
+        } catch (e) {
+          console.error("[精进之路-学习时长] 解析会话数据失败:", e);
+        }
+      }
+    }
+
     if (
       activeSessionChapterIdRef.current === chapterId &&
       sessionStartedAtRef.current
     ) {
+      console.log("[精进之路-学习时长] 同一章节已有会话，跳过");
       return;
     }
 
@@ -206,6 +235,7 @@ export default function MasteryPathPage() {
       activeSessionChapterIdRef.current !== null &&
       sessionStartedAtRef.current
     ) {
+      console.log("[精进之路-学习时长] 切换章节，先结束上一段会话");
       const prevChapterId = activeSessionChapterIdRef.current ?? undefined;
       const durationSeconds = Math.max(
         1,
@@ -213,6 +243,7 @@ export default function MasteryPathPage() {
       );
       activeSessionChapterIdRef.current = null;
       sessionStartedAtRef.current = null;
+      sessionInitializedRef.current = false;
       try {
         // Await here since we're about to start a new session — must finish first
         await endLearningSession(token, durationSeconds, prevChapterId);
@@ -222,31 +253,66 @@ export default function MasteryPathPage() {
     }
 
     try {
+      console.log("[精进之路-学习时长] ========== 开始新会话 ==========");
+      console.log("[精进之路-学习时长] 调用 startLearningSession, chapterId =", chapterId);
       await startLearningSession(token, chapterId, 0);
+      const now = Date.now();
       activeSessionChapterIdRef.current = chapterId;
-      sessionStartedAtRef.current = Date.now();
+      sessionStartedAtRef.current = now;
+      sessionInitializedRef.current = true;
+      sessionEndedRef.current = false; // 重置结束标记
+      console.log("[精进之路-学习时长] 会话已启动，开始时间:", new Date(now).toLocaleString());
     } catch (error) {
       console.error("[精进之路] 开始学习会话失败:", error);
     }
-  }, []);
+  }, [searchParams]);
 
   const endTrackedSession = useCallback(async () => {
-    const token = getStoredToken();
-    if (!token || !sessionStartedAtRef.current || isEndingSessionRef.current)
-      return;
+    console.log("[精进之路-学习时长] endTrackedSession 被调用");
+    console.log("[精进之路-学习时长] sessionEndedRef.current =", sessionEndedRef.current);
 
-    isEndingSessionRef.current = true;
-    const chapterId = activeSessionChapterIdRef.current ?? undefined;
+    if (sessionEndedRef.current) {
+      console.log("[精进之路-学习时长] 会话已结束，跳过");
+      return;
+    }
+
+    const token = getStoredToken();
+    const startedAt = sessionStartedAtRef.current;
+
+    console.log("[精进之路-学习时长] token 存在:", !!token);
+    console.log("[精进之路-学习时长] startedAt =", startedAt);
+    console.log("[精进之路-学习时长] sessionInitializedRef =", sessionInitializedRef.current);
+
+    if (
+      !token ||
+      !startedAt ||
+      !sessionInitializedRef.current
+    ) {
+      console.log("[精进之路-学习时长] 条件不满足，跳过");
+      return;
+    }
+
     const durationSeconds = Math.max(
       1,
-      Math.floor((Date.now() - sessionStartedAtRef.current) / 1000),
+      Math.floor((Date.now() - startedAt) / 1000),
     );
+    const durationMinutes = (durationSeconds / 60).toFixed(1);
+    const chapterId = activeSessionChapterIdRef.current; // 先保存 chapterId
+
+    console.log("[精进之路-学习时长] ========== 会话结束 ==========");
+    console.log("[精进之路-学习时长] 开始时间:", new Date(startedAt).toLocaleString());
+    console.log("[精进之路-学习时长] 结束时间:", new Date().toLocaleString());
+    console.log("[精进之路-学习时长] 学习时长:", durationSeconds, "秒 (约", durationMinutes, "分钟)");
+    console.log("[精进之路-学习时长] chapterId:", chapterId);
+
+    sessionEndedRef.current = true;
+    sessionInitializedRef.current = false;
     activeSessionChapterIdRef.current = null;
     sessionStartedAtRef.current = null;
-    isEndingSessionRef.current = false;
 
     // Use keepalive so the request survives page navigation / component unmount
-    endLearningSessionKeepalive(token, durationSeconds, chapterId);
+    console.log("[精进之路-学习时长] 调用 endLearningSessionKeepalive...");
+    endLearningSessionKeepalive(token, durationSeconds, chapterId ?? undefined);
   }, []);
 
   // Handle chapter selection - load knowledge content first (with optional question ID for jump)
@@ -297,7 +363,6 @@ export default function MasteryPathPage() {
     if (!token) return;
 
     setBaseQuestionLoading(true);
-    setStep("base_quiz");
 
     try {
       // 并行获取题目和进度
@@ -324,6 +389,52 @@ export default function MasteryPathPage() {
       }
       setBaseAnswers(restoredAnswers);
       setCompletedQuestionsMap(completedMap);
+
+      // 检查是否所有基础题都已完成（且不是从错题本跳转）
+      const allCompleted = data.questions.every((q) => completedMap.has(q.id));
+      if (allCompleted && targetQuestionId === 0) {
+        // 所有基础题都完成了，计算结果并直接跳到分析界面
+        let correctCount = 0;
+        const weakPoints: string[] = [];
+        const strongPoints: string[] = [];
+
+        for (const q of data.questions) {
+          const isCorrect = completedMap.get(q.id);
+          if (isCorrect) {
+            correctCount++;
+            // 收集知识点作为强项
+            for (const kp of q.knowledge_points || []) {
+              if (!strongPoints.includes(kp)) {
+                strongPoints.push(kp);
+              }
+            }
+          } else {
+            // 错题的知识点作为薄弱点
+            for (const kp of q.knowledge_points || []) {
+              if (!weakPoints.includes(kp)) {
+                weakPoints.push(kp);
+              }
+            }
+          }
+        }
+
+        setBaseResult({
+          total_questions: data.questions.length,
+          correct_answers: correctCount,
+          accuracy: correctCount / data.questions.length,
+          results: [],
+          weak_points: weakPoints,
+          strong_points: strongPoints,
+        });
+        setStep("analysis");
+        console.log(
+          `[精进之路] 所有基础题已完成，直接进入分析界面: 正确=${correctCount}/${data.questions.length}`,
+        );
+        return;
+      }
+
+      // 不是全部完成，进入答题界面
+      setStep("base_quiz");
 
       // 根据 targetQuestionId 找到正确的题目索引
       let startIndex = 0;
@@ -413,7 +524,6 @@ export default function MasteryPathPage() {
     if (!token || !selectedChapterId) return;
 
     setBaseQuestionLoading(true);
-    setStep("base_quiz");
 
     try {
       // 并行获取题目和进度
@@ -450,6 +560,52 @@ export default function MasteryPathPage() {
       }
       setBaseAnswers(restoredAnswers);
       setCompletedQuestionsMap(completedMap);
+
+      // 检查是否所有基础题都已完成（且不是从错题本跳转）
+      const allCompleted = data.questions.every((q) => completedMap.has(q.id));
+      if (allCompleted && targetQuestionId === 0) {
+        // 所有基础题都完成了，计算结果并直接跳到分析界面
+        let correctCount = 0;
+        const weakPoints: string[] = [];
+        const strongPoints: string[] = [];
+
+        for (const q of data.questions) {
+          const isCorrect = completedMap.get(q.id);
+          if (isCorrect) {
+            correctCount++;
+            // 收集知识点作为强项
+            for (const kp of q.knowledge_points || []) {
+              if (!strongPoints.includes(kp)) {
+                strongPoints.push(kp);
+              }
+            }
+          } else {
+            // 错题的知识点作为薄弱点
+            for (const kp of q.knowledge_points || []) {
+              if (!weakPoints.includes(kp)) {
+                weakPoints.push(kp);
+              }
+            }
+          }
+        }
+
+        setBaseResult({
+          total_questions: data.questions.length,
+          correct_answers: correctCount,
+          accuracy: correctCount / data.questions.length,
+          results: [],
+          weak_points: weakPoints,
+          strong_points: strongPoints,
+        });
+        setStep("analysis");
+        console.log(
+          `[精进之路] 所有基础题已完成，直接进入分析界面: 正确=${correctCount}/${data.questions.length}`,
+        );
+        return;
+      }
+
+      // 不是全部完成，进入答题界面
+      setStep("base_quiz");
 
       // 确定起始题目索引
       let startIndex = 0;
@@ -499,10 +655,6 @@ export default function MasteryPathPage() {
         setSubmitted(false);
         setIsCorrect(false);
       }
-
-      console.log(
-        `[精进之路] 开始答题: 起始题目=${startIndex + 1}, 总题数=${data.questions.length}, 已恢复答案=${restoredAnswers.size}个, 已完成=${completedMap.size}个`,
-      );
     } catch (error) {
       console.error("Failed to fetch base questions:", error);
       alert("加载测试题失败，请稍后重试");
@@ -747,18 +899,57 @@ export default function MasteryPathPage() {
     const correct =
       answer.toUpperCase() === currentQuestion.correct_answer?.toUpperCase();
 
+    setIsCorrect(correct);
     setSubmitted(true);
 
-    // Collect wrong question if incorrect
-    if (!correct) {
-      const token = getStoredToken();
-      if (token) {
+    // 更新完成状态映射（强化题也需要记录）
+    setCompletedQuestionsMap((prev) => {
+      const newMap = new Map(prev);
+      // currentQuestion.id 是字符串（数据库ID），转为数字
+      const questionId = parseInt(currentQuestion.id, 10);
+      if (!isNaN(questionId)) {
+        newMap.set(questionId, correct);
+      }
+      return newMap;
+    });
+
+    // Save progress to backend (跟基础题一样的逻辑)
+    const token = getStoredToken();
+    if (token && selectedChapterId) {
+      const questionId = parseInt(currentQuestion.id, 10);
+      const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${questionId}`;
+
+      try {
+        // 保存进度到 MasteryExerciseProgress 表
+        await saveMasteryExerciseProgress(
+          {
+            course_id: courseId,
+            chapter_id: selectedChapterId,
+            question_id: questionId,
+            question_type: "enhanced",
+            exercise_key: exerciseKey,
+            is_completed: true,
+            is_correct: correct,
+            user_answer: answer,
+            correct_answer: currentQuestion.correct_answer || "",
+            attempt_count: 1,
+          },
+          token,
+        );
+        console.log("[精进之路-强化题] 进度保存成功, question_id:", questionId);
+      } catch (error) {
+        console.error("[精进之路-强化题] 进度保存失败:", error);
+      }
+
+      // Collect wrong question if incorrect (跟基础题一样的逻辑)
+      if (!correct) {
         try {
-          const exerciseKey = `enhanced-${courseId}-${enhancedSessionId}-${currentQuestion.id}`;
           await collectWrongQuestion(token, {
             exercise_key: exerciseKey,
             user_answer: answer,
             course_id: courseId,
+            chapter_id: selectedChapterId,
+            exercise_id: questionId,
             exercise_content: {
               text: currentQuestion.text,
               options: currentQuestion.options,
@@ -767,9 +958,9 @@ export default function MasteryPathPage() {
             exercise_type: "choice",
             knowledge_points: currentQuestion.knowledge_points || [],
           });
-          console.log("[强化测试] 错题收集成功");
+          console.log("[精进之路-强化题] 错题收集成功, exercise_key:", exerciseKey);
         } catch (error) {
-          console.error("[强化测试] 错题收集失败:", error);
+          console.error("[精进之路-强化题] 错题收集失败:", error);
         }
       }
     }
@@ -820,9 +1011,28 @@ export default function MasteryPathPage() {
     }
   };
 
+  // 使用 isMountedRef 来区分 StrictMode 的假 unmount 和真正的 unmount
+  const isMountedRef = useRef(false);
+
   useEffect(() => {
+    isMountedRef.current = true;
+    console.log("[精进之路-学习时长] useEffect mount, isMountedRef =", isMountedRef.current);
+
     return () => {
-      void endTrackedSession();
+      console.log("[精进之路-学习时长] useEffect cleanup");
+      // 如果很快重新 mount，则 isMountedRef 会变回 true
+      isMountedRef.current = false;
+
+      // 延迟执行 endTrackedSession，给 StrictMode 重新 mount 的机会
+      requestAnimationFrame(() => {
+        console.log("[精进之路-学习时长] requestAnimationFrame callback, isMountedRef =", isMountedRef.current);
+        if (!isMountedRef.current) {
+          console.log("[精进之路-学习时长] 组件已真正卸载，结束会话");
+          void endTrackedSession();
+        } else {
+          console.log("[精进之路-学习时长] 组件重新 mount，跳过结束会话");
+        }
+      });
     };
   }, [endTrackedSession]);
 
@@ -845,8 +1055,8 @@ export default function MasteryPathPage() {
     const chapterParam = searchParams.get("chapter");
 
     if (fromSection && chapterParam) {
-      // Came from section, return to section selection page
-      router.replace(`/mastery/${courseId}/chapter/${chapterParam}`, { scroll: false });
+      // Came from section learning page, return to the section learning page
+      router.replace(`/mastery/${courseId}/section/${fromSection}`, { scroll: false });
     } else if (searchParams.get("chapter") || searchParams.get("exercise") || searchParams.get("skip")) {
       // Came from wrong question book or favorites, return to chapter selection
       router.replace(`/mastery/${courseId}`, { scroll: false });
@@ -1116,6 +1326,23 @@ export default function MasteryPathPage() {
     );
   }
 
+  // 查看题目（从分析界面返回题目列表）
+  const handleViewQuestions = () => {
+    // 跳转到最后一道题
+    if (baseQuestions.length > 0) {
+      setCurrentQuestionIndex(baseQuestions.length - 1);
+      const lastQuestion = baseQuestions[baseQuestions.length - 1];
+      if (lastQuestion && completedQuestionsMap.has(lastQuestion.id)) {
+        setSubmitted(true);
+        setIsCorrect(completedQuestionsMap.get(lastQuestion.id) || false);
+      } else {
+        setSubmitted(false);
+        setIsCorrect(false);
+      }
+      setStep("base_quiz");
+    }
+  };
+
   // Analysis state - show weak points and offer enhanced quiz
   if (step === "analysis" && baseResult) {
     const accuracy = Math.round(baseResult.accuracy * 100);
@@ -1125,17 +1352,22 @@ export default function MasteryPathPage() {
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
             <button
-              onClick={handleBackToChapters}
+              onClick={handleViewQuestions}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">退出</span>
+              <span className="text-sm">查看题目</span>
             </button>
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-amber-500" />
               <span className="font-semibold">学习分析</span>
             </div>
-            <div className="w-20"></div>
+            <button
+              onClick={handleBackToChapters}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              退出
+            </button>
           </div>
         </header>
 
@@ -1211,38 +1443,29 @@ export default function MasteryPathPage() {
             )}
 
             {/* Actions */}
-            {baseResult.weak_points.length > 0 ? (
-              <button
-                onClick={handleStartEnhancedQuiz}
-                disabled={enhancedLoading}
-                className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-              >
-                {enhancedLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    生成强化测试...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-5 h-5" />
-                    开始强化测试
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={handleBackToChapters}
-                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
-              >
-                完成！返回章节列表
-              </button>
-            )}
+            <button
+              onClick={handleStartEnhancedQuiz}
+              disabled={enhancedLoading}
+              className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+            >
+              {enhancedLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  生成强化测试...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-5 h-5" />
+                  开始强化测试
+                </>
+              )}
+            </button>
 
             <button
               onClick={handleBackToChapters}
               className="w-full mt-3 py-3 bg-card border border-border rounded-xl font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              跳过强化，返回章节
+              暂时跳过，返回章节
             </button>
           </div>
         </main>
@@ -1328,6 +1551,9 @@ export default function MasteryPathPage() {
               <div className="space-y-3">
                 {currentQuestion.options.map((opt, i) => {
                   const optLabel = String.fromCharCode(65 + i);
+                  const isSelected = enhancedAnswers.get(currentQuestion.id) === optLabel;
+                  const isCorrectOption = currentQuestion.correct_answer?.toUpperCase() === optLabel;
+
                   return (
                     <button
                       key={optLabel}
@@ -1339,20 +1565,40 @@ export default function MasteryPathPage() {
                       }
                       disabled={submitted}
                       className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                        enhancedAnswers.get(currentQuestion.id) === optLabel
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-muted hover:bg-muted/30"
+                        submitted
+                          ? isSelected
+                            ? isCorrect
+                              ? "border-emerald-500 bg-emerald-500/10"
+                              : "border-red-500 bg-red-500/10"
+                            : isCorrectOption
+                              ? "border-emerald-500 bg-emerald-500/5"
+                              : "border-border opacity-50"
+                          : isSelected
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-muted hover:bg-muted/30"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <span
                           className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
-                            enhancedAnswers.get(currentQuestion.id) === optLabel
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
+                            submitted
+                              ? isSelected && isCorrect
+                                ? "bg-emerald-500 text-white"
+                                : isSelected && !isCorrect
+                                  ? "bg-red-500 text-white"
+                                  : isCorrectOption
+                                    ? "bg-emerald-500 text-white"
+                                    : "bg-muted text-muted-foreground"
+                              : isSelected
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {optLabel}
+                          {submitted && isCorrectOption ? (
+                            <CheckCircle className="w-4 h-4" />
+                          ) : (
+                            optLabel
+                          )}
                         </span>
                         <span className="text-foreground">{opt}</span>
                       </div>

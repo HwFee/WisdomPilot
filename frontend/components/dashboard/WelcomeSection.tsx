@@ -1,6 +1,6 @@
 'use client'
 
-import { Rocket, Sparkles, BookOpen, Code2, Clock } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface User {
@@ -56,39 +56,27 @@ export function WelcomeSection({ user, lastProgress, onContinueLearning, lang = 
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 主行：问候语 + 继续学习按钮 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-2">
-        {/* 左侧：问候语 + 名言 */}
-        <div className="flex-1">
-          <p className="text-muted-foreground text-base mb-1">
-            {getGreeting()}，
+      {/* 问候语 + 名言 */}
+      <div className="flex flex-col gap-2 py-2">
+        <p className="text-muted-foreground text-base">
+          {getGreeting()}，
+        </p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+          {user.username}！
+          <span className="text-muted-foreground font-normal text-xl sm:text-2xl ml-2">
+            {hasProgress
+              ? t('今天准备挑战点什么？', 'Ready to challenge today?')
+              : t('开始你的编程之旅吧！', 'Start your coding journey!')}
+          </span>
+        </h2>
+
+        {/* 名言 */}
+        {quote && (
+          <p className="text-sm text-muted-foreground mt-2 italic">
+            "{quote.content}"
+            <span className="text-muted-foreground/60 ml-1">— {quote.author}</span>
           </p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-            {user.username}！
-            <span className="text-muted-foreground font-normal text-xl sm:text-2xl ml-2">
-              {hasProgress
-                ? t('今天准备挑战点什么？', 'Ready to challenge today?')
-                : t('开始你的编程之旅吧！', 'Start your coding journey!')}
-            </span>
-          </h2>
-
-          {/* 名言 - 始终显示 */}
-          {quote && (
-            <p className="text-sm text-muted-foreground mt-2 italic">
-              "{quote.content}"
-              <span className="text-muted-foreground/60 ml-1">— {quote.author}</span>
-            </p>
-          )}
-        </div>
-
-        {/* 右侧：大按钮 */}
-        <button
-          onClick={onContinueLearning}
-          className="flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-semibold text-lg hover:bg-primary-600 transition-all shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5"
-        >
-          <Rocket className="w-6 h-6" />
-          {hasProgress ? t('继续学习', 'Continue Learning') : t('开始学习', 'Start Learning')}
-        </button>
+        )}
       </div>
     </div>
   )

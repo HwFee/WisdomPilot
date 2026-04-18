@@ -1,10 +1,13 @@
 """AI 服务层 - 支持多种 AI 提供商，与原有代码完全隔离"""
 
 import json
+import logging
 import httpx
 from typing import Optional, AsyncGenerator, Any
 from app.config import get_settings
 from app.schemas.ai import AIProviderConfig
+
+logger = logging.getLogger(__name__)
 
 
 class AIProvider:
@@ -146,12 +149,12 @@ class MiniMaxProvider(AIProvider):
                     return block["text"]
             return response.json()["content"][-1].get("text", "")
         except httpx.HTTPStatusError as e:
-            # Print detailed error for debugging
-            print(f"[MiniMax API Error] Status: {e.response.status_code}")
-            print(f"[MiniMax API Error] URL: {e.request.url}")
+            # Log detailed error for debugging
+            logger.error(f"[MiniMax API Error] Status: {e.response.status_code}")
+            logger.error(f"[MiniMax API Error] URL: {e.request.url}")
             try:
-                print(f"[MiniMax API Error] Response: {e.response.text}")
-            except:
+                logger.error(f"[MiniMax API Error] Response: {e.response.text}")
+            except Exception:
                 pass
             raise
 
@@ -433,6 +436,8 @@ class AIService:
     def __init__(self):
         self._provider: Optional[AIProvider] = None
         self._config: Optional[AIProviderConfig] = None
+        # MiniMax provider for enhanced quiz generation (独立配置)
+        self._minimax_provider: Optional[MiniMaxProvider] = None
 
     def configure(self, config: AIProviderConfig):
         """配置 AI 提供商"""
@@ -451,8 +456,35 @@ class AIService:
         else:
             raise ValueError(f"不支持的 AI 提供商: {config.provider}")
 
+    def configure_minimax(self, api_key: str, model: str = "MiniMax-M2.7", temperature: float = 0.7):
+        """配置 MiniMax Provider (用于强化测试题生成)"""
+        if api_key:
+            config = AIProviderConfig(
+                provider="minimax",
+                api_key=api_key,
+                model=model,
+                temperature=temperature,
+            )
+            self._minimax_provider = MiniMaxProvider(config)
+        else:
+            self._minimax_provider = None
+
     def is_configured(self) -> bool:
         return self._provider is not None and self._config is not None
+
+    def is_minimax_configured(self) -> bool:
+        """检查 MiniMax 是否已配置"""
+        return self._minimax_provider is not None
+
+    @property
+    def provider(self) -> Optional[AIProvider]:
+        """获取当前 provider"""
+        return self._provider
+
+    @property
+    def minimax_provider(self) -> Optional[MiniMaxProvider]:
+        """获取 MiniMax provider"""
+        return self._minimax_provider
 
     async def get_provider_status(self) -> dict:
         """获取所有已配置 provider 的连接状态"""

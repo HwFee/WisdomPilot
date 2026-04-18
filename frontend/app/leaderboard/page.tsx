@@ -34,14 +34,16 @@ function LeaderboardContent() {
         ? await getMasteryLeaderboard(courseId, token, limit, off)
         : await getArenaLeaderboard(courseId, token, limit, off)
 
+      console.log('[Leaderboard] API response:', JSON.stringify(data, null, 2))
+
       if (off === 0) {
         setLeaderboard(data.entries)
       } else {
         setLeaderboard(prev => [...prev, ...data.entries])
       }
       setCurrentUserRank(data.user_rank)
-    } catch {
-      // Handle error silently
+    } catch (error) {
+      console.error('[Leaderboard] Error:', error)
     } finally {
       setLoading(false)
     }
@@ -245,14 +247,14 @@ function LeaderboardContent() {
                     <p className="text-lg font-bold text-foreground">
                       {activeTab === 'mastery'
                         ? leaderboard[1]?.total_mastery?.toFixed(0)
-                        : leaderboard[1]?.total_score?.toFixed(0)}
+                        : leaderboard[1]?.stars ?? leaderboard[1]?.total_score?.toFixed(0)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '积分'}
+                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
                     </p>
                     {activeTab === 'arena' && leaderboard[1]?.tier && (
                       <p className="text-xs mt-1">
-                        {TIER_ICONS[leaderboard[1].tier as Tier]} {TIER_NAMES[leaderboard[1].tier as Tier]}
+                        {TIER_ICONS[leaderboard[1].tier as Tier]} {TIER_NAMES[leaderboard[1].tier as Tier]}{leaderboard[1]?.sub_tier ? ['I','II','III','IV','V'][leaderboard[1].sub_tier - 1] : ''}
                       </p>
                     )}
                   </div>
@@ -269,14 +271,14 @@ function LeaderboardContent() {
                     <p className="text-xl font-bold text-foreground">
                       {activeTab === 'mastery'
                         ? leaderboard[0]?.total_mastery?.toFixed(0)
-                        : leaderboard[0]?.total_score?.toFixed(0)}
+                        : leaderboard[0]?.stars ?? leaderboard[0]?.total_score?.toFixed(0)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '积分'}
+                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
                     </p>
                     {activeTab === 'arena' && leaderboard[0]?.tier && (
                       <p className="text-xs mt-1">
-                        {TIER_ICONS[leaderboard[0].tier as Tier]} {TIER_NAMES[leaderboard[0].tier as Tier]}
+                        {TIER_ICONS[leaderboard[0].tier as Tier]} {TIER_NAMES[leaderboard[0].tier as Tier]}{leaderboard[0]?.sub_tier ? ['I','II','III','IV','V'][leaderboard[0].sub_tier - 1] : ''}
                       </p>
                     )}
                   </div>
@@ -293,14 +295,14 @@ function LeaderboardContent() {
                     <p className="text-lg font-bold text-foreground">
                       {activeTab === 'mastery'
                         ? leaderboard[2]?.total_mastery?.toFixed(0)
-                        : leaderboard[2]?.total_score?.toFixed(0)}
+                        : leaderboard[2]?.stars ?? leaderboard[2]?.total_score?.toFixed(0)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '积分'}
+                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
                     </p>
                     {activeTab === 'arena' && leaderboard[2]?.tier && (
                       <p className="text-xs mt-1">
-                        {TIER_ICONS[leaderboard[2].tier as Tier]} {TIER_NAMES[leaderboard[2].tier as Tier]}
+                        {TIER_ICONS[leaderboard[2].tier as Tier]} {TIER_NAMES[leaderboard[2].tier as Tier]}{leaderboard[2]?.sub_tier ? ['I','II','III','IV','V'][leaderboard[2].sub_tier - 1] : ''}
                       </p>
                     )}
                   </div>
@@ -344,10 +346,17 @@ function LeaderboardContent() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span>{TIER_ICONS[entry.tier as Tier]} {TIER_NAMES[entry.tier as Tier]}</span>
+                          <span>
+                            {entry.tier ? (
+                              <>
+                                {TIER_ICONS[entry.tier as Tier] || '🏅'} {TIER_NAMES[entry.tier as Tier] || entry.tier}
+                                {entry.sub_tier ? ` ${['I','II','III','IV','V'][entry.sub_tier - 1]}` : ''}
+                              </>
+                            ) : '未定级'}
+                          </span>
                           <span className="flex items-center gap-1">
                             <Flame className="w-3 h-3 text-orange-500" />
-                            {entry.wins}胜
+                            {entry.wins ?? 0}胜
                           </span>
                         </div>
                       )}
@@ -358,10 +367,10 @@ function LeaderboardContent() {
                     <p className="font-bold text-foreground text-lg">
                       {activeTab === 'mastery'
                         ? entry.total_mastery?.toFixed(0)
-                        : entry.total_score?.toFixed(0)}
+                        : entry.stars ?? entry.total_score?.toFixed(0)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '竞技分'}
+                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
                     </p>
                   </div>
                 </div>

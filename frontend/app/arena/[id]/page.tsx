@@ -20,6 +20,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
 import {
   getArenaProfile,
@@ -33,6 +34,8 @@ import {
   endLearningSession,
   TIER_ICONS,
   TIER_NAMES,
+  getTierInfo,
+  TIER_COLORS,
 } from "@/lib/api";
 import { endLearningSessionKeepalive } from "@/lib/api/stats";
 import { executeCode, executeCodeBatch } from "@/lib/api/code";
@@ -141,7 +144,11 @@ interface ResultModalProps {
   isCorrect: boolean;
   passedCount: number;
   totalCount: number;
-  xpEarned: number;
+  starsEarned: number;
+  promoted: boolean;
+  demoted: boolean;
+  firstTimeCorrect: boolean;
+  firstTimeWrong: boolean;
   onStay: () => void;
   onNext: () => void;
   canGoNext: boolean;
@@ -151,7 +158,11 @@ function ResultModal({
   isCorrect,
   passedCount,
   totalCount,
-  xpEarned,
+  starsEarned,
+  promoted,
+  demoted,
+  firstTimeCorrect,
+  firstTimeWrong,
   onStay,
   onNext,
   canGoNext,
@@ -170,9 +181,25 @@ function ResultModal({
               <h2 className="text-2xl font-bold text-[#52C41A] mb-2">
                 太棒了！全部通过
               </h2>
-              <p className="text-[#606266] mb-6">
-                +{xpEarned} XP · 继续挑战下一题
+              <p className="text-[#606266] mb-2">
+                {firstTimeCorrect && starsEarned > 0 ? (
+                  <span className="text-yellow-500 font-medium">
+                    ⭐+{starsEarned}
+                  </span>
+                ) : (
+                  <span className="text-[#909399]">已获得星星</span>
+                )}
               </p>
+              {promoted && (
+                <p className="text-[#E6A23C] font-bold mb-4">
+                  🎉 恭喜晋级！
+                </p>
+              )}
+              {!promoted && (
+                <p className="text-[#909399] mb-4">
+                  继续挑战下一题
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -182,7 +209,17 @@ function ResultModal({
               </h2>
               <p className="text-[#606266] mb-6">
                 通过 {passedCount}/{totalCount} 个测试点
+                {firstTimeWrong && starsEarned < 0 && (
+                  <span className="text-red-500 ml-2">
+                    ⭐{starsEarned}
+                  </span>
+                )}
               </p>
+              {demoted && (
+                <p className="text-[#E74C3C] font-bold mb-4">
+                  😢 段位下降...
+                </p>
+              )}
             </>
           )}
 
@@ -434,14 +471,23 @@ export default function ArenaPage() {
     isCorrect: boolean;
     passedCount: number;
     totalCount: number;
-    xpEarned: number;
+    starsEarned: number;
+    promoted: boolean;
+    demoted: boolean;
+    firstTimeCorrect: boolean;
+    firstTimeWrong: boolean;
   } | null>(null);
 
   // Exercise list modal state
   const [showExerciseList, setShowExerciseList] = useState(false);
 
-  // XP tracking
-  const [xpEarned, setXpEarned] = useState(0);
+  // Tier tracking
+  const [tierInfo, setTierInfo] = useState<{
+    tier: string;
+    sub_tier: number;
+    stars: number;
+    full_name: string;
+  } | null>(null);
 
   // Refs
   const codeRef = useRef(code);
@@ -449,6 +495,7 @@ export default function ArenaPage() {
   const mountedRef = useRef(true);
   const sessionStartedAtRef = useRef<number | null>(null);
   const sessionEndedRef = useRef(false);
+  const sessionInitializedRef = useRef(false); // 防止 StrictMode 重复初始化
   // Stable ref for courseId so the cleanup callback can read it without
   // adding courseId to the useCallback dep array (courseId never changes
   // within a single page mount).
@@ -456,22 +503,43 @@ export default function ArenaPage() {
   courseIdRef.current = courseId;
 
   const endTrackedSession = useCallback(() => {
-    if (sessionEndedRef.current) return;
+    console.log("[学习时长] endTrackedSession 被调用");
+    console.log("[学习时长] sessionEndedRef.current =", sessionEndedRef.current);
+
+    if (sessionEndedRef.current) {
+      console.log("[学习时长] 会话已结束，跳过");
+      return;
+    }
 
     const token = localStorage.getItem("token");
     const startedAt = sessionStartedAtRef.current;
 
-    if (!token || !startedAt) return;
+    console.log("[学习时长] token 存在:", !!token);
+    console.log("[学习时长] startedAt =", startedAt);
+
+    if (!token || !startedAt) {
+      console.log("[学习时长] 缺少 token 或 startedAt，跳过");
+      return;
+    }
 
     const durationSeconds = Math.max(
       1,
       Math.round((Date.now() - startedAt) / 1000),
     );
+    const durationMinutes = (durationSeconds / 60).toFixed(1);
+
+    console.log("[学习时长] ========== 会话结束 ==========");
+    console.log("[学习时长] 开始时间:", new Date(startedAt).toLocaleString());
+    console.log("[学习时长] 结束时间:", new Date().toLocaleString());
+    console.log("[学习时长] 学习时长:", durationSeconds, "秒 (约", durationMinutes, "分钟)");
+    console.log("[学习时长] courseId:", courseIdRef.current);
+
     sessionEndedRef.current = true;
 
     // Use keepalive fetch so the request survives page navigation / unmount.
     // Pass courseId as fallback chapter_id so the backend can create a
     // completed session record even if the active session was already ended.
+    console.log("[学习时长] 调用 endLearningSessionKeepalive...");
     endLearningSessionKeepalive(token, durationSeconds, courseIdRef.current);
   }, []);
 
@@ -493,18 +561,45 @@ export default function ArenaPage() {
     try {
       setLoading(true);
 
-      try {
-        await startStageSession(token, courseId);
-        sessionStartedAtRef.current = Date.now();
-        sessionEndedRef.current = false;
-      } catch (error) {
-        console.error("Failed to start challenge study session:", error);
+      // 防止 React StrictMode 重复初始化 session
+      console.log("[学习时长] initChallenge: sessionInitializedRef.current =", sessionInitializedRef.current);
+
+      if (!sessionInitializedRef.current) {
+        try {
+          console.log("[学习时长] ========== 开始新会话 ==========");
+          console.log("[学习时长] 调用 startStageSession, courseId =", courseId);
+          await startStageSession(token, courseId);
+          const now = Date.now();
+          sessionStartedAtRef.current = now;
+          sessionEndedRef.current = false;
+          sessionInitializedRef.current = true;
+          console.log("[学习时长] 会话已启动，开始时间:", new Date(now).toLocaleString());
+        } catch (error) {
+          console.error("[学习时长] 启动会话失败:", error);
+        }
+      } else {
+        console.log("[学习时长] 会话已初始化，跳过重复启动");
       }
 
       // 获取用户档案
       const profileData = await getArenaProfile(courseId, token);
       if (!mountedRef.current) return;
       setProfile(profileData);
+
+      // 获取段位信息
+      try {
+        const tierData = await getTierInfo(courseId);
+        if (mountedRef.current) {
+          setTierInfo({
+            tier: tierData.tier,
+            sub_tier: tierData.sub_tier,
+            stars: tierData.stars,
+            full_name: tierData.full_name,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to get tier info:", error);
+      }
 
       // 获取挑战之路进度（无 session 概念）
       const progressData = await getChallengeProgress(courseId, token);
@@ -629,9 +724,6 @@ export default function ArenaPage() {
         getTemplate(language);
       setCode(savedCode);
     }
-
-    // 设置累计 XP
-    setXpEarned(progressData.total_xp_earned || 0);
   };
 
   useEffect(() => {
@@ -834,7 +926,7 @@ export default function ArenaPage() {
       setFeedbackState(allPassed ? "correct" : "wrong");
 
       // Submit to backend (无 session 概念)
-      await submitChallengeExercise(
+      const submitResult = await submitChallengeExercise(
         courseId,
         {
           exercise_id: currentExercise.id,
@@ -844,6 +936,22 @@ export default function ArenaPage() {
         },
         token,
       );
+
+      // Update tier info from submit result
+      if (submitResult.tier_changed && submitResult.new_tier) {
+        setTierInfo({
+          tier: submitResult.new_tier,
+          sub_tier: submitResult.new_sub_tier || 4,
+          stars: submitResult.new_stars,
+          full_name: `${TIER_NAMES[submitResult.new_tier] || submitResult.new_tier}${submitResult.new_sub_tier ? ['I', 'II', 'III', 'IV', 'V'][submitResult.new_sub_tier - 1] : ''}`,
+        });
+      } else if (submitResult.new_stars !== undefined && tierInfo) {
+        // Always update stars count (includes case when re-submitting)
+        setTierInfo({
+          ...tierInfo,
+          stars: submitResult.new_stars,
+        });
+      }
 
       // Update progress
       setExerciseProgress((prev) => {
@@ -881,9 +989,6 @@ export default function ArenaPage() {
         },
       }));
 
-      if (allPassed) {
-        setXpEarned((prev) => prev + 10);
-      }
       // 错题收集已在后端 submitChallengeExercise 中处理，前端不再重复调用
 
       // Show modal for correct answers
@@ -892,7 +997,11 @@ export default function ArenaPage() {
           isCorrect: true,
           passedCount: batchResult.passed_count,
           totalCount: batchResult.total_count,
-          xpEarned: 10,
+          starsEarned: submitResult.stars_earned,
+          promoted: submitResult.promoted,
+          demoted: submitResult.demoted,
+          firstTimeCorrect: submitResult.first_time_correct,
+          firstTimeWrong: submitResult.first_time_wrong,
         });
         setShowResultModal(true);
       }
@@ -1083,14 +1192,36 @@ export default function ArenaPage() {
   }, [courseId, exercises, currentIndex, language]);
 
   // Cleanup on unmount
+  // 使用 isMountedRef 来区分 StrictMode 的假 unmount 和真正的 unmount
+  const isMountedRef = useRef(false);
+
   useEffect(() => {
     mountedRef.current = true;
+    isMountedRef.current = true;
+
+    console.log("[学习时长] useEffect mount, isMountedRef =", isMountedRef.current);
+
     return () => {
+      console.log("[学习时长] useEffect cleanup");
       mountedRef.current = false;
-      void handleExitSave();
-      void endTrackedSession();
+
+      // StrictMode 下，cleanup 会立即执行，然后重新 mount
+      // 使用 requestAnimationFrame 或 setTimeout 来延迟执行
+      // 如果很快重新 mount，则 isMountedRef 会变回 true
+      isMountedRef.current = false;
+
+      // 延迟执行 endTrackedSession，给 StrictMode 重新 mount 的机会
+      requestAnimationFrame(() => {
+        console.log("[学习时长] requestAnimationFrame callback, isMountedRef =", isMountedRef.current);
+        if (!isMountedRef.current) {
+          console.log("[学习时长] 组件已真正卸载，结束会话");
+          endTrackedSession();
+        } else {
+          console.log("[学习时长] 组件重新 mount，跳过结束会话");
+        }
+      });
     };
-  }, [handleExitSave, endTrackedSession]);
+  }, [endTrackedSession]);
 
   const handleExit = async () => {
     await handleExitSave();
@@ -1206,15 +1337,6 @@ export default function ArenaPage() {
               <span>题目列表</span>
             </button>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3498DB]/10 rounded-full">
-              <Zap className="w-4 h-4 text-[#F39C11]" />
-              <span className="font-bold text-sm text-[#F39C11]">
-                {xpEarned} XP
-              </span>
-            </div>
-          </div>
         </div>
       </header>
 
@@ -1239,8 +1361,8 @@ export default function ArenaPage() {
                     {DIFFICULTY_NAMES[currentExercise.difficulty] ||
                       `难度 ${currentExercise.difficulty}`}
                   </span>
-                  <span className="text-sm text-[#909399]">
-                    第 {currentIndex + 1} 题
+                  <span className="text-base font-medium text-[#303133]">
+                    {currentExercise.content.title || `题目 ${currentIndex + 1}`}
                   </span>
                 </div>
                 {/* 收藏按钮 */}
@@ -1265,7 +1387,7 @@ export default function ArenaPage() {
                 <div className="prose prose-sm max-w-none mb-6">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
+                    rehypePlugins={[rehypeKatex, rehypeRaw]}
                     components={{
                       h2: ({ children }) => (
                         <h3 className="text-base font-semibold text-[#303133] mt-4 mb-2 border-b border-[#E4E7ED] pb-2">
@@ -1345,25 +1467,6 @@ export default function ArenaPage() {
                 </div>
               )}
 
-              {/* Profile info */}
-              {profile && (
-                <div className="mt-6 bg-[#3498DB]/5 rounded-xl border border-[#3498DB]/20 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{TIER_ICONS[profile.tier]}</span>
-                    <div>
-                      <p className="font-medium text-[#303133]">
-                        {TIER_NAMES[profile.tier]}
-                      </p>
-                      <p className="text-sm text-[#606266]">
-                        总积分:{" "}
-                        <span className="text-[#3498DB] font-medium">
-                          {profile.total_score.toFixed(0)}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1480,14 +1583,20 @@ export default function ArenaPage() {
                   </div>
                   <div>
                     <p className="text-sm text-[#303133] font-medium">
-                      无限模式
+                      挑战之路
                     </p>
                     <p className="text-xs text-[#909399]">
-                      已获得{" "}
-                      <span className="text-[#F39C11] font-medium">
-                        {xpEarned}
-                      </span>{" "}
-                      XP
+                      {tierInfo ? (
+                        <>
+                          当前段位{" "}
+                          <span className="font-medium" style={{ color: TIER_COLORS[tierInfo.tier as keyof typeof TIER_COLORS] || '#CD7F32' }}>
+                            {tierInfo.full_name}
+                          </span>
+                          {" "}<span className="text-yellow-500">⭐{tierInfo.stars}</span>
+                        </>
+                      ) : (
+                        "加载中..."
+                      )}
                     </p>
                   </div>
                 </div>
@@ -1533,7 +1642,7 @@ export default function ArenaPage() {
                   <p className="font-semibold text-[#52C41A]">
                     太棒了！全部通过
                   </p>
-                  <p className="text-sm text-[#52C41A]/70">+10 XP</p>
+                  <p className="text-sm text-[#52C41A]/70">继续挑战下一题</p>
                 </div>
               </div>
               <div className="action-buttons-group">
@@ -1602,7 +1711,11 @@ export default function ArenaPage() {
           isCorrect={modalResult.isCorrect}
           passedCount={modalResult.passedCount}
           totalCount={modalResult.totalCount}
-          xpEarned={modalResult.xpEarned}
+          starsEarned={modalResult.starsEarned}
+          promoted={modalResult.promoted}
+          demoted={modalResult.demoted}
+          firstTimeCorrect={modalResult.firstTimeCorrect}
+          firstTimeWrong={modalResult.firstTimeWrong}
           onStay={handleStay}
           onNext={handleNext}
           canGoNext={canGoNext}

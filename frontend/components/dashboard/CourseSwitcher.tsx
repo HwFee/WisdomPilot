@@ -2,22 +2,10 @@
 
 import { Code2, Target, BookOpen, ChevronDown } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-
-interface Course {
-  course_id: number
-  course_code: string
-  course_name: string
-  progress: number
-  completed_stages: number
-  total_stages: number
-  current_chapter: string | null
-  mastery_score: number | null
-  arena_tier: string | null
-  arena_score: number | null
-}
+import type { CourseProgress } from '@/lib/api/courses'
 
 interface CourseSwitcherProps {
-  courses: Course[]
+  courses: CourseProgress[]
   currentCourseId: number | null
   onSwitch: (courseId: number) => void
   lang?: 'zh' | 'en'

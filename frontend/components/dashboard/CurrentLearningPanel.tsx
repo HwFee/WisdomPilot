@@ -6,6 +6,7 @@ import { CourseSwitcher } from './CourseSwitcher'
 import { useRouter } from 'next/navigation'
 import { startChallengeSession, getArenaProfile } from '@/lib/api/learning-path'
 import { getStoredToken } from '@/lib/api'
+import type { CourseProgress } from '@/lib/api/courses'
 
 interface RecentExercise {
   stageName: string
@@ -13,22 +14,8 @@ interface RecentExercise {
   time?: string
 }
 
-interface Course {
-  course_id: number
-  course_code: string
-  course_name: string
-  progress: number
-  completed_stages: number
-  total_stages: number
-  current_chapter: string | null
-  current_section: string | null
-  mastery_score: number | null
-  arena_tier: string | null
-  arena_score: number | null
-}
-
 interface CurrentLearningPanelProps {
-  courses: Course[]
+  courses: CourseProgress[]
   currentCourseId: number | null
   onSwitchCourse: (courseId: number) => void
   recentExercises?: RecentExercise[]
@@ -41,6 +28,8 @@ const TIER_NAMES: Record<string, string> = {
   gold: '黄金',
   platinum: '铂金',
   diamond: '钻石',
+  master: '星耀',
+  king: '王者',
 }
 
 const TIER_ICONS: Record<string, string> = {
@@ -48,7 +37,35 @@ const TIER_ICONS: Record<string, string> = {
   silver: '🥈',
   gold: '🥇',
   platinum: '💎',
-  diamond: '👑',
+  diamond: '💠',
+  master: '⭐',
+  king: '👑',
+}
+
+const TIER_COLORS: Record<string, string> = {
+  bronze: '#CD7F32',
+  silver: '#C0C0C0',
+  gold: '#FFD700',
+  platinum: '#E5E4E2',
+  diamond: '#B9F2FF',
+  master: '#9370DB',
+  king: '#FF4500',
+}
+
+const SUB_TIER_LABELS: Record<number, string> = {
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
+}
+
+function getTierFullName(tier: string, subTier: number | null): string {
+  const tierName = TIER_NAMES[tier] || tier
+  if (subTier && SUB_TIER_LABELS[subTier]) {
+    return `${tierName}${SUB_TIER_LABELS[subTier]}`
+  }
+  return tierName
 }
 
 const MASTERY_LEVELS = [
@@ -89,7 +106,6 @@ export function CurrentLearningPanel({
   }
 
   const masteryLevel = getMasteryLevel(currentCourse.mastery_score)
-  const hasProgress = currentCourse.progress > 0
 
   // 精进之路：直接进入 mastery 页面
   const handleMasteryStart = () => {
@@ -156,76 +172,45 @@ export function CurrentLearningPanel({
             </div>
           </div>
 
-          {hasProgress ? (
-            <>
-              {/* Current chapter */}
-              <div className="mb-2">
-                <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
-                <p className="text-sm font-medium text-foreground truncate">
-                  {currentCourse.current_chapter || t('准备开始', 'Ready to start')}
-                </p>
-              </div>
+          {/* Current chapter */}
+          <div className="mb-2">
+            <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
+            <p className="text-sm font-medium text-foreground truncate">
+              {currentCourse.current_chapter || t('准备开始', 'Ready to start')}
+            </p>
+          </div>
 
-              {/* Current section */}
-              {currentCourse.current_section && (
-                <div className="mb-3">
-                  <p className="text-xs text-muted-foreground mb-0.5">{t('当前小节', 'Current Section')}</p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 truncate">
-                    {currentCourse.current_section}
-                  </p>
-                </div>
-              )}
+          {/* Current section */}
+          {currentCourse.current_section && (
+            <div className="mb-3">
+              <p className="text-xs text-muted-foreground mb-0.5">{t('当前小节', 'Current Section')}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 truncate">
+                {currentCourse.current_section}
+              </p>
+            </div>
+          )}
 
-              {/* Progress bar */}
-              <div className="mb-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>{t('进度', 'Progress')}</span>
-                  <span>{currentCourse.progress}%</span>
-                </div>
-                <div className="h-2 bg-amber-500/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
-                    style={{ width: `${currentCourse.progress}%` }}
-                  />
-                </div>
-              </div>
+          {/* Progress bar */}
+          <div className="mb-3">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>{t('进度', 'Progress')}</span>
+              <span>{currentCourse.progress}%</span>
+            </div>
+            <div className="h-2 bg-amber-500/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
+                style={{ width: `${currentCourse.progress}%` }}
+              />
+            </div>
+          </div>
 
-              {/* Mastery score */}
-              {currentCourse.mastery_score !== null && (
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
-                  <span className={`font-medium ${masteryLevel.color}`}>
-                    {currentCourse.mastery_score.toFixed(0)} ({masteryLevel.name})
-                  </span>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              {recentExercises.length > 0 ? (
-                <div className="w-full space-y-1.5">
-                  <p className="text-xs text-muted-foreground mb-2">{t('最近练习', 'Recent Exercises')}</p>
-                  {recentExercises.slice(0, 3).map((ex, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs">
-                      {ex.isCorrect ? (
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                      ) : (
-                        <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                      )}
-                      <span className="truncate text-foreground">
-                        {ex.stageName}
-                        <span className={ex.isCorrect ? 'text-emerald-500 ml-1' : 'text-red-500 ml-1'}>
-                          {ex.isCorrect ? t('正确', 'Correct') : t('错误', 'Wrong')}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center">
-                  {t('开始你的学习之旅', 'Start your learning journey')}
-                </p>
-              )}
+          {/* Mastery score */}
+          {currentCourse.mastery_score !== null && (
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
+              <span className={`font-medium ${masteryLevel.color}`}>
+                {currentCourse.mastery_score.toFixed(0)} ({masteryLevel.name})
+              </span>
             </div>
           )}
 
@@ -239,7 +224,7 @@ export function CurrentLearningPanel({
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                {hasProgress ? t('继续精进', 'Continue') : t('开始学习', 'Start')}
+                {t('开始学习', 'Start')}
                 <ChevronRight className="w-4 h-4" />
               </>
             )}
@@ -261,42 +246,79 @@ export function CurrentLearningPanel({
           {currentCourse.arena_tier ? (
             <>
               {/* Tier display */}
-              <div className="mb-3 flex-1">
+              <div className="mb-2">
                 <p className="text-xs text-muted-foreground mb-1">{t('当前段位', 'Current Tier')}</p>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{TIER_ICONS[currentCourse.arena_tier] || '🥉'}</span>
                   <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {TIER_NAMES[currentCourse.arena_tier] || '青铜'}
+                    <p className="text-sm font-medium" style={{ color: TIER_COLORS[currentCourse.arena_tier] || '#CD7F32' }}>
+                      {getTierFullName(currentCourse.arena_tier, currentCourse.arena_sub_tier)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {currentCourse.arena_score?.toFixed(0) || 0} {t('积分', 'points')}
+                      {currentCourse.arena_stars !== null ? (
+                        <>
+                          ⭐ <span className="font-medium">{currentCourse.arena_stars}</span> {t('星', 'stars')}
+                        </>
+                      ) : (
+                        t('开始挑战获取星星', 'Start to earn stars')
+                      )}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Difficulty levels */}
-              <div className="mb-3">
-                <p className="text-xs text-muted-foreground mb-1">{t('难度解锁', 'Difficulty Unlocked')}</p>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((level) => (
-                    <div
-                      key={level}
-                      className="flex-1 h-5 rounded flex items-center justify-center text-xs font-medium bg-blue-500/20 text-blue-600 dark:text-blue-400"
-                    >
-                      {level}
+              {/* 最近练习 */}
+              {recentExercises.length > 0 && (
+                <div className="flex-1 w-full space-y-1">
+                  <p className="text-xs text-muted-foreground mb-1">{t('最近练习', 'Recent Exercises')}</p>
+                  {recentExercises.slice(0, 2).map((ex, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs">
+                      {ex.isCorrect ? (
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                      )}
+                      <span className="truncate text-foreground">
+                        {ex.stageName}
+                        <span className={ex.isCorrect ? 'text-emerald-500 ml-1' : 'text-red-500 ml-1'}>
+                          {ex.isCorrect ? t('正确', 'Correct') : t('错误', 'Wrong')}
+                        </span>
+                      </span>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-xs text-muted-foreground text-center">
-                {t('挑战获取积分', 'Challenge to earn points')}
-              </p>
-            </div>
+            <>
+              {/* 最近练习 - 没有段位时显示 */}
+              {recentExercises.length > 0 ? (
+                <div className="flex-1 w-full space-y-1.5">
+                  <p className="text-xs text-muted-foreground mb-2">{t('最近练习', 'Recent Exercises')}</p>
+                  {recentExercises.slice(0, 3).map((ex, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs">
+                      {ex.isCorrect ? (
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                      )}
+                      <span className="truncate text-foreground">
+                        {ex.stageName}
+                        <span className={ex.isCorrect ? 'text-emerald-500 ml-1' : 'text-red-500 ml-1'}>
+                          {ex.isCorrect ? t('正确', 'Correct') : t('错误', 'Wrong')}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-xs text-muted-foreground text-center">
+                    {t('挑战获取段位', 'Challenge to earn tier')}
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           {/* Action button */}

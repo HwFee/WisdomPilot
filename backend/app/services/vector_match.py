@@ -17,11 +17,18 @@ from datetime import datetime
 from app.models.exercise import Exercise
 from app.models.user import User
 from app.models.user_weak_point import UserWeakPoint
+from app.config import get_settings
 
-# SiliconFlow API for embedding generation
-SILICONFLOW_API_KEY = 'sk-yqkegkufipudxriumrrobugmlnrlpxdyngzhpwtmzxyfydqg'
-SILICONFLOW_BASE_URL = 'https://api.siliconflow.cn/v1'
-EMBEDDING_MODEL = 'BAAI/bge-large-zh-v1.5'  # 1024 dimensions
+
+def _get_embedding_config():
+    """Get embedding configuration from settings."""
+    settings = get_settings()
+    return {
+        "api_key": settings.EMBEDDING_API_KEY,
+        "base_url": settings.EMBEDDING_BASE_URL,
+        "model": settings.EMBEDDING_MODEL,
+        "dimensions": settings.EMBEDDING_DIMENSIONS,
+    }
 
 
 def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
@@ -100,48 +107,56 @@ async def generate_user_vector(
 
     # Default: return a neutral vector (will match all exercises moderately)
     # Use a small random component to avoid all users having same vector
+    config = _get_embedding_config()
     np.random.seed(hash(user.id) % (2**32))
-    default_vec = np.random.randn(1024) * 0.1
+    default_vec = np.random.randn(config["dimensions"]) * 0.1
     default_vec = default_vec / np.linalg.norm(default_vec)  # Normalize
     return default_vec.tolist()
 
 
 async def _get_embedding_from_api(text: str) -> list[float]:
     """
-    Get embedding vector from SiliconFlow API.
+    Get embedding vector from configured embedding API.
 
     Args:
         text: Text to embed
 
     Returns:
-        1024-dimensional embedding vector
+        Embedding vector (dimension depends on model)
     """
-    import requests
+    import httpx
 
     if not text.strip():
-        return [0.0] * 1024
+        config = _get_embedding_config()
+        return [0.0] * config["dimensions"]
+
+    config = _get_embedding_config()
+
+    if not config["api_key"]:
+        print("Embedding API key not configured")
+        return [0.0] * config["dimensions"]
 
     try:
-        response = requests.post(
-            f'{SILICONFLOW_BASE_URL}/embeddings',
-            headers={
-                'Authorization': f'Bearer {SILICONFLOW_API_KEY}',
-                'Content-Type': 'application/json'
-            },
-            json={
-                'model': EMBEDDING_MODEL,
-                'input': text[:8000]  # Limit text length
-            },
-            timeout=30
-        )
-        if response.status_code == 200:
-            return response.json()['data'][0]['embedding']
-        else:
-            print(f"Embedding API error: {response.status_code}")
-            return [0.0] * 1024
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f'{config["base_url"]}/embeddings',
+                headers={
+                    'Authorization': f'Bearer {config["api_key"]}',
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'model': config["model"],
+                    'input': text[:8000]  # Limit text length
+                }
+            )
+            if response.status_code == 200:
+                return response.json()['data'][0]['embedding']
+            else:
+                print(f"Embedding API error: {response.status_code}")
+                return [0.0] * config["dimensions"]
     except Exception as e:
         print(f"Embedding generation error: {e}")
-        return [0.0] * 1024
+        return [0.0] * config["dimensions"]
 
 
 async def recommend_exercises(

@@ -207,8 +207,8 @@ async def add_xp(
     user = await profile_service.add_xp(db, user, xp_amount)
     return {
         "xp": user.xp,
-        "level": user.level,
-        "xp_for_next_level": profile_service.get_xp_for_next_level(user),
+        "mastery_xp": user.mastery_xp,
+        "mastery_level": user.mastery_level,
     }
 
 
@@ -264,8 +264,8 @@ async def add_xp_alias(
     user = await profile_service.add_xp(db, user, xp_amount)
     return {
         "xp": user.xp,
-        "level": user.level,
-        "xp_for_next_level": profile_service.get_xp_for_next_level(user),
+        "mastery_xp": user.mastery_xp,
+        "mastery_level": user.mastery_level,
     }
 
 

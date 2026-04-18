@@ -41,17 +41,17 @@ class ArenaLeaderboardService:
 
     def rank_profiles(self, profiles: list[dict]) -> list[dict]:
         """
-        Rank profiles by score (descending).
+        Rank profiles by stars (descending).
 
         Args:
-            profiles: List of profile dicts with user_id and total_score
+            profiles: List of profile dicts with user_id and stars
 
         Returns:
             Sorted list with ranks
         """
         sorted_profiles = sorted(
             profiles,
-            key=lambda x: x.get("total_score", 0),
+            key=lambda x: x.get("stars", 0),
             reverse=True
         )
 
@@ -76,19 +76,19 @@ class ArenaLeaderboardService:
             offset: Pagination offset
 
         Returns:
-            List of leaderboard entries with rank, user info, and score
+            List of leaderboard entries with rank, user info, tier and stars
         """
         if not self.db:
             return []
 
-        # Query profiles with user info
+        # Query profiles with user info, ordered by stars descending
         from app.models.user import User
 
         query = (
             select(UserArenaProfile, User)
             .join(User, UserArenaProfile.user_id == User.id)
             .where(UserArenaProfile.course_id == course_id)
-            .order_by(UserArenaProfile.total_score.desc())
+            .order_by(UserArenaProfile.stars.desc())
             .limit(limit)
             .offset(offset)
         )
@@ -106,8 +106,10 @@ class ArenaLeaderboardService:
                 "rank": offset + i + 1,
                 "user_id": user.id,
                 "username": user.username,
-                "total_score": profile.total_score,
+                "total_score": profile.total_score,  # Keep for backward compatibility
+                "stars": profile.stars,
                 "tier": profile.tier,
+                "sub_tier": profile.sub_tier,
                 "total_challenges": profile.total_challenges,
                 "wins": profile.wins,
                 "highest_difficulty": profile.highest_difficulty,
@@ -150,6 +152,8 @@ class ArenaLeaderboardService:
 class MasteryLeaderboardService:
     """
     Service for managing the Mastery (精进) leaderboard.
+
+    Rankings are based on mastery_xp (精进之路经验值).
     """
 
     def __init__(self, db: Optional[AsyncSession]):
@@ -164,10 +168,7 @@ class MasteryLeaderboardService:
         """
         Get mastery leaderboard for a course.
 
-        Rankings are based on:
-        1. Total mastery points (sum of mastery scores)
-        2. Number of mastered chapters (score >= 85)
-        3. Average mastery score
+        Rankings are based on mastery_xp.
 
         Args:
             course_id: Course ID
@@ -182,6 +183,7 @@ class MasteryLeaderboardService:
 
         from app.models.user import User
         from app.models.chapter import Chapter
+        from app.models.chapter_mastery import ChapterMastery
 
         # Get total chapters for the course
         chapter_count_query = select(func.count()).select_from(Chapter).where(
@@ -190,8 +192,25 @@ class MasteryLeaderboardService:
         chapter_count_result = await self.db.execute(chapter_count_query)
         total_chapters = chapter_count_result.scalar() or 1
 
-        # Aggregate mastery scores per user
+        # Query users with mastery_xp > 0, ordered by mastery_xp descending
+        # Also join with ChapterMastery to get chapter statistics
         query = (
+            select(User)
+            .where(User.mastery_xp > 0)
+            .order_by(User.mastery_xp.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = await self.db.execute(query)
+        users = result.scalars().all()
+
+        if not users:
+            return []
+
+        # Get chapter mastery stats for each user
+        user_ids = [u.id for u in users]
+        mastery_query = (
             select(
                 ChapterMastery.user_id,
                 func.sum(ChapterMastery.mastery_score).label("total_mastery"),
@@ -201,42 +220,32 @@ class MasteryLeaderboardService:
                     func.iif(ChapterMastery.mastery_score >= 85, 1, 0)
                 ).label("mastered_chapters")
             )
-            .where(ChapterMastery.course_id == course_id)
+            .where(
+                ChapterMastery.course_id == course_id,
+                ChapterMastery.user_id.in_(user_ids)
+            )
             .group_by(ChapterMastery.user_id)
-            .order_by(func.sum(ChapterMastery.mastery_score).desc())
-            .limit(limit)
-            .offset(offset)
         )
 
-        result = await self.db.execute(query)
-        rows = result.all()
-
-        # Get user info
-        user_ids = [row.user_id for row in rows]
-
-        # If no mastery records yet, return empty list
-        if not user_ids:
-            return []
-
-        user_query = select(User).where(User.id.in_(user_ids))
-        user_result = await self.db.execute(user_query)
-        users = {u.id: u for u in user_result.scalars().all()}
+        mastery_result = await self.db.execute(mastery_query)
+        mastery_stats = {row.user_id: row for row in mastery_result.all()}
 
         leaderboard = []
-        for i, row in enumerate(rows):
-            user = users.get(row.user_id)
-            if user:
-                leaderboard.append({
-                    "rank": offset + i + 1,
-                    "user_id": user.id,
-                    "username": user.username,
-                    "total_mastery": round(row.total_mastery or 0, 2),
-                    "avg_mastery": round(row.avg_mastery or 0, 2),
-                    "chapters_practiced": row.chapters_practiced,
-                    "mastered_chapters": row.mastered_chapters or 0,
-                    "total_chapters": total_chapters,
-                    "progress_pct": round((row.chapters_practiced / total_chapters) * 100, 1),
-                })
+        for i, user in enumerate(users):
+            stats = mastery_stats.get(user.id)
+            leaderboard.append({
+                "rank": offset + i + 1,
+                "user_id": user.id,
+                "username": user.username,
+                "mastery_xp": user.mastery_xp,
+                "mastery_level": user.mastery_level,
+                "total_mastery": round(stats.total_mastery, 2) if stats else 0,
+                "avg_mastery": round(stats.avg_mastery, 2) if stats else 0,
+                "chapters_practiced": stats.chapters_practiced if stats else 0,
+                "mastered_chapters": stats.mastered_chapters if stats else 0,
+                "total_chapters": total_chapters,
+                "progress_pct": round((stats.chapters_practiced / total_chapters) * 100, 1) if stats else 0,
+            })
 
         return leaderboard
 
@@ -246,7 +255,7 @@ class MasteryLeaderboardService:
 
         Args:
             user_id: User ID
-            course_id: Course ID
+            course_id: Course ID (unused, kept for API compatibility)
 
         Returns:
             Rank or None if not ranked
@@ -254,18 +263,18 @@ class MasteryLeaderboardService:
         if not self.db:
             return None
 
-        # First try ChapterMastery-based ranking
+        from app.models.user import User
+
+        # Query all users with mastery_xp > 0, ordered by mastery_xp
         query = (
-            select(ChapterMastery.user_id)
-            .where(ChapterMastery.course_id == course_id)
-            .group_by(ChapterMastery.user_id)
-            .order_by(func.sum(ChapterMastery.mastery_score).desc())
+            select(User.id)
+            .where(User.mastery_xp > 0)
+            .order_by(User.mastery_xp.desc())
         )
 
         result = await self.db.execute(query)
         user_ids = [row[0] for row in result.all()]
 
-        # If no mastery records, return None
         if not user_ids:
             return None
 

@@ -832,11 +832,13 @@ async def submit_base_answers(
     提交基础测试题答案（精进之路）
 
     评估答案，识别薄弱知识点，返回分析结果。
+    同时更新用户的 mastery_xp。
     """
     result = await chapter_base_question_service.submit_base_answers(
         db=db,
         chapter_id=chapter_id,
         request=request,
+        user_id=current_user.id,
     )
     return result
 
@@ -1001,7 +1003,7 @@ async def get_mastery_progress_by_key(
 class InfiniteSessionStartRequest(BaseModel):
     """Request to start infinite mode session"""
     difficulty_level: int = Field(default=3, ge=1, le=5)
-    initial_count: int = Field(default=10, ge=5, le=50)
+    initial_count: int = Field(default=5, ge=5, le=50)
 
 
 class InfiniteProgressResponse(BaseModel):
@@ -1012,7 +1014,7 @@ class InfiniteProgressResponse(BaseModel):
     exercises: list[dict]
     correct_count: int
     completed_count: int
-    total_xp_earned: int
+    total_stars_earned: int
 
 
 class SubmitExerciseRequest(BaseModel):
@@ -1027,9 +1029,17 @@ class SubmitExerciseResponse(BaseModel):
     """Response for exercise submission"""
     is_correct: bool
     test_results: list[dict]
-    xp_earned: int
+    stars_earned: int
     next_unlocked: bool
     added_to_wrong_book: bool
+    tier_changed: bool
+    new_tier: str | None
+    new_sub_tier: int | None
+    new_stars: int
+    promoted: bool
+    demoted: bool
+    first_time_correct: bool
+    first_time_wrong: bool
 
 
 class SaveCodeRequest(BaseModel):
@@ -1379,6 +1389,55 @@ async def exit_infinite_session_legacy(
 ):
     """Legacy API - redirects to new exit endpoint"""
     return await exit_challenge_path(course_id, request, current_user, db)
+
+
+class RecentArenaExercise(BaseModel):
+    """最近挑战之路练习"""
+    exercise_id: int
+    title: str
+    is_correct: bool
+    difficulty: int
+
+
+@router.get("/challenge/{course_id}/recent", response_model=list[RecentArenaExercise])
+async def get_recent_arena_exercises(
+    course_id: int,
+    limit: int = Query(default=3, ge=1, le=10),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取挑战之路最近练习的题目（含正确情况）"""
+    # 查询最近的 arena_exercise_progress，按最后尝试时间倒序
+    result = await db.execute(
+        select(ArenaExerciseProgress, Exercise)
+        .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
+        .where(
+            ArenaExerciseProgress.user_id == current_user.id,
+            ArenaExerciseProgress.course_id == course_id,
+            ArenaExerciseProgress.is_completed == True,  # 只取已提交的
+        )
+        .order_by(ArenaExerciseProgress.last_attempt_at.desc())
+        .limit(limit)
+    )
+    rows = result.all()
+
+    exercises = []
+    for progress, exercise in rows:
+        # 获取标题
+        title = ""
+        if exercise.content:
+            title = exercise.content.get("title", "") or exercise.content.get("text", "")[:30] or f"题目 {exercise.id}"
+        else:
+            title = f"题目 {exercise.id}"
+
+        exercises.append(RecentArenaExercise(
+            exercise_id=exercise.id,
+            title=title,
+            is_correct=progress.is_correct,
+            difficulty=exercise.difficulty,
+        ))
+
+    return exercises
 
 
 @router.get("/challenge/{course_id}/active-session")

@@ -12,9 +12,6 @@ from app.services.achievement import achievement_service
 class ProfileService:
     """Service for managing user learning profile and statistics"""
 
-    # XP thresholds per level (level 1 = 0, level 2 = 100, etc.)
-    XP_PER_LEVEL = 100
-
     # Check-in XP rewards
     CHECKIN_BASE_XP = 10
     CHECKIN_STREAK_BONUS_MULTIPLIER = 2  # Bonus XP per 7-day streak
@@ -25,6 +22,15 @@ class ProfileService:
         ((7, 13), 1.2),     # 7-13 days: 1.2x XP
         ((14, 29), 1.5),    # 14-29 days: 1.5x XP
         ((30, float('inf')), 2.0),  # 30+ days: 2x XP
+    ]
+
+    # Mastery level thresholds (mastery_xp: level_name)
+    MASTERY_LEVELS = [
+        (0, "入门"),
+        (100, "学习"),
+        (300, "练习"),
+        (600, "熟练"),
+        (1000, "精通"),
     ]
 
     def _get_streak_multiplier(self, streak_days: int) -> float:
@@ -40,14 +46,24 @@ class ProfileService:
         return result.scalar_one_or_none()
 
     async def add_xp(self, db: AsyncSession, user: User, xp_amount: int) -> User:
-        """Add XP to user and handle level up"""
+        """Add XP to user (for check-in, etc.)"""
         user.xp += xp_amount
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        return user
 
-        # Check for level up
-        new_level = (user.xp // self.XP_PER_LEVEL) + 1
-        if new_level > user.level:
-            user.level = new_level
+    def get_mastery_level(self, mastery_xp: int) -> str:
+        """Get mastery level name based on XP"""
+        for threshold, level_name in reversed(self.MASTERY_LEVELS):
+            if mastery_xp >= threshold:
+                return level_name
+        return "入门"
 
+    async def add_mastery_xp(self, db: AsyncSession, user: User, xp_amount: int) -> User:
+        """Add mastery XP to user and update mastery level"""
+        user.mastery_xp += xp_amount
+        user.mastery_level = self.get_mastery_level(user.mastery_xp)
         db.add(user)
         await db.commit()
         await db.refresh(user)
@@ -134,11 +150,6 @@ class ProfileService:
             return 0.0
         return round(user.correct_exercises / user.total_exercises * 100, 1)
 
-    def get_xp_for_next_level(self, user: User) -> int:
-        """Get XP needed for next level"""
-        next_level_xp = user.level * self.XP_PER_LEVEL
-        return next_level_xp - user.xp
-
     def is_checked_in_today(self, user: User) -> bool:
         """Check if user has already checked in today"""
         # Never checked in before - can't be checked in today
@@ -217,11 +228,6 @@ class ProfileService:
         user.last_activity_date = now_naive
         user.xp += xp_earned
         user.total_checkin_days += 1
-
-        # Check for level up
-        new_level = (user.xp // self.XP_PER_LEVEL) + 1
-        if new_level > user.level:
-            user.level = new_level
 
         db.add(user)
         await db.commit()

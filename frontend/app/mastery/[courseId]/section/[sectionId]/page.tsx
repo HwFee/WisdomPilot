@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight } from 'lucide-react'
 import { getSection, saveSectionProgress, type SectionDetail } from '@/lib/api/sections'
 import { getStoredToken } from '@/lib/api'
+import { startLearningSession, endLearningSessionKeepalive } from '@/lib/api/stats'
 
 export default function SectionLearningPage() {
   const params = useParams()
@@ -18,9 +19,81 @@ export default function SectionLearningPage() {
   const [error, setError] = useState<string | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
+  // 学习时长统计
+  const sessionStartedAtRef = useRef<number | null>(null)
+  const sessionInitializedRef = useRef(false)
+  const sessionEndedRef = useRef(false)
+  const chapterIdRef = useRef<number | null>(null)
+
   useEffect(() => {
     loadSection()
   }, [sectionId])
+
+  // 开始学习会话
+  const startTrackedSession = useCallback(async (chapterId: number) => {
+    const token = getStoredToken()
+    if (!token || sessionInitializedRef.current) return
+
+    try {
+      await startLearningSession(token, chapterId, 0)
+      const now = Date.now()
+      sessionStartedAtRef.current = now
+      sessionInitializedRef.current = true
+      sessionEndedRef.current = false
+      chapterIdRef.current = chapterId
+    } catch {
+      // Session start failed - will retry on next interaction
+    }
+  }, [])
+
+  // 结束学习会话
+  const endTrackedSession = useCallback(() => {
+    if (sessionEndedRef.current) {
+      return
+    }
+
+    const token = getStoredToken()
+    const startedAt = sessionStartedAtRef.current
+
+    if (!token || !startedAt || !sessionInitializedRef.current) {
+      return
+    }
+
+    const durationSeconds = Math.max(
+      1,
+      Math.floor((Date.now() - startedAt) / 1000),
+    )
+
+    sessionEndedRef.current = true
+    sessionInitializedRef.current = false
+    sessionStartedAtRef.current = null
+
+    endLearningSessionKeepalive(token, durationSeconds, chapterIdRef.current ?? undefined)
+  }, [])
+
+  // 当 section 加载完成后启动会话
+  useEffect(() => {
+    if (section && !sessionInitializedRef.current) {
+      startTrackedSession(section.chapter_id)
+    }
+  }, [section, startTrackedSession])
+
+  // 使用 isMountedRef 来区分 StrictMode 的假 unmount 和真正的 unmount
+  const isMountedRef = useRef(false)
+
+  useEffect(() => {
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+
+      requestAnimationFrame(() => {
+        if (!isMountedRef.current) {
+          endTrackedSession()
+        }
+      })
+    }
+  }, [endTrackedSession])
 
   const loadSection = async () => {
     const token = getStoredToken()
@@ -49,34 +122,28 @@ export default function SectionLearningPage() {
     const token = getStoredToken()
     if (!token) return
 
+    // 保存会话开始时间到 localStorage，让做题页面继续使用
+    if (sessionStartedAtRef.current && sessionInitializedRef.current) {
+      const sessionData = {
+        startedAt: sessionStartedAtRef.current,
+        chapterId: chapterIdRef.current,
+        fromSection: sectionId
+      }
+      localStorage.setItem('masterySession', JSON.stringify(sessionData))
+
+      // 标记会话已转移，不要在本页面结束
+      sessionEndedRef.current = true
+    }
+
     try {
       setSaving(true)
-      // 保存进度为 quiz（进入测试）
       await saveSectionProgress(sectionId, 'quiz', false, token)
 
-      // 跳转到原来的测试流程，带上章节ID和小节ID
-      // 使用 skip=1 跳过知识点页面直接进入测试
-      // 使用 fromSection=sectionId 标识从小节进入，返回时能回到小节选择页面
       if (section) {
-        router.push(`/mastery/${courseId}?chapter=${section.chapter_id}&skip=1&fromSection=${sectionId}`)
+        router.push(`/mastery/${courseId}?chapter=${section.chapter_id}&skip=1&fromSection=${sectionId}&continueSession=1`)
       }
-    } catch (err) {
-      console.error('保存进度失败:', err)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleMarkCompleted = async () => {
-    const token = getStoredToken()
-    if (!token) return
-
-    try {
-      setSaving(true)
-      await saveSectionProgress(sectionId, 'content', true, token)
-      setSection(prev => prev ? { ...prev, is_completed: true } : null)
-    } catch (err) {
-      console.error('标记完成失败:', err)
+    } catch {
+      // Progress save failed - continue anyway
     } finally {
       setSaving(false)
     }
@@ -227,39 +294,21 @@ export default function SectionLearningPage() {
       {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            {!section.is_completed && (
-              <button
-                onClick={handleMarkCompleted}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 transition-all disabled:opacity-70"
-              >
-                {saving ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    标记完成
-                  </>
-                )}
-              </button>
+          <button
+            onClick={handleStartQuiz}
+            disabled={saving}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/80 text-white hover:shadow-lg transition-all disabled:opacity-70"
+          >
+            {saving ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <Play className="w-5 h-5" />
+                开始测试
+                <ArrowRight className="w-4 h-4" />
+              </>
             )}
-            <button
-              onClick={handleStartQuiz}
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/80 text-white hover:shadow-lg transition-all disabled:opacity-70"
-            >
-              {saving ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <Play className="w-5 h-5" />
-                  开始测试
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </div>
+          </button>
         </div>
       </div>
     </div>

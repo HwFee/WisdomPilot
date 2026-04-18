@@ -4,6 +4,7 @@
 处理星星增减、晋级降级、段位保护等核心逻辑
 """
 
+import logging
 from dataclasses import dataclass
 from typing import Optional
 from app.core.tier_config import (
@@ -14,6 +15,8 @@ from app.core.tier_config import (
     get_tier_order,
     tier_from_string,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -247,41 +250,84 @@ class TierService:
                 protection_remaining=new_protection,
             )
 
+    def get_free_attempts(self, difficulty: int) -> int:
+        """
+        根据难度获取免费尝试次数
+
+        简单题给较少机会，难题给更多机会
+        难度1: 3次, 难度2: 4次, 难度3: 5次, 难度4: 6次, 难度5: 7次
+        """
+        return difficulty + 2
+
+    def get_max_deduction(self, difficulty: int) -> int:
+        """
+        根据难度获取每道题的最大扣星上限
+
+        简单题扣星上限低，难题扣星上限高（激励挑战难题）
+        """
+        # 难度1: 最多扣1星，难度2: 2星，难度3: 3星，难度4: 4星，难度5: 5星
+        return difficulty
+
+    def get_base_reward(self, difficulty: int) -> int:
+        """
+        根据难度获取做对的基础奖励星星
+        """
+        if difficulty >= 5:
+            return 3  # 高难度：+3星
+        elif difficulty >= 3:
+            return 2  # 中等难度：+2星
+        else:
+            return 1  # 低难度：+1星
+
     def calculate_stars_earned(
         self,
         accuracy: float,
         difficulty: int,
+        attempt_count: int = 1,
+        total_deducted: int = 0,
     ) -> int:
         """
-        根据正确率和难度计算获得的星星数
+        计算本次提交获得的星星数
 
         Args:
             accuracy: 正确率 (0.0 - 1.0)
             difficulty: 难度等级 (1-5)
+            attempt_count: 当前尝试次数
+            total_deducted: 这道题已经累计扣掉的星星数
 
         Returns:
             星星数（正数=获得，负数=失去）
+
+        规则：
+        - 每道题有免费尝试次数（简单题多，难题少）
+        - 超过免费次数后，每次做错扣1星，但有扣星上限
+        - 做对时：基础奖励 + 补回之前扣掉的星
         """
-        # 基础星星计算（基于正确率）
+        free_attempts = self.get_free_attempts(difficulty)
+        max_deduction = self.get_max_deduction(difficulty)
+        base_reward = self.get_base_reward(difficulty)
+
         if accuracy >= 0.90:
-            base_stars = 2
-        elif accuracy >= 0.70:
-            base_stars = 1
-        elif accuracy >= 0.50:
-            base_stars = 0
-        elif accuracy >= 0.30:
-            base_stars = -1
+            # 做对：基础奖励 + 补回之前扣掉的星
+            stars = base_reward + total_deducted
+            logger.info(f"[TIER_SERVICE] CORRECT: difficulty={difficulty}, base_reward={base_reward}, total_deducted={total_deducted}, result=+{stars}")
+            return stars
         else:
-            base_stars = -2
-
-        # 难度加成
-        difficulty_bonus = 0
-        if difficulty >= 5 and accuracy >= 0.90:
-            difficulty_bonus = 1  # 高难度+高正确率额外奖励
-        elif difficulty <= 2 and accuracy < 0.50:
-            difficulty_bonus = -1  # 低难度+低正确率额外惩罚
-
-        return base_stars + difficulty_bonus
+            # 做错：检查是否超过免费次数
+            if attempt_count <= free_attempts:
+                # 免费次数内，不扣星
+                logger.info(f"[TIER_SERVICE] WRONG (free): difficulty={difficulty}, attempt={attempt_count}/{free_attempts}, result=0")
+                return 0
+            else:
+                # 超过免费次数，检查是否达到扣星上限
+                if total_deducted >= max_deduction:
+                    # 已达上限，不再扣
+                    logger.info(f"[TIER_SERVICE] WRONG (max reached): difficulty={difficulty}, total_deducted={total_deducted}/{max_deduction}, result=0")
+                    return 0
+                else:
+                    # 扣1星
+                    logger.info(f"[TIER_SERVICE] WRONG (deduct): difficulty={difficulty}, attempt={attempt_count}/{free_attempts}, result=-1")
+                    return -1
 
     def has_protection(self, tier: TierRank) -> bool:
         """

@@ -67,6 +67,17 @@ class ArenaExerciseProgress(Base):
         Boolean, default=False, comment="Whether the exercise is accessible"
     )
 
+    # Stars awarded for this exercise (positive=earned, negative=lost, 0=not awarded yet)
+    # Only set on first correct/incorrect submission
+    stars_awarded: Mapped[int] = mapped_column(
+        Integer, default=0, comment="Stars awarded (positive=earned, negative=lost)"
+    )
+
+    # Total stars deducted for this exercise (tracked separately for recovery on correct)
+    stars_deducted: Mapped[int] = mapped_column(
+        Integer, default=0, comment="Total stars deducted (for recovery when correct)"
+    )
+
     # Code storage by language - {"python": "code...", "cpp": "code..."}
     saved_codes: Mapped[dict] = mapped_column(
         JSON, default=dict, comment="Saved code per language"
@@ -83,6 +94,17 @@ class ArenaExerciseProgress(Base):
     )
     attempt_count: Mapped[int] = mapped_column(
         Integer, default=0, comment="Total submission attempts"
+    )
+
+    # Behavior tracking fields for hybrid recommendation
+    time_spent: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, comment="Time spent on this exercise in seconds"
+    )
+    hint_used: Mapped[bool] = mapped_column(
+        Boolean, default=False, comment="Whether user used hints"
+    )
+    first_attempt_correct: Mapped[Optional[bool]] = mapped_column(
+        Boolean, nullable=True, comment="Whether first attempt was correct"
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
