@@ -38,6 +38,22 @@ export interface AIAnalysisResult {
   explanation?: string
 }
 
+// Knowledge point context for the knowledge learning orb
+export interface KnowledgePointContext {
+  id: string
+  title: string
+  content: string
+  examples: string[]
+  difficulty: number
+  index: number
+  adjacentPoints: Array<{ id: string; title: string }>
+}
+
+export interface ActiveKnowledgeQuestion {
+  type: "knowledge"
+  knowledgePoint: KnowledgePointContext
+}
+
 export interface AIContextState {
   currentExercise: CurrentExerciseContext | null
   setCurrentExercise: (ctx: CurrentExerciseContext | null) => void
@@ -51,12 +67,18 @@ export interface AIContextState {
   triggerAnalysis: () => Promise<void>
   triggerFeedback: () => Promise<void>
   clearResults: () => void
-  // Panel state for new floating launcher
+  // Panel state for floating launcher
   activeQuestion: CurrentExerciseContext | null
   isPanelOpen: boolean
   panelSpawnPos: { x: number; y: number } | null
   openPanel: (question: CurrentExerciseContext, spawnPos?: { x: number; y: number }) => void
   closePanel: () => void
+  // Knowledge point mode state
+  activeKnowledgeQuestion: ActiveKnowledgeQuestion | null
+  isKnowledgePanelOpen: boolean
+  knowledgePanelSpawnPos: { x: number; y: number } | null
+  openKnowledgePanel: (question: ActiveKnowledgeQuestion, spawnPos?: { x: number; y: number }) => void
+  closeKnowledgePanel: () => void
 }
 
 // ========================================
@@ -91,6 +113,11 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [panelSpawnPos, setPanelSpawnPos] = useState<{ x: number; y: number } | null>(null)
 
+  // Knowledge point mode state
+  const [activeKnowledgeQuestion, setActiveKnowledgeQuestion] = useState<ActiveKnowledgeQuestion | null>(null)
+  const [isKnowledgePanelOpen, setIsKnowledgePanelOpen] = useState(false)
+  const [knowledgePanelSpawnPos, setKnowledgePanelSpawnPos] = useState<{ x: number; y: number } | null>(null)
+
   const openPanel = useCallback((question: CurrentExerciseContext, spawnPos?: { x: number; y: number }) => {
     // Clone to avoid mutation if caller mutates after call
     setActiveQuestion({ ...question })
@@ -100,6 +127,16 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
 
   const closePanel = useCallback(() => {
     setIsPanelOpen(false)
+  }, [])
+
+  const openKnowledgePanel = useCallback((question: ActiveKnowledgeQuestion, spawnPos?: { x: number; y: number }) => {
+    setActiveKnowledgeQuestion({ ...question })
+    setIsKnowledgePanelOpen(true)
+    setKnowledgePanelSpawnPos(spawnPos || null)
+  }, [])
+
+  const closeKnowledgePanel = useCallback(() => {
+    setIsKnowledgePanelOpen(false)
   }, [])
 
   const clearResults = useCallback(() => {
@@ -231,6 +268,11 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
       panelSpawnPos,
       openPanel,
       closePanel,
+      activeKnowledgeQuestion,
+      isKnowledgePanelOpen,
+      knowledgePanelSpawnPos,
+      openKnowledgePanel,
+      closeKnowledgePanel,
     }}>
       {children}
     </AIContext.Provider>

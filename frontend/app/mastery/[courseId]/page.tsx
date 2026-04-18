@@ -8,6 +8,7 @@ import {
   Trophy, Target, Clock, Zap, AlertTriangle, Star
 } from 'lucide-react'
 import { FavoriteButton } from '@/components/exercise/FavoriteButton'
+import { KnowledgeOrb } from '@/components/ui/knowledge-orb'
 
 import {
   getMasteryOverview,
@@ -812,12 +813,25 @@ export default function MasteryPathPage() {
 
                 {/* Knowledge Points */}
                 <div className="space-y-4">
-                  {knowledgeContent.knowledge_points.map((point, index) => (
-                    <div
-                      key={point.id}
-                      className="bg-card rounded-2xl border border-border p-6"
-                    >
-                      <div className="flex items-start gap-4">
+                  {knowledgeContent.knowledge_points.map((point, index) => {
+                    const prevPoint = index > 0 ? knowledgeContent.knowledge_points[index - 1] : undefined
+                    const nextPoint = index < knowledgeContent.knowledge_points.length - 1 ? knowledgeContent.knowledge_points[index + 1] : undefined
+                    const adjacentList = (prevPoint ? [{ id: prevPoint.id, title: prevPoint.title }] : []).concat(nextPoint ? [{ id: nextPoint.id, title: nextPoint.title }] : [])
+                    const examplesList = point.examples || []
+                    return (
+                      <div
+                        key={point.id}
+                        className="bg-card rounded-2xl border border-border p-6"
+                        data-knowledge-point=""
+                        data-knowledge-point-id={String(point.id)}
+                        data-knowledge-point-title={String(point.title)}
+                        data-knowledge-point-content={String(point.content)}
+                        data-knowledge-point-examples={JSON.stringify(examplesList)}
+                        data-knowledge-point-difficulty={Number(point.difficulty)}
+                        data-knowledge-point-index={Number(index)}
+                        data-knowledge-point-adjacent={JSON.stringify(adjacentList)}
+                      >
+                        <div className="flex items-start gap-4">
                         <span className="flex-shrink-0 w-8 h-8 bg-amber-500/20 text-amber-600 rounded-full flex items-center justify-center font-medium">
                           {index + 1}
                         </span>
@@ -864,7 +878,8 @@ export default function MasteryPathPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             ) : (
@@ -899,6 +914,9 @@ export default function MasteryPathPage() {
             </button>
           </div>
         </div>
+
+        {/* AI Learning Assistant Orb - only show in knowledge learning mode */}
+        <KnowledgeOrb />
       </div>
     )
   }

@@ -110,15 +110,21 @@ export function KnowledgePanel({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
-            {content.knowledge_points.map((point, index) => (
-              <KnowledgePointCard
-                key={point.id}
-                point={point}
-                index={index}
-                isExpanded={expandedPoint === point.id}
-                onToggle={() => togglePoint(point.id)}
-              />
-            ))}
+            {content.knowledge_points.map((point, index) => {
+              const prevPoint = index > 0 ? content.knowledge_points[index - 1] : undefined
+              const nextPoint = index < content.knowledge_points.length - 1 ? content.knowledge_points[index + 1] : undefined
+              const adjacent = [prevPoint, nextPoint].filter(Boolean) as KnowledgePoint[]
+              return (
+                <KnowledgePointCard
+                  key={point.id}
+                  point={point}
+                  index={index}
+                  isExpanded={expandedPoint === point.id}
+                  onToggle={() => togglePoint(point.id)}
+                  adjacentPoints={adjacent}
+                />
+              )
+            })}
           </div>
         </div>
 
@@ -144,13 +150,29 @@ interface KnowledgePointCardProps {
   index: number
   isExpanded: boolean
   onToggle: () => void
+  adjacentPoints?: KnowledgePoint[]
 }
 
-function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePointCardProps) {
+function KnowledgePointCard({ point, index, isExpanded, onToggle, adjacentPoints }: KnowledgePointCardProps & { adjacentPoints?: KnowledgePoint[] }) {
+  const examplesJson = point.examples && point.examples.length > 0
+    ? JSON.stringify(point.examples)
+    : '[]'
+  const adjacentJson = adjacentPoints && adjacentPoints.length > 0
+    ? JSON.stringify(adjacentPoints.map(p => ({ id: p.id, title: p.title })))
+    : '[]'
+
   return (
     <motion.div
       layout
       className="border border-gray-100 rounded-xl overflow-hidden hover:border-blue-200 transition-colors"
+      data-knowledge-point
+      data-knowledge-point-id={point.id}
+      data-knowledge-point-title={point.title}
+      data-knowledge-point-content={point.content}
+      data-knowledge-point-examples={examplesJson}
+      data-knowledge-point-difficulty={point.difficulty}
+      data-knowledge-point-index={index}
+      data-knowledge-point-adjacent={adjacentJson}
     >
       {/* Header */}
       <button
