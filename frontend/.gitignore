@@ -39,21 +39,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# Claude Code (local config)
-.claude/
-
-# Local screenshots and captures
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.webp
-screenshots/
-captures/
-
-# Local configs
-*.local
-*.conf
-tsconfig.local.json
-next.config.local.js
