@@ -70,6 +70,11 @@ class ArenaLeaderboardService:
         """
         Get arena leaderboard for a course.
 
+        Ranking order:
+        1. Tier (diamond > platinum > gold > silver > bronze)
+        2. Sub-tier (I > II > III > IV > V, i.e., lower number = higher rank)
+        3. Stars (more stars = higher rank)
+
         Args:
             course_id: Course ID
             limit: Max number of results
@@ -81,14 +86,29 @@ class ArenaLeaderboardService:
         if not self.db:
             return []
 
-        # Query profiles with user info, ordered by stars descending
         from app.models.user import User
+        from sqlalchemy import case
 
+        # Define tier order (higher tier = higher rank)
+        tier_order = case(
+            (UserArenaProfile.tier == "diamond", 5),
+            (UserArenaProfile.tier == "platinum", 4),
+            (UserArenaProfile.tier == "gold", 3),
+            (UserArenaProfile.tier == "silver", 2),
+            (UserArenaProfile.tier == "bronze", 1),
+            else_=0
+        )
+
+        # Query profiles with user info, ordered by tier (desc), sub_tier (asc), stars (desc)
         query = (
             select(UserArenaProfile, User)
             .join(User, UserArenaProfile.user_id == User.id)
             .where(UserArenaProfile.course_id == course_id)
-            .order_by(UserArenaProfile.stars.desc())
+            .order_by(
+                tier_order.desc(),        # Higher tier first
+                UserArenaProfile.sub_tier.asc(),  # Lower sub-tier first (I > II > III > IV > V)
+                UserArenaProfile.stars.desc()     # More stars first
+            )
             .limit(limit)
             .offset(offset)
         )

@@ -649,7 +649,7 @@ function DualLeaderboardPreview({
                 </span>
                 {activeTab === 'mastery' ? (
                   <span className="text-sm font-medium text-foreground">
-                    {entry.total_mastery?.toFixed(0)}
+                    {entry.mastery_xp ?? 0}
                   </span>
                 ) : (
                   <div className="flex items-center gap-1 text-sm flex-shrink-0">

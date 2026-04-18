@@ -193,6 +193,14 @@ export const MASTERY_LEVEL_COLORS: Record<string, string> = {
   '精通': 'text-purple-500',
 }
 
+export const MASTERY_LEVEL_ICONS: Record<string, string> = {
+  '入门': '🌱',
+  '学习': '📖',
+  '练习': '💪',
+  '熟练': '⭐',
+  '精通': '👑',
+}
+
 // ========================================
 // Mastery Quiz APIs (精进之路测试)
 // ========================================

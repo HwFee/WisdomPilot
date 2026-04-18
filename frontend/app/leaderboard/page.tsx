@@ -5,9 +5,8 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getStoredToken, logout } from '@/lib/api'
-import { ArrowLeft, Trophy, Swords, Crown, Medal, TrendingUp, Users, Clock, Flame, ChevronLeft, ChevronRight, Target } from 'lucide-react'
-import { LeaderboardTabs, LeaderboardPreview } from '@/components/leaderboard/LeaderboardTabs'
-import { getMasteryLeaderboard, getArenaLeaderboard, TIER_ICONS, TIER_NAMES } from '@/lib/api'
+import { ArrowLeft, Trophy, Swords, Crown, Medal, Flame, Star } from 'lucide-react'
+import { getMasteryLeaderboard, getArenaLeaderboard, TIER_ICONS, TIER_NAMES, MASTERY_LEVEL_ICONS } from '@/lib/api'
 import type { LeaderboardEntry, Tier } from '@/types/api'
 
 type LeaderboardType = 'mastery' | 'arena'
@@ -23,6 +22,7 @@ function LeaderboardContent() {
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null)
+  const [currentUserData, setCurrentUserData] = useState<LeaderboardEntry | null>(null)
   const [offset, setOffset] = useState(0)
   const limit = 20
   const hasFetched = useRef(false)
@@ -42,12 +42,29 @@ function LeaderboardContent() {
         setLeaderboard(prev => [...prev, ...data.entries])
       }
       setCurrentUserRank(data.user_rank)
+
+      // Find current user's data in leaderboard
+      const userId = currentUserId || (() => {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          return payload.sub
+        } catch {
+          return null
+        }
+      })()
+
+      if (userId && data.entries) {
+        const userEntry = data.entries.find((e: LeaderboardEntry) => e.user_id === userId)
+        if (userEntry) {
+          setCurrentUserData(userEntry)
+        }
+      }
     } catch (error) {
       console.error('[Leaderboard] Error:', error)
     } finally {
       setLoading(false)
     }
-  }, [courseId])
+  }, [courseId, currentUserId])
 
   useEffect(() => {
     if (hasFetched.current) return
@@ -74,6 +91,7 @@ function LeaderboardContent() {
   const handleTabChange = (tab: LeaderboardType) => {
     setActiveTab(tab)
     setOffset(0)
+    setCurrentUserData(null)
     const token = getStoredToken()
     if (token) {
       fetchData(token, tab, 0)
@@ -100,19 +118,6 @@ function LeaderboardContent() {
         return <Medal className="w-6 h-6 text-amber-600" />
       default:
         return <span className="text-lg font-bold text-muted-foreground">{rank}</span>
-    }
-  }
-
-  const getRankStyle = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'bg-gradient-to-r from-yellow-500/20 via-yellow-500/10 to-transparent border-yellow-500/30'
-      case 2:
-        return 'bg-gradient-to-r from-gray-400/20 via-gray-400/10 to-transparent border-gray-400/30'
-      case 3:
-        return 'bg-gradient-to-r from-amber-600/20 via-amber-600/10 to-transparent border-amber-600/30'
-      default:
-        return 'bg-card border-border hover:border-primary/30'
     }
   }
 
@@ -174,140 +179,75 @@ function LeaderboardContent() {
             </div>
           </div>
 
-          {/* Tab description */}
-          <div className="mb-6 p-4 bg-card rounded-xl border border-border">
-            {activeTab === 'mastery' ? (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">精进榜</p>
-                  <p className="text-sm text-muted-foreground">按章节掌握进度排名，鼓励系统学习</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Swords className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">竞技榜</p>
-                  <p className="text-sm text-muted-foreground">按挑战积分排名，展示竞技实力</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Current User Rank Card */}
+          {/* Current User Card - Shows user's rank and stats */}
           {currentUserRank && (
             <div className="mb-6">
-              <div className={`border rounded-xl p-4 flex items-center justify-between ${
+              <div className={`border rounded-xl p-4 ${
                 activeTab === 'mastery'
                   ? 'bg-amber-500/5 border-amber-500/20'
                   : 'bg-blue-500/5 border-blue-500/20'
               }`}>
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg ${
+                  {/* Rank Badge */}
+                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg ${
                     activeTab === 'mastery'
                       ? 'bg-amber-500 text-white shadow-amber-500/25'
                       : 'bg-blue-500 text-white shadow-blue-500/25'
                   }`}>
-                    {currentUserRank}
+                    #{currentUserRank}
                   </div>
-                  <div>
+
+                  {/* User Info */}
+                  <div className="flex-1">
                     <p className="text-sm text-muted-foreground">你的排名</p>
-                    <p className="font-semibold text-foreground">继续努力，冲上榜单！</p>
+                    {activeTab === 'mastery' ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground text-lg">{currentUserData?.mastery_xp ?? 0}</span>
+                        <span className="text-sm text-muted-foreground">经验值</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        {currentUserData?.tier ? (
+                          <>
+                            <span className="text-lg">{TIER_ICONS[currentUserData.tier as Tier]}</span>
+                            <span className="font-medium text-foreground">{TIER_NAMES[currentUserData.tier as Tier]}</span>
+                            {currentUserData.sub_tier && (
+                              <span className="text-muted-foreground">{['I','II','III','IV','V'][currentUserData.sub_tier - 1]}</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">未定级</span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-500" />
+                          <span className="font-medium">{currentUserData?.stars ?? 0}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <Link
-                  href="/dashboard"
-                  className={`px-4 py-2 text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity ${
-                    activeTab === 'mastery' ? 'bg-amber-500' : 'bg-blue-500'
-                  }`}
-                >
-                  开始学习
-                </Link>
               </div>
             </div>
           )}
 
-          {/* Top 3 Podium */}
-          {!loading && leaderboard.length >= 3 && (
-            <div className="mb-8">
-              <div className="flex items-end justify-center gap-4">
-                {/* 2nd Place */}
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center mb-2 shadow-lg">
-                    <span className="text-xl font-bold text-white">{leaderboard[1]?.username.charAt(0)}</span>
-                  </div>
-                  <p className="font-medium text-foreground text-sm mb-1">{leaderboard[1]?.username}</p>
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-6 text-center w-28">
-                    <Medal className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-foreground">
-                      {activeTab === 'mastery'
-                        ? leaderboard[1]?.total_mastery?.toFixed(0)
-                        : leaderboard[1]?.stars ?? leaderboard[1]?.total_score?.toFixed(0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
-                    </p>
-                    {activeTab === 'arena' && leaderboard[1]?.tier && (
-                      <p className="text-xs mt-1">
-                        {TIER_ICONS[leaderboard[1].tier as Tier]} {TIER_NAMES[leaderboard[1].tier as Tier]}{leaderboard[1]?.sub_tier ? ['I','II','III','IV','V'][leaderboard[1].sub_tier - 1] : ''}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 1st Place */}
-                <div className="flex flex-col items-center -mt-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mb-2 shadow-xl ring-4 ring-yellow-400/30">
-                    <span className="text-2xl font-bold text-white">{leaderboard[0]?.username.charAt(0)}</span>
-                  </div>
-                  <p className="font-semibold text-foreground mb-1">{leaderboard[0]?.username}</p>
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl px-5 py-8 text-center w-32 border border-yellow-200 dark:border-yellow-800">
-                    <Crown className="w-8 h-8 text-yellow-500 mx-auto mb-1" />
-                    <p className="text-xl font-bold text-foreground">
-                      {activeTab === 'mastery'
-                        ? leaderboard[0]?.total_mastery?.toFixed(0)
-                        : leaderboard[0]?.stars ?? leaderboard[0]?.total_score?.toFixed(0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
-                    </p>
-                    {activeTab === 'arena' && leaderboard[0]?.tier && (
-                      <p className="text-xs mt-1">
-                        {TIER_ICONS[leaderboard[0].tier as Tier]} {TIER_NAMES[leaderboard[0].tier as Tier]}{leaderboard[0]?.sub_tier ? ['I','II','III','IV','V'][leaderboard[0].sub_tier - 1] : ''}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3rd Place */}
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center mb-2 shadow-lg">
-                    <span className="text-xl font-bold text-white">{leaderboard[2]?.username.charAt(0)}</span>
-                  </div>
-                  <p className="font-medium text-foreground text-sm mb-1">{leaderboard[2]?.username}</p>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl px-4 py-5 text-center w-28 border border-amber-200 dark:border-amber-800">
-                    <Medal className="w-6 h-6 text-amber-600 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-foreground">
-                      {activeTab === 'mastery'
-                        ? leaderboard[2]?.total_mastery?.toFixed(0)
-                        : leaderboard[2]?.stars ?? leaderboard[2]?.total_score?.toFixed(0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
-                    </p>
-                    {activeTab === 'arena' && leaderboard[2]?.tier && (
-                      <p className="text-xs mt-1">
-                        {TIER_ICONS[leaderboard[2].tier as Tier]} {TIER_NAMES[leaderboard[2].tier as Tier]}{leaderboard[2]?.sub_tier ? ['I','II','III','IV','V'][leaderboard[2].sub_tier - 1] : ''}
-                      </p>
-                    )}
-                  </div>
-                </div>
+          {/* No Data State */}
+          {!loading && leaderboard.length === 0 && (
+            <div className="text-center py-12">
+              <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
+                activeTab === 'mastery' ? 'bg-amber-500/10' : 'bg-blue-500/10'
+              }`}>
+                {activeTab === 'mastery' ? (
+                  <Trophy className="w-8 h-8 text-amber-500" />
+                ) : (
+                  <Swords className="w-8 h-8 text-blue-500" />
+                )}
               </div>
+              <p className="text-muted-foreground mb-2">暂无排名数据</p>
+              <p className="text-sm text-muted-foreground">
+                {activeTab === 'mastery'
+                  ? '完成精进之路的学习和测试，获得经验值上榜'
+                  : '参与竞技挑战，获得星星和段位上榜'}
+              </p>
             </div>
           )}
 
@@ -316,9 +256,9 @@ function LeaderboardContent() {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
             </div>
-          ) : (
+          ) : leaderboard.length > 0 && (
             <div className="space-y-2">
-              {leaderboard.slice(3).map((entry) => (
+              {leaderboard.map((entry) => (
                 <div
                   key={entry.user_id}
                   className={`rounded-xl border p-4 flex items-center justify-between transition-all ${
@@ -339,39 +279,35 @@ function LeaderboardContent() {
                           <span className="ml-2 text-xs text-primary">(你)</span>
                         )}
                       </p>
-                      {activeTab === 'mastery' ? (
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span>{entry.mastered_chapters}/{entry.total_chapters} 章节</span>
-                          <span>平均 {entry.avg_mastery?.toFixed(0)}%</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span>
-                            {entry.tier ? (
-                              <>
-                                {TIER_ICONS[entry.tier as Tier] || '🏅'} {TIER_NAMES[entry.tier as Tier] || entry.tier}
-                                {entry.sub_tier ? ` ${['I','II','III','IV','V'][entry.sub_tier - 1]}` : ''}
-                              </>
-                            ) : '未定级'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Flame className="w-3 h-3 text-orange-500" />
-                            {entry.wins ?? 0}胜
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <p className="font-bold text-foreground text-lg">
-                      {activeTab === 'mastery'
-                        ? entry.total_mastery?.toFixed(0)
-                        : entry.stars ?? entry.total_score?.toFixed(0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activeTab === 'mastery' ? '掌握分' : '⭐ 星星'}
-                    </p>
+                    {activeTab === 'mastery' ? (
+                      <div className="flex items-center gap-2 justify-end">
+                        <span>{MASTERY_LEVEL_ICONS[entry.mastery_level || '入门'] || '🌱'}</span>
+                        <span className="font-bold text-foreground text-lg">{entry.mastery_xp ?? 0}</span>
+                        <span className="text-xs text-muted-foreground">经验值</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 justify-end">
+                        {entry.tier ? (
+                          <>
+                            <span>{TIER_ICONS[entry.tier as Tier]}</span>
+                            <span className="font-medium text-foreground">{TIER_NAMES[entry.tier as Tier]}</span>
+                            {entry.sub_tier && (
+                              <span className="text-muted-foreground">{['I','II','III','IV','V'][entry.sub_tier - 1]}</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">未定级</span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-500" />
+                          <span className="font-bold">{entry.stars ?? 0}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -396,8 +332,8 @@ function LeaderboardContent() {
       <div className="text-center pb-8">
         <p className="text-sm text-muted-foreground">
           {activeTab === 'mastery'
-            ? '精进榜基于章节掌握进度计算排名'
-            : '竞技榜基于挑战积分计算排名，段位越高排名越靠前'}
+            ? '精进榜基于精进经验值计算排名，通过学习和答题获得经验'
+            : '竞技榜按段位排名：大段位 > 小段位 > 星星数'}
         </p>
       </div>
     </div>

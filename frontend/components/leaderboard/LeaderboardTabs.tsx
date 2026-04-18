@@ -183,16 +183,16 @@ export function LeaderboardTabs({
                   {activeTab === 'mastery' ? (
                     <>
                       <p className="font-bold text-foreground">
-                        {entry.total_mastery?.toFixed(0)}
+                        {entry.mastery_xp ?? 0}
                       </p>
-                      <p className="text-xs text-muted-foreground">掌握分</p>
+                      <p className="text-xs text-muted-foreground">经验值</p>
                     </>
                   ) : (
                     <>
                       <p className="font-bold text-blue-500">
-                        {entry.total_score?.toFixed(0)}
+                        {entry.stars ?? 0}
                       </p>
-                      <p className="text-xs text-muted-foreground">竞技分</p>
+                      <p className="text-xs text-muted-foreground">⭐ 星星</p>
                     </>
                   )}
                 </div>
@@ -295,8 +295,8 @@ export function LeaderboardPreview({
           <span className="flex-1 text-sm text-foreground truncate">{entry.username}</span>
           <span className="text-sm font-medium text-foreground">
             {type === 'mastery'
-              ? entry.total_mastery?.toFixed(0)
-              : entry.total_score?.toFixed(0)}
+              ? (entry.mastery_xp ?? 0)
+              : (entry.stars ?? 0)}
           </span>
         </div>
       ))}

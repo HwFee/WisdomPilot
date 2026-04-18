@@ -255,6 +255,7 @@ export {
   TIER_ICONS,
   TIER_NAMES,
   MASTERY_LEVEL_COLORS,
+  MASTERY_LEVEL_ICONS,
 } from "./learning-path";
 
 // Tier

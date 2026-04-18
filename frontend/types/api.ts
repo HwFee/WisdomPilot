@@ -913,6 +913,8 @@ export interface LeaderboardEntry {
   user_id: string
   username: string
   // Mastery leaderboard fields
+  mastery_xp?: number  // 精进经验值（主要排序依据）
+  mastery_level?: number
   total_mastery?: number
   avg_mastery?: number
   chapters_practiced?: number
