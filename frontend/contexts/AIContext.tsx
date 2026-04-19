@@ -38,7 +38,27 @@ export interface AIAnalysisResult {
   explanation?: string
 }
 
+// ========================================
+// Knowledge Point Context (for mastery pages)
+// ========================================
+
+export interface KnowledgePointContext {
+  id: string
+  title: string
+  content: string
+  examples: string[]
+  difficulty: number
+  index: number
+  adjacentPoints: Array<{ id: string; title: string }>
+}
+
+export interface ActiveKnowledgeQuestion {
+  type: "knowledge"
+  knowledgePoint: KnowledgePointContext
+}
+
 export interface AIContextState {
+  // Exercise context (for chapter/exercise pages)
   currentExercise: CurrentExerciseContext | null
   setCurrentExercise: (ctx: CurrentExerciseContext | null) => void
   hintLoading: boolean
@@ -51,12 +71,20 @@ export interface AIContextState {
   triggerAnalysis: () => Promise<void>
   triggerFeedback: () => Promise<void>
   clearResults: () => void
-  // Panel state for new floating launcher
+
+  // Question panel state (for exercise pages - choice/fill_blank questions)
   activeQuestion: CurrentExerciseContext | null
   isPanelOpen: boolean
   panelSpawnPos: { x: number; y: number } | null
   openPanel: (question: CurrentExerciseContext, spawnPos?: { x: number; y: number }) => void
   closePanel: () => void
+
+  // Knowledge panel state (for mastery pages - knowledge points)
+  activeKnowledgeQuestion: ActiveKnowledgeQuestion | null
+  isKnowledgePanelOpen: boolean
+  knowledgePanelSpawnPos: { x: number; y: number } | null
+  openKnowledgePanel: (question: ActiveKnowledgeQuestion, spawnPos?: { x: number; y: number }) => void
+  closeKnowledgePanel: () => void
 }
 
 // ========================================
@@ -86,20 +114,34 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   const [feedbackLoading, setFeedbackLoading] = useState(false)
   const [feedbackResult, setFeedbackResult] = useState<AIAnalysisResult | null>(null)
 
-  // Panel state for floating launcher
+  // Question panel state (for exercise pages - choice/fill_blank questions)
   const [activeQuestion, setActiveQuestion] = useState<CurrentExerciseContext | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [panelSpawnPos, setPanelSpawnPos] = useState<{ x: number; y: number } | null>(null)
 
+  // Knowledge panel state (for mastery pages - knowledge points)
+  const [activeKnowledgeQuestion, setActiveKnowledgeQuestion] = useState<ActiveKnowledgeQuestion | null>(null)
+  const [isKnowledgePanelOpen, setIsKnowledgePanelOpen] = useState(false)
+  const [knowledgePanelSpawnPos, setKnowledgePanelSpawnPos] = useState<{ x: number; y: number } | null>(null)
+
   const openPanel = useCallback((question: CurrentExerciseContext, spawnPos?: { x: number; y: number }) => {
-    // Clone to avoid mutation if caller mutates after call
     setActiveQuestion({ ...question })
     setIsPanelOpen(true)
-    setPanelSpawnPos(spawnPos || null)
+    setPanelSpawnPos(spawnPos ?? null)
   }, [])
 
   const closePanel = useCallback(() => {
     setIsPanelOpen(false)
+  }, [])
+
+  const openKnowledgePanel = useCallback((question: ActiveKnowledgeQuestion, spawnPos?: { x: number; y: number }) => {
+    setActiveKnowledgeQuestion({ ...question })
+    setIsKnowledgePanelOpen(true)
+    setKnowledgePanelSpawnPos(spawnPos ?? null)
+  }, [])
+
+  const closeKnowledgePanel = useCallback(() => {
+    setIsKnowledgePanelOpen(false)
   }, [])
 
   const clearResults = useCallback(() => {
@@ -231,6 +273,11 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
       panelSpawnPos,
       openPanel,
       closePanel,
+      activeKnowledgeQuestion,
+      isKnowledgePanelOpen,
+      knowledgePanelSpawnPos,
+      openKnowledgePanel,
+      closeKnowledgePanel,
     }}>
       {children}
     </AIContext.Provider>

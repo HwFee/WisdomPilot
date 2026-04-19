@@ -17,6 +17,7 @@ import {
   Star,
 } from "lucide-react";
 import { FavoriteButton } from "@/components/exercise/FavoriteButton";
+import { KnowledgeOrb } from "@/components/ui/knowledge-orb";
 
 import {
   getMasteryOverview,
@@ -27,7 +28,6 @@ import {
   getStoredToken,
   logout,
   MASTERY_LEVEL_COLORS,
-  getChapterKnowledgeContent,
   startLearningSession,
   endLearningSession,
 } from "@/lib/api";
@@ -46,12 +46,10 @@ import type {
   BaseAnswersSubmitResponse,
   EnhancedQuizQuestion,
   EnhancedQuizSubmitResponse,
-  KnowledgeContentResponse,
 } from "@/types/api";
 
 type MasteryStep =
   | "select_chapter"
-  | "knowledge"
   | "base_quiz"
   | "analysis"
   | "enhanced_quiz"
@@ -133,11 +131,6 @@ export default function MasteryPathPage() {
   const [finalResult, setFinalResult] =
     useState<EnhancedQuizSubmitResponse | null>(null);
 
-  // Knowledge content state
-  const [knowledgeContent, setKnowledgeContent] =
-    useState<KnowledgeContentResponse | null>(null);
-  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
-
   // Track whether the jump from wrong question book has been handled
   const jumpHandledRef = useRef(false);
   const sessionStartedAtRef = useRef<number | null>(null);
@@ -175,7 +168,6 @@ export default function MasteryPathPage() {
 
     const chapterParam = searchParams.get("chapter");
     const exerciseParam = searchParams.get("exercise");
-    const skipKnowledge = searchParams.get("skip") === "1";
 
     if (chapterParam && overview?.chapters) {
       const chapterId = parseInt(chapterParam);
@@ -188,13 +180,8 @@ export default function MasteryPathPage() {
         // exerciseParam 是 question_id，需要在获取题目列表后找到对应索引
         const targetQuestionId = exerciseParam ? parseInt(exerciseParam) : 0;
 
-        // Select the chapter
-        handleSelectChapterForJump(
-          chapterId,
-          chapter.title,
-          targetQuestionId,
-          skipKnowledge,
-        );
+        // Directly start quiz at the target question
+        startQuizAtQuestion(chapterId, targetQuestionId);
       }
     }
   }, [searchParams, overview]);
@@ -321,44 +308,6 @@ export default function MasteryPathPage() {
     endLearningSessionKeepalive(token, durationSeconds, chapterId ?? undefined);
   }, []);
 
-  // Handle chapter selection - load knowledge content first (with optional question ID for jump)
-  const handleSelectChapterForJump = async (
-    chapterId: number,
-    chapterTitle: string,
-    targetQuestionId: number = 0,
-    skipKnowledge: boolean = false,
-  ) => {
-    const token = getStoredToken();
-    if (!token) return;
-
-    await startTrackedSession(chapterId);
-    setSelectedChapterId(chapterId);
-    setSelectedChapterTitle(chapterTitle);
-
-    if (skipKnowledge) {
-      // Skip knowledge step, go directly to quiz at specific question
-      await startQuizAtQuestion(chapterId, targetQuestionId);
-    } else {
-      // Normal flow - show knowledge first
-      setKnowledgeLoading(true);
-      setStep("knowledge");
-
-      try {
-        const knowledgeData = await getChapterKnowledgeContent(
-          courseId,
-          chapterId,
-          token,
-        );
-        setKnowledgeContent(knowledgeData);
-      } catch (error) {
-        console.error("Failed to fetch knowledge content:", error);
-        setKnowledgeContent(null);
-      } finally {
-        setKnowledgeLoading(false);
-      }
-    }
-  };
-
   // Start base quiz at a specific question (for jump from wrong question book)
   // targetQuestionId: 目标题目的 question_id，如果为 0 则从头开始或恢复进度
   const startQuizAtQuestion = async (
@@ -367,6 +316,15 @@ export default function MasteryPathPage() {
   ) => {
     const token = getStoredToken();
     if (!token) return;
+
+    await startTrackedSession(chapterId);
+    setSelectedChapterId(chapterId);
+
+    // Set chapter title from overview
+    const chapter = overview?.chapters?.find(c => c.chapter_id === chapterId);
+    if (chapter) {
+      setSelectedChapterTitle(chapter.title);
+    }
 
     setBaseQuestionLoading(true);
 
@@ -664,7 +622,7 @@ export default function MasteryPathPage() {
     } catch (error) {
       console.error("Failed to fetch base questions:", error);
       alert("加载测试题失败，请稍后重试");
-      setStep("knowledge");
+      setStep("select_chapter");
     } finally {
       setBaseQuestionLoading(false);
     }
@@ -1054,7 +1012,6 @@ export default function MasteryPathPage() {
     setEnhancedQuestions([]);
     setEnhancedAnswers(new Map());
     setFinalResult(null);
-    setKnowledgeContent(null);
 
     // Check if we came from a section (小节)
     const fromSection = searchParams.get("fromSection");
@@ -1170,164 +1127,6 @@ export default function MasteryPathPage() {
             </button>
           </div>
         </main>
-      </div>
-    );
-  }
-
-  // Knowledge state - show knowledge points before quiz
-  if (step === "knowledge") {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
-          <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <button
-              onClick={handleBackToChapters}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">返回</span>
-            </button>
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-amber-500" />
-              <span className="font-semibold">{selectedChapterTitle}</span>
-            </div>
-            <div className="w-20"></div>
-          </div>
-        </header>
-
-        <main className="pt-20 pb-24 px-4">
-          <div className="max-w-3xl mx-auto">
-            {knowledgeLoading ? (
-              <div className="text-center py-16">
-                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-muted-foreground">加载知识点...</p>
-              </div>
-            ) : knowledgeContent ? (
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold text-foreground mb-2">
-                    {knowledgeContent.chapter_title}
-                  </h1>
-                  <p className="text-muted-foreground">知识点讲解</p>
-                  <div className="flex items-center justify-center gap-4 mt-4 text-sm text-muted-foreground">
-                    <span>{knowledgeContent.total_points} 个知识点</span>
-                    <span>•</span>
-                    <span>预计 {knowledgeContent.estimated_time} 分钟</span>
-                  </div>
-                </div>
-
-                {/* Knowledge Points */}
-                <div className="space-y-4">
-                  {knowledgeContent.knowledge_points.map((point, index) => (
-                    <div
-                      key={point.id}
-                      className="bg-card rounded-2xl border border-border p-6"
-                    >
-                      <div className="flex items-start gap-4">
-                        <span className="flex-shrink-0 w-8 h-8 bg-amber-500/20 text-amber-600 rounded-full flex items-center justify-center font-medium">
-                          {index + 1}
-                        </span>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-foreground">
-                              {point.title}
-                            </h3>
-                            <span
-                              className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                point.difficulty === 1
-                                  ? "bg-green-500/20 text-green-400"
-                                  : point.difficulty === 2
-                                    ? "bg-blue-500/20 text-blue-400"
-                                    : point.difficulty === 3
-                                      ? "bg-yellow-500/20 text-yellow-400"
-                                      : point.difficulty === 4
-                                        ? "bg-orange-500/20 text-orange-400"
-                                        : "bg-red-500/20 text-red-400"
-                              }`}
-                            >
-                              {point.difficulty === 1
-                                ? "入门"
-                                : point.difficulty === 2
-                                  ? "基础"
-                                  : point.difficulty === 3
-                                    ? "中等"
-                                    : point.difficulty === 4
-                                      ? "较难"
-                                      : "困难"}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground leading-relaxed mb-4">
-                            {point.content}
-                          </p>
-
-                          {/* Code Examples */}
-                          {point.examples && point.examples.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                示例代码
-                              </p>
-                              {point.examples.map((example, i) => (
-                                <div
-                                  key={i}
-                                  className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto"
-                                >
-                                  <pre>{example}</pre>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Related Points */}
-                          {point.related_points &&
-                            point.related_points.length > 0 && (
-                              <div className="mt-4 text-sm text-muted-foreground">
-                                <span className="font-medium">
-                                  相关知识点：
-                                </span>
-                                {point.related_points.join("、")}
-                              </div>
-                            )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-16 bg-card rounded-2xl border border-border">
-                <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">无法加载知识点内容</p>
-                <p className="text-sm text-muted-foreground">
-                  您可以继续进行测试
-                </p>
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* Bottom action bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-          <div className="max-w-3xl mx-auto px-4 py-4">
-            <button
-              onClick={() => handleStartBaseQuiz()}
-              disabled={baseQuestionLoading}
-              className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-            >
-              {baseQuestionLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  加载测试题...
-                </>
-              ) : (
-                <>
-                  <BookOpen className="w-5 h-5" />
-                  开始基础测试
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
     );
   }
@@ -1739,7 +1538,15 @@ export default function MasteryPathPage() {
             </div>
 
             {/* Question */}
-            <div className="bg-card rounded-2xl border border-border p-6 mb-6">
+            <div
+              className="bg-card rounded-2xl border border-border p-6 mb-6"
+              data-question-context
+              data-question-type={getQuestionType(currentQuestion)}
+              data-question-id={currentQuestion.id}
+              data-question-text={currentQuestion.text}
+              data-question-options={JSON.stringify(currentQuestion.options || [])}
+              data-question-answer-status={submitted ? (isCorrect ? "correct" : "wrong") : "unanswered"}
+            >
               <h2 className="text-xl font-bold text-foreground mb-4">
                 {currentQuestion.text}
               </h2>
@@ -1980,6 +1787,9 @@ export default function MasteryPathPage() {
             )}
           </div>
         </div>
+
+        {/* AI Knowledge Assistant Orb - only available after submitting answer */}
+        <KnowledgeOrb disabledForQuestion={!submitted} />
       </div>
     );
   }

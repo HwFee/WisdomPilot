@@ -147,10 +147,24 @@ interface KnowledgePointCardProps {
 }
 
 function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePointCardProps) {
+  // Serialize data for KnowledgeOrb detection
+  const adjacentPoints = point.related_points?.map((title, i) => ({
+    id: `related-${i}`,
+    title
+  })) || []
+
   return (
     <motion.div
       layout
       className="border border-gray-100 rounded-xl overflow-hidden hover:border-blue-200 transition-colors"
+      data-knowledge-point
+      data-knowledge-point-id={point.id}
+      data-knowledge-point-title={point.title}
+      data-knowledge-point-content={point.content}
+      data-knowledge-point-examples={JSON.stringify(point.examples || [])}
+      data-knowledge-point-difficulty={point.difficulty}
+      data-knowledge-point-index={index}
+      data-knowledge-point-adjacent={JSON.stringify(adjacentPoints)}
     >
       {/* Header */}
       <button

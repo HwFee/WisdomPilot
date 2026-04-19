@@ -6,6 +6,7 @@ import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight } fr
 import { getSection, saveSectionProgress, type SectionDetail } from '@/lib/api/sections'
 import { getStoredToken } from '@/lib/api'
 import { startLearningSession, endLearningSessionKeepalive } from '@/lib/api/stats'
+import { KnowledgeOrb } from '@/components/ui/knowledge-orb'
 
 export default function SectionLearningPage() {
   const params = useParams()
@@ -277,7 +278,18 @@ export default function SectionLearningPage() {
         )}
 
         {/* Main Content */}
-        <div ref={contentRef} className="prose prose-slate dark:prose-invert max-w-none">
+        <div
+          ref={contentRef}
+          className="prose prose-slate dark:prose-invert max-w-none"
+          data-knowledge-point
+          data-knowledge-point-id={`section-${sectionId}`}
+          data-knowledge-point-title={section.title}
+          data-knowledge-point-content={section.content || ''}
+          data-knowledge-point-examples="[]"
+          data-knowledge-point-difficulty={1}
+          data-knowledge-point-index={0}
+          data-knowledge-point-adjacent="[]"
+        >
           {section.content ? (
             <div className="text-foreground leading-relaxed">
               {renderMarkdown(section.content)}
@@ -311,6 +323,9 @@ export default function SectionLearningPage() {
           </button>
         </div>
       </div>
+
+      {/* AI Knowledge Assistant Orb */}
+      <KnowledgeOrb />
     </div>
   )
 }
