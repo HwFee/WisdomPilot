@@ -202,6 +202,9 @@ class User(Base):
     notes: Mapped[List["Note"]] = relationship(
         "Note", back_populates="user"
     )
+    note_tags: Mapped[List["NoteTag"]] = relationship(
+        "NoteTag", back_populates="user"
+    )
     chapter_masteries: Mapped[List["ChapterMastery"]] = relationship(
         "ChapterMastery", back_populates="user"
     )

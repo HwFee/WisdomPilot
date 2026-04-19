@@ -49,13 +49,24 @@ export async function fetchWithAuth(
     })
 
     if (!response.ok) {
-      const data = await response.json()
-      console.error('[API] 请求失败:', {
-        url,
-        status: response.status,
-        error: data,
-      })
-      const error = new Error((data as ApiError).detail || 'API request failed')
+      let errorMessage = 'API request failed'
+      try {
+        const data = await response.json()
+        errorMessage = (data as ApiError).detail || errorMessage
+        console.error('[API] 请求失败:', {
+          url,
+          status: response.status,
+          error: data,
+        })
+      } catch {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        console.error('[API] 请求失败:', {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+        })
+      }
+      const error = new Error(errorMessage)
       ;(error as Error & { status?: number }).status = response.status
       throw error
     }

@@ -51,14 +51,30 @@ htmlcov/
 # Ruff cache
 .ruff_cache/
 
-# Claude Code (local config)
+# Claude Code (local config and projects)
 .claude/
+.claude/projects/
+.claude/settings.json
 backend/.claude/
 
-# Local docs and plans
-docs/
-CLAUDE.md
-frontend/AGENTS.md
+# Claude memory and temp files
+**/memory/
+**/*.memory.md
+
+# Local screenshots and temp files
+**/TempState/
+**/ScreenClip/
+**/image-cache/
+*.png
+!.github/**/*.png
+
+# Local config files (never commit these)
+*.local
+*.local.json
+*.local.yaml
+*.local.yml
+config.local.*
+settings.local.*
 
 # Everything-claude-code
 everything-claude-code/
@@ -75,3 +91,13 @@ matrix_solution.exe
 
 # Lock files (keep pnpm-lock.yaml)
 frontend/package-lock.json
+
+# Plans and docs (local only)
+PLANS/
+docs/
+CLAUDE.md
+frontend/AGENTS.md
+
+# Migration backups
+**/migrations/backup/
+**/migrations/*.bak

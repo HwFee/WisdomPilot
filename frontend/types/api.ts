@@ -684,11 +684,28 @@ export interface NoteCreate {
   exercise_id?: number
   chapter_id?: number
   subsection_index?: number
+  tags?: string[]
+  knowledge_points?: string[]
+  source?: 'manual' | 'ai_answer' | 'question'
 }
 
 export interface NoteUpdate {
   title?: string
   content?: string
+  tags?: string[]
+  knowledge_points?: string[]
+}
+
+export interface NoteFromQuestion {
+  title?: string
+  content: string
+  exercise_id?: number
+  chapter_id?: number
+  subsection_index?: number
+  knowledge_points?: string[]
+  source: 'ai_answer' | 'question'
+  question_content?: string
+  ai_answer_content?: string
 }
 
 export interface NoteResponse {
@@ -699,6 +716,9 @@ export interface NoteResponse {
   exercise_id?: number
   chapter_id?: number
   subsection_index: number
+  tags: string[]
+  knowledge_points: string[]
+  source: 'manual' | 'ai_answer' | 'question'
   created_at: string
   updated_at: string
 }
@@ -710,6 +730,44 @@ export interface NoteListResponse {
 
 export interface NoteCountResponse {
   count: number
+}
+
+export interface NoteSearchResponse {
+  notes: NoteResponse[]
+  total: number
+  query: string
+}
+
+export interface NoteExportRequest {
+  note_ids: string[]
+  format: 'markdown' | 'json'
+}
+
+// ========================================
+// Note Tag Types
+// ========================================
+
+export interface NoteTagCreate {
+  name: string
+  color?: string
+}
+
+export interface NoteTagUpdate {
+  name?: string
+  color?: string
+}
+
+export interface NoteTagResponse {
+  id: string
+  user_id: string
+  name: string
+  color: string
+  created_at: string
+}
+
+export interface NoteTagListResponse {
+  tags: NoteTagResponse[]
+  total: number
 }
 
 // ========================================

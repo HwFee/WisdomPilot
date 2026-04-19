@@ -877,9 +877,9 @@ class AIService:
 
 请直接返回 JSON，不要有其他内容："""
 
-        response = await self._provider.generate_explanation(prompt)
-
         try:
+            response = await self._provider.generate_explanation(prompt)
+
             # Try to extract JSON from response
             json_start = response.find("{")
             json_end = response.rfind("}") + 1
@@ -888,7 +888,10 @@ class AIService:
                 return json.loads(json_str)
             else:
                 return json.loads(response)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, Exception) as e:
+            # Log the error and return empty dict for fallback handling
+            import logging
+            logging.warning(f"Failed to generate knowledge content: {e}")
             return {}
 
     async def generate_personalized_quiz(

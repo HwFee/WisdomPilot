@@ -5,10 +5,11 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, BookOpen, ChevronRight, CheckCircle, XCircle,
-  Trophy, Target, Clock, Zap, AlertTriangle, Star
+  Trophy, Target, Clock, Zap, AlertTriangle, Star, FileText
 } from 'lucide-react'
 import { FavoriteButton } from '@/components/exercise/FavoriteButton'
 import { KnowledgeOrb } from '@/components/ui/knowledge-orb'
+import { NoteEditor } from '@/components/notes/NoteEditor'
 
 import {
   getMasteryOverview,
@@ -95,6 +96,31 @@ export default function MasteryPathPage() {
   // Knowledge content state
   const [knowledgeContent, setKnowledgeContent] = useState<KnowledgeContentResponse | null>(null)
   const [knowledgeLoading, setKnowledgeLoading] = useState(false)
+
+  // Note editor state
+  const [showNoteEditor, setShowNoteEditor] = useState(false)
+  const [noteEditorData, setNoteEditorData] = useState<{
+    title?: string
+    content?: string
+    knowledgePoints?: string[]
+    chapterId?: number
+  }>({})
+
+  // Handle opening note editor for a knowledge point
+  const handleOpenNoteEditor = (point: { id: string; title: string; content: string }) => {
+    setNoteEditorData({
+      title: `知识点笔记：${point.title}`,
+      content: `## ${point.title}\n\n${point.content}\n\n---\n`,
+      knowledgePoints: [point.title],
+      chapterId: selectedChapterId || undefined,
+    })
+    setShowNoteEditor(true)
+  }
+
+  // Handle note save
+  const handleNoteSave = () => {
+    setShowNoteEditor(false)
+  }
 
   // Track whether the jump from wrong question book has been handled
   const jumpHandledRef = useRef(false)
@@ -875,6 +901,15 @@ export default function MasteryPathPage() {
                               {point.related_points.join('、')}
                             </div>
                           )}
+
+                          {/* Note Button */}
+                          <button
+                            onClick={() => handleOpenNoteEditor(point)}
+                            className="mt-4 flex items-center gap-2 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                          >
+                            <FileText className="w-4 h-4" />
+                            记笔记
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1544,6 +1579,19 @@ export default function MasteryPathPage() {
           )}
         </div>
       </main>
+
+      {/* Note Editor Modal */}
+      {showNoteEditor && (
+        <NoteEditor
+          chapterId={noteEditorData.chapterId}
+          prefillTitle={noteEditorData.title}
+          prefillContent={noteEditorData.content}
+          knowledgePoints={noteEditorData.knowledgePoints}
+          source="question"
+          onSave={handleNoteSave}
+          onClose={() => setShowNoteEditor(false)}
+        />
+      )}
     </div>
   )
 }

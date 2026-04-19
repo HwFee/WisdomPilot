@@ -5,9 +5,16 @@
 import {
   NoteCreate,
   NoteUpdate,
+  NoteFromQuestion,
   NoteResponse,
   NoteListResponse,
   NoteCountResponse,
+  NoteSearchResponse,
+  NoteExportRequest,
+  NoteTagCreate,
+  NoteTagUpdate,
+  NoteTagResponse,
+  NoteTagListResponse,
 } from '@/types/api'
 import { get, post, put, del } from './client'
 
@@ -24,18 +31,50 @@ export async function createNote(
 
 export async function getNotes(
   token: string,
-  chapterId?: number,
-  limit: number = 50,
-  offset: number = 0
-): Promise<NoteListResponse> {
-  const params = new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  })
-  if (chapterId !== undefined) {
-    params.append('chapter_id', String(chapterId))
+  options?: {
+    chapterId?: number
+    tags?: string[]
+    limit?: number
+    offset?: number
   }
+): Promise<NoteListResponse> {
+  const params = new URLSearchParams()
+  if (options?.chapterId !== undefined) {
+    params.append('chapter_id', String(options.chapterId))
+  }
+  if (options?.tags && options.tags.length > 0) {
+    params.append('tags', options.tags.join(','))
+  }
+  params.append('limit', String(options?.limit ?? 50))
+  params.append('offset', String(options?.offset ?? 0))
   return get<NoteListResponse>(`/api/notes?${params.toString()}`, token)
+}
+
+export async function searchNotes(
+  token: string,
+  query: string,
+  options?: {
+    tags?: string[]
+    chapterId?: number
+    limit?: number
+  }
+): Promise<NoteSearchResponse> {
+  const params = new URLSearchParams({ q: query })
+  if (options?.tags && options.tags.length > 0) {
+    params.append('tags', options.tags.join(','))
+  }
+  if (options?.chapterId !== undefined) {
+    params.append('chapter_id', String(options.chapterId))
+  }
+  params.append('limit', String(options?.limit ?? 50))
+  return get<NoteSearchResponse>(`/api/notes/search?${params.toString()}`, token)
+}
+
+export async function getNote(
+  token: string,
+  noteId: string
+): Promise<NoteResponse> {
+  return get<NoteResponse>(`/api/notes/${noteId}`, token)
 }
 
 export async function getNotesCount(token: string): Promise<NoteCountResponse> {
@@ -57,11 +96,71 @@ export async function deleteNote(
   return del<{ success: boolean }>(`/api/notes/${noteId}`, token)
 }
 
+export async function createNoteFromQuestion(
+  token: string,
+  data: NoteFromQuestion
+): Promise<NoteResponse> {
+  return post<NoteResponse>('/api/notes/from-question', token, data)
+}
+
+export async function exportNote(
+  token: string,
+  noteId: string
+): Promise<Response> {
+  return get<Response>(`/api/notes/export/${noteId}`, token)
+}
+
+export async function exportNotes(
+  token: string,
+  data: NoteExportRequest
+): Promise<Response> {
+  return post<Response>('/api/notes/export', token, data)
+}
+
+// ========================================
+// Note Tags API Functions
+// ========================================
+
+export async function createNoteTag(
+  token: string,
+  data: NoteTagCreate
+): Promise<NoteTagResponse> {
+  return post<NoteTagResponse>('/api/note-tags', token, data)
+}
+
+export async function getNoteTags(
+  token: string
+): Promise<NoteTagListResponse> {
+  return get<NoteTagListResponse>('/api/note-tags', token)
+}
+
+export async function updateNoteTag(
+  token: string,
+  tagId: string,
+  data: NoteTagUpdate
+): Promise<NoteTagResponse> {
+  return put<NoteTagResponse>(`/api/note-tags/${tagId}`, token, data)
+}
+
+export async function deleteNoteTag(
+  token: string,
+  tagId: string
+): Promise<{ success: boolean }> {
+  return del<{ success: boolean }>(`/api/note-tags/${tagId}`, token)
+}
+
 // Re-export types
 export type {
   NoteCreate,
   NoteUpdate,
+  NoteFromQuestion,
   NoteResponse,
   NoteListResponse,
   NoteCountResponse,
+  NoteSearchResponse,
+  NoteExportRequest,
+  NoteTagCreate,
+  NoteTagUpdate,
+  NoteTagResponse,
+  NoteTagListResponse,
 }

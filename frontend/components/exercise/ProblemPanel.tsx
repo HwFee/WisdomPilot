@@ -2,6 +2,10 @@
 
 import { Lightbulb } from 'lucide-react'
 import { FavoriteButton } from './FavoriteButton'
+import { NoteButton } from './NoteButton'
+import { useState } from 'react'
+import { NoteEditor } from '@/components/notes/NoteEditor'
+import type { NoteResponse } from '@/types/api'
 
 interface ProblemPanelProps {
   title: string
@@ -20,6 +24,9 @@ interface ProblemPanelProps {
   subsectionIndex?: number
   showFavorite?: boolean
   onFavoriteChange?: (isFavorited: boolean) => void
+  // Note props
+  showNote?: boolean
+  onNoteSave?: (note: NoteResponse) => void
 }
 
 export function ProblemPanel({
@@ -39,26 +46,48 @@ export function ProblemPanel({
   subsectionIndex = 0,
   showFavorite = false,
   onFavoriteChange,
+  // Note props
+  showNote = false,
+  onNoteSave,
 }: ProblemPanelProps) {
+  const [showNoteEditor, setShowNoteEditor] = useState(false)
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   return (
     <div className="h-full overflow-y-auto p-6 bg-card">
       <div className="max-w-2xl">
-        {/* Title with Favorite Button */}
+        {/* Title with Favorite and Note Buttons */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-foreground">{title}</h2>
-          {showFavorite && exerciseId && chapterId && (
-            <FavoriteButton
-              exerciseId={exerciseId}
-              chapterId={chapterId}
-              subsectionIndex={subsectionIndex}
-              size="md"
-              showLabel
-              lang={lang}
-              onFavoriteChange={onFavoriteChange}
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {showNote && exerciseId && chapterId && (
+              <NoteButton
+                exerciseId={exerciseId}
+                chapterId={chapterId}
+                subsectionIndex={subsectionIndex}
+                knowledgePoints={knowledgePoints}
+                prefillTitle={`${t('题目笔记', 'Note')}: ${title}`}
+                prefillContent={`## ${t('题目', 'Question')}\n\n${description}`}
+                source="question"
+                size="md"
+                showLabel
+                lang={lang}
+                onNoteChange={onNoteSave}
+                onOpenEditor={() => setShowNoteEditor(true)}
+              />
+            )}
+            {showFavorite && exerciseId && chapterId && (
+              <FavoriteButton
+                exerciseId={exerciseId}
+                chapterId={chapterId}
+                subsectionIndex={subsectionIndex}
+                size="md"
+                showLabel
+                lang={lang}
+                onFavoriteChange={onFavoriteChange}
+              />
+            )}
+          </div>
         </div>
 
         {/* Description */}
@@ -131,6 +160,24 @@ export function ProblemPanel({
           </button>
         )}
       </div>
+
+      {/* Note Editor Modal */}
+      {showNoteEditor && (
+        <NoteEditor
+          exerciseId={exerciseId}
+          chapterId={chapterId}
+          subsectionIndex={subsectionIndex}
+          knowledgePoints={knowledgePoints}
+          prefillTitle={`${t('题目笔记', 'Note')}: ${title}`}
+          prefillContent={`## ${t('题目', 'Question')}\n\n${description}`}
+          source="question"
+          onSave={(note) => {
+            onNoteSave?.(note)
+            setShowNoteEditor(false)
+          }}
+          onClose={() => setShowNoteEditor(false)}
+        />
+      )}
     </div>
   )
 }

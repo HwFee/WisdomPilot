@@ -5,8 +5,11 @@ import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { FileText } from "lucide-react"
 import { useAIContext } from "@/contexts/AIContext"
 import { cn } from "@/lib/utils"
+import { getStoredToken } from "@/lib/api"
+import { createNoteFromQuestion } from "@/lib/api/notes"
 
 // ── Dimensions ─────────────────────────────────────────────
 const ORB_SIZE = 52
@@ -94,8 +97,32 @@ function PanelOrb({ size = 22 }: { size?: number }) {
 }
 
 // ── Message bubble with Markdown ─────────────────────────
-function MessageBubble({ role, content }: { role: "user" | "ai"; content: string }) {
+function MessageBubble({ role, content, onSaveAsNote }: { role: "user" | "ai"; content: string; onSaveAsNote?: (content: string) => void }) {
   const isUser = role === "user"
+  const [isSaving, setIsSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleSaveAsNote = async () => {
+    if (!content || isSaving || saved) return
+    const token = getStoredToken()
+    if (!token) return
+
+    setIsSaving(true)
+    try {
+      await createNoteFromQuestion(token, {
+        title: "AI 回答笔记",
+        content: content,
+        source: "ai_answer",
+      })
+      setSaved(true)
+      onSaveAsNote?.(content)
+    } catch (error) {
+      console.error("[笔记] 保存失败:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div
       className="rounded-2xl px-3 py-2 leading-relaxed"
@@ -109,31 +136,46 @@ function MessageBubble({ role, content }: { role: "user" | "ai"; content: string
       {isUser ? (
         <span className="whitespace-pre-wrap">{content}</span>
       ) : (
-        <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
-              code: ({ children }) => (
-                <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>
-                  {children}
-                </code>
-              ),
-              pre: ({ children }) => (
-                <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ background: "hsl(var(--muted))" }}>
-                  {children}
-                </pre>
-              ),
-              ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
-              li: ({ children }) => <li className="leading-snug">{children}</li>,
-              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-              em: ({ children }) => <em>{children}</em>,
-            }}
-          >
-            {content}
-          </ReactMarkdown>
-        </div>
+        <>
+          <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
+                code: ({ children }) => (
+                  <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>
+                    {children}
+                  </code>
+                ),
+                pre: ({ children }) => (
+                  <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ background: "hsl(var(--muted))" }}>
+                    {children}
+                  </pre>
+                ),
+                ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
+                li: ({ children }) => <li className="leading-snug">{children}</li>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                em: ({ children }) => <em>{children}</em>,
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+          {/* Save as Note button */}
+          {!isUser && (
+            <button
+              onClick={handleSaveAsNote}
+              disabled={isSaving || saved}
+              className="flex items-center gap-1 mt-2 px-2 py-1 text-xs rounded-lg transition-colors hover:bg-black/10 disabled:opacity-50"
+              style={{ color: saved ? "hsl(var(--success))" : "hsl(var(--primary))" }}
+              title="将AI回答保存为笔记"
+            >
+              <FileText className="w-3 h-3" />
+              {saved ? "已保存" : isSaving ? "保存中..." : "记为笔记"}
+            </button>
+          )}
+        </>
       )}
     </div>
   )
