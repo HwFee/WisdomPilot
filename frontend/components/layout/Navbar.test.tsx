@@ -34,7 +34,7 @@ describe('Navbar', () => {
       <Navbar
         user={mockUser}
         isLoggedIn={true}
-        aiQuota={50}
+        cores={50}
         xp={100}
       />
     )
@@ -46,7 +46,7 @@ describe('Navbar', () => {
       <Navbar
         user={mockUser}
         isLoggedIn={true}
-        aiQuota={50}
+        cores={50}
         xp={100}
       />
     )
@@ -58,7 +58,7 @@ describe('Navbar', () => {
       <Navbar
         user={null}
         isLoggedIn={false}
-        aiQuota={0}
+        cores={0}
         xp={0}
       />
     )
@@ -71,7 +71,7 @@ describe('Navbar', () => {
       <Navbar
         user={mockUser}
         isLoggedIn={true}
-        aiQuota={50}
+        cores={50}
         xp={100}
       />
     )
@@ -80,12 +80,12 @@ describe('Navbar', () => {
     expect(screen.getByText('排行榜')).toBeInTheDocument()
   })
 
-  it('renders quota and XP when logged in', () => {
+  it('renders cores and XP when logged in', () => {
     render(
       <Navbar
         user={mockUser}
         isLoggedIn={true}
-        aiQuota={50}
+        cores={50}
         xp={100}
       />
     )

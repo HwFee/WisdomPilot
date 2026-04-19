@@ -66,6 +66,12 @@ class WrongQuestion(Base):
         index=True,
         comment="章节ID"
     )
+    section_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+        comment="小节ID（强化测试来源）"
+    )
     stage_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         nullable=True,

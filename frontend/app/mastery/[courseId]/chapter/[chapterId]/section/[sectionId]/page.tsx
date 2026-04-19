@@ -12,6 +12,7 @@ export default function SectionLearningPage() {
   const params = useParams()
   const router = useRouter()
   const courseId = parseInt(params.courseId as string)
+  const chapterId = parseInt(params.chapterId as string)
   const sectionId = parseInt(params.sectionId as string)
 
   const [section, setSection] = useState<SectionDetail | null>(null)
@@ -130,7 +131,11 @@ export default function SectionLearningPage() {
         chapterId: chapterIdRef.current,
         fromSection: sectionId
       }
-      localStorage.setItem('masterySession', JSON.stringify(sessionData))
+      try {
+        localStorage.setItem('masterySession', JSON.stringify(sessionData))
+      } catch (e) {
+        console.warn('Failed to save session to localStorage:', e)
+      }
 
       // 标记会话已转移，不要在本页面结束
       sessionEndedRef.current = true
@@ -140,9 +145,9 @@ export default function SectionLearningPage() {
       setSaving(true)
       await saveSectionProgress(sectionId, 'quiz', false, token)
 
-      if (section) {
-        router.push(`/mastery/${courseId}?chapter=${section.chapter_id}&skip=1&fromSection=${sectionId}&continueSession=1`)
-      }
+      // 跳转到主页面触发答题状态，带上章节和小节信息
+      // 主页面会检测 chapter 参数并自动进入答题状态
+      router.push(`/mastery/${courseId}?chapter=${chapterId}&section=${sectionId}&fromSection=${sectionId}&continueSession=1`)
     } catch {
       // Progress save failed - continue anyway
     } finally {
@@ -152,11 +157,7 @@ export default function SectionLearningPage() {
 
   const handleBack = () => {
     // 返回小节选择页面
-    if (section) {
-      router.push(`/mastery/${courseId}/chapter/${section.chapter_id}`)
-    } else {
-      router.push(`/mastery/${courseId}`)
-    }
+    router.push(`/mastery/${courseId}/chapter/${chapterId}`)
   }
 
   // 简单的Markdown渲染（实际项目应该用markdown库）

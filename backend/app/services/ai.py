@@ -1066,6 +1066,33 @@ class AIService:
         except json.JSONDecodeError:
             return []
 
+    async def generate(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+    ) -> str:
+        """
+        通用的 AI 文本生成方法
+
+        Args:
+            prompt: 用户提示词
+            system_prompt: 可选的系统提示词
+
+        Returns:
+            AI 生成的文本
+        """
+        if not self.is_configured():
+            return "AI 服务未配置，请联系管理员。"
+
+        # 对于所有 provider，直接使用 generate_explanation
+        # 它会将 prompt 发送给 AI，让 AI 生成内容
+        # 如果需要 system_prompt，可以在 prompt 中包含
+        if system_prompt:
+            combined_prompt = f"{system_prompt}\n\n{prompt}"
+            return await self._provider.generate_explanation(combined_prompt)
+        else:
+            return await self._provider.generate_explanation(prompt)
+
     async def generate_question_analysis(
         self,
         question_text: str,

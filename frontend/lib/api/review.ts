@@ -111,6 +111,22 @@ export async function getWrongQuestion(
   return get<WrongQuestionResponse>(`/api/review/wrong-questions/${wrongQuestionId}`, token)
 }
 
+export async function deleteWrongQuestion(
+  wrongQuestionId: string,
+  token: string
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/review/wrong-questions/${wrongQuestionId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to delete wrong question: ${response.statusText}`)
+  }
+  return response.json()
+}
+
 // ========================================
 // Analysis API Functions
 // ========================================

@@ -14,6 +14,7 @@ class SectionSummary(BaseModel):
     order_index: int
     estimated_minutes: int = Field(default=15, description="预计学习时间（分钟）")
     is_completed: bool = Field(default=False, description="用户是否已完成此小节")
+    mastery_score: Optional[float] = Field(default=None, description="BKT 聚合掌握度 0-100")
 
 
 class SectionDetail(BaseModel):

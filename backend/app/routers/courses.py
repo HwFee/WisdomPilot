@@ -512,7 +512,7 @@ async def get_chapter_sections(
     current_user: auth_dependency
 ):
     """
-    Get all sections for a chapter with user's completion status.
+    Get all sections for a chapter with user's completion status and BKT mastery.
     """
     # Get chapter
     chapter_result = await db.execute(
@@ -543,10 +543,21 @@ async def get_chapter_sections(
     )
     progress_map = {p.section_id: p for p in progress_result.scalars().all()}
 
+    # Get BKT mastery for these sections
+    from app.models.section_mastery import SectionMastery
+    mastery_result = await db.execute(
+        select(SectionMastery).where(
+            SectionMastery.user_id == current_user.id,
+            SectionMastery.section_id.in_(section_ids)
+        )
+    )
+    mastery_map = {m.section_id: m for m in mastery_result.scalars().all()}
+
     # Build response
     section_summaries = []
     for section in sections:
         progress = progress_map.get(section.id)
+        mastery = mastery_map.get(section.id)
         section_summaries.append(SectionSummary(
             id=section.id,
             chapter_id=section.chapter_id,
@@ -555,6 +566,7 @@ async def get_chapter_sections(
             order_index=section.order_index,
             estimated_minutes=section.estimated_minutes,
             is_completed=progress.is_completed if progress else False,
+            mastery_score=mastery.mastery_score if mastery else None,
         ))
 
     return SectionListResponse(sections=section_summaries, total=len(section_summaries))

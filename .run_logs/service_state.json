@@ -1,0 +1,7 @@
+{
+  "launcher_pid": 13900,
+  "backend_pid": 18872,
+  "frontend_pid": 28720,
+  "backend_port": 8000,
+  "frontend_port": 3000
+}

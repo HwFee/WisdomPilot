@@ -31,6 +31,10 @@ import type {
   EnhancedQuizSubmitResponse,
 } from '@/types/api'
 
+type LegacyMasteryOverviewResponse = MasteryOverviewResponse & {
+  total_mastery_score?: number
+}
+
 // ========================================
 // Mastery Path APIs
 // ========================================
@@ -42,7 +46,13 @@ export async function getMasteryOverview(
   courseId: number,
   token: string
 ): Promise<MasteryOverviewResponse> {
-  return get<MasteryOverviewResponse>(`/api/learning-path/mastery/${courseId}/overview`, token)
+  const data = await get<LegacyMasteryOverviewResponse>(`/api/learning-path/mastery/${courseId}/overview`, token)
+
+  return {
+    ...data,
+    current_chapter: typeof data.current_chapter === 'number' ? data.current_chapter : null,
+    total_mastery_points: data.total_mastery_points ?? data.total_mastery_score ?? 0,
+  }
 }
 
 /**
@@ -254,15 +264,14 @@ export async function submitMasteryQuiz(
 // ========================================
 
 /**
- * Get chapter base questions (fixed questions from database)
+ * Get section base questions (fixed questions from database)
  */
-export async function getChapterBaseQuestions(
-  courseId: number,
-  chapterId: number,
+export async function getSectionBaseQuestions(
+  sectionId: number,
   token: string
 ): Promise<BaseQuestionListResponse> {
   return get<BaseQuestionListResponse>(
-    `/api/learning-path/mastery/${courseId}/chapter/${chapterId}/base-questions`,
+    `/api/learning-path/mastery/section/${sectionId}/base-questions`,
     token
   )
 }
@@ -680,6 +689,7 @@ export async function getActiveChallengeSession(
 export interface SaveMasteryExerciseProgressRequest {
   course_id: number
   chapter_id: number
+  section_id?: number  // 小节ID，用于小节级掌握度聚合
   question_id: number
   question_type?: 'base' | 'enhanced'
   exercise_key?: string
@@ -690,10 +700,25 @@ export interface SaveMasteryExerciseProgressRequest {
   attempt_count?: number
 }
 
+export interface BKTDebugInfo {
+  section_id?: number
+  knowledge_points: string[]
+  counted_for_mastery: boolean
+  not_counted_reason?: string
+  mastery_changes: Array<{
+    knowledge_point: string
+    p_l_before: number
+    p_l_after: number
+  }>
+  section_mastery: number
+  chapter_mastery: number
+}
+
 export interface SaveMasteryExerciseProgressResponse {
   success: boolean
   progress_id?: string
   message: string
+  bkt_debug?: BKTDebugInfo
 }
 
 export interface MasteryChapterProgressResponse {
@@ -736,11 +761,52 @@ export async function saveMasteryExerciseProgress(
   request: SaveMasteryExerciseProgressRequest,
   token: string
 ): Promise<SaveMasteryExerciseProgressResponse> {
-  return post<SaveMasteryExerciseProgressResponse>(
+  console.log("[BKT] ╔══════════════════════════════════════════════════════════════════")
+  console.log("[BKT] ║                    前端发送答题数据                                ║")
+  console.log("[BKT] ╠══════════════════════════════════════════════════════════════════")
+  console.log(`[BKT] ║ 课程ID: ${request.course_id}`)
+  console.log(`[BKT] ║ 章节ID: ${request.chapter_id}`)
+  console.log(`[BKT] ║ 小节ID: ${request.section_id ?? '未指定'}`)
+  console.log(`[BKT] ║ 题目ID: ${request.question_id}`)
+  console.log(`[BKT] ║ 答题结果: ${request.is_correct ? '✓ 正确' : '✗ 错误'}`)
+  console.log("[BKT] ╚══════════════════════════════════════════════════════════════════")
+
+  const response = await post<SaveMasteryExerciseProgressResponse>(
     '/api/learning-path/mastery/progress/exercise',
     token,
     request
   )
+
+  // 在浏览器控制台显示后端返回的 BKT 调试信息
+  if (response.bkt_debug) {
+    const debug = response.bkt_debug
+    console.log("[BKT] ╔══════════════════════════════════════════════════════════════════")
+    console.log("[BKT] ║                    后端 BKT 计算结果                               ║")
+    console.log("[BKT] ╠══════════════════════════════════════════════════════════════════")
+    console.log(`[BKT] ║ 小节ID: ${debug.section_id ?? '未指定'}`)
+    console.log(`[BKT] ║ 知识点: ${debug.knowledge_points.join(', ') || '无'}`)
+    console.log(`[BKT] ║ 计入掌握度: ${debug.counted_for_mastery ? '✓ 是' : '✗ 否'}`)
+    if (!debug.counted_for_mastery && debug.not_counted_reason) {
+      console.log(`[BKT] ║ 不计入原因: ${debug.not_counted_reason}`)
+    }
+    console.log("[BKT] ╠────────────────────────────────────────────────────────────────")
+    console.log("[BKT] ║ 知识点掌握度变化:")
+    for (const change of debug.mastery_changes) {
+      const before = (change.p_l_before * 100).toFixed(1)
+      const after = (change.p_l_after * 100).toFixed(1)
+      const diff = ((change.p_l_after - change.p_l_before) * 100).toFixed(1)
+      const arrow = change.p_l_after > change.p_l_before ? '↑' : (change.p_l_after < change.p_l_before ? '↓' : '→')
+      console.log(`[BKT] ║   ${change.knowledge_point}: ${before}% → ${after}% (${arrow}${diff}%)`)
+    }
+    console.log("[BKT] ╠────────────────────────────────────────────────────────────────")
+    console.log(`[BKT] ║ 小节掌握度: ${debug.section_mastery.toFixed(1)}%`)
+    console.log(`[BKT] ║ 章节掌握度: ${debug.chapter_mastery.toFixed(1)}%`)
+    console.log("[BKT] ╚══════════════════════════════════════════════════════════════════")
+  } else {
+    console.log("[BKT] ⚠ 后端未返回 BKT 调试信息")
+  }
+
+  return response
 }
 
 /**
@@ -846,6 +912,71 @@ export async function getRecentArenaExercises(
 ): Promise<RecentArenaExercise[]> {
   return get<RecentArenaExercise[]>(
     `/api/learning-path/challenge/${courseId}/recent?limit=${limit}`,
+    token
+  )
+}
+
+// ========================================
+// BKT Mastery APIs (四层聚合掌握度)
+// ========================================
+
+export interface KnowledgePointMastery {
+  name: string
+  p_l: number
+  is_mastered: boolean
+  total_attempts: number
+  correct_attempts: number
+}
+
+export interface SectionMasteryResponse {
+  section_id: number
+  chapter_id: number
+  mastery_score: number
+  bkt_aggregated_p_l: number
+  knowledge_points_count: number
+  mastered_points_count: number
+  is_completed: boolean
+  knowledge_points: KnowledgePointMastery[]
+}
+
+export interface ChapterMasterySummary {
+  chapter_id: number
+  mastery_score: number
+  is_completed: boolean
+}
+
+export interface CourseMasteryResponse {
+  course_id: number
+  mastery_score: number
+  progress_percentage: number
+  chapters_count: number
+  completed_chapters: number
+  is_completed: boolean
+  chapters: ChapterMasterySummary[]
+}
+
+/**
+ * 获取小节掌握度（BKT 聚合）
+ */
+export async function getSectionMastery(
+  sectionId: number,
+  token: string
+): Promise<SectionMasteryResponse> {
+  return get<SectionMasteryResponse>(
+    `/api/learning-path/mastery/section/${sectionId}`,
+    token
+  )
+}
+
+/**
+ * 获取课程掌握度（BKT 四层聚合顶层）
+ */
+export async function getCourseMastery(
+  courseId: number,
+  token: string
+): Promise<CourseMasteryResponse> {
+  return get<CourseMasteryResponse>(
+    `/api/learning-path/mastery/course/${courseId}`,
     token
   )
 }

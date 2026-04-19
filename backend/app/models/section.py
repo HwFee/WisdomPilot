@@ -18,6 +18,7 @@ from app.utils.time import utc_now
 
 if TYPE_CHECKING:
     from app.models.chapter import Chapter
+    from app.models.section_base_question import SectionBaseQuestion
 
 
 class Section(Base):
@@ -57,6 +58,11 @@ class Section(Base):
 
     # Relationships
     chapter: Mapped["Chapter"] = relationship("Chapter", back_populates="sections")
+    base_questions: Mapped[List["SectionBaseQuestion"]] = relationship(
+        "SectionBaseQuestion",
+        back_populates="section",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Section {self.id}: {self.title}>"

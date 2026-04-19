@@ -38,34 +38,32 @@ async def add_favorite(
 ):
     """Add an exercise to favorites
 
-    与错题本完全一致的存储逻辑：
-    - 如果有 exercise_key，用 exercise_key 去重
-    - 如果没有 exercise_key，用 exercise_id 去重
-    - 存储完整信息快照
+    去重逻辑（优先用 exercise_id）：
+    1. 如果有 exercise_id，用 exercise_id 去重（同一道题无论在哪个界面收藏都能匹配）
+    2. 如果没有 exercise_id 但有 exercise_key，用 exercise_key 去重
+    3. 存储完整信息快照
     """
     logger.info(f"[API] 添加收藏请求: user_id={current_user.id}")
     logger.info(f"[API] 请求数据: exercise_key={request.exercise_key}, exercise_id={request.exercise_id}, course_id={request.course_id}")
-    logger.info(f"[API] 请求数据: chapter_id={request.chapter_id}, exercise_type={request.exercise_type}, exercise_difficulty={request.exercise_difficulty}")
-    logger.info(f"[API] 请求数据: knowledge_points={request.knowledge_points}")
-    logger.info(f"[API] 请求数据: exercise_content={request.exercise_content}")
+    logger.info(f"[API] 请求数据: chapter_id={request.chapter_id}, section_id={request.section_id}, exercise_type={request.exercise_type}")
 
-    # 检查是否已存在（与错题本一致的去重逻辑）
+    # 检查是否已存在（优先用 exercise_id 去重）
     existing = None
-    if request.exercise_key:
-        logger.info(f"[API] 使用 exercise_key 查询: {request.exercise_key}")
-        result = await db.execute(
-            select(Favorite).where(
-                Favorite.user_id == current_user.id,
-                Favorite.exercise_key == request.exercise_key,
-            )
-        )
-        existing = result.scalar_one_or_none()
-    elif request.exercise_id:
+    if request.exercise_id:
         logger.info(f"[API] 使用 exercise_id 查询: {request.exercise_id}")
         result = await db.execute(
             select(Favorite).where(
                 Favorite.user_id == current_user.id,
                 Favorite.exercise_id == request.exercise_id,
+            )
+        )
+        existing = result.scalar_one_or_none()
+    elif request.exercise_key:
+        logger.info(f"[API] 使用 exercise_key 查询: {request.exercise_key}")
+        result = await db.execute(
+            select(Favorite).where(
+                Favorite.user_id == current_user.id,
+                Favorite.exercise_key == request.exercise_key,
             )
         )
         existing = result.scalar_one_or_none()
@@ -97,6 +95,7 @@ async def add_favorite(
         exercise_id=request.exercise_id,
         course_id=request.course_id,
         chapter_id=request.chapter_id,
+        section_id=request.section_id,
         knowledge_points=request.knowledge_points or [],
         exercise_content=request.exercise_content,
         exercise_type=request.exercise_type or "choice",
@@ -214,14 +213,21 @@ async def check_favorite(
 ):
     """Check whether the current user has favorited a specific exercise.
 
-    与错题本一致：支持 exercise_key 或 exercise_id 查询
+    去重逻辑：
+    1. 如果有 exercise_key，先用 exercise_key 查询
+    2. 如果没找到且有 exercise_id，再用 exercise_id 查询
+    3. 这样同一道题无论用什么标识收藏，都能正确匹配
 
     Returns:
         is_favorited: True if a matching favorite record exists.
         favorite_id:  The UUID string of that record, or null when not found.
     """
+    logger.info(f"[API] check_favorite: user_id={current_user.id}, exercise_key={exercise_key}, exercise_id={exercise_id}")
     favorite = None
+
+    # 第一步：用 exercise_key 查询
     if exercise_key:
+        logger.info(f"[API] check_favorite: 使用 exercise_key 查询")
         result = await db.execute(
             select(Favorite).where(
                 Favorite.user_id == current_user.id,
@@ -229,7 +235,11 @@ async def check_favorite(
             )
         )
         favorite = result.scalar_one_or_none()
-    elif exercise_id:
+        logger.info(f"[API] check_favorite: exercise_key 查询结果 favorite={favorite}")
+
+    # 第二步：如果没找到，用 exercise_id 查询
+    if favorite is None and exercise_id:
+        logger.info(f"[API] check_favorite: 使用 exercise_id 查询")
         result = await db.execute(
             select(Favorite).where(
                 Favorite.user_id == current_user.id,
@@ -237,11 +247,14 @@ async def check_favorite(
             )
         )
         favorite = result.scalar_one_or_none()
+        logger.info(f"[API] check_favorite: exercise_id 查询结果 favorite={favorite}")
 
-    return {
+    result_data = {
         "is_favorited": favorite is not None,
         "favorite_id": str(favorite.id) if favorite is not None else None,
     }
+    logger.info(f"[API] check_favorite: 返回结果={result_data}")
+    return result_data
 
 
 @router.patch("/{favorite_id}", response_model=FavoriteResponse)

@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Brain, Clock, Target, TrendingDown, ChevronRight, CheckCircle, XCircle, Flame, BookOpen, BarChart3, AlertTriangle, Star } from 'lucide-react'
+import { ArrowLeft, Brain, Clock, Target, TrendingDown, ChevronRight, CheckCircle, XCircle, Flame, BookOpen, BarChart3, AlertTriangle, Star, Trash2 } from 'lucide-react'
 import { FavoriteButton } from '@/components/exercise/FavoriteButton'
 import {
   getReviewQueue,
@@ -12,6 +12,7 @@ import {
   getWrongQuestions,
   getWeakPointsAnalysis,
   getReviewReminders,
+  deleteWrongQuestion,
   type ReviewQueueItem as ReviewItem,
   type WeakPointResponse as WeakPoint,
   type WrongQuestionResponse as WrongQuestion,
@@ -185,6 +186,23 @@ function ReviewPageContent() {
       case 'programming': return '编程题'
       case 'fill_blank': return '填空题'
       default: return type
+    }
+  }
+
+  const handleDeleteWrongQuestion = async (wrongQuestionId: string) => {
+    if (!confirm('确定要删除这条错题记录吗？')) return
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      await deleteWrongQuestion(wrongQuestionId, token)
+
+      // 从列表中移除
+      setWrongQuestions(prev => prev.filter(wq => wq.id !== wrongQuestionId))
+    } catch (error) {
+      console.error('删除错题失败:', error)
+      alert('删除失败，请稍后重试')
     }
   }
 
@@ -469,13 +487,9 @@ function ReviewPageContent() {
               ) : (
                 <div className="space-y-3">
                   {wrongQuestions.map((wq) => {
-                    // 解析来源信息
-                    const sourceType = wq.source_type || (wq.exercise_key?.startsWith('arena-') ? 'arena' :
-                      wq.exercise_key?.startsWith('mastery-') ? 'mastery' :
-                      wq.exercise_key?.startsWith('enhanced-') ? 'enhanced' : 'unknown')
-                    const sourceLabel = wq.source_label || (sourceType === 'arena' ? '挑战之路' :
-                      sourceType === 'mastery' ? '精进之路' :
-                      sourceType === 'enhanced' ? '强化测试' : '未知来源')
+                    // 解析来源信息 - 统一用 mastery- 前缀，通过是否有 section_id 区分
+                    const sourceType = wq.source_type || (wq.exercise_key?.startsWith('arena-') ? 'arena' : 'mastery')
+                    const sourceLabel = wq.source_label || (sourceType === 'arena' ? '挑战之路' : '精进之路')
 
                     // 提取题目标题
                     const textContent = wq.exercise_content?.text
@@ -493,18 +507,13 @@ function ReviewPageContent() {
                     // 格式: mastery-{courseId}-{chapterId}-{questionId} 或 arena-{courseId}-{questionId}
                     const keyParts = wq.exercise_key?.split('-') || []
                     let questionIdFromKey = ''
-                    let chapterIdFromKey = wq.chapter_id || ''
 
                     if (sourceType === 'mastery' && keyParts.length >= 4) {
                       // mastery-{courseId}-{chapterId}-{questionId}
-                      chapterIdFromKey = keyParts[2]
                       questionIdFromKey = keyParts[3]
                     } else if (sourceType === 'arena' && keyParts.length >= 3) {
                       // arena-{courseId}-{questionId}
                       questionIdFromKey = keyParts[2]
-                    } else if (sourceType === 'enhanced' && keyParts.length >= 4) {
-                      // enhanced-{courseId}-{sessionId}-{questionId}
-                      questionIdFromKey = keyParts[3]
                     }
 
                     return (
@@ -524,8 +533,7 @@ function ReviewPageContent() {
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
                                 sourceType === 'arena' ? 'bg-purple-500/10 text-purple-500' :
-                                sourceType === 'mastery' ? 'bg-blue-500/10 text-blue-500' :
-                                'bg-muted text-muted-foreground'
+                                'bg-blue-500/10 text-blue-500'
                               }`}>
                                 {sourceLabel}
                               </span>
@@ -562,6 +570,7 @@ function ReviewPageContent() {
                               courseId={wq.course_id}
                               exerciseId={wq.exercise_id ?? undefined}
                               chapterId={wq.chapter_id ?? undefined}
+                              sectionId={wq.section_id ?? undefined}
                               exerciseContent={wq.exercise_content as { title?: string; text?: string; description?: string; options?: string[] } | undefined}
                               exerciseType={wq.exercise_type}
                               exerciseDifficulty={wq.exercise_difficulty}
@@ -572,8 +581,19 @@ function ReviewPageContent() {
                               }}
                             />
 
-                            {/* 复习按钮 */}
-                            <button
+                            {/* 按钮行 */}
+                            <div className="flex items-center gap-2">
+                              {/* 删除按钮 */}
+                              <button
+                                onClick={() => handleDeleteWrongQuestion(wq.id)}
+                                className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                title="删除"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+
+                              {/* 复习按钮 */}
+                              <button
                             onClick={async () => {
                               const token = localStorage.getItem('token')
                               // 根据来源类型跳转到不同页面
@@ -597,11 +617,13 @@ function ReviewPageContent() {
                                   router.push('/dashboard?tab=challenge')
                                 }
                               } else if (sourceType === 'mastery' && wq.course_id) {
-                                // 精进之路: 跳转到具体章节和题目（跳过知识点直接进入测试）
-                                // exercise 参数是 question_id，精进之路页面会找到对应的索引
-                                const chapterParam = chapterIdFromKey || wq.chapter_id || ''
+                                // 精进之路: 跳转到具体章节和题目
+                                // 直接用错题记录里的 chapter_id 和 section_id，不从 exercise_key 解析
+                                const chapterParam = wq.chapter_id || ''
                                 const questionParam = questionIdFromKey || ''
-                                router.push(`/mastery/${wq.course_id}?chapter=${chapterParam}&exercise=${questionParam}&skip=1`)
+                                const sectionParam = wq.section_id || ''
+                                // 跳转到具体题目，skip=1 表示跳过知识点选择
+                                router.push(`/mastery/${wq.course_id}?chapter=${chapterParam}&section=${sectionParam}&exercise=${questionParam}&skip=1`)
                               } else if (wq.course_id) {
                                 // 其他情况: 跳转到精进之路
                                 router.push(`/mastery/${wq.course_id}`)
@@ -611,6 +633,7 @@ function ReviewPageContent() {
                           >
                             复习
                           </button>
+                            </div>
                           </div>
                         </div>
                       </div>

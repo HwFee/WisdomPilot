@@ -18,10 +18,11 @@ import {
 } from "lucide-react";
 import { FavoriteButton } from "@/components/exercise/FavoriteButton";
 import { KnowledgeOrb } from "@/components/ui/knowledge-orb";
+import { CourseMasteryOverview } from "@/components/mastery/MasteryComponents";
 
 import {
   getMasteryOverview,
-  getChapterBaseQuestions,
+  getSectionBaseQuestions,
   submitBaseAnswers,
   generateEnhancedQuiz,
   submitEnhancedQuiz,
@@ -30,6 +31,8 @@ import {
   MASTERY_LEVEL_COLORS,
   startLearningSession,
   endLearningSession,
+  getCourseMastery,
+  type CourseMasteryResponse,
 } from "@/lib/api";
 import { endLearningSessionKeepalive } from "@/lib/api/stats";
 import {
@@ -82,11 +85,15 @@ export default function MasteryPathPage() {
     null,
   );
 
+  // BKT Course Mastery state
+  const [courseMastery, setCourseMastery] = useState<CourseMasteryResponse | null>(null);
+
   // Chapter selection state
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(
     null,
   );
   const [selectedChapterTitle, setSelectedChapterTitle] = useState<string>("");
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null); // 当前学习的小节
   const [step, setStep] = useState<MasteryStep>("select_chapter");
 
   // Base quiz state
@@ -131,13 +138,13 @@ export default function MasteryPathPage() {
   const [finalResult, setFinalResult] =
     useState<EnhancedQuizSubmitResponse | null>(null);
 
-  // Track whether the jump from wrong question book has been handled
-  const jumpHandledRef = useRef(false);
+  // Track learning session state
   const sessionStartedAtRef = useRef<number | null>(null);
   const activeSessionChapterIdRef = useRef<number | null>(null);
   const isEndingSessionRef = useRef(false);
   const sessionInitializedRef = useRef(false); // 防止 StrictMode 重复初始化
   const sessionEndedRef = useRef(false); // 防止 StrictMode 重复结束
+  const currentSectionIdRef = useRef<number | null>(null); // 保存当前 sectionId，避免 state 丢失
 
   const fetchOverview = useCallback(async () => {
     const token = getStoredToken();
@@ -148,8 +155,13 @@ export default function MasteryPathPage() {
     }
 
     try {
-      const data = await getMasteryOverview(courseId, token);
+      // 并行获取 overview 和 course mastery
+      const [data, masteryData] = await Promise.all([
+        getMasteryOverview(courseId, token),
+        getCourseMastery(courseId, token).catch(() => null),
+      ]);
       setOverview(data);
+      setCourseMastery(masteryData);
     } catch (error) {
       console.error("Failed to fetch mastery overview:", error);
     } finally {
@@ -161,29 +173,47 @@ export default function MasteryPathPage() {
     fetchOverview();
   }, [fetchOverview]);
 
-  // Handle query params for jump from wrong question book
+  // Handle query params for jump from wrong question book or section learning
   useEffect(() => {
-    // Only handle jump once — prevent re-triggering after exit
-    if (jumpHandledRef.current) return;
-
     const chapterParam = searchParams.get("chapter");
+    const sectionParam = searchParams.get("section");
     const exerciseParam = searchParams.get("exercise");
 
-    if (chapterParam && overview?.chapters) {
-      const chapterId = parseInt(chapterParam);
-      const chapter = overview.chapters.find((c) => c.chapter_id === chapterId);
+    console.log("[精进之路-DEBUG] useEffect 触发, URL参数:", { chapterParam, sectionParam, exerciseParam, overviewLoaded: !!overview?.chapters });
 
-      if (chapter) {
-        // Mark as handled so it won't re-trigger after exit
-        jumpHandledRef.current = true;
-
-        // exerciseParam 是 question_id，需要在获取题目列表后找到对应索引
-        const targetQuestionId = exerciseParam ? parseInt(exerciseParam) : 0;
-
-        // Directly start quiz at the target question
-        startQuizAtQuestion(chapterId, targetQuestionId);
-      }
+    // 如果没有必要的参数，不处理
+    if (!chapterParam) {
+      console.log("[精进之路-DEBUG] 没有 chapter 参数，跳过");
+      return;
     }
+
+    if (!overview?.chapters) {
+      console.log("[精进之路-DEBUG] overview 未加载，跳过");
+      return;
+    }
+
+    const chapterId = parseInt(chapterParam);
+    const chapter = overview.chapters.find((c) => c.chapter_id === chapterId);
+
+    console.log("[精进之路-DEBUG] 找到章节:", { chapterId, found: !!chapter, chapterTitle: chapter?.title });
+
+    if (!chapter) {
+      console.log("[精进之路-DEBUG] 未找到章节，跳过");
+      return;
+    }
+
+    // 保存 section_id（如果有）
+    const sectionId = sectionParam ? parseInt(sectionParam) : null;
+    console.log("[精进之路-DEBUG] 解析 sectionId:", sectionId);
+
+    // 跳转到具体题目
+    // exerciseParam 是 question_id，需要在获取题目列表后找到对应索引
+    const targetQuestionId = exerciseParam ? parseInt(exerciseParam) : 0;
+
+    // Directly start quiz at the target question
+    console.log("[精进之路-DEBUG] 调用 startQuizAtQuestion:", { chapterId, targetQuestionId, sectionId });
+    startQuizAtQuestion(chapterId, targetQuestionId, sectionId || undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, overview]);
 
   const startTrackedSession = useCallback(async (chapterId: number) => {
@@ -197,9 +227,9 @@ export default function MasteryPathPage() {
     // 检查是否有从其他页面转移过来的会话
     const continueSession = searchParams.get("continueSession") === "1";
     if (continueSession) {
-      const savedSession = localStorage.getItem('masterySession');
-      if (savedSession) {
-        try {
+      try {
+        const savedSession = localStorage.getItem('masterySession');
+        if (savedSession) {
           const sessionData = JSON.parse(savedSession);
           console.log("[精进之路-学习时长] 检测到继续会话，从 localStorage 恢复:", sessionData);
           activeSessionChapterIdRef.current = sessionData.chapterId;
@@ -210,9 +240,9 @@ export default function MasteryPathPage() {
           localStorage.removeItem('masterySession');
           console.log("[精进之路-学习时长] 会话已恢复，开始时间:", new Date(sessionData.startedAt).toLocaleString());
           return;
-        } catch (e) {
-          console.error("[精进之路-学习时长] 解析会话数据失败:", e);
         }
+      } catch (e) {
+        console.error("[精进之路-学习时长] 解析会话数据失败:", e);
       }
     }
 
@@ -313,12 +343,22 @@ export default function MasteryPathPage() {
   const startQuizAtQuestion = async (
     chapterId: number,
     targetQuestionId: number = 0,
+    sectionId?: number,
   ) => {
     const token = getStoredToken();
     if (!token) return;
 
+    // 必须有 sectionId 才能获取题目
+    if (!sectionId) {
+      console.error("[精进之路] startQuizAtQuestion: sectionId is required");
+      alert("请先选择小节");
+      return;
+    }
+
     await startTrackedSession(chapterId);
     setSelectedChapterId(chapterId);
+    setSelectedSectionId(sectionId);
+    currentSectionIdRef.current = sectionId; // 保存到 ref，避免 state 丢失
 
     // Set chapter title from overview
     const chapter = overview?.chapters?.find(c => c.chapter_id === chapterId);
@@ -329,14 +369,21 @@ export default function MasteryPathPage() {
     setBaseQuestionLoading(true);
 
     try {
-      // 并行获取题目和进度
-      const [data, progressData] = await Promise.all([
-        getChapterBaseQuestions(courseId, chapterId, token),
-        getMasteryChapterDetailProgress(courseId, chapterId, token).catch(
-          () => null,
-        ),
-      ]);
+      // 获取小节题目
+      console.log(`[精进之路-DEBUG] 请求 sectionId=${sectionId} 的题目`);
+      const data = await getSectionBaseQuestions(sectionId, token);
+      console.log(`[精进之路-DEBUG] 收到题目数据: section_id=${data.section_id}, section_title=${data.section_title}, 题目数量=${data.questions.length}`);
+      if (data.questions.length > 0) {
+        console.log(`[精进之路-DEBUG] 第一题: id=${data.questions[0].id}, text=${data.questions[0].text?.substring(0, 50)}...`);
+      }
       setBaseQuestions(data.questions);
+
+      // 获取章节进度（用于恢复答案状态）
+      const progressData = await getMasteryChapterDetailProgress(
+        courseId,
+        chapterId,
+        token
+      ).catch(() => null);
 
       // 构建进度映射并恢复答案和完成状态
       const restoredAnswers = new Map<number, string>();
@@ -383,6 +430,7 @@ export default function MasteryPathPage() {
         }
 
         setBaseResult({
+          section_id: selectedSectionId ?? 0,
           total_questions: data.questions.length,
           correct_answers: correctCount,
           accuracy: correctCount / data.questions.length,
@@ -470,12 +518,16 @@ export default function MasteryPathPage() {
     if (!token) return;
 
     // Store chapter info for section page
-    localStorage.setItem('current_chapter_info', JSON.stringify({
-      id: chapterId,
-      title: chapterTitle,
-      course_id: courseId,
-      course_name: overview?.chapters[0]?.title || ''
-    }));
+    try {
+      localStorage.setItem('current_chapter_info', JSON.stringify({
+        id: chapterId,
+        title: chapterTitle,
+        course_id: courseId,
+        course_name: overview?.chapters[0]?.title || ''
+      }));
+    } catch (e) {
+      console.warn('Failed to save chapter info to localStorage:', e);
+    }
 
     // Navigate to section selection page
     router.push(`/mastery/${courseId}/chapter/${chapterId}`);
@@ -485,21 +537,21 @@ export default function MasteryPathPage() {
   // targetQuestionId: 目标题目的 question_id，如果为 0 则从头开始或恢复进度
   const handleStartBaseQuiz = async (targetQuestionId: number = 0) => {
     const token = getStoredToken();
-    if (!token || !selectedChapterId) return;
+    if (!token || !selectedSectionId) return;
 
     setBaseQuestionLoading(true);
 
     try {
-      // 并行获取题目和进度
-      const [data, progressData] = await Promise.all([
-        getChapterBaseQuestions(courseId, selectedChapterId, token),
-        getMasteryChapterDetailProgress(
-          courseId,
-          selectedChapterId,
-          token,
-        ).catch(() => null),
-      ]);
+      // 获取小节题目
+      const data = await getSectionBaseQuestions(selectedSectionId, token);
       setBaseQuestions(data.questions);
+
+      // 获取章节进度（用于恢复答案状态）
+      const progressData = selectedChapterId ? await getMasteryChapterDetailProgress(
+        courseId,
+        selectedChapterId,
+        token,
+      ).catch(() => null) : null;
 
       // 构建进度映射
       const progressMap = new Map<number, MasteryExerciseProgressItem>();
@@ -554,6 +606,7 @@ export default function MasteryPathPage() {
         }
 
         setBaseResult({
+          section_id: selectedSectionId ?? 0,
           total_questions: data.questions.length,
           correct_answers: correctCount,
           accuracy: correctCount / data.questions.length,
@@ -674,10 +727,12 @@ export default function MasteryPathPage() {
     if (token && selectedChapterId) {
       try {
         const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`;
+        const sectionIdToSave = selectedSectionId ?? currentSectionIdRef.current ?? undefined;
         await saveMasteryExerciseProgress(
           {
             course_id: courseId,
             chapter_id: selectedChapterId,
+            section_id: sectionIdToSave,
             question_id: currentQuestion.id,
             question_type: "base",
             exercise_key: exerciseKey,
@@ -689,7 +744,7 @@ export default function MasteryPathPage() {
           },
           token,
         );
-        console.log("[精进之路] 进度保存成功");
+        console.log("[精进之路] 进度保存成功, sectionId:", sectionIdToSave);
       } catch (error) {
         console.error("[精进之路] 进度保存失败:", error);
       }
@@ -697,7 +752,7 @@ export default function MasteryPathPage() {
 
     // Collect wrong question if incorrect
     if (!correct) {
-      if (token && selectedChapterId) {
+      if (token && selectedChapterId && selectedSectionId) {
         try {
           // Use question ID as exercise_key
           const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`;
@@ -706,6 +761,7 @@ export default function MasteryPathPage() {
             user_answer: answer,
             course_id: courseId,
             chapter_id: selectedChapterId,
+            section_id: selectedSectionId,
             exercise_content: {
               text: currentQuestion.text,
               options: currentQuestion.options,
@@ -746,7 +802,10 @@ export default function MasteryPathPage() {
   // Submit all base answers and get analysis
   const handleSubmitAllBaseAnswers = async () => {
     const token = getStoredToken();
-    if (!token || !selectedChapterId) return;
+    if (!token || !selectedChapterId || !selectedSectionId) {
+      console.error("[精进之路] handleSubmitAllBaseAnswers: 缺少必要参数", { selectedChapterId, selectedSectionId });
+      return;
+    }
 
     setBaseQuestionLoading(true);
 
@@ -762,7 +821,7 @@ export default function MasteryPathPage() {
       const result = await submitBaseAnswers(
         courseId,
         selectedChapterId,
-        { answers: answersArray },
+        { section_id: selectedSectionId, answers: answersArray },
         token,
       );
       setBaseResult(result);
@@ -803,8 +862,12 @@ export default function MasteryPathPage() {
   // Generate enhanced quiz based on weak points
   const handleStartEnhancedQuiz = async () => {
     const token = getStoredToken();
-    if (!token || !selectedChapterId) return;
+    if (!token || !selectedChapterId || !selectedSectionId) {
+      console.error("[精进之路] handleStartEnhancedQuiz: 缺少必要参数", { selectedChapterId, selectedSectionId });
+      return;
+    }
 
+    currentSectionIdRef.current = selectedSectionId; // 保存到 ref，避免 state 丢失
     setEnhancedLoading(true);
 
     try {
@@ -812,11 +875,12 @@ export default function MasteryPathPage() {
         courseId,
         {
           course_id: courseId,
+          section_id: selectedSectionId,
           chapter_id: selectedChapterId,
           weak_points: baseResult?.weak_points || [],
           strong_points: baseResult?.strong_points || [],
           question_count: 3,
-          question_types: ["choice"],
+          question_types: ["choice", "fill_blank"],
         },
         token,
       );
@@ -833,6 +897,7 @@ export default function MasteryPathPage() {
         setFinalResult({
           success: true,
           session_id: "",
+          section_id: selectedSectionId,
           total_questions: baseResult?.total_questions || 0,
           correct_answers: baseResult?.correct_answers || 0,
           accuracy: baseResult?.accuracy || 0,
@@ -879,16 +944,21 @@ export default function MasteryPathPage() {
 
     // Save progress to backend (跟基础题一样的逻辑)
     const token = getStoredToken();
-    if (token && selectedChapterId) {
+    // 使用 ref 作为后备，避免 state 丢失导致 section_id 为空
+    const sectionIdToSave = selectedSectionId ?? currentSectionIdRef.current ?? undefined;
+    if (token && selectedChapterId && sectionIdToSave) {
       const questionId = parseInt(currentQuestion.id, 10);
+      // 统一使用 mastery- 前缀，方便与收藏去重匹配
       const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${questionId}`;
 
       try {
         // 保存进度到 MasteryExerciseProgress 表
+        console.log("[精进之路-强化题] 保存进度, sectionId:", sectionIdToSave);
         await saveMasteryExerciseProgress(
           {
             course_id: courseId,
             chapter_id: selectedChapterId,
+            section_id: sectionIdToSave,
             question_id: questionId,
             question_type: "enhanced",
             exercise_key: exerciseKey,
@@ -913,6 +983,7 @@ export default function MasteryPathPage() {
             user_answer: answer,
             course_id: courseId,
             chapter_id: selectedChapterId,
+            section_id: selectedSectionId,
             exercise_id: questionId,
             exercise_content: {
               text: currentQuestion.text,
@@ -944,7 +1015,7 @@ export default function MasteryPathPage() {
   // Submit all enhanced answers
   const handleSubmitAllEnhancedAnswers = async () => {
     const token = getStoredToken();
-    if (!token) return;
+    if (!token || !selectedSectionId) return;
 
     setEnhancedLoading(true);
 
@@ -960,6 +1031,7 @@ export default function MasteryPathPage() {
         courseId,
         {
           session_id: enhancedSessionId,
+          section_id: selectedSectionId,
           answers: answersArray,
         },
         token,
@@ -1005,6 +1077,7 @@ export default function MasteryPathPage() {
     await endTrackedSession();
     setStep("select_chapter");
     setSelectedChapterId(null);
+    setSelectedSectionId(null); // 清除小节状态
     setBaseQuestions([]);
     setBaseAnswers(new Map());
     setCompletedQuestionsMap(new Map());
@@ -1019,7 +1092,7 @@ export default function MasteryPathPage() {
 
     if (fromSection && chapterParam) {
       // Came from section learning page, return to the section learning page
-      router.replace(`/mastery/${courseId}/section/${fromSection}`, { scroll: false });
+      router.replace(`/mastery/${courseId}/chapter/${chapterParam}/section/${fromSection}`, { scroll: false });
     } else if (searchParams.get("chapter") || searchParams.get("exercise") || searchParams.get("skip")) {
       // Came from wrong question book or favorites, return to chapter selection
       router.replace(`/mastery/${courseId}`, { scroll: false });
@@ -1028,8 +1101,8 @@ export default function MasteryPathPage() {
     fetchOverview();
   };
 
-  // Loading state
-  if (loading) {
+  // Loading state - only show for select_chapter step
+  if (loading && step === "select_chapter") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -1858,8 +1931,28 @@ export default function MasteryPathPage() {
 
       <main className="pt-20 pb-12 px-4">
         <div className="max-w-4xl mx-auto">
-          {/* Progress Overview */}
-          {overview && (
+          {/* BKT Course Mastery Overview */}
+          {courseMastery && (
+            <div className="mb-8">
+              <CourseMasteryOverview
+                courseName={overview?.chapters?.[0]?.title || `课程 ${courseId}`}
+                masteryScore={courseMastery.mastery_score}
+                progressPercentage={courseMastery.progress_percentage}
+                chaptersCount={courseMastery.chapters_count}
+                completedChaptersCount={courseMastery.completed_chapters}
+                chapters={courseMastery.chapters}
+                onChapterClick={(chapterId) => {
+                  const chapter = overview?.chapters?.find(c => c.chapter_id === chapterId);
+                  if (chapter) {
+                    handleSelectChapter(chapterId, chapter.title);
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* Legacy Progress Overview (fallback when BKT data not available) */}
+          {!courseMastery && overview && (
             <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-2xl border border-amber-500/20 p-6 mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -1873,7 +1966,7 @@ export default function MasteryPathPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-amber-500">
-                    {overview.total_mastery_score?.toFixed(0) ?? 0}
+                    {overview.total_mastery_points?.toFixed(0) ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground">掌握分数</p>
                 </div>
@@ -1955,9 +2048,9 @@ export default function MasteryPathPage() {
                     </div>
 
                     {/* Progress bar */}
-                    <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="mt-3 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-amber-500 rounded-full transition-all"
+                        className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
                         style={{ width: `${masteryPercent}%` }}
                       />
                     </div>

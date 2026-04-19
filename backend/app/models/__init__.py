@@ -18,13 +18,17 @@ from app.models.chapter_mastery import ChapterMastery
 from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
 from app.models.wrong_question import WrongQuestion
-from app.models.chapter_base_question import ChapterBaseQuestion
+from app.models.section_base_question import SectionBaseQuestion, ChapterBaseQuestion
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.mastery_exercise_progress import MasteryExerciseProgress
 from app.models.section import Section
 from app.models.section_progress import SectionProgress
 from app.models.core_transaction import CoreTransaction
 from app.models.ai_hint_cache import AIHintCache
+from app.models.knowledge_point_mastery import KnowledgePointMastery
+from app.models.answer_history import AnswerHistory
+from app.models.section_mastery import SectionMastery
+from app.models.course_mastery import CourseMastery
 
 __all__ = [
     # User & Auth
@@ -61,7 +65,8 @@ __all__ = [
     "UserArenaProfile",
     # Wrong Questions System
     "WrongQuestion",
-    # Chapter Base Questions
+    # Section Base Questions
+    "SectionBaseQuestion",
     "ChapterBaseQuestion",
     # Arena Progress
     "ArenaExerciseProgress",
@@ -75,4 +80,9 @@ __all__ = [
     "CoreTransaction",
     # AI Hint Cache
     "AIHintCache",
+    # BKT Mastery System
+    "KnowledgePointMastery",
+    "AnswerHistory",
+    "SectionMastery",
+    "CourseMastery",
 ]

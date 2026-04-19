@@ -229,8 +229,8 @@ export {
   getChapterKnowledgeContent,
   generateMasteryQuiz,
   submitMasteryQuiz,
-  // Chapter Base Question APIs
-  getChapterBaseQuestions,
+  // Section Base Question APIs
+  getSectionBaseQuestions,
   submitBaseAnswers,
   generateEnhancedQuiz,
   submitEnhancedQuiz,
@@ -250,6 +250,14 @@ export {
   switchChallengeExercise,
   appendChallengeExercises,
   getChallengeExercise,
+  // BKT Mastery APIs
+  getSectionMastery,
+  getCourseMastery,
+  // Types
+  type KnowledgePointMastery,
+  type SectionMasteryResponse,
+  type ChapterMasterySummary,
+  type CourseMasteryResponse,
   // Constants
   TIER_THRESHOLDS,
   TIER_ICONS,

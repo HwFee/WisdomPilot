@@ -537,6 +537,7 @@ class ChallengePathService:
                     "exercise_index": progress.exercise_index,
                     "exercise_title": exercise_title,
                     "is_correct": all_passed,
+                    "difficulty": exercise.difficulty,
                 },
             )
             self.db.add(activity)

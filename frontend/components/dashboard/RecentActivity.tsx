@@ -19,6 +19,12 @@ interface Activity {
     is_correct?: boolean;
     learning_path?: "mastery" | "challenge" | string;
     learning_path_label?: string;
+    // 精进之路/挑战之路共用字段
+    section_id?: number;
+    section_title?: string;
+    order_index?: number;
+    difficulty?: number;
+    exercise_index?: number;
   };
 }
 
@@ -49,7 +55,8 @@ export function RecentActivity({
     if (learningPath === "challenge") {
       return t("挑战之路", "Challenge");
     }
-    return null;
+    // 默认统一显示为练习题
+    return t("练习题", "Exercise");
   };
 
   const getLearningPathBadgeClass = (activity: Activity) => {
@@ -60,7 +67,8 @@ export function RecentActivity({
     if (learningPath === "challenge") {
       return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
     }
-    return "bg-muted text-muted-foreground";
+    // 默认统一练习题样式
+    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
   };
 
   const getActivityIcon = (activity: Activity) => {
@@ -92,33 +100,61 @@ export function RecentActivity({
     }
   };
 
-  // 获取活动显示文本 - 对于练习完成，显示"练习 xxx 正确/错误"
+  // 获取活动显示文本 - 对于练习完成，显示丰富信息
   const getActivityText = (activity: Activity) => {
     const type = activity.type || activity.activity_type;
+    const details = activity.details;
 
-    if (type === "exercise_complete") {
-      const details = activity.details;
-      // 优先显示具体练习题名称，其次显示关卡名称
-      const exerciseName =
-        details?.exercise_title || details?.stage_name || "练习";
+    if (type === "exercise_complete" && details) {
+      const learningPath = details.learning_path;
 
-      if (details?.is_correct === true) {
+      // 精进之路：练习题X + 小节信息 + 正确/错误
+      if (learningPath === "mastery") {
+        const exerciseTitle = details.exercise_title || "练习题";
+        // 组合章节和小节信息
+        const sectionInfo = details.chapter_title || details.section_title
+          ? `(${[details.chapter_title, details.section_title].filter(Boolean).join('-')})`
+          : "";
+        const isCorrect = details.is_correct;
+
         return (
           <>
-            <span className="text-foreground">{exerciseName}</span>
-            <span className="text-emerald-500 ml-1">
-              {t("正确", "Correct")}
-            </span>
-          </>
-        );
-      } else if (details?.is_correct === false) {
-        return (
-          <>
-            <span className="text-foreground">{exerciseName}</span>
-            <span className="text-red-500 ml-1">{t("错误", "Wrong")}</span>
+            <span className="text-foreground">{exerciseTitle}{sectionInfo}</span>
+            {isCorrect === true && <span className="text-emerald-500 ml-1">{t("正确", "Correct")}</span>}
+            {isCorrect === false && <span className="text-red-500 ml-1">{t("错误", "Wrong")}</span>}
           </>
         );
       }
+
+      // 挑战之路：难度X + 题目名称 + 正确/错误
+      if (learningPath === "challenge") {
+        const difficulty = details.difficulty;
+        const exerciseTitle = details.exercise_title;
+        const sectionInfo = details.section_title ? `(${details.section_title})` : "";
+        const isCorrect = details.is_correct;
+
+        return (
+          <>
+            <span className="text-foreground">
+              {difficulty ? `难度 ${difficulty}` : "挑战题目"}
+              {exerciseTitle && ` ${exerciseTitle}`}
+              {sectionInfo}
+            </span>
+            {isCorrect === true && <span className="text-emerald-500 ml-1">{t("正确", "Correct")}</span>}
+            {isCorrect === false && <span className="text-red-500 ml-1">{t("错误", "Wrong")}</span>}
+          </>
+        );
+      }
+
+      // 默认显示
+      const exerciseName = details.exercise_title || details.stage_name || "练习";
+      return (
+        <>
+          <span className="text-foreground">{exerciseName}</span>
+          {details.is_correct === true && <span className="text-emerald-500 ml-1">✓</span>}
+          {details.is_correct === false && <span className="text-red-500 ml-1">✗</span>}
+        </>
+      );
     }
 
     return activity.description;

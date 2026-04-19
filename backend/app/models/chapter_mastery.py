@@ -51,6 +51,23 @@ class ChapterMastery(Base):
     correct_exercises: Mapped[int] = mapped_column(Integer, default=0)
     consecutive_correct: Mapped[int] = mapped_column(Integer, default=0)
 
+    # BKT 相关字段
+    bkt_aggregated_p_l: Mapped[float] = mapped_column(
+        Float,
+        default=0.15,
+        comment="BKT聚合掌握概率（章节内知识点平均值）"
+    )
+    knowledge_points_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        comment="章节涉及的知识点总数"
+    )
+    mastered_points_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        comment="已掌握知识点数（P(L)>=0.95）"
+    )
+
     # Learning objectives status: {"objective1": true, "objective2": false, ...}
     objectives_status: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 

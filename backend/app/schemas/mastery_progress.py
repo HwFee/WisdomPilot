@@ -9,6 +9,7 @@ class MasteryExerciseProgressSaveRequest(BaseModel):
     """保存精进之路做题进度"""
     course_id: int
     chapter_id: int
+    section_id: Optional[int] = Field(default=None, description="小节ID，用于小节级掌握度聚合")
     question_id: int
     question_type: str = Field(default="base", description="base=基础测试, enhanced=强化测试")
     exercise_key: Optional[str] = Field(default=None, description="错题本关联key")
@@ -19,11 +20,23 @@ class MasteryExerciseProgressSaveRequest(BaseModel):
     attempt_count: int = Field(default=1, description="尝试次数")
 
 
+class BKTDebugInfo(BaseModel):
+    """BKT 调试信息"""
+    section_id: Optional[int] = None
+    knowledge_points: List[str] = []
+    counted_for_mastery: bool = False
+    not_counted_reason: Optional[str] = None
+    mastery_changes: List[dict] = []  # [{knowledge_point, p_l_before, p_l_after}]
+    section_mastery: float = 0.0
+    chapter_mastery: float = 0.0
+
+
 class MasteryExerciseProgressResponse(BaseModel):
     """精进之路做题进度响应"""
     success: bool
     progress_id: Optional[str] = None
     message: str = ""
+    bkt_debug: Optional[BKTDebugInfo] = None
 
 
 class MasteryChapterProgressResponse(BaseModel):

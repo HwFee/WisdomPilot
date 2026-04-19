@@ -29,18 +29,15 @@ class WrongQuestionService:
     def _extract_base_exercise_key(self, exercise_key: str) -> str:
         """从 exercise_key 中提取基础标识用于去重
 
-        exercise_key 格式 (新格式):
-        - 精进之路: mastery-${courseId}-${chapterId}-${exerciseId}
-        - 强化测试: enhanced-${courseId}-${sessionId}-${exerciseId}
-        - 挑战之路: arena-${courseId}-${exerciseId}  (新格式，已去掉sessionId)
-
-        exercise_key 格式 (旧格式，兼容):
-        - 挑战之路: arena-${sessionId}-${exerciseId}
+        exercise_key 格式:
+        - 精进之路基础题: mastery-${courseId}-${chapterId}-${questionId}
+        - 强化测试题: enhanced-${courseId}-${sectionId}-${questionId}
+        - 挑战之路: arena-${courseId}-${exerciseId}
 
         去重逻辑: 同一道题无论在哪个会话中，都应该合并记录
-        - 精进之路: 使用完整 key (包含章节信息)
+        - 精进之路基础题: 使用完整 key (包含章节信息)
+        - 强化测试题: 使用完整 key (包含小节信息)
         - 挑战之路: 只使用 courseId 和 exerciseId (去掉 sessionId)
-        - 强化测试: 只使用 courseId 和 exerciseId
         """
         parts = exercise_key.split('-')
         if len(parts) < 3:
@@ -48,21 +45,16 @@ class WrongQuestionService:
 
         prefix = parts[0]
         if prefix == 'arena':
-            # 新格式: arena-${courseId}-${exerciseId} -> 保持不变
-            # 旧格式: arena-${sessionId}-${exerciseId} -> arena-${exerciseId}
+            # arena-${courseId}-${exerciseId} -> 保持不变
             if len(parts) == 3:
-                # 新格式，已经是去重后的格式
                 return exercise_key
             else:
-                # 旧格式，需要去掉 sessionId
+                # 旧格式兼容: arena-${sessionId}-${exerciseId} -> arena-${exerciseId}
                 exercise_id = parts[-1]
                 return f"arena-{exercise_id}"
         elif prefix == 'enhanced':
-            # enhanced-${courseId}-${sessionId}-${exerciseId} -> enhanced-${courseId}-${exerciseId}
-            if len(parts) >= 4:
-                course_id = parts[1]
-                exercise_id = parts[-1]
-                return f"enhanced-{course_id}-{exercise_id}"
+            # enhanced-${courseId}-${sectionId}-${questionId} -> 保持不变
+            # 这样同一小节的同一道强化题会被合并
             return exercise_key
         else:
             # mastery 或其他格式保持不变
@@ -76,6 +68,7 @@ class WrongQuestionService:
         user_answer: Any,
         course_id: int,
         chapter_id: Optional[int] = None,
+        section_id: Optional[int] = None,
         exercise_content: Optional[dict] = None,
         exercise_type: str = "choice",
         knowledge_points: Optional[List[str]] = None,
@@ -92,6 +85,7 @@ class WrongQuestionService:
             user_answer: 用户答案
             course_id: 课程ID
             chapter_id: 章节ID
+            section_id: 小节ID（强化测试来源）
             exercise_content: 题目内容快照
             exercise_type: 题目类型
             knowledge_points: 知识点列表
@@ -133,6 +127,7 @@ class WrongQuestionService:
                 exercise_key=base_key,  # 存储去重后的 key
                 course_id=course_id,
                 chapter_id=chapter_id,
+                section_id=section_id,
                 knowledge_points=knowledge_points or [],
                 user_answer=user_answer,
                 correct_answer={},  # 前端硬编码习题没有标准答案存储
@@ -576,6 +571,39 @@ class WrongQuestionService:
 
         result = await db.execute(query)
         return result.scalar() or 0
+
+
+    async def delete_wrong_question(
+        self,
+        db: AsyncSession,
+        wrong_question_id: str,
+        user_id: str,
+    ) -> bool:
+        """删除错题记录
+
+        Args:
+            db: 数据库会话
+            wrong_question_id: 错题ID
+            user_id: 用户ID（用于权限验证）
+
+        Returns:
+            bool: 是否删除成功
+        """
+        result = await db.execute(
+            select(WrongQuestion).where(
+                and_(
+                    WrongQuestion.id == wrong_question_id,
+                    WrongQuestion.user_id == user_id,
+                )
+            )
+        )
+        wrong_question = result.scalar_one_or_none()
+
+        if wrong_question:
+            await db.delete(wrong_question)
+            await db.flush()
+            return True
+        return False
 
 
 wrong_question_service = WrongQuestionService()

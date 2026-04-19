@@ -15,6 +15,7 @@ export interface SectionSummary {
   order_index: number
   estimated_minutes: number
   is_completed: boolean
+  mastery_score?: number  // BKT 聚合掌握度 0-100
 }
 
 export interface SectionDetail {

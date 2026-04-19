@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, CheckCircle, Play, BookOpen, Loader2 } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Play, BookOpen, Loader2, Target } from 'lucide-react'
 import { getChapterSections, type SectionSummary } from '@/lib/api/sections'
 import { getStoredToken } from '@/lib/api'
+import { MasteryProgressBar } from '@/components/mastery/MasteryComponents'
 
 interface ChapterInfo {
   id: number
@@ -40,6 +41,12 @@ export default function ChapterSectionsPage() {
       const response = await getChapterSections(chapterId, token)
       setSections(response.sections)
 
+      // 调试日志：显示小节掌握度数据
+      console.log("[小节选择] 加载小节列表:", response.sections.length, "个")
+      response.sections.forEach((s, i) => {
+        console.log(`[小节选择] 小节 ${i + 1}: id=${s.id}, title=${s.title}, mastery_score=${s.mastery_score ?? '无数据'}`)
+      })
+
       // 从第一个section获取章节信息（如果有的话）
       // 或者调用单独的API获取章节信息
       // 这里暂时从localStorage获取
@@ -55,8 +62,8 @@ export default function ChapterSectionsPage() {
   }
 
   const handleSelectSection = (section: SectionSummary) => {
-    // 跳转到小节学习页面
-    router.push(`/mastery/${courseId}/section/${section.id}`)
+    // 跳转到小节学习页面（带章节信息）
+    router.push(`/mastery/${courseId}/chapter/${chapterId}/section/${section.id}`)
   }
 
   const handleBack = () => {
@@ -123,9 +130,9 @@ export default function ChapterSectionsPage() {
               {completedCount} / {sections.length} 小节已完成
             </span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-300"
+              className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -180,6 +187,15 @@ export default function ChapterSectionsPage() {
                         已完成
                       </span>
                     )}
+                  </div>
+
+                  {/* Mastery Progress Bar - 始终显示 */}
+                  <div className="mt-3">
+                    <MasteryProgressBar
+                      score={section.mastery_score ?? 0}
+                      size="sm"
+                      showLabel={true}
+                    />
                   </div>
                 </div>
               </div>

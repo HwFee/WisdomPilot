@@ -390,7 +390,7 @@ class TestEnhancedQuizGeneration:
     @pytest.mark.asyncio
     async def test_generate_enhanced_quiz_uses_minimax(self):
         """Enhanced quiz generation uses MiniMax when configured"""
-        from app.services.chapter_base_question import ChapterBaseQuestionService
+        from app.services.section_base_question import SectionBaseQuestionService
         from app.models.chapter import Chapter
 
         # Create mock chapter
@@ -403,7 +403,7 @@ class TestEnhancedQuizGeneration:
         )
 
         # Create service instance
-        service = ChapterBaseQuestionService()
+        service = SectionBaseQuestionService()
 
         # Mock MiniMax response with valid JSON
         mock_response = '''```json
@@ -442,7 +442,7 @@ class TestEnhancedQuizGeneration:
     @pytest.mark.asyncio
     async def test_generate_enhanced_quiz_fallback_to_main_provider(self):
         """Enhanced quiz generation falls back to main provider when MiniMax not configured"""
-        from app.services.chapter_base_question import ChapterBaseQuestionService
+        from app.services.section_base_question import SectionBaseQuestionService
         from app.models.chapter import Chapter
 
         chapter = Chapter(
@@ -453,7 +453,7 @@ class TestEnhancedQuizGeneration:
             order_index=1,
         )
 
-        service = ChapterBaseQuestionService()
+        service = SectionBaseQuestionService()
 
         mock_response = '''[
           {
@@ -486,7 +486,7 @@ class TestEnhancedQuizGeneration:
     @pytest.mark.asyncio
     async def test_generate_enhanced_quiz_no_provider(self):
         """Enhanced quiz generation returns empty when no provider configured"""
-        from app.services.chapter_base_question import ChapterBaseQuestionService
+        from app.services.section_base_question import SectionBaseQuestionService
         from app.models.chapter import Chapter
 
         chapter = Chapter(
@@ -497,7 +497,7 @@ class TestEnhancedQuizGeneration:
             order_index=1,
         )
 
-        service = ChapterBaseQuestionService()
+        service = SectionBaseQuestionService()
 
         with patch.object(ai_service, 'is_minimax_configured', return_value=False):
             with patch.object(ai_service, 'is_configured', return_value=False):

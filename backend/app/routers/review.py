@@ -450,6 +450,7 @@ async def collect_wrong_question(
             user_answer=request.user_answer,
             course_id=request.course_id,
             chapter_id=request.chapter_id,
+            section_id=request.section_id,
             exercise_content=request.exercise_content,
             exercise_type=request.exercise_type,
             knowledge_points=request.knowledge_points,
@@ -513,6 +514,50 @@ async def resolve_wrong_question(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"标记失败: {str(e)}",
+        )
+
+
+@router.delete("/wrong-questions/{wrong_question_id}")
+async def delete_wrong_question(
+    wrong_question_id: str,
+    db: db_dependency,
+    user: auth_dependency,
+):
+    """
+    Delete a wrong question record.
+
+    删除指定的错题记录。
+    """
+    logger.info(f"[API] 删除错题: user_id={user.id}, wrong_question_id={wrong_question_id}")
+
+    try:
+        deleted = await wrong_question_service.delete_wrong_question(
+            db=db,
+            wrong_question_id=wrong_question_id,
+            user_id=user.id,
+        )
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="错题记录不存在或无权删除"
+            )
+
+        await db.commit()
+
+        logger.info(f"[API] 错题已删除: wrong_question_id={wrong_question_id}")
+
+        return {
+            "success": True,
+            "message": "错题已删除",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[API] 删除错题失败: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"删除失败: {str(e)}",
         )
 
 

@@ -667,9 +667,10 @@ export interface DailyTimeTrendResponse {
 
 export interface FavoriteCreate {
   // 与错题本 CollectWrongQuestionRequest 一致
-  exercise_key: string  // 格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId}
+  exercise_key: string  // 格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId} 或 enhanced-{courseId}-{sectionId}-{exerciseId}
   course_id: number
   chapter_id?: number
+  section_id?: number
   exercise_id?: number
   exercise_content?: {
     title?: string
@@ -698,6 +699,7 @@ export interface FavoriteResponse {
   exercise_key?: string
   course_id: number
   chapter_id?: number
+  section_id?: number
   knowledge_points: string[]
   exercise_content?: {
     title?: string
@@ -831,12 +833,9 @@ export interface MasteryOverviewResponse {
   course_id: number
   total_chapters: number
   mastered_chapters: number
-  current_chapter: string | null
-  current_chapter_id: number | null
-  total_mastery_score: number
+  current_chapter: number | null
+  total_mastery_points: number
   avg_mastery: number
-  current_mastery_level: MasteryLevel
-  completed_chapters: number
   chapters: ChapterMasteryInfo[]
 }
 
@@ -1078,14 +1077,16 @@ export interface MasteryQuizSubmitResponse {
 }
 
 // ========================================
-// Chapter Base Question Types (章节基础测试题)
+// Section Base Question Types (小节基础测试题)
 // ========================================
 
 export interface BaseQuestionResponse {
   id: number
-  chapter_id: number
+  section_id: number
+  chapter_id?: number
   order_index: number
   type: 'choice' | 'programming' | 'fill_blank'
+  title?: string
   text: string
   options?: string[]
   correct_answer?: string
@@ -1099,8 +1100,9 @@ export interface BaseQuestionResponse {
 }
 
 export interface BaseQuestionListResponse {
+  section_id: number
+  section_title: string
   chapter_id: number
-  chapter_title: string
   total_questions: number
   questions: BaseQuestionResponse[]
 }
@@ -1112,6 +1114,7 @@ export interface BaseAnswerSubmit {
 }
 
 export interface BaseAnswersSubmitRequest {
+  section_id: number
   answers: BaseAnswerSubmit[]
 }
 
@@ -1125,6 +1128,7 @@ export interface BaseQuestionResult {
 }
 
 export interface BaseAnswersSubmitResponse {
+  section_id: number
   total_questions: number
   correct_answers: number
   accuracy: number
@@ -1135,6 +1139,7 @@ export interface BaseAnswersSubmitResponse {
 
 export interface EnhancedQuizGenerateRequest {
   course_id: number
+  section_id: number
   chapter_id: number
   weak_points?: string[]
   strong_points?: string[]
@@ -1165,12 +1170,14 @@ export interface EnhancedQuizGenerateResponse {
 
 export interface EnhancedQuizSubmitRequest {
   session_id: string
+  section_id: number
   answers: Array<{ question_id: string; answer: string }>
 }
 
 export interface EnhancedQuizSubmitResponse {
   success: boolean
   session_id: string
+  section_id: number
   total_questions: number
   correct_answers: number
   accuracy: number
@@ -1187,4 +1194,43 @@ export interface EnhancedQuizSubmitResponse {
   recommendations: string[]
   passed: boolean
   message: string
+}
+
+// ========================================
+// BKT Mastery Types (四层聚合掌握度)
+// ========================================
+
+export interface KnowledgePointMasteryStatus {
+  name: string
+  p_l: number          // BKT 掌握概率 0-1
+  is_mastered: boolean // P(L) >= 0.95
+  total_attempts: number
+  correct_attempts: number
+}
+
+export interface SectionMasteryResponse {
+  section_id: number
+  chapter_id: number
+  mastery_score: number          // 0-100 的掌握度分数
+  bkt_aggregated_p_l: number     // BKT 聚合 P(L)
+  knowledge_points_count: number
+  mastered_points_count: number
+  is_completed: boolean
+  knowledge_points: KnowledgePointMasteryStatus[]
+}
+
+export interface ChapterMasterySummary {
+  chapter_id: number
+  mastery_score: number
+  is_completed: boolean
+}
+
+export interface CourseMasteryResponse {
+  course_id: number
+  mastery_score: number
+  progress_percentage: number
+  chapters_count: number
+  completed_chapters: number
+  is_completed: boolean
+  chapters: ChapterMasterySummary[]
 }

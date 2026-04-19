@@ -11,7 +11,7 @@ import {
 import type { FavoriteCreate } from "@/types/api";
 
 interface FavoriteButtonProps {
-  /** 题目标识 (格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId}) */
+  /** 题目标识 (格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId} 或 enhanced-{courseId}-{sectionId}-{exerciseId}) */
   exerciseKey?: string;
   /** 课程ID */
   courseId: number;
@@ -19,6 +19,8 @@ interface FavoriteButtonProps {
   exerciseId?: number;
   /** 章节ID（精进之路来源） */
   chapterId?: number;
+  /** 小节ID（强化测试来源） */
+  sectionId?: number;
   /** 题目内容快照 */
   exerciseContent?: {
     title?: string;
@@ -47,6 +49,7 @@ export function FavoriteButton({
   courseId,
   exerciseId,
   chapterId,
+  sectionId,
   exerciseContent,
   exerciseType,
   exerciseDifficulty,
@@ -73,12 +76,16 @@ export function FavoriteButton({
       // 如果没有 exerciseKey 和 exerciseId，跳过检查
       if (!exerciseKey && !exerciseId) return;
 
+      console.log("[FavoriteButton] checkStatus called:", { exerciseKey, exerciseId, courseId });
+
       try {
         const result = await checkFavorite(token, exerciseKey, exerciseId);
+        console.log("[FavoriteButton] checkStatus result:", result);
         if (cancelled) return;
         setIsFavorited(result.is_favorited);
         setFavoriteId(result.favorite_id);
-      } catch {
+      } catch (error) {
+        console.error("[FavoriteButton] checkStatus error:", error);
         if (!cancelled) {
           setIsFavorited(false);
           setFavoriteId(null);
@@ -99,9 +106,18 @@ export function FavoriteButton({
     // 如果没有 exerciseKey 和 exerciseId，无法收藏
     if (!exerciseKey && !exerciseId) return;
 
+    console.log("[FavoriteButton] handleToggleFavorite:", {
+      isFavorited,
+      favoriteId,
+      exerciseKey,
+      exerciseId,
+      courseId,
+    });
+
     setIsLoading(true);
     try {
       if (isFavorited && favoriteId) {
+        console.log("[FavoriteButton] Removing favorite:", favoriteId);
         await removeFavorite(token, favoriteId);
         setIsFavorited(false);
         setFavoriteId(null);
@@ -113,18 +129,21 @@ export function FavoriteButton({
           course_id: courseId,
           exercise_id: exerciseId,
           chapter_id: chapterId,
+          section_id: sectionId,
           exercise_content: exerciseContent,
           exercise_type: exerciseType,
           exercise_difficulty: exerciseDifficulty,
           knowledge_points: knowledgePoints,
         };
+        console.log("[FavoriteButton] Adding favorite:", data);
         const response = await addFavorite(token, data);
+        console.log("[FavoriteButton] Add favorite response:", response);
         setIsFavorited(true);
         setFavoriteId(response.id);
         onFavoriteChange?.(true);
       }
-    } catch {
-      // 静默处理错误
+    } catch (error) {
+      console.error("[FavoriteButton] handleToggleFavorite error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +154,7 @@ export function FavoriteButton({
     courseId,
     exerciseId,
     chapterId,
+    sectionId,
     exerciseContent,
     exerciseType,
     exerciseDifficulty,

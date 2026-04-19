@@ -21,12 +21,11 @@ function getTypeLabel(type?: string): string {
   return TYPE_LABELS[type] || type
 }
 
-// 从 exercise_key 推断来源类型 - 与错题本一致
+// 从 exercise_key 推断来源类型 - 统一 mastery- 前缀
 function getSourceType(exerciseKey?: string): string {
   if (!exerciseKey) return 'unknown'
   if (exerciseKey.startsWith('mastery-')) return 'mastery'
   if (exerciseKey.startsWith('arena-')) return 'arena'
-  if (exerciseKey.startsWith('enhanced-')) return 'enhanced'
   return 'unknown'
 }
 
@@ -34,7 +33,6 @@ function getSourceType(exerciseKey?: string): string {
 const SOURCE_LABELS: Record<string, string> = {
   mastery: '精进之路',
   arena: '挑战之路',
-  enhanced: '强化测试',
   unknown: '未知来源',
 }
 
@@ -276,19 +274,18 @@ export default function FavoritesPage() {
         ) : (
           <div className="space-y-3">
             {favorites.map((fav) => {
-              // 通过 exercise_key 推断来源类型 - 与错题本一致
+              // 通过 exercise_key 推断来源类型 - 统一 mastery- 前缀
               const sourceType = getSourceType(fav.exercise_key)
               const sourceLabel = getSourceLabel(fav.exercise_key)
               const questionTitle = getQuestionTitle(fav)
 
               // 从 exercise_key 提取 question_id 用于跳转
+              // 格式: mastery-{courseId}-{chapterId}-{questionId} 或 arena-{courseId}-{questionId}
               const keyParts = fav.exercise_key?.split('-') || []
               let questionIdFromKey = ''
-              let chapterIdFromKey = fav.chapter_id || ''
 
               if (sourceType === 'mastery' && keyParts.length >= 4) {
                 // mastery-{courseId}-{chapterId}-{questionId}
-                chapterIdFromKey = keyParts[2]
                 questionIdFromKey = keyParts[3]
               } else if (sourceType === 'arena' && keyParts.length >= 3) {
                 // arena-{courseId}-{questionId}
@@ -314,8 +311,7 @@ export default function FavoritesPage() {
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                           sourceType === 'arena' ? 'bg-purple-500/10 text-purple-500' :
-                          sourceType === 'mastery' ? 'bg-blue-500/10 text-blue-500' :
-                          'bg-muted text-muted-foreground'
+                          'bg-blue-500/10 text-blue-500'
                         }`}>
                           {sourceLabel}
                         </span>
@@ -388,10 +384,11 @@ export default function FavoritesPage() {
                               router.push('/dashboard?tab=challenge')
                             }
                           } else if (sourceType === 'mastery' && fav.course_id) {
-                            // 精进之路: 跳转到具体章节和题目
-                            const chapterParam = chapterIdFromKey || fav.chapter_id || ''
+                            // 精进之路: 直接用收藏记录里的 chapter_id 和 section_id
+                            const chapterParam = fav.chapter_id || ''
                             const questionParam = questionIdFromKey || ''
-                            router.push(`/mastery/${fav.course_id}?chapter=${chapterParam}&exercise=${questionParam}&skip=1`)
+                            const sectionParam = fav.section_id || ''
+                            router.push(`/mastery/${fav.course_id}?chapter=${chapterParam}&section=${sectionParam}&exercise=${questionParam}&skip=1`)
                           } else if (fav.course_id) {
                             router.push(`/mastery/${fav.course_id}`)
                           }

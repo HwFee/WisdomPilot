@@ -15,6 +15,7 @@ class FavoriteBase(BaseModel):
     exercise_key: Optional[str] = None
     course_id: int
     chapter_id: Optional[int] = None
+    section_id: Optional[int] = None
     knowledge_points: List[str] = []
     exercise_type: str = "choice"
     exercise_difficulty: int = 1
@@ -25,6 +26,7 @@ class FavoriteCreate(BaseModel):
     exercise_key: Optional[str] = Field(None, description="练习题标识")
     course_id: int = Field(..., description="课程ID")
     chapter_id: Optional[int] = Field(None, description="章节ID")
+    section_id: Optional[int] = Field(None, description="小节ID（强化测试来源）")
     exercise_id: Optional[int] = Field(None, description="原始练习题ID")
     exercise_content: Optional[dict] = Field(None, description="题目内容快照")
     exercise_type: Optional[str] = Field(None, description="题目类型")
@@ -50,6 +52,7 @@ class FavoriteResponse(BaseModel):
     exercise_key: Optional[str] = None
     course_id: int
     chapter_id: Optional[int] = None
+    section_id: Optional[int] = None
     knowledge_points: List[str] = []
     exercise_content: Optional[dict] = None
     exercise_type: str = "choice"

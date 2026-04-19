@@ -40,6 +40,15 @@ from app.routers.test_sandbox import router as test_sandbox_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
+    # 配置日志级别 - 确保 INFO 级别日志可以显示
+    import logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    # 设置 app.services 的日志级别为 INFO
+    logging.getLogger('app.services').setLevel(logging.INFO)
+
     # Startup: initialize database and AI service
     await init_db()
     # Initialize AI service with config from settings

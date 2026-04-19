@@ -137,7 +137,7 @@ async def get_mastery_overview(
 ):
     """Get user's mastery path overview for a course"""
     from app.models.mastery_exercise_progress import MasteryExerciseProgress
-    from app.models.chapter_base_question import ChapterBaseQuestion
+    from app.models.section_base_question import SectionBaseQuestion
 
     # Get all chapters for the course
     chapters_result = await db.execute(
@@ -188,12 +188,12 @@ async def get_mastery_overview(
     chapter_ids = [ch.id for ch in chapters]
     base_questions_result = await db.execute(
         select(
-            ChapterBaseQuestion.chapter_id,
-            func.count(ChapterBaseQuestion.id)
+            SectionBaseQuestion.chapter_id,
+            func.count(SectionBaseQuestion.id)
         ).where(
-            ChapterBaseQuestion.chapter_id.in_(chapter_ids),
-            ChapterBaseQuestion.is_active == True,
-        ).group_by(ChapterBaseQuestion.chapter_id)
+            SectionBaseQuestion.chapter_id.in_(chapter_ids),
+            SectionBaseQuestion.is_active == True,
+        ).group_by(SectionBaseQuestion.chapter_id)
     )
     chapter_question_counts = {row[0]: row[1] for row in base_questions_result.fetchall()}
 
@@ -781,10 +781,10 @@ async def submit_mastery_quiz(
     return result
 
 
-# ========== Chapter Base Question Endpoints (精进之路基础测试) ==========
+# ========== Section Base Question Endpoints (精进之路基础测试) ==========
 
-from app.services.chapter_base_question import chapter_base_question_service
-from app.schemas.chapter_base_question import (
+from app.services.section_base_question import section_base_question_service
+from app.schemas.section_base_question import (
     BaseAnswersSubmitRequest,
     BaseAnswersSubmitResponse,
     EnhancedQuizGenerateRequest,
@@ -801,21 +801,21 @@ from app.schemas.mastery_progress import (
 )
 
 
-@router.get("/mastery/{course_id}/chapter/{chapter_id}/base-questions")
-async def get_chapter_base_questions(
-    course_id: int,
-    chapter_id: int,
+@router.get("/mastery/section/{section_id}/base-questions")
+async def get_section_base_questions(
+    section_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    获取章节基础测试题（精进之路）
+    获取小节基础测试题（精进之路）
 
-    返回该章节的固定基础测试题，用于学习知识点后的基础测试。
+    返回该小节的固定基础测试题，用于学习知识点后的基础测试。
     """
-    result = await chapter_base_question_service.get_chapter_base_questions(
+    result = await section_base_question_service.get_section_base_questions(
         db=db,
-        chapter_id=chapter_id,
+        section_id=section_id,
+        user_id=current_user.id,
     )
     return result
 
@@ -834,9 +834,11 @@ async def submit_base_answers(
     评估答案，识别薄弱知识点，返回分析结果。
     同时更新用户的 mastery_xp。
     """
-    result = await chapter_base_question_service.submit_base_answers(
+    # 使用请求中的 section_id，如果没有则回退到 chapter_id（兼容旧逻辑）
+    section_id = request.section_id if request.section_id else chapter_id
+    result = await section_base_question_service.submit_base_answers(
         db=db,
-        chapter_id=chapter_id,
+        section_id=section_id,
         request=request,
         user_id=current_user.id,
     )
@@ -860,7 +862,7 @@ async def generate_enhanced_quiz(
     logger.info(f"[API] generate_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., chapter={request.chapter_id}, weak_points={request.weak_points}")
 
     request.course_id = course_id
-    result = await chapter_base_question_service.generate_enhanced_quiz(
+    result = await section_base_question_service.generate_enhanced_quiz(
         db=db,
         user_id=current_user.id,
         request=request,
@@ -885,7 +887,7 @@ async def submit_enhanced_quiz(
     logger = logging.getLogger(__name__)
     logger.info(f"[API] submit_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., session={request.session_id}, answers={len(request.answers)}")
 
-    result = await chapter_base_question_service.submit_enhanced_quiz(
+    result = await section_base_question_service.submit_enhanced_quiz(
         db=db,
         user_id=current_user.id,
         request=request,
@@ -907,11 +909,15 @@ async def save_mastery_exercise_progress(
 
     当用户完成一道题（交卷）时调用。
     """
+    print(f"[ROUTE-DEBUG] ========== 收到 /mastery/progress/exercise 请求 ==========")
+    print(f"[ROUTE-DEBUG] course_id={request.course_id}, chapter_id={request.chapter_id}")
+    print(f"[ROUTE-DEBUG] section_id={request.section_id}, question_id={request.question_id}")
     result = await mastery_progress_service.save_exercise_progress(
         db=db,
         user_id=current_user.id,
         request=request,
     )
+    print(f"[ROUTE-DEBUG] 返回结果: success={result.success}, bkt_debug={result.bkt_debug}")
     return result
 
 
@@ -1496,3 +1502,125 @@ async def get_active_challenge_session(
         },
         "exercise_map": exercise_map,
     }
+
+
+# ========== BKT Mastery Endpoints (小节/章节/课程 三层聚合) ==========
+
+
+class SectionMasteryResponse(BaseModel):
+    """小节掌握度响应"""
+    section_id: int
+    chapter_id: int
+    mastery_score: float
+    bkt_aggregated_p_l: float
+    knowledge_points_count: int
+    mastered_points_count: int
+    is_completed: bool
+    knowledge_points: list[dict]
+
+
+class CourseMasteryResponse(BaseModel):
+    """课程掌握度响应"""
+    course_id: int
+    mastery_score: float
+    progress_percentage: float
+    chapters_count: int
+    completed_chapters: int
+    is_completed: bool
+    chapters: list[dict]
+
+
+@router.get("/mastery/section/{section_id}", response_model=SectionMasteryResponse)
+async def get_section_mastery(
+    section_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取小节掌握度（BKT 聚合）"""
+    from app.models.section import Section
+    from app.models.section_mastery import SectionMastery
+    from app.models.knowledge_point_mastery import KnowledgePointMastery
+    from app.services.bkt_mastery import BKTMasteryService
+
+    # 获取小节信息
+    section_result = await db.execute(
+        select(Section).where(Section.id == section_id)
+    )
+    section = section_result.scalar_one_or_none()
+    if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+
+    # 获取小节掌握度
+    mastery_result = await db.execute(
+        select(SectionMastery).where(
+            SectionMastery.user_id == current_user.id,
+            SectionMastery.section_id == section_id,
+        )
+    )
+    section_mastery = mastery_result.scalar_one_or_none()
+
+    # 获取章节内所有知识点掌握状态
+    kp_result = await db.execute(
+        select(KnowledgePointMastery).where(
+            KnowledgePointMastery.user_id == current_user.id,
+            KnowledgePointMastery.chapter_id == section.chapter_id,
+        )
+    )
+    kp_masteries = kp_result.scalars().all()
+
+    knowledge_points = []
+    for kp in kp_masteries:
+        knowledge_points.append({
+            "name": kp.knowledge_point,
+            "p_l": kp.p_l,
+            "is_mastered": kp.p_l >= 0.95,
+            "total_attempts": kp.total_attempts,
+            "correct_attempts": kp.correct_attempts,
+        })
+
+    if section_mastery:
+        return SectionMasteryResponse(
+            section_id=section_id,
+            chapter_id=section.chapter_id,
+            mastery_score=section_mastery.mastery_score,
+            bkt_aggregated_p_l=section_mastery.bkt_aggregated_p_l,
+            knowledge_points_count=section_mastery.knowledge_points_count,
+            mastered_points_count=section_mastery.mastered_points_count,
+            is_completed=section_mastery.is_completed,
+            knowledge_points=knowledge_points,
+        )
+    else:
+        # 返回默认值
+        return SectionMasteryResponse(
+            section_id=section_id,
+            chapter_id=section.chapter_id,
+            mastery_score=15.0,
+            bkt_aggregated_p_l=0.15,
+            knowledge_points_count=0,
+            mastered_points_count=0,
+            is_completed=False,
+            knowledge_points=knowledge_points,
+        )
+
+
+@router.get("/mastery/course/{course_id}", response_model=CourseMasteryResponse)
+async def get_course_mastery(
+    course_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取课程掌握度（BKT 四层聚合顶层）"""
+    from app.services.bkt_mastery import BKTMasteryService
+
+    bkt_service = BKTMasteryService(db)
+    summary = await bkt_service.get_course_mastery_summary(current_user.id, course_id)
+
+    return CourseMasteryResponse(
+        course_id=course_id,
+        mastery_score=summary["mastery_score"],
+        progress_percentage=summary["progress_percentage"],
+        chapters_count=summary["chapters_count"],
+        completed_chapters=summary["completed_chapters"],
+        is_completed=summary["is_completed"],
+        chapters=summary["chapters"],
+    )

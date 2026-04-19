@@ -542,7 +542,7 @@ export default function DashboardPage() {
                 <KnowledgeMastery
                   courseName={currentCourse?.course_name || 'C语言'}
                   knowledgePoints={knowledgePoints}
-                  onLearnClick={(courseId) => router.push(`/courses/${courseId || currentCourseId || 1}`)}
+                  onLearnClick={(courseId) => router.push(`/mastery/${courseId || currentCourseId || 1}`)}
                   lang={lang}
                   compact
                 />

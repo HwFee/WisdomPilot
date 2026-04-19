@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import select
 from app.database import AsyncSessionLocal
 from app.models.chapter import Chapter
-from app.models.chapter_base_question import ChapterBaseQuestion
+from app.models.section_base_question import SectionBaseQuestion
 from app.services.ai import ai_service
 from app.schemas.ai import AIProviderConfig
 from app.config import get_settings
@@ -153,7 +153,7 @@ async def main():
 
             # 检查是否已有基础题
             existing_result = await db.execute(
-                select(ChapterBaseQuestion).where(ChapterBaseQuestion.chapter_id == chapter.id)
+                select(SectionBaseQuestion).where(SectionBaseQuestion.chapter_id == chapter.id)
             )
             existing = existing_result.scalars().all()
 
@@ -170,7 +170,7 @@ async def main():
 
             # 保存到数据库
             for q_data in questions_data:
-                question = ChapterBaseQuestion(
+                question = SectionBaseQuestion(
                     chapter_id=chapter.id,
                     order_index=q_data.get("order_index", 1),
                     question_type=q_data.get("type", "choice"),

@@ -1,4 +1,9 @@
-"""Chapter Base Question Schemas - 章节基础测试题数据模型"""
+"""Section Base Question Schemas - 小节基础测试题数据模型
+
+重构说明：
+- 原名为 chapter_base_question，现已重构为 section_base_question
+- 题目现在按小节组织，section_id 为必填字段
+"""
 
 from datetime import datetime
 from typing import Optional, List, Any
@@ -12,9 +17,11 @@ from pydantic import BaseModel, Field
 class BaseQuestionResponse(BaseModel):
     """基础测试题响应"""
     id: int
-    chapter_id: int
+    section_id: int = Field(..., description="所属小节ID")
+    chapter_id: Optional[int] = Field(default=None, description="所属章节ID")
     order_index: int
     type: str = Field(..., description="题目类型: choice, programming, fill_blank")
+    title: Optional[str] = Field(default=None, description="题目标题")
     text: str = Field(..., description="题目内容")
     options: Optional[List[str]] = Field(default=None, description="选择题选项")
     knowledge_points: List[str] = Field(default_factory=list)
@@ -24,9 +31,10 @@ class BaseQuestionResponse(BaseModel):
 
 
 class BaseQuestionListResponse(BaseModel):
-    """章节基础题列表响应"""
-    chapter_id: int
-    chapter_title: str
+    """小节基础题列表响应"""
+    section_id: int = Field(..., description="小节ID")
+    section_title: str = Field(default="", description="小节标题")
+    chapter_id: int = Field(..., description="章节ID")
     total_questions: int
     questions: List[BaseQuestionResponse]
 
@@ -44,6 +52,7 @@ class BaseAnswerSubmit(BaseModel):
 
 class BaseAnswersSubmitRequest(BaseModel):
     """批量提交基础题答案"""
+    section_id: int = Field(..., description="小节ID")
     answers: List[BaseAnswerSubmit]
 
 
@@ -59,6 +68,7 @@ class BaseQuestionResult(BaseModel):
 
 class BaseAnswersSubmitResponse(BaseModel):
     """基础题提交结果"""
+    section_id: int = Field(..., description="小节ID")
     total_questions: int
     correct_answers: int
     accuracy: float = Field(..., ge=0, le=1, description="正确率")
@@ -80,7 +90,8 @@ class BaseAnswersSubmitResponse(BaseModel):
 class EnhancedQuizGenerateRequest(BaseModel):
     """生成强化测试题请求"""
     course_id: int
-    chapter_id: int
+    section_id: int = Field(..., description="小节ID")
+    chapter_id: int = Field(..., description="章节ID")
     weak_points: List[str] = Field(
         default_factory=list,
         description="需要强化的薄弱知识点"
@@ -125,6 +136,7 @@ class EnhancedQuizGenerateResponse(BaseModel):
 class EnhancedQuizSubmitRequest(BaseModel):
     """提交强化测试题答案"""
     session_id: str
+    section_id: int = Field(..., description="小节ID")
     answers: List[dict]  # [{question_id: str, answer: str}]
 
 
@@ -132,6 +144,7 @@ class EnhancedQuizSubmitResponse(BaseModel):
     """提交强化测试题结果"""
     success: bool
     session_id: str
+    section_id: int = Field(..., description="小节ID")
     total_questions: int
     correct_answers: int
     accuracy: float

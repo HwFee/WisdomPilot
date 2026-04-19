@@ -11,7 +11,7 @@ from app.utils.time import utc_now
 if TYPE_CHECKING:
     from app.models.course import Course
     from app.models.exercise import Exercise
-    from app.models.chapter_base_question import ChapterBaseQuestion
+    from app.models.section_base_question import SectionBaseQuestion
     from app.models.section import Section
 
 
@@ -74,12 +74,8 @@ class Chapter(Base):
         order_by="Exercise.difficulty",
         lazy="noload"
     )
-    base_questions: Mapped[List["ChapterBaseQuestion"]] = relationship(
-        "ChapterBaseQuestion",
-        back_populates="chapter",
-        order_by="ChapterBaseQuestion.order_index",
-        lazy="noload"
-    )
+    # Note: base_questions relationship removed - questions are now organized by section
+    # Use Section.base_questions to access questions for each section
 
     def __repr__(self) -> str:
         return f"<Chapter {self.id}: {self.title}>"
