@@ -13,6 +13,7 @@ from app.models import UserWeakPoint, SpacedRepetition  # noqa: F401 - registers
 from app.models import Favorite, Note  # noqa: F401 - registers favorites and notes models
 from app.models import ChapterMastery, ChallengeSession, UserArenaProfile  # noqa: F401 - registers mastery and arena models
 from app.models import WrongQuestion  # noqa: F401 - registers wrong question model
+from app.models import CoreTransaction  # noqa: F401 - registers core transaction model
 from app.middleware import RateLimitMiddleware
 from app.routers import (
     auth_router,
@@ -22,7 +23,7 @@ from app.routers import (
     code_router,
 )
 from app.routers.courses import router as courses_router
-from app.routers.ai import choice_router, review_router, config_router, chat_router, analysis_router
+from app.routers.ai import choice_router, review_router, config_router, chat_router, analysis_router, hint_router
 from app.routers.challenges import router as challenges_router
 from app.routers.achievements import router as achievements_router
 from app.routers.exercises import router as exercises_router
@@ -32,6 +33,8 @@ from app.routers.favorites import router as favorites_router
 from app.routers.notes import router as notes_router
 from app.routers.learning_path import router as learning_path_router
 from app.routers.tier import router as tier_router
+from app.routers.core import router as core_router
+from app.routers.test_sandbox import router as test_sandbox_router
 
 
 @asynccontextmanager
@@ -102,6 +105,7 @@ app.include_router(review_router)
 app.include_router(config_router)
 app.include_router(chat_router)
 app.include_router(analysis_router)
+app.include_router(hint_router)
 app.include_router(challenges_router)
 app.include_router(achievements_router)
 app.include_router(exercises_router)
@@ -111,6 +115,8 @@ app.include_router(favorites_router)
 app.include_router(notes_router)
 app.include_router(learning_path_router)
 app.include_router(tier_router)
+app.include_router(core_router)
+app.include_router(test_sandbox_router)
 
 
 @app.get("/")

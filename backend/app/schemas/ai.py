@@ -1,7 +1,7 @@
 """AI 模块 Pydantic Schemas"""
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 
 class ChoiceExplanationRequest(BaseModel):
@@ -174,3 +174,23 @@ class TestConnectionResponse(BaseModel):
     model: Optional[str] = None
     address: Optional[str] = None
     latency_ms: Optional[int] = None
+
+
+class ExerciseHintRequest(BaseModel):
+    """编程题 AI 提示请求 - 挑战之路使用"""
+
+    exercise_title: str = Field(..., max_length=200, description="题目标题")
+    exercise_description: str = Field(..., max_length=2000, description="题目描述")
+    difficulty: int = Field(..., ge=1, le=5, description="难度 1-5")
+    knowledge_points: list[str] = Field(default=[], description="相关知识点")
+    hint_level: Literal["light", "medium", "deep"] = Field(..., description="提示级别")
+    code_template: str = Field(default="", max_length=2000, description="代码模板")
+    sample_input: str = Field(default="", max_length=500, description="示例输入")
+    sample_output: str = Field(default="", max_length=500, description="示例输出")
+
+
+class ExerciseHintResponse(BaseModel):
+    """编程题 AI 提示响应"""
+
+    hint: str
+    cost: int

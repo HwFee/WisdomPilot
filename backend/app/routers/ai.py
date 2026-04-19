@@ -26,6 +26,7 @@ from app.schemas.ai import (
     AIStatusResponse,
     TestConnectionRequest,
     TestConnectionResponse,
+    ExerciseHintRequest,
 )
 from app.services.ai import ai_service
 from app.config import get_settings
@@ -428,3 +429,72 @@ async def get_code_feedback(
         return CodeFeedbackResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI 反馈失败: {str(e)}")
+
+
+# ========================================
+# AI 编程题提示路由（挑战之路）
+# ========================================
+
+hint_router = APIRouter(prefix="/api/ai", tags=["ai-hint"])
+
+# 提示级别对应的智核消耗
+HINT_COSTS = {
+    "light": 1,
+    "medium": 3,
+    "deep": 5,
+}
+
+
+async def sse_exercise_hint_generator(
+    request: ExerciseHintRequest,
+    user: User,
+    db: AsyncSession,
+    cost: int,
+) -> AsyncGenerator[bytes, None]:
+    """SSE 格式的编程题提示流生成器，包含智核扣除"""
+    from app.services.quota import quota_service
+
+    try:
+        # 先尝试扣除智核
+        deducted = await quota_service.deduct_quota(user, db, cost)
+        if not deducted:
+            error_payload = json.dumps({"error": "智核余额不足", "code": "INSUFFICIENT_CORES"}) + "\n"
+            yield f"data: {error_payload}\n\n".encode()
+            return
+
+        # 生成提示
+        async for chunk in ai_service.stream_exercise_hint(
+            exercise_title=request.exercise_title,
+            exercise_description=request.exercise_description,
+            difficulty=request.difficulty,
+            knowledge_points=request.knowledge_points,
+            hint_level=request.hint_level,
+            code_template=request.code_template,
+            sample_input=request.sample_input,
+            sample_output=request.sample_output,
+        ):
+            payload = json.dumps({"content": chunk}) + "\n"
+            yield f"data: {payload}\n\n".encode()
+        yield b"data: [DONE]\n\n"
+    except Exception as e:
+        error_payload = json.dumps({"error": str(e)}) + "\n"
+        yield f"data: {error_payload}\n\n".encode()
+
+
+@hint_router.post("/exercise-hint/stream")
+async def stream_exercise_hint(
+    request: ExerciseHintRequest,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: AsyncSession = Depends(get_db),
+):
+    """编程题 AI 提示（流式）- 挑战之路使用
+
+    智核会在流式输出开始时扣除，如果余额不足会立即返回错误。
+    """
+    # 获取消耗
+    cost = HINT_COSTS.get(request.hint_level, 1)
+
+    return StreamingResponse(
+        sse_exercise_hint_generator(request, current_user, db, cost),
+        media_type="text/event-stream",
+    )

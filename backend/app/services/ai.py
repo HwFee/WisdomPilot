@@ -1125,6 +1125,107 @@ class AIService:
         analysis = await self._provider.generate_explanation(prompt)
         return {"analysis": analysis, "is_correct": is_correct}
 
+    async def stream_exercise_hint(
+        self,
+        exercise_title: str,
+        exercise_description: str,
+        difficulty: int,
+        knowledge_points: list[str],
+        hint_level: str,
+        code_template: str = "",
+        sample_input: str = "",
+        sample_output: str = "",
+    ) -> AsyncGenerator[str, None]:
+        """
+        流式生成编程题 AI 提示 - 挑战之路使用
+
+        Args:
+            exercise_title: 题目标题
+            exercise_description: 题目描述
+            difficulty: 难度 1-5
+            knowledge_points: 相关知识点
+            hint_level: 提示级别 light/medium/deep
+            code_template: 代码模板
+            sample_input: 示例输入
+            sample_output: 示例输出
+
+        Yields:
+            AI 生成的提示内容（流式）
+        """
+        if not self.is_configured():
+            yield "AI 服务未配置，请联系管理员。"
+            return
+
+        difficulty_labels = {1: "入门", 2: "基础", 3: "中等", 4: "较难", 5: "困难"}
+        diff_label = difficulty_labels.get(difficulty, "中等")
+
+        kp_context = ""
+        if knowledge_points:
+            kp_context = f"\n涉及知识点：{', '.join(knowledge_points)}"
+
+        sample_context = ""
+        if sample_input and sample_output:
+            sample_context = f"""
+
+示例：
+输入：{sample_input}
+输出：{sample_output}"""
+
+        code_context = ""
+        if code_template:
+            code_context = f"""
+
+代码模板：
+```
+{code_template}
+```"""
+
+        if hint_level == "light":
+            prompt = f"""你是一位耐心的编程老师。学生正在做一道编程题，需要思路引导（不要直接给出答案）。
+
+题目：{exercise_title}
+难度：{diff_label}
+描述：{exercise_description}{kp_context}{sample_context}{code_context}
+
+请给出轻度提示：
+1. 分析题目要求什么
+2. 指出应该使用什么类型的数据结构和算法思路
+3. 提醒需要注意的边界情况
+
+注意：只给思路方向，不要写出完整代码！"""
+        elif hint_level == "medium":
+            prompt = f"""你是一位耐心的编程老师。学生正在做一道编程题，需要关键步骤提示。
+
+题目：{exercise_title}
+难度：{diff_label}
+描述：{exercise_description}{kp_context}{sample_context}{code_context}
+
+请给出中度提示：
+1. 分析问题的核心算法思路
+2. 给出伪代码框架（不要完整实现）
+3. 说明关键步骤的实现要点
+
+注意：可以给出代码框架，但关键实现部分用注释代替！"""
+        else:  # deep
+            prompt = f"""你是一位耐心的编程老师。学生正在做一道编程题，需要详细的解题思路。
+
+题目：{exercise_title}
+难度：{diff_label}
+描述：{exercise_description}{kp_context}{sample_context}{code_context}
+
+请给出深度解析：
+1. 完整的问题分析和算法设计
+2. 带注释的参考代码框架
+3. 复杂度分析（时间和空间）
+4. 可能的优化方向
+
+注意：代码框架要有详细注释，但不要直接给出完整可运行的答案！"""
+
+        messages = [{"role": "user", "content": prompt}]
+
+        async for chunk in self._provider.stream_generate(messages):
+            yield chunk
+
 
 # 全局单例 - 独立模块
 ai_service = AIService()

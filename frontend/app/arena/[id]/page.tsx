@@ -50,7 +50,11 @@ import {
   LuoguTestCasesSummary,
 } from "@/components/exercise/LuoguTestCaseTable";
 import { FavoriteButton } from "@/components/exercise/FavoriteButton";
+import { StreamHintPanel, type ExerciseHintData } from "@/components/exercise/AIHintPanel";
 import { getTemplate } from "@/lib/codeTemplates";
+import {
+  getCoreBalance,
+} from "@/lib/api/core";
 import type {
   ArenaProfileResponse,
   ChallengeSessionResponse,
@@ -489,6 +493,9 @@ export default function ArenaPage() {
     full_name: string;
   } | null>(null);
 
+  // Core balance for AI hints
+  const [coreBalance, setCoreBalance] = useState<number | undefined>(undefined);
+
   // Refs
   const codeRef = useRef(code);
   codeRef.current = code;
@@ -631,6 +638,16 @@ export default function ArenaPage() {
       const savedLanguage = localStorage.getItem("preferred_language");
       if (savedLanguage && LANGUAGE_MAP[savedLanguage]) {
         setLanguage(savedLanguage);
+      }
+
+      // 获取智核余额
+      try {
+        const balanceData = await getCoreBalance();
+        if (mountedRef.current) {
+          setCoreBalance(balanceData.balance);
+        }
+      } catch (error) {
+        console.error("Failed to get core balance:", error);
       }
     } catch (error) {
       if (mountedRef.current) {
@@ -1466,6 +1483,37 @@ export default function ArenaPage() {
                   ))}
                 </div>
               )}
+
+              {/* AI Hint Panel */}
+              <div className="mt-6">
+                <StreamHintPanel
+                  exerciseData={{
+                    exercise_title: currentExercise.content.title || `题目 #${currentExercise.id}`,
+                    exercise_description: currentExercise.content.description || currentExercise.content.text || "",
+                    difficulty: currentExercise.difficulty,
+                    knowledge_points: currentExercise.knowledge_points || [],
+                    code_template: currentExercise.content.code_template,
+                    sample_input: currentExercise.content.sample_input,
+                    sample_output: currentExercise.content.sample_output,
+                  }}
+                  token={localStorage.getItem("token") || ""}
+                  onBalanceChange={async () => {
+                    // 刷新智核余额
+                    const token = localStorage.getItem("token");
+                    if (token) {
+                      try {
+                        const { getCoreBalance } = await import("@/lib/api/core");
+                        const balanceData = await getCoreBalance();
+                        setCoreBalance(balanceData.balance);
+                      } catch {
+                        // 忽略刷新失败
+                      }
+                    }
+                  }}
+                  currentBalance={coreBalance}
+                  disabled={isSubmitting}
+                />
+              </div>
 
             </div>
           )}

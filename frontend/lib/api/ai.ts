@@ -162,6 +162,85 @@ export async function testAIConnection(
   return post<TestConnectionResponse>('/api/admin/ai/test-connection', token, request)
 }
 
+// ========================================
+// AI Exercise Hint (挑战之路使用)
+// ========================================
+
+export interface ExerciseHintRequest {
+  exercise_title: string
+  exercise_description: string
+  difficulty: number
+  knowledge_points: string[]
+  hint_level: 'light' | 'medium' | 'deep'
+  code_template?: string
+  sample_input?: string
+  sample_output?: string
+}
+
+export async function streamExerciseHint(
+  request: ExerciseHintRequest,
+  token: string,
+  onChunk: (content: string) => void,
+  onError: (error: string) => void,
+  onComplete: () => void
+): Promise<void> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/ai/exercise-hint/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    const data = await response.json()
+    onError(data.detail || 'AI 提示请求失败')
+    return
+  }
+
+  const reader = response.body?.getReader()
+  if (!reader) {
+    onError('无响应流')
+    return
+  }
+
+  const decoder = new TextDecoder()
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value, { stream: true })
+      const lines = chunk.split('\n')
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data === '[DONE]') {
+            onComplete()
+            return
+          }
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.error) {
+              onError(parsed.error)
+            } else if (parsed.content) {
+              onChunk(parsed.content)
+            }
+          } catch {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+    onComplete()
+  } catch (error) {
+    onError(error instanceof Error ? error.message : '流式输出错误')
+  }
+}
+
 // Re-export types
 export type {
   ChoiceExplanationRequest,
