@@ -1470,25 +1470,67 @@ export default function MasteryPathPage() {
               <BookOpen className="w-5 h-5 text-amber-500" />
               <span className="font-semibold">{selectedChapterTitle}</span>
             </div>
-            <div className="flex items-center gap-1">
-              {baseQuestions.map((q, i) => {
-                const isCompleted = completedQuestionsMap.has(q.id);
-                const wasCorrect = completedQuestionsMap.get(q.id) || false;
-                return (
-                  <div
-                    key={i}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      isCompleted
-                        ? wasCorrect
-                          ? "bg-emerald-400"
-                          : "bg-red-400"
-                        : i === currentQuestionIndex
-                          ? "bg-primary"
-                          : "bg-muted"
-                    }`}
-                  />
-                );
-              })}
+            <div className="flex items-center gap-1.5">
+              {(() => {
+                // 显示5个题目，当前题始终在第3个位置（中间）
+                const MAX_VISIBLE = 5;
+                const CENTER_INDEX = 2;
+
+                let start = currentQuestionIndex - CENTER_INDEX;
+                let end = start + MAX_VISIBLE;
+
+                // 边界处理：开头不够时
+                if (start < 0) {
+                  start = 0;
+                  end = Math.min(baseQuestions.length, MAX_VISIBLE);
+                }
+
+                // 边界处理：结尾不够时
+                if (end > baseQuestions.length) {
+                  end = baseQuestions.length;
+                  start = Math.max(0, end - MAX_VISIBLE);
+                }
+
+                return baseQuestions.slice(start, end).map((q, idx) => {
+                  const globalIndex = start + idx;
+                  const isCompleted = completedQuestionsMap.has(q.id);
+                  const wasCorrect = completedQuestionsMap.get(q.id) || false;
+                  const isCurrent = globalIndex === currentQuestionIndex;
+
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => {
+                        // 只能跳转到已完成的题目
+                        if (completedQuestionsMap.has(q.id) || globalIndex <= currentQuestionIndex) {
+                          setCurrentQuestionIndex(globalIndex);
+                          if (completedQuestionsMap.has(q.id)) {
+                            setSubmitted(true);
+                            setIsCorrect(completedQuestionsMap.get(q.id) || false);
+                          } else {
+                            setSubmitted(false);
+                            setIsCorrect(false);
+                          }
+                        }
+                      }}
+                      title={`第 ${globalIndex + 1} 题`}
+                      className={`rounded-lg text-xs font-bold transition-all ${
+                        isCurrent
+                          ? "w-10 h-10 bg-primary text-primary-foreground scale-110 shadow-lg z-10"
+                          : isCompleted
+                            ? wasCorrect
+                              ? "w-8 h-8 bg-emerald-100 text-emerald-700 border-2 border-emerald-400"
+                              : "w-8 h-8 bg-red-100 text-red-700 border-2 border-red-400"
+                            : globalIndex <= currentQuestionIndex
+                              ? "w-8 h-8 bg-muted text-muted-foreground border border-border hover:border-primary"
+                              : "w-8 h-8 bg-muted/50 text-muted-foreground/50 border border-border cursor-not-allowed"
+                      }`}
+                    >
+                      {globalIndex + 1}
+                    </button>
+                  );
+                });
+              })()}
             </div>
           </div>
         </header>
