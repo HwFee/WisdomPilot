@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Trophy, Swords, ChevronRight, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { CourseSwitcher } from './CourseSwitcher'
 import { useRouter } from 'next/navigation'
-import { startChallengeSession, getArenaProfile } from '@/lib/api/learning-path'
+import { startChallengeSession, getArenaProfile, getMasteryOverview, type MasteryOverviewResponse } from '@/lib/api/learning-path'
 import { getStoredToken } from '@/lib/api'
 import type { CourseProgress } from '@/lib/api/courses'
 
@@ -94,6 +94,18 @@ export function CurrentLearningPanel({
   const [isNavigating, setIsNavigating] = useState<'mastery' | 'challenge' | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null)
   const [showDifficultyModal, setShowDifficultyModal] = useState(false)
+  const [masteryOverview, setMasteryOverview] = useState<MasteryOverviewResponse | null>(null)
+
+  // Fetch mastery overview when course changes
+  useEffect(() => {
+    if (!currentCourseId) return
+    const token = getStoredToken()
+    if (!token) return
+
+    getMasteryOverview(currentCourseId, token)
+      .then(data => setMasteryOverview(data))
+      .catch(() => setMasteryOverview(null))
+  }, [currentCourseId])
 
   const currentCourse = courses.find(c => c.course_id === currentCourseId) || courses[0]
 
@@ -105,7 +117,18 @@ export function CurrentLearningPanel({
     )
   }
 
-  const masteryLevel = getMasteryLevel(currentCourse.mastery_score)
+  // Use mastery overview data (from KnowledgePointMastery) for mastery path card
+  const masteryScore = masteryOverview?.avg_mastery ?? 0
+  const masteryLevel = getMasteryLevel(masteryScore)
+
+  // Current chapter from masteryOverview (order_index)
+  const currentChapterData = masteryOverview?.chapters?.find(
+    ch => ch.order_index === masteryOverview.current_chapter
+  )
+  const currentChapterTitle = currentChapterData?.title || (masteryOverview?.current_chapter ? `第${masteryOverview.current_chapter}章` : t('准备开始', 'Ready to start'))
+
+  // Progress matches avg_mastery (same as grid display)
+  const progress = Math.round(masteryScore)
 
   // 精进之路：直接进入 mastery 页面
   const handleMasteryStart = () => {
@@ -176,7 +199,7 @@ export function CurrentLearningPanel({
           <div className="mb-2">
             <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
             <p className="text-sm font-medium text-foreground truncate">
-              {currentCourse.current_chapter || t('准备开始', 'Ready to start')}
+              {currentChapterTitle}
             </p>
           </div>
 
@@ -194,25 +217,23 @@ export function CurrentLearningPanel({
           <div className="mb-3">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
               <span>{t('进度', 'Progress')}</span>
-              <span>{currentCourse.progress}%</span>
+              <span>{progress}%</span>
             </div>
             <div className="h-2 bg-amber-500/20 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
-                style={{ width: `${currentCourse.progress}%` }}
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>
 
           {/* Mastery score */}
-          {currentCourse.mastery_score !== null && (
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
-              <span className={`font-medium ${masteryLevel.color}`}>
-                {currentCourse.mastery_score.toFixed(0)} ({masteryLevel.name})
-              </span>
-            </div>
-          )}
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
+            <span className={`font-medium ${masteryLevel.color}`}>
+              {masteryScore.toFixed(0)} ({masteryLevel.name})
+            </span>
+          </div>
 
           {/* Action button */}
           <button

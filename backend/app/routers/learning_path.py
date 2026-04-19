@@ -16,14 +16,12 @@ from pydantic import BaseModel, Field
 from app.database import get_db
 from app.utils.deps import get_current_user
 from app.models.user import User
-from app.models.chapter_mastery import ChapterMastery
 from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.exercise import Exercise
-from app.services.chapter_mastery import ChapterMasteryService, get_chapter_mastery_service
 from app.services.challenge_service import ChallengeService, get_challenge_service
 from app.services.leaderboard_service import (
     ArenaLeaderboardService,
@@ -136,8 +134,7 @@ async def get_mastery_overview(
     db: AsyncSession = Depends(get_db),
 ):
     """Get user's mastery path overview for a course"""
-    from app.models.mastery_exercise_progress import MasteryExerciseProgress
-    from app.models.section_base_question import SectionBaseQuestion
+    from app.models.knowledge_point_mastery import KnowledgePointMastery, MASTERY_THRESHOLD
 
     # Get all chapters for the course
     chapters_result = await db.execute(
@@ -146,7 +143,6 @@ async def get_mastery_overview(
     chapters = chapters_result.scalars().all()
 
     if not chapters:
-        # Return empty overview instead of error when no chapters
         return MasteryOverviewResponse(
             course_id=course_id,
             total_chapters=0,
@@ -157,114 +153,85 @@ async def get_mastery_overview(
             chapters=[],
         )
 
-    # Get user's mastery records (from completed quizzes)
-    mastery_result = await db.execute(
-        select(ChapterMastery).where(
-            ChapterMastery.user_id == current_user.id,
-            ChapterMastery.course_id == course_id
-        )
-    )
-    masteries = {m.chapter_id: m for m in mastery_result.scalars().all()}
-
-    # Also get per-question progress for chapters without a ChapterMastery record
-    # This ensures partial progress is visible even if the user hasn't completed the full quiz
-    exercise_progress_result = await db.execute(
-        select(MasteryExerciseProgress).where(
-            MasteryExerciseProgress.user_id == current_user.id,
-            MasteryExerciseProgress.course_id == course_id,
-            MasteryExerciseProgress.question_type == "base",
-        )
-    )
-    exercise_progress_list = exercise_progress_result.scalars().all()
-
-    # Group exercise progress by chapter_id
-    chapter_exercise_progress = {}
-    for p in exercise_progress_list:
-        if p.chapter_id not in chapter_exercise_progress:
-            chapter_exercise_progress[p.chapter_id] = []
-        chapter_exercise_progress[p.chapter_id].append(p)
-
-    # Get base question counts per chapter (for calculating partial progress)
+    # 从KnowledgePointMastery实时计算每个章节的掌握度
     chapter_ids = [ch.id for ch in chapters]
-    base_questions_result = await db.execute(
-        select(
-            SectionBaseQuestion.chapter_id,
-            func.count(SectionBaseQuestion.id)
-        ).where(
-            SectionBaseQuestion.chapter_id.in_(chapter_ids),
-            SectionBaseQuestion.is_active == True,
-        ).group_by(SectionBaseQuestion.chapter_id)
+    kp_result = await db.execute(
+        select(KnowledgePointMastery).where(
+            KnowledgePointMastery.user_id == current_user.id,
+            KnowledgePointMastery.chapter_id.in_(chapter_ids),
+        )
     )
-    chapter_question_counts = {row[0]: row[1] for row in base_questions_result.fetchall()}
+    kp_masteries = kp_result.scalars().all()
 
-    # Calculate stats
-    total_mastery_points = sum(m.mastery_score for m in masteries.values())
-    mastered_count = sum(1 for m in masteries.values() if m.mastery_score >= 85)
+    # 按chapter_id分组
+    from collections import defaultdict
+    chapter_kps = defaultdict(list)
+    for kp in kp_masteries:
+        chapter_kps[kp.chapter_id].append(kp)
 
-    # Find current chapter (first unmastered)
-    current_chapter = None
-    for ch in chapters:
-        if ch.id not in masteries or masteries[ch.id].mastery_score < 75:
-            current_chapter = ch.order_index
-            break
-
-    # Build chapter list with partial progress fallback
+    # 构建章节列表
     chapter_list = []
+    total_mastery_points = 0  # 保留（用于各章节展示）
+    total_kp_count = 0       # 总知识点数（用于加权平均）
+    weighted_mastery_sum = 0 # 加权掌握度之和 Σ(kp_count × mastery_pct)
+    mastered_count = 0
+    current_chapter = None
+
     for ch in chapters:
-        m = masteries.get(ch.id)
-        if m:
-            # Use ChapterMastery data (from completed quiz)
+        kps = chapter_kps.get(ch.id, [])
+        if kps:
+            # 从知识点实时计算章节掌握度
+            avg_p_l = sum(kp.p_l for kp in kps) / len(kps)
+            mastery_score = avg_p_l * 100
+            kp_count = len(kps)
+            mastered_kps = sum(1 for kp in kps if kp.p_l >= MASTERY_THRESHOLD)
+            is_mastered = mastered_kps == kp_count and kp_count > 0
+
+            # 章节等级
+            if mastery_score >= 95:
+                mastery_level = "精通"
+            elif mastery_score >= 85:
+                mastery_level = "熟练"
+            elif mastery_score >= 70:
+                mastery_level = "练习"
+            elif mastery_score >= 50:
+                mastery_level = "学习"
+            else:
+                mastery_level = "入门"
+
+            total_mastery_points += mastery_score
+            total_kp_count += kp_count
+            weighted_mastery_sum += kp_count * mastery_score
+            if is_mastered:
+                mastered_count += 1
+
+            # 找到第一个未完成的章节
+            if current_chapter is None and not is_mastered:
+                current_chapter = ch.order_index
+
             chapter_list.append({
                 "chapter_id": ch.id,
                 "order_index": ch.order_index,
                 "title": ch.title,
-                "mastery_score": m.mastery_score,
-                "mastery_level": m.mastery_level,
-                "can_advance": m.mastery_score >= 75,
+                "mastery_score": round(mastery_score, 2),
+                "mastery_level": mastery_level,
+                "can_advance": mastery_score >= 75,
             })
         else:
-            # Fallback: calculate partial progress from exercise progress
-            progress_list = chapter_exercise_progress.get(ch.id, [])
-            total_q = chapter_question_counts.get(ch.id, 0)
-            if progress_list and total_q > 0:
-                completed = sum(1 for p in progress_list if p.is_completed)
-                correct = sum(1 for p in progress_list if p.is_correct)
-                # Partial mastery score based on completion and accuracy
-                partial_score = (correct / total_q) * 100
-                partial_level = (
-                    "入门" if partial_score < 20 else
-                    "学习" if partial_score < 40 else
-                    "练习" if partial_score < 60 else
-                    "熟练" if partial_score < 80 else
-                    "精通"
-                )
-                total_mastery_points += partial_score
-                if partial_score >= 85:
-                    mastered_count += 1
-                chapter_list.append({
-                    "chapter_id": ch.id,
-                    "order_index": ch.order_index,
-                    "title": ch.title,
-                    "mastery_score": round(partial_score, 2),
-                    "mastery_level": partial_level,
-                    "can_advance": partial_score >= 75,
-                })
-            else:
-                chapter_list.append({
-                    "chapter_id": ch.id,
-                    "order_index": ch.order_index,
-                    "title": ch.title,
-                    "mastery_score": 0,
-                    "mastery_level": "入门",
-                    "can_advance": False,
-                })
+            # 没有知识点数据的章节
+            if current_chapter is None:
+                current_chapter = ch.order_index
+            chapter_list.append({
+                "chapter_id": ch.id,
+                "order_index": ch.order_index,
+                "title": ch.title,
+                "mastery_score": 0,
+                "mastery_level": "入门",
+                "can_advance": False,
+            })
 
-    # Recalculate avg_mastery with partial progress included
-    chapters_with_progress = len(masteries) + len([
-        ch_id for ch_id in chapter_exercise_progress
-        if ch_id not in masteries and chapter_exercise_progress[ch_id]
-    ])
-    avg_mastery = total_mastery_points / chapters_with_progress if chapters_with_progress > 0 else 0
+    # 计算平均掌握度（按知识点数量加权）
+    avg_mastery = weighted_mastery_sum / total_kp_count if total_kp_count > 0 else 0
 
     return MasteryOverviewResponse(
         course_id=course_id,
@@ -285,6 +252,8 @@ async def get_chapter_mastery(
     db: AsyncSession = Depends(get_db),
 ):
     """Get detailed mastery info for a specific chapter"""
+    from app.models.knowledge_point_mastery import KnowledgePointMastery, MASTERY_THRESHOLD
+
     # Get chapter
     chapter_result = await db.execute(
         select(Chapter).where(Chapter.id == chapter_id, Chapter.course_id == course_id)
@@ -293,16 +262,16 @@ async def get_chapter_mastery(
     if not chapter:
         raise HTTPException(status_code=404, detail="Chapter not found")
 
-    # Get mastery record
-    mastery_result = await db.execute(
-        select(ChapterMastery).where(
-            ChapterMastery.user_id == current_user.id,
-            ChapterMastery.chapter_id == chapter_id
+    # Get knowledge point masteries for this chapter
+    kp_result = await db.execute(
+        select(KnowledgePointMastery).where(
+            KnowledgePointMastery.user_id == current_user.id,
+            KnowledgePointMastery.chapter_id == chapter_id,
         )
     )
-    mastery = mastery_result.scalar_one_or_none()
+    kp_masteries = kp_result.scalars().all()
 
-    if not mastery:
+    if not kp_masteries:
         # Return default values
         return ChapterMasteryResponse(
             chapter_id=chapter_id,
@@ -319,22 +288,38 @@ async def get_chapter_mastery(
             objectives_status=None,
         )
 
-    service = get_chapter_mastery_service(db)
-    can_advance = service.can_advance(mastery.mastery_score)
+    # Calculate from knowledge points
+    avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
+    mastery_score = avg_p_l * 100
+    mastered_kps = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
+    total_exercises = len(kp_masteries)
+    correct_exercises = mastered_kps
+
+    # Chapter level
+    if mastery_score >= 95:
+        mastery_level = "精通"
+    elif mastery_score >= 85:
+        mastery_level = "熟练"
+    elif mastery_score >= 70:
+        mastery_level = "练习"
+    elif mastery_score >= 50:
+        mastery_level = "学习"
+    else:
+        mastery_level = "入门"
 
     return ChapterMasteryResponse(
         chapter_id=chapter_id,
         chapter_title=chapter.title,
-        mastery_score=mastery.mastery_score,
-        mastery_level=mastery.mastery_level,
-        accuracy_score=mastery.accuracy_score,
-        consistency_score=mastery.consistency_score,
-        depth_score=mastery.depth_score,
-        recency_score=mastery.recency_score,
-        total_exercises=mastery.total_exercises,
-        correct_exercises=mastery.correct_exercises,
-        can_advance=can_advance,
-        objectives_status=mastery.objectives_status,
+        mastery_score=round(mastery_score, 2),
+        mastery_level=mastery_level,
+        accuracy_score=round(mastery_score, 2),
+        consistency_score=round(mastery_score, 2),
+        depth_score=round(mastery_score, 2),
+        recency_score=round(mastery_score, 2),
+        total_exercises=total_exercises,
+        correct_exercises=correct_exercises,
+        can_advance=mastery_score >= 75,
+        objectives_status=None,
     )
 
 
@@ -1522,6 +1507,7 @@ class SectionMasteryResponse(BaseModel):
 class CourseMasteryResponse(BaseModel):
     """课程掌握度响应"""
     course_id: int
+    course_name: str  # 课程名称
     mastery_score: float
     progress_percentage: float
     chapters_count: int
@@ -1611,12 +1597,25 @@ async def get_course_mastery(
 ):
     """获取课程掌握度（BKT 四层聚合顶层）"""
     from app.services.bkt_mastery import BKTMasteryService
+    from app.models.course import Course
+
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[API] get_course_mastery: course_id={course_id}, user={current_user.id[:8]}...")
+
+    # 获取课程名称
+    course_result = await db.execute(select(Course).where(Course.id == course_id))
+    course = course_result.scalar_one_or_none()
+    course_name = course.name if course else f"课程 {course_id}"
 
     bkt_service = BKTMasteryService(db)
     summary = await bkt_service.get_course_mastery_summary(current_user.id, course_id)
 
+    logger.info(f"[API] get_course_mastery result: chapters_count={summary['chapters_count']}, chapters={len(summary.get('chapters', []))}")
+
     return CourseMasteryResponse(
         course_id=course_id,
+        course_name=course_name,
         mastery_score=summary["mastery_score"],
         progress_percentage=summary["progress_percentage"],
         chapters_count=summary["chapters_count"],
