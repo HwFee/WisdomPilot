@@ -37,14 +37,10 @@ export default function AccuracyDetailPage() {
 
   const todayAccuracy = trends[0]?.accuracy || 0;
   const yesterdayAccuracy = trends[1]?.accuracy || 0;
-  const avgAccuracy =
-    trends.length > 0
-      ? Math.round(
-          trends.reduce((sum, t) => sum + t.accuracy, 0) / trends.length,
-        )
-      : 0;
   const totalCorrect = trends.reduce((sum, t) => sum + t.correct, 0);
   const totalAll = trends.reduce((sum, t) => sum + t.total, 0);
+  // 计算总正确率（总正确数/总题数），而不是每日正确率的平均值
+  const avgAccuracy = totalAll > 0 ? Math.round((totalCorrect / totalAll) * 100) : 0;
 
   const trendPercent =
     yesterdayAccuracy > 0
