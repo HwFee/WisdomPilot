@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Code2, Search, LogOut, User, Settings } from 'lucide-react'
+import { Sparkles, Search, LogOut, User, Settings } from 'lucide-react'
 import { useState } from 'react'
+import { CoreDisplay } from '@/components/core'
 
 interface User {
   id: string
@@ -14,12 +15,12 @@ interface User {
 interface NavbarProps {
   user: User | null
   isLoggedIn: boolean
-  aiQuota: number
+  cores: number  // Changed from aiQuota to cores (智核)
   xp: number
   lang?: 'zh' | 'en'
 }
 
-export function Navbar({ user, isLoggedIn, aiQuota, xp, lang = 'zh' }: NavbarProps) {
+export function Navbar({ user, isLoggedIn, cores, xp, lang = 'zh' }: NavbarProps) {
   const router = useRouter()
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
@@ -85,12 +86,7 @@ export function Navbar({ user, isLoggedIn, aiQuota, xp, lang = 'zh' }: NavbarPro
             <>
               {/* Stats Pills */}
               <div className="hidden sm:flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 rounded-full">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                    {aiQuota}
-                  </span>
-                </div>
+                <CoreDisplay initialBalance={cores} showDetails lang={lang} />
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 rounded-full">
                   <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
                     {xp} XP
@@ -129,7 +125,7 @@ export function Navbar({ user, isLoggedIn, aiQuota, xp, lang = 'zh' }: NavbarPro
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-card rounded-xl border border-border shadow-lg py-2">
+                  <div className="absolute right-0 mt-2 w-48 bg-card rounded-xl border border-border shadow-lg py-2 z-50">
                     <div className="px-4 py-2 border-b border-border">
                       <p className="text-sm font-medium text-foreground">{user?.username}</p>
                       <p className="text-xs text-muted-foreground">{user?.email}</p>

@@ -752,7 +752,7 @@ class TestStatsServiceAPI:
             hashed_password=get_password_hash("Password123"),
             is_active=True,
             xp=250,
-            level=3,
+            mastery_level="熟练",
             streak_days=5,
             total_exercises=20,
             correct_exercises=18,
@@ -781,10 +781,8 @@ class TestStatsServiceAPI:
 
         # Verify user data
         assert data["user"]["xp"] == 250
-        assert data["user"]["level"] == 3
         assert data["user"]["streak_days"] == 5
         assert data["xp_summary"]["total_xp"] == 250
-        assert data["xp_summary"]["level"] == 3
 
         # Verify exercises
         assert data["exercises"]["total"] == 20
@@ -809,7 +807,7 @@ class TestStatsServiceAPI:
                 hashed_password=get_password_hash("Password123"),
                 is_active=True,
                 xp=xp,
-                level=(xp // 100) + 1,
+                mastery_level="学习",
                 streak_days=i,
                 accuracy_rate=80.0 + i,
             )
@@ -846,7 +844,7 @@ class TestStatsServiceAPI:
                 hashed_password=get_password_hash("Password123"),
                 is_active=True,
                 xp=(10 - i) * 100,  # 1000, 900, 800, ...
-                level=10 - i,
+                mastery_level="学习",
             )
             db_session.add(user)
         await db_session.commit()

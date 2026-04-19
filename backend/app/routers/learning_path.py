@@ -855,12 +855,17 @@ async def generate_enhanced_quiz(
 
     根据基础测试识别的薄弱点，AI 生成个性化强化题目。
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[API] generate_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., chapter={request.chapter_id}, weak_points={request.weak_points}")
+
     request.course_id = course_id
     result = await chapter_base_question_service.generate_enhanced_quiz(
         db=db,
         user_id=current_user.id,
         request=request,
     )
+    logger.info(f"[API] generate_enhanced_quiz 完成: success={result.success}, questions_count={len(result.questions) if result.questions else 0}")
     return result
 
 
@@ -876,11 +881,16 @@ async def submit_enhanced_quiz(
 
     评估答案，更新学习进度，返回最终结果。
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[API] submit_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., session={request.session_id}, answers={len(request.answers)}")
+
     result = await chapter_base_question_service.submit_enhanced_quiz(
         db=db,
         user_id=current_user.id,
         request=request,
     )
+    logger.info(f"[API] submit_enhanced_quiz 完成: correct={result.correct_answers}/{result.total_questions}")
     return result
 
 

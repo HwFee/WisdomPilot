@@ -58,7 +58,7 @@ class StatsService:
             "user": {
                 "id": user.id,
                 "username": user.username,
-                "level": user.level,
+                "level": user.mastery_level,
                 "xp": user.xp,
                 "streak_days": user.streak_days,
                 "preferred_languages": user.preferred_languages,
@@ -86,8 +86,8 @@ class StatsService:
             },
             "xp_summary": {
                 "total_xp": user.xp,
-                "level": user.level,
-                "xp_to_next_level": user.level * 100 - user.xp,
+                "level": user.mastery_level,
+                "xp_to_next_level": user.mastery_xp - user.xp,
             },
         }
 
@@ -156,7 +156,7 @@ class StatsService:
                 "rank": rank,
                 "user_id": user.id,
                 "username": user.username,
-                "level": user.level,
+                "level": user.mastery_level,
                 "xp": user.xp,
                 "streak_days": user.streak_days,
                 "accuracy_rate": user.accuracy_rate,

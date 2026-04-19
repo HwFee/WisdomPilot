@@ -1488,6 +1488,7 @@ export default function ArenaPage() {
               <div className="mt-6">
                 <StreamHintPanel
                   exerciseData={{
+                    exercise_id: String(currentExercise.id),  // 使用题目 ID 作为唯一标识
                     exercise_title: currentExercise.content.title || `题目 #${currentExercise.id}`,
                     exercise_description: currentExercise.content.description || currentExercise.content.text || "",
                     difficulty: currentExercise.difficulty,

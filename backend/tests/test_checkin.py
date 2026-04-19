@@ -146,15 +146,18 @@ class TestCheckinService:
     async def test_is_checked_in_today(self, db_session, auth_user):
         """Should correctly determine if user checked in today"""
         from app.services.profile import profile_service
-        from datetime import datetime
+        from app.utils.time import utc_now
 
         # Set last activity far in the past (not checked in today)
         auth_user.last_activity_date = datetime(2020, 1, 1)
+        auth_user.total_checkin_days = 1  # Need this for is_checked_in_today to work
+        auth_user.streak_days = 1
         await db_session.commit()
         assert profile_service.is_checked_in_today(auth_user) is False
 
-        # Just checked in
-        auth_user.last_activity_date = datetime.now(timezone.utc).replace(tzinfo=None)
+        # Just checked in - use utc_now() for consistency
+        now = utc_now()
+        auth_user.last_activity_date = now.replace(tzinfo=None)  # Store as naive UTC
         await db_session.commit()
 
         assert profile_service.is_checked_in_today(auth_user) is True

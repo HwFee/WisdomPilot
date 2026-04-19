@@ -16,6 +16,8 @@ if TYPE_CHECKING:
     from app.models.note import Note
     from app.models.chapter_mastery import ChapterMastery
     from app.models.wrong_question import WrongQuestion
+    from app.models.core_transaction import CoreTransaction
+    from app.models.ai_hint_cache import AIHintCache
 
 
 class User(Base):
@@ -62,16 +64,23 @@ class User(Base):
         default=False,
         nullable=False
     )
-    ai_quota: Mapped[int] = mapped_column(
+    cores: Mapped[int] = mapped_column(
+        Integer,
         default=100,
         nullable=False,
-        comment="Daily AI quota remaining"
+        comment="Core (智核) balance - platform currency"
     )
-    quota_reset_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=24),
+    cores_total_earned: Mapped[int] = mapped_column(
+        Integer,
+        default=100,
         nullable=False,
-        comment="When the quota resets (stored as naive UTC)"
+        comment="Total cores earned (starts with 100 initial bonus)"
+    )
+    cores_total_spent: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        comment="Total cores spent"
     )
     # Learning profile fields
     xp: Mapped[int] = mapped_column(
@@ -214,4 +223,10 @@ class User(Base):
     )
     wrong_questions: Mapped[List["WrongQuestion"]] = relationship(
         "WrongQuestion", back_populates="user"
+    )
+    core_transactions: Mapped[List["CoreTransaction"]] = relationship(
+        "CoreTransaction", back_populates="user"
+    )
+    ai_hint_caches: Mapped[List["AIHintCache"]] = relationship(
+        "AIHintCache", back_populates="user"
     )

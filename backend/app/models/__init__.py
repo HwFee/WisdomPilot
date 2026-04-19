@@ -23,6 +23,8 @@ from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.mastery_exercise_progress import MasteryExerciseProgress
 from app.models.section import Section
 from app.models.section_progress import SectionProgress
+from app.models.core_transaction import CoreTransaction
+from app.models.ai_hint_cache import AIHintCache
 
 __all__ = [
     # User & Auth
@@ -69,4 +71,8 @@ __all__ = [
     "Section",
     # Section Progress
     "SectionProgress",
+    # Core (智核) System
+    "CoreTransaction",
+    # AI Hint Cache
+    "AIHintCache",
 ]

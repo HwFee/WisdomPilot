@@ -308,7 +308,9 @@ export interface UserProfileResponse {
   correct_exercises: number
   accuracy_rate: number
   is_admin: boolean
-  ai_quota: number
+  cores: number
+  cores_total_earned: number
+  cores_total_spent: number
   created_at: string
 }
 
@@ -431,6 +433,39 @@ export interface Activity {
   description: string
   extra_data: Record<string, unknown>
   created_at: string
+}
+
+// ========================================
+// Trend Types (from stats.py)
+// ========================================
+
+export interface DailyTrendPoint {
+  date: string // ISO date string YYYY-MM-DD
+  count: number
+}
+
+export interface DailyExercisesTrendResponse {
+  trends: DailyTrendPoint[]
+}
+
+export interface DailyAccuracyTrendPoint {
+  date: string
+  accuracy: number
+  total: number
+  correct: number
+}
+
+export interface DailyAccuracyTrendResponse {
+  trends: DailyAccuracyTrendPoint[]
+}
+
+export interface DailyTimeTrendPoint {
+  date: string
+  minutes: number
+}
+
+export interface DailyTimeTrendResponse {
+  trends: DailyTimeTrendPoint[]
 }
 
 // ========================================

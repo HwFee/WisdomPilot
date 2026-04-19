@@ -179,6 +179,7 @@ class TestConnectionResponse(BaseModel):
 class ExerciseHintRequest(BaseModel):
     """编程题 AI 提示请求 - 挑战之路使用"""
 
+    exercise_id: Optional[str] = Field(default=None, max_length=100, description="题目唯一标识（优先使用）")
     exercise_title: str = Field(..., max_length=200, description="题目标题")
     exercise_description: str = Field(..., max_length=2000, description="题目描述")
     difficulty: int = Field(..., ge=1, le=5, description="难度 1-5")

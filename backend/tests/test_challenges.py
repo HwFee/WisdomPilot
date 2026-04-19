@@ -161,7 +161,7 @@ class TestChallengeService:
         """Should grant quota bonus when challenge completed"""
         from app.services.challenge import challenge_service
 
-        initial_quota = auth_user.ai_quota
+        initial_cores = auth_user.cores
 
         await challenge_service.create_default_challenges(db_session)
         challenges = await challenge_service.get_active_challenges(db_session)
@@ -172,4 +172,4 @@ class TestChallengeService:
 
         await db_session.refresh(auth_user)
         # FIRST_STEPS has quota_bonus of 10
-        assert auth_user.ai_quota == initial_quota + 10
+        assert auth_user.cores == initial_cores + 10

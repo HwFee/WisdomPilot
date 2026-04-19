@@ -80,20 +80,20 @@ class TestQuotaService:
         """Quota should be deducted when sufficient"""
         from app.services.quota import quota_service
 
-        # Set quota to known value
-        auth_user.ai_quota = 10
+        # Set cores to known value
+        auth_user.cores = 10
         await db_session.commit()
 
         result = await quota_service.deduct_quota(auth_user, db_session, cost=1)
         assert result is True
         await db_session.refresh(auth_user)
-        assert auth_user.ai_quota == 9
+        assert auth_user.cores == 9
 
     async def test_quota_fails_when_insufficient(self, db_session, auth_user):
         """Quota deduction should fail when insufficient"""
         from app.services.quota import quota_service
 
-        auth_user.ai_quota = 0
+        auth_user.cores = 0
         await db_session.commit()
 
         result = await quota_service.deduct_quota(auth_user, db_session, cost=1)
@@ -103,7 +103,7 @@ class TestQuotaService:
         """Admin should never run out of quota"""
         from app.services.quota import quota_service
 
-        admin_user.ai_quota = 0
+        admin_user.cores = 0
         await db_session.commit()
 
         has_quota = await quota_service.check_quota(admin_user, db_session)

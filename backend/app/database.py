@@ -11,7 +11,7 @@ engine = create_async_engine(
 
 
 @event.listens_for(engine.sync_engine, "connect")
-def _set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore[no-untyped-def]
+def _set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore[no-untyped-def
     """Enable SQLite foreign key enforcement on every new connection (C7)."""
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")

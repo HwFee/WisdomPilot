@@ -27,7 +27,7 @@ import {
 } from '@/lib/api'
 import {
   Sparkles, Zap, Trophy, Clock, Target,
-  BookOpen, Code2, Swords, FlaskConical,
+  BookOpen, Code2, Swords, FlaskConical, Gem,
 } from 'lucide-react'
 import type { ReviewStatsResponse } from '@/types/review'
 import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse, Tier } from '@/types/api'
@@ -403,13 +403,9 @@ export default function DashboardPage() {
 
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 rounded-full">
-                  <Zap className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{profile?.ai_quota ?? 50}</span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/10 rounded-full">
-                  <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-                  <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400">{profile?.xp ?? 0} XP</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 rounded-full">
+                  <Gem className="w-3.5 h-3.5 text-purple-500" />
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400">{profile?.cores ?? 100}</span>
                 </div>
               </div>
 
@@ -425,15 +421,24 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-2 pl-2 border-l border-border">
-                {/* Test page link - only visible in development */}
+                {/* Test page links - only visible in development */}
                 {process.env.NODE_ENV === 'development' && (
-                  <button
-                    onClick={() => router.push('/test/hybrid-recommendation')}
-                    className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                    title="混合推荐测试"
-                  >
-                    <FlaskConical className="w-4 h-4" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => router.push('/test/hybrid-recommendation')}
+                      className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                      title="混合推荐测试"
+                    >
+                      <FlaskConical className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => router.push('/test/cores')}
+                      className="p-2 text-muted-foreground hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-all"
+                      title="智核系统测试"
+                    >
+                      <Gem className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
                 <span className="text-xs text-muted-foreground hidden lg:block">{user?.username}</span>
                 <button onClick={handleLogout}

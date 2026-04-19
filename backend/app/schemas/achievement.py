@@ -92,7 +92,7 @@ class UserRankResponse(BaseModel):
     rank: int
     user_id: str
     username: str
-    level: int
+    level: str  # Mastery level: 入门/学习/练习/熟练/精通
     xp: int
     streak_days: int
     accuracy_rate: float

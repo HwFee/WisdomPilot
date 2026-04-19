@@ -21,7 +21,7 @@ class UserProfileResponse(BaseModel):
     correct_exercises: int
     accuracy_rate: float
     is_admin: bool
-    ai_quota: int
+    cores: int  # Renamed from ai_quota to cores (智核)
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -46,6 +46,7 @@ class CheckinResponse(BaseModel):
     total_checkin_days: int = 0
     streak_multiplier: float = 1.0
     new_achievements: list[str] = []
+    cores_earned: int = 0  # Cores (智核) earned from check-in
 
 
 class CheckinStatusResponse(BaseModel):

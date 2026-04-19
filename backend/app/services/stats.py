@@ -4,7 +4,7 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -508,7 +508,11 @@ class StatsService:
         )
 
     async def _calculate_streaks(self, user_id: str) -> tuple[int, int]:
-        """Calculate current and longest learning streaks."""
+        """Calculate current and longest learning streaks.
+
+        Uses Beijing timezone (UTC+8) for date calculations since the app
+        is designed for Chinese users.
+        """
         result = await self.db.execute(
             select(func.date(ActivityLog.created_at))
             .where(ActivityLog.user_id == user_id)
@@ -521,7 +525,11 @@ class StatsService:
         if not raw_dates:
             return 0, 0
 
-        today = date.today()
+        # 使用北京时区的日期来判断"今天"
+        from datetime import timezone
+        beijing_tz = timezone(timedelta(hours=8))
+        beijing_now = datetime.now(beijing_tz)
+        today = beijing_now.date()
 
         # Normalize all dates to date objects
         dates = set()
@@ -534,7 +542,7 @@ class StatsService:
 
         longest_streak = self._longest_consecutive_streak(sorted_dates)
 
-        # Calculate current streak: must start from today
+        # Calculate current streak: must start from today (Beijing time)
         # If no activity today, current streak is 0
         current_streak = 0
         if today in dates:
@@ -697,33 +705,57 @@ class StatsService:
     async def get_daily_exercises_trend(
         self, user_id: str, days: int = 7
     ) -> list[dict]:
-        """Get daily challenge-path exercises count for the past N days"""
-        now = utc_now()
+        """Get daily challenge-path exercises count for the past N days.
+
+        Uses Beijing timezone (UTC+8) for date boundaries.
+        Uses raw SQL to avoid encoding issues with some database records.
+        """
+        from datetime import timezone
+        beijing_tz = timezone(timedelta(hours=8))
+        beijing_now = datetime.now(beijing_tz)
         trends = []
 
         for i in range(days):
-            day_start = (now - timedelta(days=i)).replace(
+            # 北京时间的日期边界
+            beijing_day_start = (beijing_now - timedelta(days=i)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            day_end = day_start + timedelta(days=1)
+            beijing_day_end = beijing_day_start + timedelta(days=1)
+            # 转换为 UTC 用于数据库查询
+            day_start_utc = beijing_day_start.astimezone(timezone.utc)
+            day_end_utc = beijing_day_end.astimezone(timezone.utc)
 
+            # 使用原始 SQL 避免 ORM 解码问题
             result = await self.db.execute(
-                select(ActivityLog)
-                .where(
-                    ActivityLog.user_id == user_id,
-                    ActivityLog.activity_type == "exercise_complete",
-                    ActivityLog.created_at >= day_start,
-                    ActivityLog.created_at < day_end,
-                )
-                .order_by(desc(ActivityLog.created_at))
+                text("""
+                    SELECT extra_data FROM activity_logs
+                    WHERE user_id = :user_id
+                    AND activity_type = 'exercise_complete'
+                    AND created_at >= :start AND created_at < :end
+                    ORDER BY created_at DESC
+                """),
+                {"user_id": user_id, "start": str(day_start_utc), "end": str(day_end_utc)}
             )
-            activities = result.scalars().all()
+            rows = result.fetchall()
 
-            count, _ = self._summarize_challenge_activities(activities)
+            # 统计挑战之路的练习数量
+            count = 0
+            for row in rows:
+                extra_data = row[0] or {}
+                if isinstance(extra_data, str):
+                    try:
+                        import json
+                        extra_data = json.loads(extra_data)
+                    except:
+                        extra_data = {}
+                learning_path = extra_data.get("learning_path", "")
+                # 排除精进之路，统计挑战之路和旧版数据
+                if learning_path != "mastery":
+                    count += 1
 
             trends.append(
                 {
-                    "date": day_start.strftime("%Y-%m-%d"),
+                    "date": beijing_day_start.strftime("%Y-%m-%d"),
                     "count": count,
                 }
             )
@@ -731,34 +763,62 @@ class StatsService:
         return trends  # Most recent first
 
     async def get_daily_accuracy_trend(self, user_id: str, days: int = 7) -> list[dict]:
-        """Get daily challenge-path accuracy rate for the past N days"""
-        now = utc_now()
+        """Get daily challenge-path accuracy rate for the past N days.
+
+        Uses Beijing timezone (UTC+8) for date boundaries.
+        Uses raw SQL to avoid encoding issues with some database records.
+        """
+        from datetime import timezone
+        beijing_tz = timezone(timedelta(hours=8))
+        beijing_now = datetime.now(beijing_tz)
         trends = []
 
         for i in range(days):
-            day_start = (now - timedelta(days=i)).replace(
+            # 北京时间的日期边界
+            beijing_day_start = (beijing_now - timedelta(days=i)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            day_end = day_start + timedelta(days=1)
+            beijing_day_end = beijing_day_start + timedelta(days=1)
+            # 转换为 UTC 用于数据库查询
+            day_start_utc = beijing_day_start.astimezone(timezone.utc)
+            day_end_utc = beijing_day_end.astimezone(timezone.utc)
 
+            # 使用原始 SQL 避免 ORM 解码问题
             result = await self.db.execute(
-                select(ActivityLog)
-                .where(
-                    ActivityLog.user_id == user_id,
-                    ActivityLog.activity_type == "exercise_complete",
-                    ActivityLog.created_at >= day_start,
-                    ActivityLog.created_at < day_end,
-                )
-                .order_by(desc(ActivityLog.created_at))
+                text("""
+                    SELECT extra_data FROM activity_logs
+                    WHERE user_id = :user_id
+                    AND activity_type = 'exercise_complete'
+                    AND created_at >= :start AND created_at < :end
+                    ORDER BY created_at DESC
+                """),
+                {"user_id": user_id, "start": str(day_start_utc), "end": str(day_end_utc)}
             )
-            activities = result.scalars().all()
+            rows = result.fetchall()
 
-            total, correct = self._summarize_challenge_activities(activities)
+            # 统计挑战之路的练习数量和正确数
+            total = 0
+            correct = 0
+            for row in rows:
+                extra_data = row[0] or {}
+                if isinstance(extra_data, str):
+                    try:
+                        import json
+                        extra_data = json.loads(extra_data)
+                    except:
+                        extra_data = {}
+                learning_path = extra_data.get("learning_path", "")
+                # 排除精进之路，统计挑战之路和旧版数据
+                if learning_path != "mastery":
+                    total += 1
+                    if extra_data.get("is_correct", False):
+                        correct += 1
+
             accuracy = round(correct / total * 100, 1) if total > 0 else 0.0
 
             trends.append(
                 {
-                    "date": day_start.strftime("%Y-%m-%d"),
+                    "date": beijing_day_start.strftime("%Y-%m-%d"),
                     "accuracy": accuracy,
                     "total": total,
                     "correct": correct,
@@ -768,22 +828,31 @@ class StatsService:
         return trends  # Most recent first
 
     async def get_daily_time_trend(self, user_id: str, days: int = 7) -> list[dict]:
-        """Get daily learning time for the past N days"""
-        now = utc_now()
+        """Get daily learning time for the past N days.
+
+        Uses Beijing timezone (UTC+8) for date boundaries.
+        """
+        from datetime import timezone
+        beijing_tz = timezone(timedelta(hours=8))
+        beijing_now = datetime.now(beijing_tz)
         trends = []
 
         for i in range(days):
-            day_start = (now - timedelta(days=i)).replace(
+            # 北京时间的日期边界
+            beijing_day_start = (beijing_now - timedelta(days=i)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            day_end = day_start + timedelta(days=1)
+            beijing_day_end = beijing_day_start + timedelta(days=1)
+            # 转换为 UTC 用于数据库查询
+            day_start_utc = beijing_day_start.astimezone(timezone.utc)
+            day_end_utc = beijing_day_end.astimezone(timezone.utc)
 
             # Sum duration of sessions that ended on this day
             result = await self.db.execute(
                 select(func.sum(LearningSession.duration_seconds)).where(
                     LearningSession.user_id == user_id,
-                    LearningSession.ended_at >= day_start,
-                    LearningSession.ended_at < day_end,
+                    LearningSession.ended_at >= day_start_utc,
+                    LearningSession.ended_at < day_end_utc,
                 )
             )
             total_seconds = result.scalar() or 0
@@ -791,7 +860,7 @@ class StatsService:
 
             trends.append(
                 {
-                    "date": day_start.strftime("%Y-%m-%d"),
+                    "date": beijing_day_start.strftime("%Y-%m-%d"),
                     "minutes": minutes,
                 }
             )

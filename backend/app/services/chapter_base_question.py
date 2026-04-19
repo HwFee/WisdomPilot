@@ -113,6 +113,10 @@ class ChapterBaseQuestionService:
         Returns:
             包含结果分析和薄弱点识别的响应
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[submit_base_answers] 开始处理 chapter_id={chapter_id}, user_id={user_id}, answers_count={len(request.answers)}")
+
         from app.models.user import User
         from app.services.profile import profile_service
 
@@ -123,6 +127,7 @@ class ChapterBaseQuestionService:
             .order_by(ChapterBaseQuestion.order_index)
         )
         questions = {q.id: q for q in questions_result.scalars().all()}
+        logger.info(f"[submit_base_answers] 获取到 {len(questions)} 道题目")
 
         results = []
         correct_count = 0
@@ -159,6 +164,8 @@ class ChapterBaseQuestionService:
         total_questions = len(questions)
         accuracy = correct_count / total_questions if total_questions > 0 else 0
 
+        logger.info(f"[submit_base_answers] 答题结果: correct_count={correct_count}, total={total_questions}, accuracy={accuracy:.2%}")
+
         # 识别薄弱点和强项
         weak_points = []
         strong_points = []
@@ -171,6 +178,8 @@ class ChapterBaseQuestionService:
                 strong_points.append(kp)
 
         # 更新用户 mastery_xp（基础测试：根据正确率计算 XP）
+        # 注：智核已在每道题答对时通过 mastery_progress.save_exercise_progress 发放
+        # 此处不再批量发放智核
         if user_id:
             user_result = await db.execute(
                 select(User).where(User.id == user_id)
@@ -179,6 +188,9 @@ class ChapterBaseQuestionService:
             if user:
                 base_xp = int(accuracy * 20)  # 基础测试最高 20 XP
                 await profile_service.add_mastery_xp(db, user, base_xp)
+                logger.info(f"[submit_base_answers] 更新用户 {user_id[:8]}... mastery_xp +{base_xp}")
+
+        logger.info(f"[submit_base_answers] 返回结果: 不发放智核（已通过每题保存时发放）")
 
         return BaseAnswersSubmitResponse(
             total_questions=total_questions,
@@ -206,45 +218,76 @@ class ChapterBaseQuestionService:
         Returns:
             包含强化测试题的响应
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[generate_enhanced_quiz] 开始: user={user_id[:8]}..., chapter={request.chapter_id}, weak_points={request.weak_points}, count={request.question_count}")
+
         from app.models.mastery_exercise_progress import MasteryExerciseProgress
 
         # 获取章节信息
+        logger.info(f"[generate_enhanced_quiz] 步骤1: 获取章节信息...")
         chapter_result = await db.execute(
             select(Chapter).where(Chapter.id == request.chapter_id)
         )
         chapter = chapter_result.scalar_one_or_none()
         if not chapter:
+            logger.error(f"[generate_enhanced_quiz] 章节不存在: chapter_id={request.chapter_id}")
             return EnhancedQuizGenerateResponse(
                 success=False,
                 message="章节不存在",
             )
+        logger.info(f"[generate_enhanced_quiz] 章节信息获取成功: {chapter.title}")
 
         # 使用 AI 生成强化题
+        logger.info(f"[generate_enhanced_quiz] 步骤2: 调用AI生成题目...")
         questions = await self._generate_enhanced_questions_with_ai(
             chapter=chapter,
             weak_points=request.weak_points,
             question_count=request.question_count,
             question_types=request.question_types,
         )
+        logger.info(f"[generate_enhanced_quiz] AI生成完成, 获得 {len(questions)} 道题目")
 
         if not questions:
+            logger.error(f"[generate_enhanced_quiz] AI未返回任何题目")
             return EnhancedQuizGenerateResponse(
                 success=False,
                 message="AI 服务暂时不可用，请稍后重试",
             )
 
         # 获取当前章节题目的最大 order_index
+        logger.info(f"[generate_enhanced_quiz] 步骤3: 获取最大order_index...")
+
+        # 先查询该章节当前有多少题目
+        count_result = await db.execute(
+            select(ChapterBaseQuestion.id)
+            .where(ChapterBaseQuestion.chapter_id == request.chapter_id)
+        )
+        existing_ids = count_result.scalars().all()
+        logger.info(f"[generate_enhanced_quiz] 章节当前已有题目数: {len(existing_ids)}, 题目IDs: {existing_ids}")
+
         max_order_result = await db.execute(
             select(ChapterBaseQuestion.order_index)
             .where(ChapterBaseQuestion.chapter_id == request.chapter_id)
             .order_by(ChapterBaseQuestion.order_index.desc())
             .limit(1)
         )
-        max_order = max_order_result.scalar() or 0
+        max_order_row = max_order_result.scalar()
+        logger.info(f"[generate_enhanced_quiz] 查询结果 max_order_row={max_order_row}, 类型={type(max_order_row)}")
+
+        # 确保 max_order 是整数且不为 None
+        if max_order_row is None:
+            max_order = 0
+            logger.warning(f"[generate_enhanced_quiz] max_order 为 None，设置为 0")
+        else:
+            max_order = int(max_order_row)
+        logger.info(f"[generate_enhanced_quiz] 最终 max_order={max_order}, 新题目将从 order_index={max_order + 1} 开始")
 
         # 持久化题目到数据库，并创建进度记录（未完成状态）
+        logger.info(f"[generate_enhanced_quiz] 步骤4: 持久化题目到数据库...")
         db_questions = []
         for i, q in enumerate(questions):
+            logger.info(f"[generate_enhanced_quiz] 创建题目 {i+1}: type={q.type}, text={q.text[:30]}...")
             db_question = ChapterBaseQuestion(
                 chapter_id=request.chapter_id,
                 question_source="精进之路",
@@ -262,13 +305,21 @@ class ChapterBaseQuestionService:
             db.add(db_question)
             db_questions.append(db_question)
 
+        logger.info(f"[generate_enhanced_quiz] 步骤5: 提交题目到数据库...")
         await db.commit()
+        logger.info(f"[generate_enhanced_quiz] 题目已提交到数据库")
 
         # 刷新获取生成的ID
+        logger.info(f"[generate_enhanced_quiz] 步骤6: 刷新获取ID...")
         for q in db_questions:
             await db.refresh(q)
+        logger.info(f"[generate_enhanced_quiz] ID刷新完成, 题目IDs: {[q.id for q in db_questions]}")
+        # 详细记录每道题的 ID 和 order_index 对应关系
+        for i, db_q in enumerate(db_questions):
+            logger.info(f"[generate_enhanced_quiz] 题目{i+1}: 数据库ID={db_q.id}, order_index={db_q.order_index}, chapter_id={db_q.chapter_id}")
 
         # 为每道题创建进度记录（未完成状态），方便错题本跳转
+        logger.info(f"[generate_enhanced_quiz] 步骤7: 创建进度记录...")
         for db_q in db_questions:
             progress = MasteryExerciseProgress(
                 user_id=user_id,
@@ -281,8 +332,10 @@ class ChapterBaseQuestionService:
             db.add(progress)
 
         await db.commit()
+        logger.info(f"[generate_enhanced_quiz] 进度记录创建完成")
 
         # 构建返回的题目列表（带数据库ID）
+        logger.info(f"[generate_enhanced_quiz] 步骤8: 构建返回数据...")
         persisted_questions = []
         for db_q, q in zip(db_questions, questions):
             persisted_questions.append(EnhancedQuizQuestion(
@@ -300,6 +353,7 @@ class ChapterBaseQuestionService:
 
         # 创建会话（用于提交时的验证）
         session_id = str(uuid.uuid4())
+        logger.info(f"[generate_enhanced_quiz] 步骤9: 创建会话 session_id={session_id}")
         self._enhanced_sessions[session_id] = EnhancedQuizSession(
             session_id=session_id,
             user_id=user_id,
@@ -308,6 +362,7 @@ class ChapterBaseQuestionService:
             questions=[q.model_dump() for q in persisted_questions],
         )
 
+        logger.info(f"[generate_enhanced_quiz] 完成! session_id={session_id}, questions_count={len(persisted_questions)}")
         return EnhancedQuizGenerateResponse(
             success=True,
             session_id=session_id,
@@ -433,6 +488,7 @@ class ChapterBaseQuestionService:
         user = user_result.scalar_one_or_none()
         if user:
             await profile_service.add_mastery_xp(db, user, xp_earned)
+            # 注：智核已在每道题答对时立即发放，此处不再批量发放
 
         # 进度已经在每道题答完后保存了，这里不需要再更新
 
@@ -472,14 +528,23 @@ class ChapterBaseQuestionService:
         question_types: List[str],
     ) -> List[EnhancedQuizQuestion]:
         """使用 AI 生成强化测试题 (优先使用 MiniMax)"""
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[_generate_enhanced_questions_with_ai] 开始生成题目: chapter={chapter.title}, weak_points={weak_points}, count={question_count}")
+
         # 优先使用 MiniMax provider，否则使用主 AI provider
         provider = None
         if ai_service.is_minimax_configured():
             provider = ai_service.minimax_provider
+            logger.info(f"[_generate_enhanced_questions_with_ai] 使用 MiniMax provider")
         elif ai_service.is_configured():
             provider = ai_service.provider
+            logger.info(f"[_generate_enhanced_questions_with_ai] 使用主 AI provider")
+        else:
+            logger.warning(f"[_generate_enhanced_questions_with_ai] 没有可用的 AI provider")
 
         if provider is None:
+            logger.error(f"[_generate_enhanced_questions_with_ai] provider 为空，返回空列表")
             return []
 
         # 构建提示
@@ -529,7 +594,10 @@ class ChapterBaseQuestionService:
 
         try:
             # 调用 AI 服务
+            logger.info(f"[_generate_enhanced_questions_with_ai] 调用 AI provider.generate_explanation...")
             response = await provider.generate_explanation(prompt)
+            logger.info(f"[_generate_enhanced_questions_with_ai] AI 返回响应, 长度: {len(response) if response else 0}")
+            logger.debug(f"[_generate_enhanced_questions_with_ai] AI 响应内容: {response[:500] if response else 'None'}...")
 
             # 解析 JSON
             import json
@@ -539,12 +607,15 @@ class ChapterBaseQuestionService:
             json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response)
             if json_match:
                 json_str = json_match.group(1)
+                logger.info(f"[_generate_enhanced_questions_with_ai] 从 markdown 代码块提取 JSON")
             else:
                 json_str = response
+                logger.info(f"[_generate_enhanced_questions_with_ai] 直接使用响应作为 JSON")
 
             questions_data = json.loads(json_str)
+            logger.info(f"[_generate_enhanced_questions_with_ai] JSON 解析成功, 题目数量: {len(questions_data)}")
 
-            return [
+            result = [
                 EnhancedQuizQuestion(
                     id=q.get("id", f"eq_{i}"),
                     type=q.get("type", "choice"),
@@ -559,9 +630,13 @@ class ChapterBaseQuestionService:
                 )
                 for i, q in enumerate(questions_data)
             ]
+            logger.info(f"[_generate_enhanced_questions_with_ai] 题目构建完成, 返回 {len(result)} 道题")
+            return result
         except Exception as e:
             import logging
-            logging.error(f"Failed to generate enhanced questions: {e}")
+            logging.error(f"[_generate_enhanced_questions_with_ai] AI 生成题目失败: {e}")
+            import traceback
+            logging.error(f"[_generate_enhanced_questions_with_ai] 异常堆栈:\n{traceback.format_exc()}")
             return []
 
     async def _update_user_progress(

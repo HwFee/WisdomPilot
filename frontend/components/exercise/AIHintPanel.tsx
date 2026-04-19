@@ -10,6 +10,7 @@ import remarkGfm from "remark-gfm";
 // ========================================
 
 export interface ExerciseHintData {
+  exercise_id?: string;  // 题目唯一标识
   exercise_title: string;
   exercise_description: string;
   difficulty: number;
@@ -245,6 +246,7 @@ interface StreamHintModalProps {
   hintContent: string;
   isStreaming: boolean;
   cost: number;
+  isCached?: boolean;  // 是否为缓存内容
 }
 
 export function StreamHintModal({
@@ -254,6 +256,7 @@ export function StreamHintModal({
   hintContent,
   isStreaming,
   cost,
+  isCached = false,
 }: StreamHintModalProps) {
   const config = HINT_CONFIG[level];
   const Icon = config.icon;
@@ -261,54 +264,114 @@ export function StreamHintModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Icon className={`w-6 h-6 ${config.color}`} />
-            <h3 className="text-lg font-bold text-foreground">
-              {config.label}
-            </h3>
-            {isStreaming && (
-              <Loader2 className={`w-4 h-4 ${config.color} animate-spin ml-2`} />
+    <>
+      {/* Backdrop - 透明背景，点击关闭 */}
+      <div
+        className="fixed inset-0 z-[100]"
+        onClick={onClose}
+        style={{ animation: 'fadeIn 0.2s ease-out' }}
+      />
+
+      {/* Modal Panel - 居中显示，无背景遮罩 */}
+      <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none">
+        <div
+          className={`
+            bg-white rounded-2xl shadow-xl border border-gray-200
+            w-full max-w-lg mx-4
+            max-h-[80vh]
+            overflow-hidden flex flex-col
+            pointer-events-auto
+          `}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            animation: 'slideUp 0.3s ease-out',
+          }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${config.bgColor}`}>
+                <Icon className={`w-5 h-5 ${config.color}`} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  {config.label}
+                  {isCached && (
+                    <span className="text-xs font-normal text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                      已购买
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-muted-foreground">{config.description}</p>
+              </div>
+              {isStreaming && !isCached && (
+                <Loader2 className={`w-4 h-4 ${config.color} animate-spin ml-2`} />
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+            {hintContent ? (
+              <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground/90">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {hintContent}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-purple-500" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow">
+                    <Loader2 className="w-3 h-3 text-purple-500 animate-spin" />
+                  </div>
+                </div>
+                <p className="mt-4 text-sm">AI 正在思考...</p>
+              </div>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {hintContent ? (
-            <div className="prose prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {hintContent}
-              </ReactMarkdown>
+          {/* Footer */}
+          <div className="p-4 sm:p-5 border-t bg-gray-50/50 rounded-b-2xl">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                {isCached ? (
+                  <span className="text-green-600">免费查看（已购买）</span>
+                ) : (
+                  <>消耗 <Gem className="w-4 h-4 text-purple-500" /> {cost} 智核</>
+                )}
+              </span>
+              <button
+                onClick={onClose}
+                className="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-blue-600 transition-all"
+              >
+                {isStreaming && !isCached ? "关闭" : "知道了"}
+              </button>
             </div>
-          ) : (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
-              <Loader2 className="w-6 h-6 animate-spin mr-2" />
-              AI 正在思考...
-            </div>
-          )}
-        </div>
-
-        <div className="mt-4 pt-4 border-t flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            消耗 <Gem className="w-3 h-3 inline text-purple-500" /> {cost} 智核
-          </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-          >
-            {isStreaming ? "关闭" : "知道了"}
-          </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* CSS Animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 0; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
+    </>
   );
 }
 
@@ -337,7 +400,7 @@ export function StreamHintButton({
   const [hintContent, setHintContent] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [costDeducted, setCostDeducted] = useState(false);
+  const [isCached, setIsCached] = useState(false);  // 是否为缓存内容
 
   const config = HINT_CONFIG[level];
   const Icon = config.icon;
@@ -348,14 +411,17 @@ export function StreamHintButton({
     setHintContent("");
     setIsStreaming(true);
     setError(null);
-    setCostDeducted(false);
+    setIsCached(false);
 
     try {
       // 动态导入 API 函数避免循环依赖
       const { streamExerciseHint } = await import("@/lib/api/ai");
 
-      await streamExerciseHint(
+      let wasCached = false;
+
+      const result = await streamExerciseHint(
         {
+          exercise_id: exerciseData.exercise_id,  // 传递题目 ID
           exercise_title: exerciseData.exercise_title,
           exercise_description: exerciseData.exercise_description,
           difficulty: exerciseData.difficulty,
@@ -366,12 +432,11 @@ export function StreamHintButton({
           sample_output: exerciseData.sample_output,
         },
         token,
-        (chunk) => {
+        (chunk, cached) => {
           setHintContent((prev) => prev + chunk);
-          // 第一个 chunk 到达时标记已扣费
-          if (!costDeducted) {
-            setCostDeducted(true);
-            onBalanceChange();
+          if (cached) {
+            wasCached = true;
+            setIsCached(true);
           }
         },
         (errorMsg) => {
@@ -386,6 +451,11 @@ export function StreamHintButton({
           setIsStreaming(false);
         }
       );
+
+      // 如果扣费了，刷新余额
+      if (!result.cached && result.cost > 0) {
+        onBalanceChange();
+      }
     } catch {
       setError("AI 提示请求失败，请重试");
       setIsStreaming(false);
@@ -438,6 +508,7 @@ export function StreamHintButton({
         hintContent={hintContent}
         isStreaming={isStreaming}
         cost={config.cost}
+        isCached={isCached}
       />
 
       {/* Error toast */}

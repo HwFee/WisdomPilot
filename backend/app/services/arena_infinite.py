@@ -37,10 +37,14 @@ from app.services.hybrid_recommendation import HybridRecommendationService
 from app.services.user_profile import UserProfileService
 from app.services.wrong_question import wrong_question_service
 from app.services.tier_service import tier_service
+from app.services.core_service import CoreService
 from app.core.tier_config import TierRank, tier_from_string
 
 # 创建日志器
 logger = logging.getLogger(__name__)
+
+# Core rewards for challenge path
+CORE_REWARD_CHALLENGE_CORRECT = 3  # Cores earned for correct answer in challenge path
 
 
 class ChallengePathService:
@@ -696,6 +700,25 @@ class ChallengePathService:
         except Exception as e:
             logger.warning(f"Failed to update arena profile stats: {e}")
 
+        # Award cores for correct answer in challenge path
+        cores_earned = 0
+        if all_passed and stars_earned > 0:  # Only award cores on first correct
+            try:
+                core_service = CoreService(self.db)
+                cores_earned = CORE_REWARD_CHALLENGE_CORRECT
+                await core_service.earn_cores(
+                    user_id=user_id,
+                    amount=cores_earned,
+                    category="arena",
+                    reference_type="exercise",
+                    reference_id=str(exercise_id),
+                    description=f"挑战之路答对题目",
+                )
+                logger.info(f"[CORE] Awarded {cores_earned} cores to user {user_id[:8]}... for correct challenge exercise")
+            except Exception as e:
+                logger.warning(f"Failed to award cores: {e}")
+                cores_earned = 0
+
         await self.db.commit()
         logger.info(f"[STARS] After commit - profile.stars: {profile.stars}")
 
@@ -723,6 +746,7 @@ class ChallengePathService:
             "is_correct": all_passed,
             "test_results": test_results,
             "stars_earned": stars_earned,
+            "cores_earned": cores_earned,
             "next_unlocked": next_unlocked,
             "added_to_wrong_book": added_to_wrong_book,
             "tier_changed": tier_changed,

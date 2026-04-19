@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.utils.time import utc_now
 from app.services.achievement import achievement_service
+from app.services.core_service import CoreService
 
 
 class ProfileService:
@@ -24,6 +25,15 @@ class ProfileService:
         ((30, float('inf')), 2.0),  # 30+ days: 2x XP
     ]
 
+    # Check-in Core (智核) rewards by streak
+    CHECKIN_CORE_REWARDS = {
+        1: 5,    # Day 1: 5 cores
+        3: 10,   # 3+ day streak: 10 cores
+        7: 20,   # 7+ day streak: 20 cores
+        14: 35,  # 14+ day streak: 35 cores
+        30: 55,  # 30+ day streak: 55 cores
+    }
+
     # Mastery level thresholds (mastery_xp: level_name)
     MASTERY_LEVELS = [
         (0, "入门"),
@@ -39,6 +49,14 @@ class ProfileService:
             if min_days <= streak_days <= max_days:
                 return multiplier
         return 1.0
+
+    def _get_checkin_cores(self, streak_days: int) -> int:
+        """Get core reward for check-in based on streak"""
+        # Return the highest applicable tier
+        for threshold in sorted(self.CHECKIN_CORE_REWARDS.keys(), reverse=True):
+            if streak_days >= threshold:
+                return self.CHECKIN_CORE_REWARDS[threshold]
+        return self.CHECKIN_CORE_REWARDS[1]  # Default to day 1 reward
 
     async def get_profile(self, db: AsyncSession, user_id: str) -> User | None:
         """Get user profile"""
@@ -98,10 +116,16 @@ class ProfileService:
         return user
 
     async def _update_streak(self, db: AsyncSession, user: User) -> None:
-        """Internal: update streak based on last activity"""
-        now = utc_now()
-        now_naive = now.replace(tzinfo=None)
-        today_start = now_naive.replace(hour=0, minute=0, second=0, microsecond=0)
+        """Internal: update streak based on last activity
+
+        Uses Beijing timezone (UTC+8) for date calculations.
+        """
+        # 使用北京时区计算日期
+        beijing_tz = timezone(timedelta(hours=8))
+        beijing_now = datetime.now(beijing_tz)
+        beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+        # 转换为 naive datetime 用于比较（数据库存储的是 naive UTC）
+        today_start_naive = beijing_today_start.replace(tzinfo=None)
 
         if user.last_activity_date:
             last_date = user.last_activity_date
@@ -110,10 +134,10 @@ class ProfileService:
             last_date = last_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
             # If last activity was yesterday, increment streak
-            if today_start - last_date == timedelta(days=1):
+            if today_start_naive - last_date == timedelta(days=1):
                 user.streak_days += 1
             # If last activity was today, don't change streak
-            elif today_start == last_date:
+            elif today_start_naive == last_date:
                 pass
             # If more than 1 day gap, reset streak
             else:
@@ -121,7 +145,8 @@ class ProfileService:
         else:
             user.streak_days = 1
 
-        user.last_activity_date = now_naive
+        # 更新 last_activity_date 为当前 UTC 时间
+        user.last_activity_date = utc_now().replace(tzinfo=None)
 
     # Supported programming languages
     SUPPORTED_LANGUAGES = [
@@ -151,7 +176,10 @@ class ProfileService:
         return round(user.correct_exercises / user.total_exercises * 100, 1)
 
     def is_checked_in_today(self, user: User) -> bool:
-        """Check if user has already checked in today"""
+        """Check if user has already checked in today
+
+        Uses Beijing timezone (UTC+8) for date calculations.
+        """
         # Never checked in before - can't be checked in today
         if user.total_checkin_days == 0:
             return False
@@ -164,27 +192,35 @@ class ProfileService:
         if not user.last_activity_date:
             return False
 
-        now = utc_now()
-        now_naive = now.replace(tzinfo=None)
-        today_start = now_naive.replace(hour=0, minute=0, second=0, microsecond=0)
+        # 使用北京时区计算日期
+        beijing_tz = timezone(timedelta(hours=8))
+        beijing_now = datetime.now(beijing_tz)
+        beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+        # 转换为 naive datetime 用于比较
+        today_start_naive = beijing_today_start.replace(tzinfo=None)
 
         last_date = user.last_activity_date
         if hasattr(last_date, 'tzinfo') and last_date.tzinfo:
             last_date = last_date.replace(tzinfo=None)
         last_date = last_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        return today_start == last_date
+        return today_start_naive == last_date
 
     async def checkin(self, db: AsyncSession, user: User) -> dict:
         """Process daily check-in
 
+        Uses Beijing timezone (UTC+8) for date calculations.
+
         Returns:
             dict with streak_days, checked_in_today, xp_earned, last_checkin_date,
-                   total_checkin_days, streak_multiplier
+                   total_checkin_days, streak_multiplier, cores_earned
         """
-        now = utc_now()
-        now_naive = now.replace(tzinfo=None)
-        today_start = now_naive.replace(hour=0, minute=0, second=0, microsecond=0)
+        # 使用北京时区计算日期
+        beijing_tz = timezone(timedelta(hours=8))
+        beijing_now = datetime.now(beijing_tz)
+        beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+        # 转换为 naive datetime 用于比较
+        today_start_naive = beijing_today_start.replace(tzinfo=None)
 
         # Check if already checked in today
         if self.is_checked_in_today(user):
@@ -195,6 +231,7 @@ class ProfileService:
                 "last_checkin_date": user.last_activity_date,
                 "total_checkin_days": user.total_checkin_days,
                 "streak_multiplier": self._get_streak_multiplier(user.streak_days),
+                "cores_earned": 0,
             }
 
         # Calculate streak
@@ -205,7 +242,7 @@ class ProfileService:
             last_date = last_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
             # If last activity was yesterday, increment streak
-            if today_start - last_date == timedelta(days=1):
+            if today_start_naive - last_date == timedelta(days=1):
                 user.streak_days += 1
             # If more than 1 day gap, reset streak
             else:
@@ -224,13 +261,25 @@ class ProfileService:
             streak_bonus = (user.streak_days // 7) * self.CHECKIN_STREAK_BONUS_MULTIPLIER
             xp_earned += streak_bonus
 
-        # Update user
-        user.last_activity_date = now_naive
+        # Calculate core reward
+        cores_earned = self._get_checkin_cores(user.streak_days)
+
+        # Update user - 使用 UTC 时间存储
+        user.last_activity_date = utc_now().replace(tzinfo=None)
         user.xp += xp_earned
         user.total_checkin_days += 1
 
         db.add(user)
-        await db.commit()
+
+        # Award cores using CoreService
+        core_service = CoreService(db)
+        await core_service.earn_cores(
+            user_id=user.id,
+            amount=cores_earned,
+            category="checkin",
+            description=f"每日签到奖励 (连续{user.streak_days}天)",
+        )
+
         await db.refresh(user)
 
         # Check and award streak achievements
@@ -243,6 +292,7 @@ class ProfileService:
             "last_checkin_date": user.last_activity_date,
             "total_checkin_days": user.total_checkin_days,
             "streak_multiplier": streak_multiplier,
+            "cores_earned": cores_earned,
             "new_achievements": new_achievements,
         }
 

@@ -97,7 +97,7 @@ class AchievementService:
             user.xp += achievement.xp_reward
             db.add(user)
         if achievement.quota_reward > 0:
-            user.ai_quota += achievement.quota_reward
+            user.cores += achievement.quota_reward
             db.add(user)
 
         await db.commit()
@@ -128,7 +128,7 @@ class AchievementService:
             "rank": higher_count + 1,
             "user_id": user.id,
             "username": user.username,
-            "level": user.level,
+            "level": user.mastery_level,  # Use mastery_level instead of level
             "xp": user.xp,
             "streak_days": user.streak_days,
             "accuracy_rate": user.accuracy_rate,

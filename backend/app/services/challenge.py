@@ -132,7 +132,7 @@ class ChallengeService:
         quota_bonus = rewards.get("quota_bonus", 0)
 
         if quota_bonus > 0:
-            user.ai_quota += quota_bonus
+            user.cores += quota_bonus
             db.add(user)
 
     async def check_challenge_completion(

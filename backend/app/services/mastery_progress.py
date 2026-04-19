@@ -25,6 +25,7 @@ from app.schemas.mastery_progress import (
     MasteryQuizCompleteRequest,
 )
 from app.utils.time import utc_now
+from app.services.core_service import CoreService
 
 
 class MasteryProgressService:
@@ -47,6 +48,10 @@ class MasteryProgressService:
         Returns:
             保存结果
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[save_exercise_progress] 开始处理 user={user_id[:8]}..., question={request.question_id}, is_correct={request.is_correct}")
+
         try:
             # 构建exercise_key
             if not request.exercise_key:
@@ -65,6 +70,21 @@ class MasteryProgressService:
                 )
             )
             progress = result.scalar_one_or_none()
+
+            # 判断是否应该发放智核奖励（首次答对）
+            should_award_cores = False
+            if request.is_correct:
+                if progress:
+                    # 已有记录，检查是否首次答对
+                    if not progress.correct_at:
+                        should_award_cores = True
+                        logger.info(f"[save_exercise_progress] 已有记录但未答对过，将发放智核")
+                    else:
+                        logger.info(f"[save_exercise_progress] 已答对过，不重复发放智核")
+                else:
+                    # 新记录，首次答对
+                    should_award_cores = True
+                    logger.info(f"[save_exercise_progress] 新记录，将发放智核")
 
             if progress:
                 # 更新已有记录
@@ -104,11 +124,22 @@ class MasteryProgressService:
                 )
             )
             question = question_result.scalar_one_or_none()
-            question_title = (
-                f"基础题 {question.order_index}"
-                if question and question.order_index
-                else f"题目 {request.question_id}"
-            )
+
+            # 调试日志：记录题目信息
+            logger.info(f"[save_exercise_progress] 题目查询结果: question_id={request.question_id}, found={question is not None}")
+            if question:
+                logger.info(f"[save_exercise_progress] 题目详情: db_id={question.id}, order_index={question.order_index}, question_source={question.question_source}, question_type={request.question_type}")
+
+            # 根据题目类型确定标题，使用 order_index 作为编号
+            if question:
+                if request.question_type == "enhanced":
+                    question_title = f"强化题 {question.order_index}"
+                else:
+                    question_title = f"基础题 {question.order_index}"
+            else:
+                question_title = f"题目 {request.question_id}"
+
+            logger.info(f"[save_exercise_progress] 生成标题: question_title={question_title}, question_id={request.question_id}, order_index={question.order_index if question else None}")
 
             activity = ActivityLog(
                 user_id=user_id,
@@ -128,10 +159,34 @@ class MasteryProgressService:
                 },
             )
             db.add(activity)
+            logger.info(f"[save_exercise_progress] 已创建活动记录: activity_type=exercise_complete, exercise_id={request.question_id}, exercise_title={question_title}")
+
+            # 首次答对时发放智核奖励（每题2个智核）
+            core_earned = False
+            if should_award_cores:
+                try:
+                    core_service = CoreService(db)
+                    logger.info(f"[save_exercise_progress] 发放智核: user={user_id[:8]}..., question={request.question_id}, amount=2")
+                    await core_service.earn_cores(
+                        user_id=user_id,
+                        amount=2,
+                        category="mastery",
+                        reference_type="exercise",
+                        reference_id=str(request.question_id),
+                        description=f"精进之路答对{question_title}",
+                    )
+                    core_earned = True
+                    logger.info(f"[save_exercise_progress] 智核发放成功")
+                except Exception as core_error:
+                    # 智核发放失败不应影响进度保存，记录错误即可
+                    logger.error(f"[save_exercise_progress] 智核发放失败: {core_error}")
 
             await db.commit()
+            logger.info(f"[save_exercise_progress] 完成, core_earned={core_earned}")
             return MasteryExerciseProgressResponse(
-                success=True, progress_id=progress.id, message="进度保存成功"
+                success=True,
+                progress_id=progress.id,
+                message="进度保存成功" + ("，获得2智核" if core_earned else "")
             )
 
         except Exception as e:

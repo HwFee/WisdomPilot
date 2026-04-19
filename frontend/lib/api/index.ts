@@ -265,3 +265,22 @@ export {
   updateStars,
   TIER_COLORS,
 } from "./tier";
+
+// Core (智核)
+export {
+  getCoreBalance,
+  spendCores,
+  getCoreTransactions,
+  getDailyCoreSummary,
+  hasEnoughCores,
+  AI_HINT_COSTS,
+  CORE_REWARDS,
+  type CoreBalance,
+  type CoreSpendCategory,
+  type CoreEarnCategory,
+  type CoreTransaction,
+  type CoreTransactionList,
+  type DailyCoreSummary,
+  type SpendRequest,
+  type SpendResult,
+} from "./core";

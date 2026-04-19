@@ -167,6 +167,7 @@ export async function testAIConnection(
 // ========================================
 
 export interface ExerciseHintRequest {
+  exercise_id?: string  // 题目唯一标识（优先使用）
   exercise_title: string
   exercise_description: string
   difficulty: number
@@ -177,13 +178,24 @@ export interface ExerciseHintRequest {
   sample_output?: string
 }
 
+export interface CachedHintResponse {
+  cached: boolean
+  hint?: string
+  cost: number
+}
+
+export interface StreamHintResult {
+  cached: boolean
+  cost: number
+}
+
 export async function streamExerciseHint(
   request: ExerciseHintRequest,
   token: string,
-  onChunk: (content: string) => void,
+  onChunk: (content: string, cached?: boolean) => void,
   onError: (error: string) => void,
   onComplete: () => void
-): Promise<void> {
+): Promise<StreamHintResult> {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/ai/exercise-hint/stream`, {
     method: 'POST',
     headers: {
@@ -196,16 +208,17 @@ export async function streamExerciseHint(
   if (!response.ok) {
     const data = await response.json()
     onError(data.detail || 'AI 提示请求失败')
-    return
+    return { cached: false, cost: 0 }
   }
 
   const reader = response.body?.getReader()
   if (!reader) {
     onError('无响应流')
-    return
+    return { cached: false, cost: 0 }
   }
 
   const decoder = new TextDecoder()
+  let isCached = false
 
   try {
     while (true) {
@@ -220,14 +233,15 @@ export async function streamExerciseHint(
           const data = line.slice(6)
           if (data === '[DONE]') {
             onComplete()
-            return
+            return { cached: isCached, cost: isCached ? 0 : (request.hint_level === 'light' ? 1 : request.hint_level === 'medium' ? 3 : 5) }
           }
           try {
             const parsed = JSON.parse(data)
             if (parsed.error) {
               onError(parsed.error)
             } else if (parsed.content) {
-              onChunk(parsed.content)
+              if (parsed.cached) isCached = true
+              onChunk(parsed.content, parsed.cached)
             }
           } catch {
             // Skip invalid JSON
@@ -236,8 +250,10 @@ export async function streamExerciseHint(
       }
     }
     onComplete()
+    return { cached: isCached, cost: isCached ? 0 : (request.hint_level === 'light' ? 1 : request.hint_level === 'medium' ? 3 : 5) }
   } catch (error) {
     onError(error instanceof Error ? error.message : '流式输出错误')
+    return { cached: false, cost: 0 }
   }
 }
 

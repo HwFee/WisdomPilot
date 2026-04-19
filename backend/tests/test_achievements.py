@@ -186,7 +186,7 @@ class TestUserRank:
             hashed_password="hashed",
             is_active=True,
             xp=100,
-            level=1,
+            mastery_level="学习",
         )
         user2 = User(
             id=str(uuid.uuid4()),
@@ -195,7 +195,7 @@ class TestUserRank:
             hashed_password="hashed",
             is_active=True,
             xp=300,
-            level=3,
+            mastery_level="熟练",
         )
         user3 = User(
             id=str(uuid.uuid4()),
@@ -204,7 +204,7 @@ class TestUserRank:
             hashed_password="hashed",
             is_active=True,
             xp=200,
-            level=2,
+            mastery_level="练习",
         )
         db_session.add(user1)
         db_session.add(user2)
@@ -265,12 +265,12 @@ class TestAchievementService:
         achievements = await achievement_service.get_active_achievements(db_session)
         five_lessons = next(a for a in achievements if a.code == "FIVE_LESSONS")
 
-        initial_quota = auth_user.ai_quota
+        initial_cores = auth_user.cores
         await achievement_service.earn_achievement(db_session, auth_user, five_lessons.id)
 
         await db_session.refresh(auth_user)
         # FIVE_LESSONS has quota_reward of 5
-        assert auth_user.ai_quota == initial_quota + 5
+        assert auth_user.cores == initial_cores + 5
 
     async def test_cannot_earn_same_achievement_twice(self, db_session, auth_user):
         """Should raise error if achievement already earned"""

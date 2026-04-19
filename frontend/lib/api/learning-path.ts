@@ -285,16 +285,19 @@ export async function submitBaseAnswers(
 
 /**
  * Generate enhanced quiz based on weak points
+ * Note: Uses longer timeout (120s) because AI generation takes time
  */
 export async function generateEnhancedQuiz(
   courseId: number,
   request: EnhancedQuizGenerateRequest,
   token: string
 ): Promise<EnhancedQuizGenerateResponse> {
+  // AI 生成题目需要较长时间，使用 120 秒超时
   return post<EnhancedQuizGenerateResponse>(
     `/api/learning-path/mastery/${courseId}/generate-enhanced`,
     token,
-    request
+    request,
+    120000  // 120 seconds
   )
 }
 

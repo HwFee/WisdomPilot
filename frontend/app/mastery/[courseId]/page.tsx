@@ -109,6 +109,12 @@ export default function MasteryPathPage() {
     Map<number, boolean>
   >(new Map());
 
+  // Track answers modified in current session (not restored from history)
+  // This ensures we only submit new answers, not all historical answers
+  const [currentSessionAnswers, setCurrentSessionAnswers] = useState<
+    Set<number>
+  >(new Set());
+
   // Analysis state
   const [baseResult, setBaseResult] =
     useState<BaseAnswersSubmitResponse | null>(null);

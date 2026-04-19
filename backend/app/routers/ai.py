@@ -4,6 +4,7 @@ import json
 from typing import Annotated, AsyncGenerator
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -445,22 +446,69 @@ HINT_COSTS = {
 }
 
 
+@hint_router.get("/exercise-hint/cache/{exercise_id}/{hint_level}")
+async def get_cached_hint(
+    exercise_id: str,
+    hint_level: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: AsyncSession = Depends(get_db),
+):
+    """获取缓存的 AI 提示 - 如果用户已购买过，免费返回"""
+    from app.models.ai_hint_cache import AIHintCache
+
+    result = await db.execute(
+        select(AIHintCache).where(
+            AIHintCache.user_id == current_user.id,
+            AIHintCache.exercise_id == exercise_id,
+            AIHintCache.hint_level == hint_level,
+        )
+    )
+    cached = result.scalar_one_or_none()
+
+    if cached:
+        return {
+            "cached": True,
+            "hint": cached.hint_content,
+            "cost": 0,  # 免费
+        }
+
+    return {"cached": False, "cost": HINT_COSTS.get(hint_level, 1)}
+
+
 async def sse_exercise_hint_generator(
     request: ExerciseHintRequest,
     user: User,
     db: AsyncSession,
     cost: int,
+    exercise_id: str,
 ) -> AsyncGenerator[bytes, None]:
-    """SSE 格式的编程题提示流生成器，包含智核扣除"""
-    from app.services.quota import quota_service
+    """SSE 格式的编程题提示流生成器，包含智核扣除和缓存"""
+    from app.services.core_service import CoreService
+    from app.models.ai_hint_cache import AIHintCache
 
     try:
-        # 先尝试扣除智核
-        deducted = await quota_service.deduct_quota(user, db, cost)
-        if not deducted:
-            error_payload = json.dumps({"error": "智核余额不足", "code": "INSUFFICIENT_CORES"}) + "\n"
-            yield f"data: {error_payload}\n\n".encode()
-            return
+        # 使用 CoreService 扣除智核（会创建交易记录）
+        core_service = CoreService(db)
+        category = f"ai_hint_{request.hint_level}"  # ai_hint_light, ai_hint_medium, ai_hint_deep
+
+        try:
+            result = await core_service.spend_cores(
+                user_id=user.id,
+                amount=cost,
+                category=category,
+                reference_type="exercise_hint",
+                reference_id=exercise_id,
+                description=f"AI提示 - {request.exercise_title[:50]}",
+            )
+        except ValueError as e:
+            if "Insufficient" in str(e):
+                error_payload = json.dumps({"error": "智核余额不足", "code": "INSUFFICIENT_CORES"}) + "\n"
+                yield f"data: {error_payload}\n\n".encode()
+                return
+            raise
+
+        # 收集完整内容用于缓存
+        full_content = ""
 
         # 生成提示
         async for chunk in ai_service.stream_exercise_hint(
@@ -473,8 +521,22 @@ async def sse_exercise_hint_generator(
             sample_input=request.sample_input,
             sample_output=request.sample_output,
         ):
+            full_content += chunk
             payload = json.dumps({"content": chunk}) + "\n"
             yield f"data: {payload}\n\n".encode()
+
+        # 保存缓存
+        if full_content:
+            cache = AIHintCache(
+                user_id=user.id,
+                exercise_id=exercise_id,
+                hint_level=request.hint_level,
+                hint_content=full_content,
+                cost=cost,
+            )
+            db.add(cache)
+            await db.commit()
+
         yield b"data: [DONE]\n\n"
     except Exception as e:
         error_payload = json.dumps({"error": str(e)}) + "\n"
@@ -490,11 +552,72 @@ async def stream_exercise_hint(
     """编程题 AI 提示（流式）- 挑战之路使用
 
     智核会在流式输出开始时扣除，如果余额不足会立即返回错误。
+    生成后会缓存，下次访问免费。
     """
+    from app.models.ai_hint_cache import AIHintCache
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # 使用前端传递的 exercise_id，如果没有则基于标题生成
+    if request.exercise_id:
+        exercise_id = request.exercise_id
+    else:
+        import hashlib
+        exercise_id = hashlib.md5(
+            f"{request.exercise_title}:{request.exercise_description[:100]}".encode()
+        ).hexdigest()[:16]
+
+    logger.info(f"[AI Hint] user={current_user.id[:8]}... exercise_id={exercise_id} level={request.hint_level}")
+
+    # 检查是否已缓存
+    result = await db.execute(
+        select(AIHintCache).where(
+            AIHintCache.user_id == current_user.id,
+            AIHintCache.exercise_id == exercise_id,
+            AIHintCache.hint_level == request.hint_level,
+        )
+    )
+    cached = result.scalar_one_or_none()
+
+    if cached:
+        logger.info(f"[AI Hint] CACHE HIT! Returning cached content")
+        # 直接返回缓存内容（不扣费）
+        async def cached_generator(content: str) -> AsyncGenerator[bytes, None]:
+            # 模拟流式输出效果
+            chunk_size = 20
+            for i in range(0, len(content), chunk_size):
+                chunk = content[i:i + chunk_size]
+                payload = json.dumps({"content": chunk, "cached": True}) + "\n"
+                yield f"data: {payload}\n\n".encode()
+            yield b"data: [DONE]\n\n"
+
+        return StreamingResponse(
+            cached_generator(cached.hint_content),
+            media_type="text/event-stream",
+        )
+
+    logger.info(f"[AI Hint] CACHE MISS, generating new hint...")
+
+    if cached:
+        # 直接返回缓存内容（不扣费）
+        async def cached_generator(content: str) -> AsyncGenerator[bytes, None]:
+            # 模拟流式输出效果
+            chunk_size = 20
+            for i in range(0, len(content), chunk_size):
+                chunk = content[i:i + chunk_size]
+                payload = json.dumps({"content": chunk, "cached": True}) + "\n"
+                yield f"data: {payload}\n\n".encode()
+            yield b"data: [DONE]\n\n"
+
+        return StreamingResponse(
+            cached_generator(cached.hint_content),
+            media_type="text/event-stream",
+        )
+
     # 获取消耗
     cost = HINT_COSTS.get(request.hint_level, 1)
 
     return StreamingResponse(
-        sse_exercise_hint_generator(request, current_user, db, cost),
+        sse_exercise_hint_generator(request, current_user, db, cost, exercise_id),
         media_type="text/event-stream",
     )

@@ -321,28 +321,34 @@ async def get_today_stats(
     - accuracy: Challenge-path accuracy rate today (percentage)
     - time_minutes: Total learning time today in minutes across all paths
     """
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone, timedelta
     import logging
 
     from app.models.stats import ActivityLog, LearningSession
 
     logger = logging.getLogger(__name__)
 
-    # Use UTC time for consistency with database storage
-    utc_now = datetime.now(timezone.utc)
-    today_start = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # 使用北京时间 (UTC+8) 计算今天的起始时间
+    # 用户在中国，所以"今天"应该按北京时区来计算
+    beijing_tz = timezone(timedelta(hours=8))
+    beijing_now = datetime.now(beijing_tz)
+    # 北京时间的今天零点
+    beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # 转换为 UTC 时间用于数据库查询
+    today_start_utc = beijing_today_start.astimezone(timezone.utc)
 
     logger.info(f"[学习时长-Today] ========== 查询今日统计 ==========")
     logger.info(f"[学习时长-Today] user_id: {current_user.id}")
-    logger.info(f"[学习时长-Today] 当前UTC时间: {utc_now}")
-    logger.info(f"[学习时长-Today] 今日起始时间: {today_start}")
+    logger.info(f"[学习时长-Today] 当前北京时间: {beijing_now}")
+    logger.info(f"[学习时长-Today] 北京今天零点: {beijing_today_start}")
+    logger.info(f"[学习时长-Today] 转换为UTC: {today_start_utc}")
 
-    # Get today's exercise activities
+    # Get today's exercise activities (using Beijing timezone adjusted start time)
     exercises_result = await db.execute(
         select(ActivityLog)
         .where(
             ActivityLog.user_id == current_user.id,
-            ActivityLog.created_at >= today_start,
+            ActivityLog.created_at >= today_start_utc,
             ActivityLog.activity_type == "exercise_complete",
         )
         .order_by(ActivityLog.created_at.desc())
@@ -401,7 +407,7 @@ async def get_today_stats(
     sessions_result = await db.execute(
         select(LearningSession).where(
             LearningSession.user_id == current_user.id,
-            LearningSession.started_at >= today_start,
+            LearningSession.started_at >= today_start_utc,
         )
     )
     today_sessions = sessions_result.scalars().all()
