@@ -20,6 +20,7 @@ from app.models.wrong_question import WrongQuestion
 from app.models.chapter_base_question import ChapterBaseQuestion
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.mastery_exercise_progress import MasteryExerciseProgress
+from app.models.solution import Solution
 
 __all__ = [
     # User & Auth
@@ -62,4 +63,6 @@ __all__ = [
     "ArenaExerciseProgress",
     # Mastery Exercise Progress
     "MasteryExerciseProgress",
+    # Solution System
+    "Solution",
 ]
