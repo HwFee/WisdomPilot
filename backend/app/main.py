@@ -14,6 +14,8 @@ from app.models import Favorite, Note  # noqa: F401 - registers favorites and no
 from app.models import ChapterMastery, ChallengeSession, UserArenaProfile  # noqa: F401 - registers mastery and arena models
 from app.models import WrongQuestion  # noqa: F401 - registers wrong question model
 from app.models import CoreTransaction  # noqa: F401 - registers core transaction model
+from app.models import TierTransaction  # noqa: F401 - registers tier transaction model
+from app.models import MasteryXpTransaction  # noqa: F401 - registers mastery xp transaction model
 from app.middleware import RateLimitMiddleware
 from app.routers import (
     auth_router,
@@ -34,6 +36,7 @@ from app.routers.notes import router as notes_router
 from app.routers.learning_path import router as learning_path_router
 from app.routers.tier import router as tier_router
 from app.routers.core import router as core_router
+from app.routers.xp import router as xp_router
 from app.routers.test_sandbox import router as test_sandbox_router
 
 
@@ -125,6 +128,7 @@ app.include_router(notes_router)
 app.include_router(learning_path_router)
 app.include_router(tier_router)
 app.include_router(core_router)
+app.include_router(xp_router)
 app.include_router(test_sandbox_router)
 
 

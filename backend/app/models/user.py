@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from app.models.wrong_question import WrongQuestion
     from app.models.core_transaction import CoreTransaction
     from app.models.ai_hint_cache import AIHintCache
+    from app.models.tier_transaction import TierTransaction
+    from app.models.mastery_xp_transaction import MasteryXpTransaction
 
 
 class User(Base):
@@ -229,4 +231,10 @@ class User(Base):
     )
     ai_hint_caches: Mapped[List["AIHintCache"]] = relationship(
         "AIHintCache", back_populates="user"
+    )
+    tier_transactions: Mapped[List["TierTransaction"]] = relationship(
+        "TierTransaction", back_populates="user"
+    )
+    mastery_xp_transactions: Mapped[List["MasteryXpTransaction"]] = relationship(
+        "MasteryXpTransaction", back_populates="user"
     )

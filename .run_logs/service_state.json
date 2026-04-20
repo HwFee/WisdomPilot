@@ -1,7 +1,7 @@
 {
-  "launcher_pid": 22972,
-  "backend_pid": 3884,
-  "frontend_pid": 16860,
+  "launcher_pid": 22912,
+  "backend_pid": 10376,
+  "frontend_pid": 4504,
   "backend_port": 8000,
   "frontend_port": 3000
 }

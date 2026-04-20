@@ -761,7 +761,7 @@ export default function MasteryPathPage() {
             user_answer: answer,
             course_id: courseId,
             chapter_id: selectedChapterId,
-            section_id: selectedSectionId,
+            section_id: selectedSectionId ?? undefined,
             exercise_content: {
               text: currentQuestion.text,
               options: currentQuestion.options,
@@ -983,7 +983,7 @@ export default function MasteryPathPage() {
             user_answer: answer,
             course_id: courseId,
             chapter_id: selectedChapterId,
-            section_id: selectedSectionId,
+            section_id: selectedSectionId ?? undefined,
             exercise_id: questionId,
             exercise_content: {
               text: currentQuestion.text,

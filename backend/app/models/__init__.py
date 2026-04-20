@@ -29,6 +29,8 @@ from app.models.knowledge_point_mastery import KnowledgePointMastery
 from app.models.answer_history import AnswerHistory
 from app.models.section_mastery import SectionMastery
 from app.models.course_mastery import CourseMastery
+from app.models.tier_transaction import TierTransaction
+from app.models.mastery_xp_transaction import MasteryXpTransaction
 
 __all__ = [
     # User & Auth
@@ -85,4 +87,8 @@ __all__ = [
     "AnswerHistory",
     "SectionMastery",
     "CourseMastery",
+    # Tier (段位) System
+    "TierTransaction",
+    # Mastery XP (精进之路经验) System
+    "MasteryXpTransaction",
 ]

@@ -22,6 +22,7 @@ interface Activity {
     // 精进之路/挑战之路共用字段
     section_id?: number;
     section_title?: string;
+    chapter_title?: string;
     order_index?: number;
     difficulty?: number;
     exercise_index?: number;

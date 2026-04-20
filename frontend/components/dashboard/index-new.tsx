@@ -27,7 +27,7 @@ import {
 } from '@/lib/api'
 import {
   Sparkles, Zap, Trophy, Clock, Target,
-  BookOpen, Code2, Swords, FlaskConical, Gem,
+  BookOpen, Code2, Swords, Gem,
 } from 'lucide-react'
 import type { ReviewStatsResponse } from '@/types/review'
 import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse, Tier } from '@/types/api'
@@ -420,27 +420,30 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 pl-2 border-l border-border">
-                {/* Test page links - only visible in development */}
-                {process.env.NODE_ENV === 'development' && (
-                  <>
-                    <button
-                      onClick={() => router.push('/test/hybrid-recommendation')}
-                      className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                      title="混合推荐测试"
-                    >
-                      <FlaskConical className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => router.push('/test/cores')}
-                      className="p-2 text-muted-foreground hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-all"
-                      title="智核系统测试"
-                    >
-                      <Gem className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-                <span className="text-xs text-muted-foreground hidden lg:block">{user?.username}</span>
+              {/* Flow Icons - 智核流水、段位流水、经验流水 */}
+              <div className="flex items-center gap-1 pl-2 border-l border-border">
+                <button
+                  onClick={() => router.push('/cores')}
+                  className="p-2 text-purple-500 hover:text-purple-600 hover:bg-purple-500/10 rounded-lg transition-all"
+                  title={t('智核流水', 'Core Transactions')}
+                >
+                  <Gem className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => router.push('/tier')}
+                  className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-lg transition-all"
+                  title={t('段位流水', 'Tier Transactions')}
+                >
+                  <Trophy className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => router.push('/xp')}
+                  className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
+                  title={t('经验流水', 'XP Transactions')}
+                >
+                  <Zap className="w-4 h-4" />
+                </button>
+                <span className="text-xs text-muted-foreground hidden lg:block ml-2">{user?.username}</span>
                 <button onClick={handleLogout}
                   className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                   title={t('退出登录', 'Logout')}>

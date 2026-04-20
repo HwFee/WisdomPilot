@@ -589,6 +589,9 @@ class ChallengePathService:
         current_sub_tier = profile.sub_tier if profile.sub_tier else 4
         current_stars = profile.stars if profile.stars else 0
 
+        # Initialize result for tier operations
+        tier_result = None
+
         # Get stars_deducted for this exercise (use getattr for backward compatibility)
         stars_deducted = getattr(progress, 'stars_deducted', None)
         if stars_deducted is None:
@@ -638,34 +641,34 @@ class ChallengePathService:
 
             if stars_earned > 0:
                 # Add stars
-                result = tier_service.add_stars(
+                tier_result = tier_service.add_stars(
                     tier=current_tier,
                     sub_tier=current_sub_tier,
                     current_stars=current_stars,
                     stars_earned=stars_earned,
                 )
-                new_tier = result.tier
-                new_sub_tier = result.sub_tier
-                new_stars = result.stars
-                promoted = result.promoted
+                new_tier = tier_result.tier
+                new_sub_tier = tier_result.sub_tier
+                new_stars = tier_result.stars
+                promoted = tier_result.promoted
                 logger.info(f"[STARS] Add stars result - new_tier: {new_tier.value}, new_sub_tier: {new_sub_tier}, new_stars: {new_stars}, promoted: {promoted}")
             elif stars_earned < 0:
                 # Remove stars
-                result = tier_service.remove_stars(
+                tier_result = tier_service.remove_stars(
                     tier=current_tier,
                     sub_tier=current_sub_tier,
                     current_stars=current_stars,
                     stars_lost=abs(stars_earned),
                     protection_remaining=profile.protection_remaining or 0,
                 )
-                new_tier = result.tier
-                new_sub_tier = result.sub_tier
-                new_stars = result.stars
-                demoted = result.demoted
+                new_tier = tier_result.tier
+                new_sub_tier = tier_result.sub_tier
+                new_stars = tier_result.stars
+                demoted = tier_result.demoted
                 logger.info(f"[STARS] Remove stars result - new_tier: {new_tier.value}, new_sub_tier: {new_sub_tier}, new_stars: {new_stars}, demoted: {demoted}")
 
                 # Update protection remaining
-                profile.protection_remaining = result.protection_remaining
+                profile.protection_remaining = tier_result.protection_remaining
             else:
                 # No change
                 new_tier = current_tier
@@ -719,6 +722,34 @@ class ChallengePathService:
             except Exception as e:
                 logger.warning(f"Failed to award cores: {e}")
                 cores_earned = 0
+
+        # Record tier transaction if stars changed
+        if stars_earned != 0 or promoted or demoted:
+            try:
+                from app.services.tier_transaction_service import TierTransactionService
+                tier_tx_service = TierTransactionService(self.db)
+                used_protection = getattr(tier_result, 'used_protection', False) if tier_result and stars_earned < 0 else False
+                await tier_tx_service.record_transaction(
+                    user_id=user_id,
+                    course_id=course_id,
+                    tier_before=current_tier.value if current_tier else TierRank.BRONZE.value,
+                    sub_tier_before=current_sub_tier,
+                    stars_before=current_stars,
+                    tier_after=new_tier.value if new_tier else TierRank.BRONZE.value,
+                    sub_tier_after=new_sub_tier,
+                    stars_after=new_stars,
+                    stars_change=stars_earned,
+                    promoted=promoted,
+                    demoted=demoted,
+                    used_protection=used_protection,
+                    protection_remaining=profile.protection_remaining or 0,
+                    source="arena_challenge",
+                    reference_id=str(exercise_id),
+                    description=f"挑战之路答题 - {'答对' if all_passed else '答错'}",
+                )
+                logger.info(f"[TierTx] Recorded tier transaction for user {user_id[:8]}... stars_change={stars_earned}")
+            except Exception as e:
+                logger.warning(f"Failed to record tier transaction: {e}")
 
         await self.db.commit()
         logger.info(f"[STARS] After commit - profile.stars: {profile.stars}")

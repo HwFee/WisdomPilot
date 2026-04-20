@@ -78,10 +78,35 @@ class ProfileService:
                 return level_name
         return "入门"
 
-    async def add_mastery_xp(self, db: AsyncSession, user: User, xp_amount: int) -> User:
-        """Add mastery XP to user and update mastery level"""
+    async def add_mastery_xp(self, db: AsyncSession, user: User, xp_amount: int, category: str = "bonus", description: str = None) -> User:
+        """Add mastery XP to user and update mastery level
+
+        Note: This method records a transaction. For simple XP updates without
+        transaction recording, use MasteryXpTransactionService.earn_xp directly.
+        """
+        from app.services.mastery_xp_transaction_service import MasteryXpTransactionService, get_mastery_level
+
+        # Record before state
+        level_before = get_mastery_level(user.mastery_xp)
+
+        # Update user
         user.mastery_xp += xp_amount
-        user.mastery_level = self.get_mastery_level(user.mastery_xp)
+        user.mastery_level = get_mastery_level(user.mastery_xp)
+
+        # Record transaction
+        service = MasteryXpTransactionService(db)
+        await service.record_transaction(
+            user_id=user.id,
+            type="earn",
+            category=category,
+            amount=xp_amount,
+            balance_after=user.mastery_xp,
+            level_before=level_before,
+            level_after=user.mastery_level,
+            level_up=user.mastery_level != level_before,
+            description=description,
+        )
+
         db.add(user)
         await db.commit()
         await db.refresh(user)

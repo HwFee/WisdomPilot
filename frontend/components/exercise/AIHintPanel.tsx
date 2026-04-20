@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Lightbulb, Sparkles, BookOpen, Gem, Loader2, X, AlertCircle, GripVertical } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -342,27 +343,18 @@ export function StreamHintModal({
     zIndex: 9999,
   };
 
-  return (
-    <>
-      {/* Backdrop - 透明背景，点击关闭 */}
-      <div
-        className="fixed inset-0"
-        style={{ zIndex: 9998 }}
-        onClick={onClose}
-      />
-
-      {/* Modal Panel - 直接 fixed 定位，可拖动 */}
-      <div
-        style={modalStyle}
-        className={`
-          bg-white rounded-2xl shadow-2xl border border-gray-200
-          w-full max-w-lg mx-4
-          max-h-[80vh]
-          overflow-hidden flex flex-col
-          ${isDragging ? 'select-none' : ''}
-        `}
-        onClick={(e) => e.stopPropagation()}
-      >
+  // 模态框内容 - 不使用 backdrop，允许用户继续操作页面
+  const modalContent = (
+    <div
+      style={modalStyle}
+      className={`
+        bg-white rounded-2xl shadow-2xl border border-gray-200
+        w-full max-w-lg
+        max-h-[80vh]
+        overflow-hidden flex flex-col
+        ${isDragging ? 'select-none' : ''}
+      `}
+    >
           {/* 可拖动的标题栏 */}
           <div
             className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl cursor-grab active:cursor-grabbing"
@@ -443,8 +435,10 @@ export function StreamHintModal({
             </div>
           </div>
         </div>
-    </>
   );
+
+  // 使用 Portal 渲染到 body，避免被父容器 CSS 影响
+  return createPortal(modalContent, document.body);
 }
 
 // ========================================

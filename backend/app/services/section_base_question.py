@@ -195,15 +195,24 @@ class SectionBaseQuestionService:
                 knowledge_points=question.knowledge_points,
             ))
 
-        # 更新用户经验值（如果提供了 user_id）
+        # 更新用户精进之路经验值（如果提供了 user_id）
         if user_id and correct_count > 0:
             user_result = await db.execute(
                 select(User).where(User.id == user_id)
             )
             user = user_result.scalar_one_or_none()
             if user:
+                from app.services.mastery_xp_transaction_service import MasteryXpTransactionService
                 xp_earned = correct_count * 10  # 每题 10 XP
-                await profile_service.add_xp(db, user, xp_earned)
+                mastery_xp_service = MasteryXpTransactionService(db)
+                await mastery_xp_service.earn_xp(
+                    user_id=user.id,
+                    amount=xp_earned,
+                    category="base_test",
+                    reference_type="section",
+                    reference_id=str(section_id),
+                    description=f"小节基础测试答对 {correct_count} 题"
+                )
 
         accuracy = correct_count / len(questions) if questions else 0
 
@@ -434,6 +443,8 @@ class SectionBaseQuestionService:
         Returns:
             包含结果和学习建议
         """
+        from app.models.user import User
+
         session = self._enhanced_sessions.get(request.session_id)
         if not session:
             return EnhancedQuizSubmitResponse(
@@ -469,6 +480,26 @@ class SectionBaseQuestionService:
         accuracy = correct_count / len(session.questions) if session.questions else 0
         passed = accuracy >= 0.8
 
+        # 更新用户精进之路经验值
+        xp_earned = 0
+        if correct_count > 0:
+            user_result = await db.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = user_result.scalar_one_or_none()
+            if user:
+                from app.services.mastery_xp_transaction_service import MasteryXpTransactionService
+                xp_earned = correct_count * 15  # 强化题每题 15 XP
+                mastery_xp_service = MasteryXpTransactionService(db)
+                await mastery_xp_service.earn_xp(
+                    user_id=user.id,
+                    amount=xp_earned,
+                    category="enhanced_test",
+                    reference_type="section",
+                    reference_id=str(request.section_id),
+                    description=f"强化测试答对 {correct_count} 题"
+                )
+
         # 生成学习建议
         recommendations = []
         if not passed:
@@ -486,7 +517,7 @@ class SectionBaseQuestionService:
             total_questions=len(session.questions),
             correct_answers=correct_count,
             accuracy=accuracy,
-            xp_earned=correct_count * 15,  # 强化题每题 15 XP
+            xp_earned=xp_earned,
             mastery_points_earned=correct_count * 5 if passed else 0,
             results=results,
             recommendations=recommendations,

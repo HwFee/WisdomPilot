@@ -5,7 +5,7 @@
 """
 
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, Field
@@ -24,6 +24,7 @@ from app.core.tier_config import (
     tier_from_string,
 )
 from app.services.tier_service import TierService, tier_service, TierUpdateResult
+from app.services.tier_transaction_service import TierTransactionService
 from app.utils.deps import get_current_active_user
 
 router = APIRouter(prefix="/api/tier", tags=["tier"])
@@ -194,6 +195,11 @@ async def update_stars(
 
     tier = tier_from_string(profile.tier)
 
+    # 记录变化前的状态
+    tier_before = profile.tier
+    sub_tier_before = profile.sub_tier
+    stars_before = profile.stars
+
     # 计算星星变化
     if request.accuracy is not None and request.difficulty is not None:
         # 使用正确率和难度计算
@@ -251,6 +257,26 @@ async def update_stars(
         elif new_tier_order == old_highest_order and new_sub_tier < (profile.highest_sub_tier or 5):
             profile.highest_sub_tier = new_sub_tier
 
+    # 记录段位变化交易
+    tier_tx_service = TierTransactionService(db)
+    await tier_tx_service.record_transaction(
+        user_id=current_user.id,
+        course_id=course_id,
+        tier_before=tier_before,
+        sub_tier_before=sub_tier_before,
+        stars_before=stars_before,
+        tier_after=new_tier.value,
+        sub_tier_after=new_sub_tier,
+        stars_after=new_stars,
+        stars_change=stars_change,
+        promoted=result.promoted,
+        demoted=result.demoted,
+        used_protection=result.used_protection,
+        protection_remaining=profile.protection_remaining,
+        source="arena_challenge",
+        description=_generate_tier_message(result, stars_change),
+    )
+
     await db.commit()
     await db.refresh(profile)
 
@@ -269,6 +295,35 @@ async def update_stars(
         full_name=get_full_tier_name(new_tier, new_sub_tier),
         message=message,
     )
+
+
+# ============================================
+# 段位交易记录 API
+# ============================================
+
+class TierTransactionListResponse(BaseModel):
+    """段位交易记录列表响应"""
+    transactions: list[dict]
+    total: int
+
+
+@router.get("/transactions", response_model=TierTransactionListResponse)
+async def get_tier_transactions(
+    current_user: auth_dependency,
+    db: db_dependency,
+    course_id: Optional[int] = Query(None, description="课程ID，不传则返回所有课程"),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+):
+    """获取用户段位变化历史记录"""
+    tier_tx_service = TierTransactionService(db)
+    result = await tier_tx_service.get_transactions(
+        user_id=current_user.id,
+        course_id=course_id,
+        limit=limit,
+        offset=offset,
+    )
+    return TierTransactionListResponse(**result)
 
 
 def _generate_tier_message(result: TierUpdateResult, stars_change: int) -> str:

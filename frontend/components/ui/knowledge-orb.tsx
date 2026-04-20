@@ -203,6 +203,10 @@ export function KnowledgeOrb({ disabledForQuestion = false }: KnowledgeOrbProps)
 
   // ── Orb: hide when panel open, show when panel closed ──
   const [orbVisible, setOrbVisible] = useState(true)
+
+  // ── "Please answer first" toast state ──
+  const [showDisabledToast, setShowDisabledToast] = useState(false)
+
   useEffect(() => {
     if (isKnowledgePanelOpen) {
       setOrbVisible(false)
@@ -257,7 +261,8 @@ export function KnowledgeOrb({ disabledForQuestion = false }: KnowledgeOrbProps)
 
   // ── Orb: expand panel on click ─────────────────────────
   const handleOrbClick = useCallback((e: React.MouseEvent) => {
-    if (isDraggingOrb) return
+    // If we just finished a drag operation, don't open panel
+    if (panelOpenedRef.current) return
     e.preventDefault()
     e.stopPropagation()
 
@@ -281,7 +286,7 @@ export function KnowledgeOrb({ disabledForQuestion = false }: KnowledgeOrbProps)
     }
     setContextMode(null)
     openKnowledgePanel(blankQuestion, { x: spawnX, y: spawnY })
-  }, [isDraggingOrb, openKnowledgePanel])
+  }, [openKnowledgePanel])
 
   // ── Orb: drag start ────────────────────────────────────
   const handleOrbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -368,6 +373,15 @@ export function KnowledgeOrb({ disabledForQuestion = false }: KnowledgeOrbProps)
     const kp = targetedKnowledgeRef.current
     const q = targetedQuestionRef.current
 
+    // Debug log
+    console.log('[KnowledgeOrb] Pointer up:', {
+      hasKp: !!kp,
+      hasQ: !!q,
+      disabledForQuestion,
+      qType: q?.type,
+      qId: q?.id
+    })
+
     if (kp && !panelOpenedRef.current) {
       panelOpenedRef.current = true
 
@@ -389,32 +403,20 @@ export function KnowledgeOrb({ disabledForQuestion = false }: KnowledgeOrbProps)
     } else if (q && !panelOpenedRef.current) {
       // Check if question AI is disabled (user hasn't answered yet)
       if (disabledForQuestion) {
-        // Show friendly message instead of opening panel
-        panelOpenedRef.current = true
+        // Show a brief toast message instead of opening panel
+        console.log('[KnowledgeOrb] Disabled for question - showing toast, NOT opening panel')
+        panelOpenedRef.current = true // Mark as handled to prevent click event from opening panel
+        setShowDisabledToast(true)
+        setTimeout(() => setShowDisabledToast(false), 2000)
+        // Snap orb back to default position
         const orbEl = orbRef.current
-        const orbRect = orbEl?.getBoundingClientRect()
-        const spawnX = orbRect ? orbRect.left + ORB_SIZE / 2 : e.clientX
-        const spawnY = orbRect ? orbRect.top + ORB_SIZE / 2 : e.clientY
-
-        setOrbVisible(false)
-        setContextMode("question")
-
-        // Open panel with encouraging message
-        openKnowledgePanel(
-          {
-            type: "knowledge",
-            knowledgePoint: {
-              id: "",
-              title: "先试试自己的智慧吧！",
-              content: "💪 这道题你还没作答呢，先凭自己的努力完成它吧！\n\n相信你能行的！完成后如果还有疑问，再来找我~",
-              examples: [],
-              difficulty: 1,
-              index: 0,
-              adjacentPoints: [],
-            },
-          },
-          { x: spawnX, y: spawnY }
-        )
+        if (orbEl) {
+          orbEl.style.position = "fixed"
+          orbEl.style.left = ""
+          orbEl.style.top = ""
+          orbEl.style.right = "24px"
+          orbEl.style.bottom = "24px"
+        }
       } else {
         panelOpenedRef.current = true
 
@@ -629,6 +631,33 @@ ${kp.title}${optsStr}
   // ── Render ─────────────────────────────────────────────
   return (
     <>
+      {/* ── "Please answer first" toast ── */}
+      {showDisabledToast && createPortal(
+        <div
+          className="fixed z-[10000] pointer-events-none"
+          style={{
+            bottom: '180px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <div
+            className="bg-amber-100 dark:bg-amber-900/80 text-amber-700 dark:text-amber-200 px-4 py-2 rounded-lg shadow-md text-sm font-medium flex items-center gap-2 animate-fade-in"
+            style={{
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            先试试自己的智慧吧！
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* ── Orb (always visible when not panel open) ── */}
       {orbVisible && createPortal(
         <div

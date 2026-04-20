@@ -10,6 +10,7 @@ export interface CollectWrongQuestionRequest {
   user_answer: unknown // 用户答案
   course_id: number // 课程ID
   chapter_id?: number // 章节ID
+  section_id?: number // 小节ID（强化测试来源）
   exercise_id?: number // 练习题ID（可选）
   exercise_content?: Record<string, unknown> // 题目内容快照
   exercise_type: string // 题目类型

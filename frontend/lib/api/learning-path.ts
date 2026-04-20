@@ -31,6 +31,9 @@ import type {
   EnhancedQuizSubmitResponse,
 } from '@/types/api'
 
+// Re-export types for external use
+export type { MasteryOverviewResponse }
+
 type LegacyMasteryOverviewResponse = MasteryOverviewResponse & {
   total_mastery_score?: number
 }
@@ -947,6 +950,7 @@ export interface ChapterMasterySummary {
 
 export interface CourseMasteryResponse {
   course_id: number
+  course_name: string
   mastery_score: number
   progress_percentage: number
   chapters_count: number
