@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Lightbulb, Sparkles, BookOpen, Gem, Loader2, X, AlertCircle } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Lightbulb, Sparkles, BookOpen, Gem, Loader2, X, AlertCircle, GripVertical } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -261,7 +261,85 @@ export function StreamHintModal({
   const config = HINT_CONFIG[level];
   const Icon = config.icon;
 
+  // 拖动相关状态
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
+
+  // 从 localStorage 加载保存的位置
+  useEffect(() => {
+    const saved = localStorage.getItem('aiHintModalPosition');
+    if (saved) {
+      try {
+        setPosition(JSON.parse(saved));
+      } catch {
+        // 解析失败，使用默认位置
+      }
+    }
+  }, []);
+
+  // 保存位置到 localStorage
+  const savePosition = useCallback((pos: { x: number; y: number }) => {
+    localStorage.setItem('aiHintModalPosition', JSON.stringify(pos));
+  }, []);
+
+  // 拖动开始
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    const currentPos = position || { x: 0, y: 0 };
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      posX: currentPos.x,
+      posY: currentPos.y,
+    };
+    e.preventDefault();
+  };
+
+  // 拖动中
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current) return;
+
+      const deltaX = e.clientX - dragStartRef.current.x;
+      const deltaY = e.clientY - dragStartRef.current.y;
+
+      const newPos = {
+        x: dragStartRef.current.posX + deltaX,
+        y: dragStartRef.current.posY + deltaY,
+      };
+
+      setPosition(newPos);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      if (position) {
+        savePosition(position);
+      }
+      dragStartRef.current = null;
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, position, savePosition]);
+
   if (!isOpen) return null;
+
+  // 计算样式 - 始终使用 fixed 定位
+  const modalStyle: React.CSSProperties = {
+    position: 'fixed',
+    left: position ? `calc(50% + ${position.x}px)` : '50%',
+    top: position ? `calc(50% + ${position.y}px)` : '50%',
+    transform: 'translate(-50%, -50%)',
+  };
 
   return (
     <>
@@ -272,23 +350,25 @@ export function StreamHintModal({
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       />
 
-      {/* Modal Panel - 居中显示，无背景遮罩 */}
+      {/* Modal Panel - 居中显示，可拖动 */}
       <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none">
         <div
+          style={modalStyle}
           className={`
             bg-white rounded-2xl shadow-xl border border-gray-200
             w-full max-w-lg mx-4
             max-h-[80vh]
             overflow-hidden flex flex-col
             pointer-events-auto
+            ${isDragging ? 'select-none' : ''}
           `}
           onClick={(e) => e.stopPropagation()}
-          style={{
-            animation: 'slideUp 0.3s ease-out',
-          }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl">
+          {/* 可拖动的标题栏 */}
+          <div
+            className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl cursor-grab active:cursor-grabbing"
+            onMouseDown={handleMouseDown}
+          >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${config.bgColor}`}>
                 <Icon className={`w-5 h-5 ${config.color}`} />
@@ -308,12 +388,18 @@ export function StreamHintModal({
                 <Loader2 className={`w-4 h-4 ${config.color} animate-spin ml-2`} />
               )}
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-5 h-5 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <GripVertical className="w-4 h-4" />
+                <span>拖动</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
           </div>
 
           {/* Content */}

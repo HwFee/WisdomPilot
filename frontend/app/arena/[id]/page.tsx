@@ -171,113 +171,14 @@ function ResultModal({
   onNext,
   canGoNext,
 }: ResultModalProps) {
-  // 拖动相关状态
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  // 从 localStorage 加载保存的位置
-  useEffect(() => {
-    const saved = localStorage.getItem('resultModalPosition');
-    if (saved) {
-      try {
-        setPosition(JSON.parse(saved));
-      } catch {
-        // 解析失败，使用默认位置
-      }
-    }
-  }, []);
-
-  // 保存位置到 localStorage
-  const savePosition = useCallback((pos: { x: number; y: number }) => {
-    localStorage.setItem('resultModalPosition', JSON.stringify(pos));
-  }, []);
-
-  // 拖动开始
-  const handleMouseDown = (e: React.MouseEvent) => {
-    // 只有点击标题区域才能拖动
-    if ((e.target as HTMLElement).closest('.drag-handle')) {
-      setIsDragging(true);
-      const currentPos = position || { x: 0, y: 0 };
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        posX: currentPos.x,
-        posY: currentPos.y,
-      };
-      e.preventDefault();
-    }
-  };
-
-  // 拖动中
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragStartRef.current) return;
-
-      const deltaX = e.clientX - dragStartRef.current.x;
-      const deltaY = e.clientY - dragStartRef.current.y;
-
-      const newPos = {
-        x: dragStartRef.current.posX + deltaX,
-        y: dragStartRef.current.posY + deltaY,
-      };
-
-      setPosition(newPos);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      if (position) {
-        savePosition(position);
-      }
-      dragStartRef.current = null;
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, position, savePosition]);
-
-  // 计算样式 - 始终使用 fixed 定位，确保不随滚动移动
-  const modalStyle: React.CSSProperties = {
-    position: 'fixed',
-    left: position ? `calc(50% + ${position.x}px)` : '50%',
-    top: position ? `calc(50% + ${position.y}px)` : '50%',
-    transform: 'translate(-50%, -50%)',
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" style={{ pointerEvents: 'auto' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
-        ref={modalRef}
-        style={modalStyle}
-        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 ${
+        className={`bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all ${
           isCorrect ? "border-2 border-[#52C41A]" : "border-2 border-[#E74C3C]"
-        } ${isDragging ? 'select-none' : ''}`}
+        }`}
       >
-        {/* 可拖动的标题栏 */}
-        <div
-          className="drag-handle cursor-grab active:cursor-grabbing bg-[#F5F7FA] rounded-t-2xl px-4 py-3 border-b border-[#E4E7ED] flex items-center justify-between"
-          onMouseDown={handleMouseDown}
-        >
-          <span className="text-sm font-medium text-[#606266]">
-            {isCorrect ? '✓ 挑战成功' : '✗ 挑战失败'}
-          </span>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-1 bg-[#C0C4CC] rounded-full"></div>
-            <span className="text-xs text-[#909399]">拖动移动</span>
-          </div>
-        </div>
-
-        {/* 内容区域 */}
-        <div className="p-6 text-center">
+        <div className="text-center">
           {isCorrect ? (
             <>
               <CheckCircle className="w-20 h-20 text-[#52C41A] mx-auto mb-4" />
