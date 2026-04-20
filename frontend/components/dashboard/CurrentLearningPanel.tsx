@@ -185,7 +185,7 @@ export function CurrentLearningPanel({
       <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
         {/* Mastery Path Card */}
         <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl border border-amber-500/20 p-4 flex flex-col overflow-hidden">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
             <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Trophy className="w-4 h-4 text-amber-500" />
             </div>
@@ -195,51 +195,54 @@ export function CurrentLearningPanel({
             </div>
           </div>
 
-          {/* Current chapter */}
-          <div className="mb-2">
-            <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
-            <p className="text-sm font-medium text-foreground truncate">
-              {currentChapterTitle}
-            </p>
-          </div>
-
-          {/* Current section */}
-          {currentCourse.current_section && (
-            <div className="mb-3">
-              <p className="text-xs text-muted-foreground mb-0.5">{t('当前小节', 'Current Section')}</p>
-              <p className="text-xs text-amber-600 dark:text-amber-400 truncate">
-                {currentCourse.current_section}
+          {/* Content area - flex-1 to push button to bottom */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Current chapter */}
+            <div className="mb-2">
+              <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
+              <p className="text-sm font-medium text-foreground truncate">
+                {currentChapterTitle}
               </p>
             </div>
-          )}
 
-          {/* Progress bar */}
-          <div className="mb-3">
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>{t('进度', 'Progress')}</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="h-2 bg-amber-500/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
+            {/* Current section */}
+            {currentCourse.current_section && (
+              <div className="mb-3">
+                <p className="text-xs text-muted-foreground mb-0.5">{t('当前小节', 'Current Section')}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 truncate">
+                  {currentCourse.current_section}
+                </p>
+              </div>
+            )}
 
-          {/* Mastery score */}
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
-            <span className={`font-medium ${masteryLevel.color}`}>
-              {masteryScore.toFixed(0)} ({masteryLevel.name})
-            </span>
+            {/* Progress bar */}
+            <div className="mb-3">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>{t('进度', 'Progress')}</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="h-2 bg-amber-500/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Mastery score */}
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
+              <span className={`font-medium ${masteryLevel.color}`}>
+                {masteryScore.toFixed(0)} ({masteryLevel.name})
+              </span>
+            </div>
           </div>
 
           {/* Action button */}
           <button
             onClick={handleMasteryStart}
             disabled={isNavigating === 'mastery'}
-            className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-amber-500 to-amber-400 text-white hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-70"
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-amber-500 to-amber-400 text-white hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-70 flex-shrink-0"
           >
             {isNavigating === 'mastery' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -346,7 +349,7 @@ export function CurrentLearningPanel({
           <button
             onClick={handleChallengeStart}
             disabled={isNavigating === 'challenge'}
-            className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-blue-500 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-70"
+            className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-blue-500 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-70 flex-shrink-0"
           >
             {isNavigating === 'challenge' ? (
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -7,7 +7,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { getStoredToken, logout } from '@/lib/api'
 import { ArrowLeft, Trophy, Swords, Crown, Medal, Flame, Star } from 'lucide-react'
 import { getMasteryLeaderboard, getArenaLeaderboard, TIER_ICONS, TIER_NAMES, MASTERY_LEVEL_ICONS } from '@/lib/api'
+import { getUserCourseProgress } from '@/lib/api/courses'
 import type { LeaderboardEntry, Tier } from '@/types/api'
+import type { CourseProgress } from '@/lib/api/courses'
 
 type LeaderboardType = 'mastery' | 'arena'
 
@@ -18,14 +20,17 @@ function LeaderboardContent() {
     (searchParams.get('tab') as LeaderboardType) || 'mastery'
   )
   const [courseId, setCourseId] = useState<number>(1)
+  const [enrolledCourses, setEnrolledCourses] = useState<CourseProgress[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null)
   const [currentUserData, setCurrentUserData] = useState<LeaderboardEntry | null>(null)
   const [offset, setOffset] = useState(0)
+  const [courseLoading, setCourseLoading] = useState(true)
   const limit = 20
   const hasFetched = useRef(false)
+  const hasFetchedCourses = useRef(false)
 
   const fetchData = useCallback(async (token: string, tab: LeaderboardType, off: number = 0) => {
     try {
@@ -67,7 +72,7 @@ function LeaderboardContent() {
   }, [courseId, currentUserId])
 
   useEffect(() => {
-    if (hasFetched.current) return
+    if (hasFetchedCourses.current) return
     const token = getStoredToken()
     if (!token) {
       logout()
@@ -83,9 +88,36 @@ function LeaderboardContent() {
       // Ignore parsing errors
     }
 
+    // Fetch enrolled courses first
+    getUserCourseProgress(token)
+      .then((progress) => {
+        const courses = progress.courses || []
+        setEnrolledCourses(courses)
+        // Use first enrolled course, or first available course, or default to 1
+        if (courses.length > 0) {
+          const firstEnrolled = courses.find(c => c.progress !== null && c.progress > 0) || courses[0]
+          setCourseId(firstEnrolled.course_id)
+        }
+      })
+      .catch((err) => {
+        console.error('[Leaderboard] Failed to fetch course progress:', err)
+      })
+      .finally(() => {
+        setCourseLoading(false)
+        hasFetchedCourses.current = true
+      })
+  }, [router])
+
+  // Fetch leaderboard data when course is loaded
+  useEffect(() => {
+    if (courseLoading) return
+    if (hasFetched.current) return
+    const token = getStoredToken()
+    if (!token) return
+
     hasFetched.current = true
     fetchData(token, activeTab, 0)
-  }, [router, fetchData, activeTab])
+  }, [courseLoading, courseId, activeTab, fetchData])
 
   // Update URL when tab changes
   const handleTabChange = (tab: LeaderboardType) => {
@@ -242,12 +274,26 @@ function LeaderboardContent() {
                   <Swords className="w-8 h-8 text-blue-500" />
                 )}
               </div>
-              <p className="text-muted-foreground mb-2">暂无排名数据</p>
-              <p className="text-sm text-muted-foreground">
-                {activeTab === 'mastery'
-                  ? '完成精进之路的学习和测试，获得经验值上榜'
-                  : '参与竞技挑战，获得星星和段位上榜'}
-              </p>
+              {enrolledCourses.length === 0 ? (
+                <>
+                  <p className="text-muted-foreground mb-2">你还没有选择任何课程</p>
+                  <p className="text-sm text-muted-foreground">
+                    先选择并加入一门课程后才能查看排行榜
+                  </p>
+                  <Link href="/dashboard" className="inline-block mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                    前往课程页面
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground mb-2">暂无排名数据</p>
+                  <p className="text-sm text-muted-foreground">
+                    {activeTab === 'mastery'
+                      ? '完成精进之路的学习和测试，获得经验值上榜'
+                      : '参与竞技挑战，获得星星和段位上榜'}
+                  </p>
+                </>
+              )}
             </div>
           )}
 
