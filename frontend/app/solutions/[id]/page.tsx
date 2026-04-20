@@ -203,7 +203,7 @@ export default function SolutionDetailPage() {
           </header>
 
           {/* Markdown Content */}
-          <div className="prose prose-lg dark:prose-invert max-w-none">
+          <div className="markdown-body">
             <SolutionMarkdown content={solution.content} />
           </div>
 

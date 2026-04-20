@@ -1057,7 +1057,7 @@ export default function ArenaPage() {
               </div>
 
               {currentExercise.content.description && (
-                <div className="prose prose-sm max-w-none mb-6">
+                <div className="markdown-body text-sm mb-6">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeKatex]}

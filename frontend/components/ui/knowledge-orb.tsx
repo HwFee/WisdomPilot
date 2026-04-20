@@ -137,7 +137,7 @@ function MessageBubble({ role, content, onSaveAsNote }: { role: "user" | "ai"; c
         <span className="whitespace-pre-wrap">{content}</span>
       ) : (
         <>
-          <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
+          <div className="markdown-body" style={{ fontSize: "inherit" }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -724,7 +724,7 @@ export function KnowledgeOrb() {
                   style={{ background: "hsl(var(--secondary))", maxWidth: "88%", fontSize: "0.75rem" }}
                 >
                   {streamingText ? (
-                    <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
+                    <div className="markdown-body" style={{ fontSize: "inherit" }}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{

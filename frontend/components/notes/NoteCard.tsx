@@ -195,11 +195,8 @@ export function NoteCard({
                 ×
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-              >
+            <div className="flex-1 overflow-y-auto p-6">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                 {note.content}
               </ReactMarkdown>
             </div>

@@ -8,6 +8,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import rehypeHighlight from 'rehype-highlight'
 import 'katex/dist/katex.min.css'
+import 'highlight.js/styles/github-dark.css'
 import type { SolutionCreate, SolutionUpdate } from '@/lib/api/solutions'
 
 interface SolutionEditorProps {
@@ -88,10 +89,12 @@ export function SolutionEditor({
         {/* Split pane editor */}
         <div className="flex h-[calc(100%-140px)]">
           {/* Left: Editor */}
-          <div className="flex-1 flex flex-col min-w-0 border-r border-border">
-            <div className="flex items-center gap-2 px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
-              <Edit3 className="w-4 h-4" />
-              <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4" />
+                <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
+              </div>
             </div>
             <textarea
               value={content}
@@ -101,29 +104,34 @@ export function SolutionEditor({
             />
           </div>
 
+          {/* Divider */}
+          <div className="w-px bg-border" />
+
           {/* Right: Preview */}
           <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex items-center justify-between px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+            <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4" />
                 <span>{t('预览', 'Preview')}</span>
               </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
+              <div className="markdown-body">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]}>
+                  {content}
+                </ReactMarkdown>
+              </div>
+            </div>
+            {/* Save button in preview footer */}
+            <div className="px-6 py-3 border-t border-border bg-muted/30">
               <button
                 onClick={handleSave}
                 disabled={isSaving || !title.trim()}
-                className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 <Save className="w-4 h-4" />
                 {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
               </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 bg-muted/30 prose prose-lg dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex, rehypeHighlight]}
-              >
-                {content || t('暂无内容', 'No content yet')}
-              </ReactMarkdown>
             </div>
           </div>
         </div>
@@ -177,9 +185,11 @@ export function SolutionEditor({
         <div className="flex-1 flex gap-4 p-5 overflow-hidden">
           {/* Left: Editor */}
           <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-              <Edit3 className="w-4 h-4" />
-              <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
+            <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4" />
+                <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
+              </div>
             </div>
             <textarea
               value={content}
@@ -191,17 +201,18 @@ export function SolutionEditor({
 
           {/* Right: Preview */}
           <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-              <Eye className="w-4 h-4" />
-              <span>{t('预览', 'Preview')}</span>
+            <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                <span>{t('预览', 'Preview')}</span>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 rounded-xl border border-border bg-muted/30 prose prose-lg dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex, rehypeHighlight]}
-              >
-                {content || t('暂无内容', 'No content yet')}
-              </ReactMarkdown>
+            <div className="flex-1 overflow-y-auto p-4 rounded-xl border border-border bg-muted/30">
+              <div className="markdown-body">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]}>
+                  {content}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         </div>
