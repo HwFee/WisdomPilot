@@ -31,6 +31,7 @@ from app.models.section_mastery import SectionMastery
 from app.models.course_mastery import CourseMastery
 from app.models.tier_transaction import TierTransaction
 from app.models.mastery_xp_transaction import MasteryXpTransaction
+from app.models.solution import Solution
 
 __all__ = [
     # User & Auth
@@ -92,4 +93,6 @@ __all__ = [
     "TierTransaction",
     # Mastery XP (精进之路经验) System
     "MasteryXpTransaction",
+    # Solution (题解广场) System
+    "Solution",
 ]

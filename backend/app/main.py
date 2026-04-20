@@ -16,6 +16,7 @@ from app.models import WrongQuestion  # noqa: F401 - registers wrong question mo
 from app.models import CoreTransaction  # noqa: F401 - registers core transaction model
 from app.models import TierTransaction  # noqa: F401 - registers tier transaction model
 from app.models import MasteryXpTransaction  # noqa: F401 - registers mastery xp transaction model
+from app.models import Solution  # noqa: F401 - registers solution model
 from app.middleware import RateLimitMiddleware
 from app.routers import (
     auth_router,
@@ -23,6 +24,7 @@ from app.routers import (
     admin_router,
     stats_router,
     code_router,
+    solutions_router,
 )
 from app.routers.courses import router as courses_router
 from app.routers.ai import choice_router, review_router, config_router, chat_router, analysis_router, hint_router
@@ -132,6 +134,7 @@ app.include_router(tier_router)
 app.include_router(core_router)
 app.include_router(xp_router)
 app.include_router(test_sandbox_router)
+app.include_router(solutions_router)
 
 
 @app.get("/")

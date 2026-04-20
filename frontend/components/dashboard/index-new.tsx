@@ -36,7 +36,7 @@ import { getRecentArenaExercises, RecentArenaExercise, TIER_ICONS, TIER_NAMES } 
 // Dashboard components
 import { WelcomeSection } from './WelcomeSection'
 import { TodayStats } from './TodayStats'
-import { KnowledgeMastery } from './KnowledgeMastery'
+import { SolutionBoard } from './SolutionBoard'
 import { QuickTools } from './QuickTools'
 import { RecentActivity } from './RecentActivity'
 import { CurrentLearningPanel } from './CurrentLearningPanel'
@@ -538,14 +538,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 右栏 40%：知识掌握度 + 最近动态 */}
+            {/* 右栏 40%：题解广场 + 最近动态 */}
             <div className="lg:col-span-2 flex flex-col gap-6" style={{ minHeight: '500px' }}>
-              {/* 知识掌握度 */}
-              <div>
-                <KnowledgeMastery
-                  courseName={currentCourse?.course_name || 'C语言'}
-                  knowledgePoints={knowledgePoints}
-                  onLearnClick={(courseId) => router.push(`/mastery/${courseId || currentCourseId || 1}`)}
+              {/* 题解广场 */}
+              <div className="flex-1 min-h-0">
+                <SolutionBoard
                   lang={lang}
                   compact
                 />
