@@ -245,34 +245,39 @@ function ResultModal({
     };
   }, [isDragging, position, savePosition]);
 
-  // 计算样式
-  const modalStyle = position
-    ? {
-        position: 'fixed' as const,
-        left: `calc(50% + ${position.x}px)`,
-        top: `calc(50% + ${position.y}px)`,
-        transform: 'translate(-50%, -50%)',
-      }
-    : {};
+  // 计算样式 - 始终使用 fixed 定位，确保不随滚动移动
+  const modalStyle: React.CSSProperties = {
+    position: 'fixed',
+    left: position ? `calc(50% + ${position.x}px)` : '50%',
+    top: position ? `calc(50% + ${position.y}px)` : '50%',
+    transform: 'translate(-50%, -50%)',
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" style={{ pointerEvents: 'auto' }}>
       <div
         ref={modalRef}
         style={modalStyle}
-        onMouseDown={handleMouseDown}
-        className={`bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 ${
           isCorrect ? "border-2 border-[#52C41A]" : "border-2 border-[#E74C3C]"
-        } ${isDragging ? 'cursor-grabbing select-none' : ''}`}
+        } ${isDragging ? 'select-none' : ''}`}
       >
-        {/* 可拖动的标题区域 */}
-        <div className="drag-handle cursor-grab active:cursor-grabbing mb-2 -mt-2 -mx-4 px-4 py-1">
-          <div className="flex justify-center">
-            <div className="w-12 h-1.5 bg-[#E4E7ED] rounded-full"></div>
+        {/* 可拖动的标题栏 */}
+        <div
+          className="drag-handle cursor-grab active:cursor-grabbing bg-[#F5F7FA] rounded-t-2xl px-4 py-3 border-b border-[#E4E7ED] flex items-center justify-between"
+          onMouseDown={handleMouseDown}
+        >
+          <span className="text-sm font-medium text-[#606266]">
+            {isCorrect ? '✓ 挑战成功' : '✗ 挑战失败'}
+          </span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-1 bg-[#C0C4CC] rounded-full"></div>
+            <span className="text-xs text-[#909399]">拖动移动</span>
           </div>
         </div>
 
-        <div className="text-center">
+        {/* 内容区域 */}
+        <div className="p-6 text-center">
           {isCorrect ? (
             <>
               <CheckCircle className="w-20 h-20 text-[#52C41A] mx-auto mb-4" />
