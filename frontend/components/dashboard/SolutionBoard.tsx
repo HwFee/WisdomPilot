@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { MessageSquare, Pin, Eye, Heart, Plus, X, Trash, Megaphone } from 'lucide-react'
 import { getSolutionSummary, createSolution, likeSolution, deleteSolution, SolutionSummary, SolutionCreate } from '@/lib/api/solutions'
 import { getStoredToken, getStoredUser } from '@/lib/api/auth'
@@ -13,6 +14,7 @@ interface SolutionBoardProps {
 }
 
 export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('hot')
   const [solutions, setSolutions] = useState<SolutionSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,6 +58,10 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCardClick = () => {
+    router.push('/solutions')
   }
 
   const handleCreate = async () => {
@@ -130,11 +136,6 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
       filtered = filtered.filter(s => s.is_announcement)
     } else if (activeTab === 'pinned') {
       filtered = filtered.filter(s => s.is_pinned)
-    } else {
-      // Exclude announcements from hot/new tabs unless they're also pinned
-      if (activeTab !== 'pinned') {
-        // Keep all, but announcements will be shown at top
-      }
     }
 
     // Sort: announcements first (if not in announcement tab), then pinned, then by sort type
@@ -213,7 +214,10 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-6 h-full flex flex-col overflow-hidden">
+    <div
+      className="bg-card rounded-2xl border border-border p-6 h-full flex flex-col overflow-hidden cursor-pointer hover:bg-card/80 transition-colors"
+      onClick={handleCardClick}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -221,7 +225,10 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
           {t('题解广场', 'Solutions')}
         </h3>
         <button
-          onClick={() => setShowEditor(true)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowEditor(true)
+          }}
           className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -230,7 +237,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4 flex-shrink-0">
+      <div className="flex gap-2 mb-4 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         {(Object.keys(tabMap) as TabType[]).map(tab => (
           <button
             key={tab}
@@ -247,7 +254,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto" onClick={(e) => e.stopPropagation()}>
         {loading ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <span className="animate-pulse">{t('加载中...', 'Loading...')}</span>
@@ -256,6 +263,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <MessageSquare className="w-10 h-10 mb-2 opacity-50" />
             <p className="text-sm">{t('暂无内容', 'No content yet')}</p>
+            <p className="text-xs mt-1">{t('点击查看全部', 'Click to view all')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -266,8 +274,8 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
 
       {/* Editor Modal */}
       {showEditor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl border border-border w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card rounded-2xl border border-border w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground">{t('发布内容', 'Post Content')}</h3>
               <button

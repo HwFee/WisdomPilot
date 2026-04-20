@@ -51,7 +51,7 @@ async def get_solutions(
 @router.get("/summary", response_model=list[SolutionSummary])
 async def get_solution_summary(
     db: db_dependency,
-    limit: int = Query(10, ge=1, le=50),
+    limit: int = Query(50, ge=1, le=100),
 ):
     """获取题解摘要（用于Dashboard展示）"""
     solutions, _ = await solution_service.get_solutions(db, page=1, limit=limit, sort="hot")
@@ -77,7 +77,7 @@ async def update_solution(
     solution_id: int,
     update_data: SolutionUpdate,
     db: db_dependency,
-    current_user: dict = Depends(get_current_user),
+    current_user = Depends(get_current_user),
 ):
     """更新题解（仅作者）"""
     solution = await solution_service.get_solution_by_id(db, solution_id)
@@ -93,7 +93,7 @@ async def update_solution(
 async def delete_solution(
     solution_id: int,
     db: db_dependency,
-    current_user: dict = Depends(get_current_user),
+    current_user = Depends(get_current_user),
 ):
     """删除题解（仅作者）"""
     solution = await solution_service.get_solution_by_id(db, solution_id)
@@ -109,12 +109,13 @@ async def delete_solution(
 async def toggle_like(
     solution_id: int,
     db: db_dependency,
+    current_user = Depends(get_current_user),
 ):
     """点赞"""
     solution = await solution_service.get_solution_by_id(db, solution_id)
     if not solution:
         raise HTTPException(status_code=404, detail="题解不存在")
-    updated = await solution_service.toggle_like(db, solution)
+    updated = await solution_service.toggle_like(db, solution, current_user.id)
     return await solution_service.get_solution_with_username(db, updated)
 
 
@@ -122,7 +123,7 @@ async def toggle_like(
 async def toggle_pin(
     solution_id: int,
     db: db_dependency,
-    current_user: dict = Depends(get_current_user),
+    current_user = Depends(get_current_user),
 ):
     """置顶/取消置顶（需要管理员权限，这里简化为作者可操作）"""
     solution = await solution_service.get_solution_by_id(db, solution_id)

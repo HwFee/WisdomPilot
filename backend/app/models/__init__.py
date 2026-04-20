@@ -21,6 +21,8 @@ from app.models.chapter_base_question import ChapterBaseQuestion
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.mastery_exercise_progress import MasteryExerciseProgress
 from app.models.solution import Solution
+from app.models.solution_like import SolutionLike
+from app.models.solution_like import SolutionLike
 
 __all__ = [
     # User & Auth
@@ -65,4 +67,5 @@ __all__ = [
     "MasteryExerciseProgress",
     # Solution System
     "Solution",
+    "SolutionLike",
 ]

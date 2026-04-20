@@ -3,6 +3,7 @@ from sqlalchemy import select, desc, func
 from datetime import datetime, timedelta
 from typing import List, Optional
 from app.models.solution import Solution
+from app.models.solution_like import SolutionLike
 from app.models.user import User
 from app.schemas.solution import SolutionCreate, SolutionUpdate
 
@@ -116,9 +117,30 @@ async def delete_solution(db: AsyncSession, solution: Solution) -> None:
     await db.commit()
 
 
-async def toggle_like(db: AsyncSession, solution: Solution) -> Solution:
-    """点赞（简单累加，可扩展为用户维度）"""
-    solution.like_count += 1
+async def toggle_like(db: AsyncSession, solution: Solution, user_id: str) -> Solution:
+    """点赞/取消点赞（每人只能点赞一次）"""
+    # 先尝试删除（如果存在的话）
+    existing = await db.execute(
+        select(SolutionLike).where(
+            SolutionLike.user_id == user_id,
+            SolutionLike.solution_id == solution.id
+        )
+    )
+    existing_like = existing.scalar_one_or_none()
+
+    if existing_like:
+        # 已点赞，取消点赞
+        await db.delete(existing_like)
+        solution.like_count = max(0, solution.like_count - 1)
+    else:
+        # 未点赞，先确保 solution.like_count 已同步（处理并发情况）
+        actual_count = await db.execute(
+            select(func.count()).select_from(SolutionLike).where(SolutionLike.solution_id == solution.id)
+        )
+        solution.like_count = actual_count.scalar() + 1
+        new_like = SolutionLike(user_id=user_id, solution_id=solution.id)
+        db.add(new_like)
+
     await db.commit()
     await db.refresh(solution)
     return solution

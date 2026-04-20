@@ -18,6 +18,8 @@ import { NoteSearch } from '@/components/notes/NoteSearch'
 import { NoteTagFilter } from '@/components/notes/NoteTagFilter'
 import { Button } from '@/components/ui/button'
 
+type PageMode = 'list' | 'create' | 'edit'
+
 export default function NotesPage() {
   const router = useRouter()
   const [notes, setNotes] = useState<NoteResponse[]>([])
@@ -25,7 +27,7 @@ export default function NotesPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [showEditor, setShowEditor] = useState(false)
+  const [pageMode, setPageMode] = useState<PageMode>('list')
   const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
   const hasFetched = useRef(false)
 
@@ -88,12 +90,12 @@ export default function NotesPage() {
 
   const handleEdit = useCallback((note: NoteResponse) => {
     setEditingNote(note)
-    setShowEditor(true)
+    setPageMode('edit')
   }, [])
 
   const handleCreate = useCallback(() => {
     setEditingNote(null)
-    setShowEditor(true)
+    setPageMode('create')
   }, [])
 
   const handleSave = useCallback((savedNote: NoteResponse) => {
@@ -104,6 +106,7 @@ export default function NotesPage() {
       }
       return [savedNote, ...prev]
     })
+    setPageMode('list')
   }, [])
 
   const handleSearchResults = useCallback((results: NoteResponse[], query: string) => {
@@ -156,102 +159,124 @@ export default function NotesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border/50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2.5 hover:bg-muted rounded-lg transition-colors"
-          >
-            ←
-          </button>
-          <h1 className="text-xl font-semibold">我的笔记</h1>
-          <span className="ml-auto text-base text-muted-foreground">{notes.length} 条</span>
-          <button
-            onClick={handleExportAll}
-            disabled={notes.length === 0}
-            className="flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
-            title="导出全部"
-          >
-            <Download className="w-5 h-5" />
-            <span className="text-sm">导出</span>
-          </button>
-          <Button onClick={handleCreate} size="lg" className="gap-2">
-            <Plus className="w-5 h-5" />
-            新建笔记
-          </Button>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="lg:w-72 shrink-0 space-y-6">
-            {/* Search */}
-            <NoteSearch
-              onResults={handleSearchResults}
-              placeholder="搜索笔记..."
-            />
-
-            {/* Tags filter */}
-            <div className="bg-card rounded-2xl border p-5">
-              <h3 className="font-semibold text-lg mb-4">标签筛选</h3>
-              <NoteTagFilter
-                selectedTags={selectedTags}
-                onTagsChange={setSelectedTags}
-              />
+      {pageMode === 'list' ? (
+        <>
+          {/* Header */}
+          <header className="sticky top-0 z-40 glass border-b border-border/50">
+            <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
+              <button
+                onClick={() => router.back()}
+                className="p-2.5 hover:bg-muted rounded-lg transition-colors"
+              >
+                ←
+              </button>
+              <h1 className="text-xl font-semibold">我的笔记</h1>
+              <span className="ml-auto text-base text-muted-foreground">{notes.length} 条</span>
+              <button
+                onClick={handleExportAll}
+                disabled={notes.length === 0}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
+                title="导出全部"
+              >
+                <Download className="w-5 h-5" />
+                <span className="text-sm">导出</span>
+              </button>
+              <Button onClick={handleCreate} size="lg" className="gap-2">
+                <Plus className="w-5 h-5" />
+                新建笔记
+              </Button>
             </div>
-          </aside>
+          </header>
 
-          {/* Main content */}
-          <div className="flex-1">
-            {filteredNotes.length === 0 ? (
-              <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
-                <div className="w-20 h-20 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-6">
-                  <span className="text-4xl">📝</span>
-                </div>
-                <p className="text-lg text-muted-foreground mb-2">
-                  {searchQuery || selectedTags.length > 0
-                    ? '没有找到匹配的笔记'
-                    : '暂无笔记'}
-                </p>
-                {!searchQuery && selectedTags.length === 0 && (
-                  <p className="text-base text-muted-foreground mb-6">
-                    在学习过程中可以添加笔记记录心得
-                  </p>
-                )}
-                {!searchQuery && selectedTags.length === 0 && (
-                  <button
-                    onClick={handleCreate}
-                    className="px-6 py-3 text-base bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
-                  >
-                    创建第一条笔记
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
+          <main className="max-w-6xl mx-auto px-6 py-8">
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Sidebar */}
+              <aside className="lg:w-72 shrink-0 space-y-6">
+                {/* Search */}
+                <NoteSearch
+                  onResults={handleSearchResults}
+                  placeholder="搜索笔记..."
+                />
+
+                {/* Tags filter */}
+                <div className="bg-card rounded-2xl border p-5">
+                  <h3 className="font-semibold text-lg mb-4">标签筛选</h3>
+                  <NoteTagFilter
+                    selectedTags={selectedTags}
+                    onTagsChange={setSelectedTags}
                   />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
+                </div>
+              </aside>
 
-      {/* Note Editor Modal */}
-      {showEditor && (
-        <NoteEditor
-          note={editingNote}
-          onSave={handleSave}
-          onClose={() => setShowEditor(false)}
-        />
+              {/* Main content */}
+              <div className="flex-1">
+                {filteredNotes.length === 0 ? (
+                  <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
+                    <div className="w-20 h-20 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-6">
+                      <span className="text-4xl">📝</span>
+                    </div>
+                    <p className="text-lg text-muted-foreground mb-2">
+                      {searchQuery || selectedTags.length > 0
+                        ? '没有找到匹配的笔记'
+                        : '暂无笔记'}
+                    </p>
+                    {!searchQuery && selectedTags.length === 0 && (
+                      <p className="text-base text-muted-foreground mb-6">
+                        在学习过程中可以添加笔记记录心得
+                      </p>
+                    )}
+                    {!searchQuery && selectedTags.length === 0 && (
+                      <button
+                        onClick={handleCreate}
+                        className="px-6 py-3 text-base bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
+                      >
+                        创建第一条笔记
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredNotes.map((note) => (
+                      <NoteCard
+                        key={note.id}
+                        note={note}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </main>
+        </>
+      ) : (
+        /* Full Page Editor Mode */
+        <div className="min-h-screen bg-background">
+          <header className="sticky top-0 z-40 glass border-b border-border/50">
+            <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
+              <button
+                onClick={() => setPageMode('list')}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ←
+                <span>取消</span>
+              </button>
+              <h1 className="text-xl font-semibold flex-1 text-center">
+                {pageMode === 'create' ? '新建笔记' : '编辑笔记'}
+              </h1>
+              <div className="w-16" />
+            </div>
+          </header>
+          <main className="max-w-6xl mx-auto px-6 py-6">
+            <NoteEditor
+              note={editingNote}
+              onSave={handleSave}
+              onClose={() => setPageMode('list')}
+              isFullPage
+            />
+          </main>
+        </div>
       )}
     </div>
   )

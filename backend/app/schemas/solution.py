@@ -16,6 +16,7 @@ class SolutionUpdate(BaseModel):
     content: Optional[str] = None
     problem_link: Optional[str] = None
     tags: Optional[List[str]] = None
+    is_announcement: Optional[bool] = None
 
 
 class SolutionResponse(BaseModel):
