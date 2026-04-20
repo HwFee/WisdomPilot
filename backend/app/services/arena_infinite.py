@@ -743,6 +743,10 @@ class ChallengePathService:
         logger.info(f"[STARS] stars_earned: {stars_earned}, tier_changed: {tier_changed}")
         logger.info(f"[STARS] new_tier: {new_tier.value if new_tier else None}, new_sub_tier: {new_sub_tier}, new_stars: {new_stars}")
 
+        # 判断是否是第一次做对/做错
+        first_time_correct = all_passed and progress.attempt_count == 1
+        first_time_wrong = not all_passed and progress.attempt_count == 1
+
         return {
             "is_correct": all_passed,
             "test_results": test_results,
@@ -756,6 +760,8 @@ class ChallengePathService:
             "new_stars": new_stars,
             "promoted": promoted,
             "demoted": demoted,
+            "first_time_correct": first_time_correct,
+            "first_time_wrong": first_time_wrong,
         }
 
     async def save_code(

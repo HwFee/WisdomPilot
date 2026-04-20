@@ -1934,8 +1934,35 @@ export default function MasteryPathPage() {
           {/* BKT Course Mastery Overview */}
           {courseMastery && (
             <div className="mb-8">
+              {(() => {
+                // 详细日志：每个章节的掌握度计算
+                console.log("========== 课程掌握度计算 ==========");
+                console.log(`API返回: courseMastery.mastery_score = ${courseMastery.mastery_score} (渲染到页面应该是 ${courseMastery.mastery_score.toFixed(0)}%)`);
+                console.log(`章节数: ${courseMastery.chapters_count}, 已完成: ${courseMastery.completed_chapters}`);
+                console.log("--- 各章节掌握度 ---");
+                courseMastery.chapters.forEach((ch: any, idx: number) => {
+                  if (idx < 2) {
+                    console.log(`章节 ${idx + 1} (id=${ch.chapter_id}): mastery_score = ${ch.mastery_score} (${ch.mastery_score.toFixed(2)}%), 完成=${ch.is_completed}`);
+                  }
+                });
+
+                // 按你的算法验证
+                const ch1 = courseMastery.chapters[0];
+                const ch2 = courseMastery.chapters[1];
+                const kp1 = 64, kp2 = 10;
+                const p1 = ch1.mastery_score / 100, p2 = ch2.mastery_score / 100;
+                const totalKp = kp1 + kp2;
+                const weighted = (kp1 * p1 + kp2 * p2) / totalKp;
+                console.log("--- 验证课程整体（按你的算法）---");
+                console.log(`第1章: ${kp1}个知识点 × ${ch1.mastery_score.toFixed(2)}% = ${(kp1 * p1).toFixed(2)}`);
+                console.log(`第2章: ${kp2}个知识点 × ${ch2.mastery_score.toFixed(2)}% = ${(kp2 * p2).toFixed(2)}`);
+                console.log(`总计: (${(kp1 * p1).toFixed(2)} + ${(kp2 * p2).toFixed(2)}) / ${totalKp} = ${(weighted * 100).toFixed(2)}%`);
+                console.log(`API返回的 courseMastery.mastery_score = ${courseMastery.mastery_score.toFixed(2)}%`);
+                console.log("=====================================");
+                return null;
+              })()}
               <CourseMasteryOverview
-                courseName={overview?.chapters?.[0]?.title || `课程 ${courseId}`}
+                courseName={courseMastery.course_name || overview?.chapters?.[0]?.title || `课程 ${courseId}`}
                 masteryScore={courseMastery.mastery_score}
                 progressPercentage={courseMastery.progress_percentage}
                 chaptersCount={courseMastery.chapters_count}

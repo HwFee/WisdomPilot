@@ -1227,6 +1227,7 @@ export interface ChapterMasterySummary {
 
 export interface CourseMasteryResponse {
   course_id: number
+  course_name: string
   mastery_score: number
   progress_percentage: number
   chapters_count: number

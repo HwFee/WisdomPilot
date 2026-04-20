@@ -137,10 +137,10 @@ class CourseMastery(Base):
 
     @property
     def progress_percentage(self) -> float:
-        """学习进度百分比（基于已完成章节）"""
-        if self.chapters_count == 0:
+        """学习进度百分比（基于已掌握知识点）"""
+        if self.knowledge_points_count == 0:
             return 0.0
-        return (self.completed_chapters_count / self.chapters_count) * 100
+        return (self.mastered_points_count / self.knowledge_points_count) * 100
 
     def __repr__(self) -> str:
         return f"<CourseMastery user={self.user_id[:8]}... course={self.course_id} p_l={self.bkt_aggregated_p_l:.2f}>"

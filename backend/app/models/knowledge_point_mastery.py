@@ -34,7 +34,7 @@ DEFAULT_P_G = 0.2     # 猜测率
 DEFAULT_P_S = 0.05    # 失误率
 
 # 掌握阈值
-MASTERY_THRESHOLD = 0.95
+MASTERY_THRESHOLD = 0.6
 
 
 class KnowledgePointMastery(Base):

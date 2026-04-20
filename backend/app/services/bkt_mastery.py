@@ -567,99 +567,64 @@ class BKTMasteryService:
         """
         更新章节聚合掌握度
 
-        章节掌握度 = 该章节内所有小节的平均掌握度
+        章节掌握度 = 该章节内所有知识点的平均 P(L)
+        （不再通过小节聚合，直接统计所有知识点）
 
         Returns:
             (聚合掌握度, 是否完成)
         """
-        # 获取章节内所有小节的掌握状态
+        # 直接获取章节内所有知识点的掌握状态（不经过小节聚合）
         result = await self.db.execute(
-            select(SectionMastery).where(
-                SectionMastery.user_id == user_id,
-                SectionMastery.chapter_id == chapter_id,
+            select(KnowledgePointMastery).where(
+                KnowledgePointMastery.user_id == user_id,
+                KnowledgePointMastery.chapter_id == chapter_id,
             )
         )
-        section_masteries = result.scalars().all()
+        kp_masteries = result.scalars().all()
 
-        logger.info(f"[BKT] │ 章节 {chapter_id} 内小节数: {len(section_masteries)}")
+        logger.info(f"[BKT] │ 章节 {chapter_id} 内知识点数: {len(kp_masteries)}")
 
         # 获取或创建 ChapterMastery
         chapter_mastery = await self._get_or_create_chapter_mastery(
             user_id, chapter_id, course_id
         )
 
-        if not section_masteries:
-            # 如果没有小节数据，回退到知识点聚合
-            result = await self.db.execute(
-                select(KnowledgePointMastery).where(
-                    KnowledgePointMastery.user_id == user_id,
-                    KnowledgePointMastery.chapter_id == chapter_id,
-                )
-            )
-            kp_masteries = result.scalars().all()
+        if not kp_masteries:
+            chapter_mastery.bkt_aggregated_p_l = 0.15
+            chapter_mastery.mastery_score = 15.0
+            chapter_mastery.knowledge_points_count = 0
+            chapter_mastery.mastered_points_count = 0
+            logger.info(f"[BKT] │ 无知识点数据，使用默认值 15%")
+            return 0.15, False
 
-            if not kp_masteries:
-                chapter_mastery.bkt_aggregated_p_l = 0.15
-                chapter_mastery.mastery_score = 15.0
-                chapter_mastery.knowledge_points_count = 0
-                chapter_mastery.mastered_points_count = 0
-                logger.info(f"[BKT] │ 无知识点数据，使用默认值 15%")
-                return 0.15, False
+        # 直接计算所有知识点的平均 P(L)
+        avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
+        mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
 
-            avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
-            mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
+        # 打印每个知识点的详细数据
+        for kp in kp_masteries:
+            status = "[OK] 已掌握" if kp.p_l >= MASTERY_THRESHOLD else "学习中"
+            logger.info(f"[BKT] │   知识点 '{kp.knowledge_point}': P(L)={kp.p_l:.4f} ({status})")
 
-            logger.info(f"[BKT] │ 回退到知识点聚合: {len(kp_masteries)} 个知识点")
-            logger.info(f"[BKT] │ 平均 P(L) = {avg_p_l:.4f}")
-
-            chapter_mastery.bkt_aggregated_p_l = avg_p_l
-            chapter_mastery.knowledge_points_count = len(kp_masteries)
-            chapter_mastery.mastered_points_count = mastered_count
-            chapter_mastery.mastery_score = avg_p_l * 100
-
-            from app.services.chapter_mastery import ChapterMasteryService
-            chapter_mastery.mastery_level = ChapterMasteryService(None).get_mastery_level(avg_p_l * 100)
-            chapter_mastery.last_practiced_at = utc_now()
-
-            is_completed = mastered_count == len(kp_masteries) and len(kp_masteries) > 0
-            if is_completed and not chapter_mastery.mastered_at:
-                chapter_mastery.mastered_at = utc_now()
-                logger.info(f"[BKT] [*] 章节 {chapter_id} 完成！(知识点聚合)")
-
-            return avg_p_l, is_completed
-
-        # 由小节聚合章节掌握度
-        avg_p_l = sum(sm.bkt_aggregated_p_l for sm in section_masteries) / len(section_masteries)
-        completed_sections = sum(1 for sm in section_masteries if sm.is_completed)
-
-        # 打印每个小节的详细数据
-        for sm in section_masteries:
-            status = "[OK] 已完成" if sm.is_completed else "学习中"
-            logger.info(f"[BKT] │   小节 {sm.section_id}: P(L)={sm.bkt_aggregated_p_l:.4f} ({status})")
-
-        logger.info(f"[BKT] │ 平均 P(L) = {sum(sm.bkt_aggregated_p_l for sm in section_masteries):.4f} / {len(section_masteries)} = {avg_p_l:.4f}")
-        logger.info(f"[BKT] │ 已完成小节: {completed_sections} / {len(section_masteries)}")
-
-        # 聚合知识点统计
-        total_kp = sum(sm.knowledge_points_count for sm in section_masteries)
-        mastered_kp = sum(sm.mastered_points_count for sm in section_masteries)
+        logger.info(f"[BKT] │ 平均 P(L) = {sum(kp.p_l for kp in kp_masteries):.4f} / {len(kp_masteries)} = {avg_p_l:.4f}")
+        logger.info(f"[BKT] │ 已掌握知识点: {mastered_count} / {len(kp_masteries)}")
 
         # 更新章节掌握度
         chapter_mastery.bkt_aggregated_p_l = avg_p_l
         chapter_mastery.mastery_score = avg_p_l * 100
-        chapter_mastery.knowledge_points_count = total_kp
-        chapter_mastery.mastered_points_count = mastered_kp
+        chapter_mastery.knowledge_points_count = len(kp_masteries)
+        chapter_mastery.mastered_points_count = mastered_count
 
         from app.services.chapter_mastery import ChapterMasteryService
         chapter_mastery.mastery_level = ChapterMasteryService(None).get_mastery_level(avg_p_l * 100)
         chapter_mastery.last_practiced_at = utc_now()
 
-        # 判断是否完成：所有小节都完成
-        is_completed = completed_sections == len(section_masteries) and len(section_masteries) > 0
+        # 判断是否完成：所有知识点都掌握
+        is_completed = mastered_count == len(kp_masteries) and len(kp_masteries) > 0
 
         if is_completed and not chapter_mastery.mastered_at:
             chapter_mastery.mastered_at = utc_now()
-            logger.info(f"[BKT] [*] 章节 {chapter_id} 完成！所有小节已掌握！")
+            logger.info(f"[BKT] [*] 章节 {chapter_id} 完成！所有知识点已掌握！")
 
         return avg_p_l, is_completed
 
@@ -838,52 +803,76 @@ class BKTMasteryService:
         """
         更新课程聚合掌握度
 
-        课程掌握度 = 该课程内所有章节的平均掌握度
+        课程掌握度 = 该课程内所有知识点的平均 P(L)
+        （不再通过章节聚合，直接统计所有知识点）
 
         Returns:
             (聚合掌握度, 是否完成)
         """
-        # 获取课程内所有章节的掌握状态
+        # 直接获取课程内所有知识点的掌握状态（不经过章节聚合）
         result = await self.db.execute(
-            select(ChapterMastery).where(
-                ChapterMastery.user_id == user_id,
-                ChapterMastery.course_id == course_id,
+            select(KnowledgePointMastery).where(
+                KnowledgePointMastery.user_id == user_id,
+                KnowledgePointMastery.course_id == course_id,
             )
         )
-        chapter_masteries = result.scalars().all()
+        kp_masteries = result.scalars().all()
 
         # 获取或创建 CourseMastery
         course_mastery = await self._get_or_create_course_mastery(user_id, course_id)
 
-        if not chapter_masteries:
+        if not kp_masteries:
+            # 统计章节数：获取该课程的实际章节数
+            from app.models.chapter import Chapter
+            chapters_result = await self.db.execute(
+                select(Chapter).where(Chapter.course_id == course_id)
+            )
+            all_chapters = chapters_result.scalars().all()
             course_mastery.bkt_aggregated_p_l = 0.15
             course_mastery.mastery_score = 15.0
-            course_mastery.chapters_count = 0
+            course_mastery.knowledge_points_count = 0
+            course_mastery.mastered_points_count = 0
+            course_mastery.chapters_count = len(all_chapters)
             course_mastery.completed_chapters_count = 0
             return 0.15, False
 
-        # 由章节聚合课程掌握度
-        avg_p_l = sum(cm.bkt_aggregated_p_l for cm in chapter_masteries) / len(chapter_masteries)
-        completed_chapters = sum(1 for cm in chapter_masteries if cm.mastered_at is not None)
+        # 直接计算所有知识点的平均 P(L)
+        avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
+        mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
 
-        # 聚合知识点统计
-        total_kp = sum(cm.knowledge_points_count for cm in chapter_masteries)
-        mastered_kp = sum(cm.mastered_points_count for cm in chapter_masteries)
+        # 统计章节数：获取该课程的实际章节数
+        from app.models.chapter import Chapter
+        chapters_result = await self.db.execute(
+            select(Chapter).where(Chapter.course_id == course_id)
+        )
+        all_chapters = chapters_result.scalars().all()
+        chapters_count = len(all_chapters)
+
+        # 统计已完成章节数：获取该课程下所有章节中已完成的
+        from app.models.chapter_mastery import ChapterMastery
+        completed_result = await self.db.execute(
+            select(ChapterMastery).where(
+                ChapterMastery.user_id == user_id,
+                ChapterMastery.course_id == course_id,
+                ChapterMastery.mastered_at.isnot(None),
+            )
+        )
+        completed_chapters_count = len(completed_result.scalars().all())
 
         # 更新课程掌握度
         course_mastery.bkt_aggregated_p_l = avg_p_l
         course_mastery.mastery_score = avg_p_l * 100
-        course_mastery.chapters_count = len(chapter_masteries)
-        course_mastery.completed_chapters_count = completed_chapters
-        course_mastery.knowledge_points_count = total_kp
-        course_mastery.mastered_points_count = mastered_kp
+        course_mastery.knowledge_points_count = len(kp_masteries)
+        course_mastery.mastered_points_count = mastered_count
+        course_mastery.chapters_count = chapters_count
+        course_mastery.completed_chapters_count = completed_chapters_count
         course_mastery.last_practiced_at = utc_now()
 
         if not course_mastery.first_practiced_at:
             course_mastery.first_practiced_at = utc_now()
 
-        # 判断是否完成：所有章节都完成
-        is_completed = completed_chapters == len(chapter_masteries) and len(chapter_masteries) > 0
+        # 判断是否完成：所有知识点都掌握
+        is_completed = mastered_count == len(kp_masteries) and len(kp_masteries) > 0
         course_mastery.is_completed = is_completed
 
         if is_completed and not course_mastery.completed_at:
@@ -953,38 +942,87 @@ class BKTMasteryService:
         """
         course_mastery = await self.get_course_mastery(user_id, course_id)
 
-        # 获取课程内所有章节掌握度
-        result = await self.db.execute(
-            select(ChapterMastery).where(
-                ChapterMastery.user_id == user_id,
-                ChapterMastery.course_id == course_id,
-            ).order_by(ChapterMastery.chapter_id)
+        # 总是从数据库查询真实的章节数
+        from app.models.chapter import Chapter
+        chapters_result = await self.db.execute(
+            select(Chapter).where(Chapter.course_id == course_id)
         )
-        chapter_masteries = result.scalars().all()
+        all_chapters = chapters_result.scalars().all()
+        chapters_count = len(all_chapters)
 
+        logger.info(f"[BKT] get_course_mastery_summary: course_id={course_id}, chapters_count={chapters_count}")
+
+        # ========== 关键修复：总是从知识点计算真实掌握度，不使用 stored mastery_score ==========
+        # 获取课程内所有知识点的掌握状态
+        chapter_ids = [ch.id for ch in all_chapters]
+        kp_result = await self.db.execute(
+            select(KnowledgePointMastery).where(
+                KnowledgePointMastery.user_id == user_id,
+                KnowledgePointMastery.chapter_id.in_(chapter_ids),
+            )
+        )
+        kp_masteries = kp_result.scalars().all()
+
+        logger.info(f"[BKT] get_course_mastery_summary: course_id={course_id}, chapters={chapter_ids}, kp_count={len(kp_masteries)}")
+
+        # 按 chapter_id 分组计算每个章节的掌握度
+        from collections import defaultdict
+        chapter_kps = defaultdict(list)
+        for kp in kp_masteries:
+            chapter_kps[kp.chapter_id].append(kp)
+
+        # 构建章节列表：每个章节的掌握度从知识点实时计算
         chapters = []
-        for cm in chapter_masteries:
-            chapters.append({
-                "chapter_id": cm.chapter_id,
-                "mastery_score": cm.mastery_score,
-                "is_completed": cm.mastered_at is not None,
-            })
+        total_mastered = 0
+        for chapter in all_chapters:
+            kps = chapter_kps.get(chapter.id, [])
+            if kps:
+                chapter_avg_p_l = sum(kp.p_l for kp in kps) / len(kps)
+                chapter_mastered = sum(1 for kp in kps if kp.p_l >= MASTERY_THRESHOLD)
+                is_completed = chapter_mastered == len(kps) and len(kps) > 0
+                if is_completed:
+                    total_mastered += 1
+                chapters.append({
+                    "chapter_id": chapter.id,
+                    "mastery_score": chapter_avg_p_l * 100,
+                    "is_completed": is_completed,
+                })
+            else:
+                chapters.append({
+                    "chapter_id": chapter.id,
+                    "mastery_score": 0.0,
+                    "is_completed": False,
+                })
 
-        if not course_mastery:
+        completed_chapters = total_mastered
+
+        if not kp_masteries:
+            # 没有知识点数据，返回默认值
             return {
                 "mastery_score": 0.0,
                 "progress_percentage": 0.0,
-                "chapters_count": len(chapter_masteries),
-                "completed_chapters": 0,
+                "chapters_count": chapters_count,
+                "completed_chapters": completed_chapters,
                 "is_completed": False,
                 "chapters": chapters,
             }
 
+        # 从所有知识点计算真实的平均 P(L)
+        avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
+        mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
+
+        # 真实课程掌握度分数
+        mastery_score = avg_p_l * 100
+        # 进度百分比 = 已掌握知识点 / 总知识点
+        progress_percentage = (mastered_count / len(kp_masteries)) * 100 if kp_masteries else 0.0
+
+        logger.info(f"[BKT] get_course_mastery_summary 真实计算: mastery_score={mastery_score:.2f}%, progress_percentage={progress_percentage:.2f}%")
+
         return {
-            "mastery_score": course_mastery.mastery_score,
-            "progress_percentage": course_mastery.progress_percentage,
-            "chapters_count": course_mastery.chapters_count,
-            "completed_chapters": course_mastery.completed_chapters_count,
-            "is_completed": course_mastery.is_completed,
+            "mastery_score": mastery_score,
+            "progress_percentage": progress_percentage,
+            "chapters_count": chapters_count,
+            "completed_chapters": completed_chapters,
+            "is_completed": mastered_count == len(kp_masteries) and len(kp_masteries) > 0,
             "chapters": chapters,
         }
