@@ -339,31 +339,30 @@ export function StreamHintModal({
     left: position ? `calc(50% + ${position.x}px)` : '50%',
     top: position ? `calc(50% + ${position.y}px)` : '50%',
     transform: 'translate(-50%, -50%)',
+    zIndex: 9999,
   };
 
   return (
     <>
       {/* Backdrop - 透明背景，点击关闭 */}
       <div
-        className="fixed inset-0 z-[100]"
+        className="fixed inset-0"
+        style={{ zIndex: 9998 }}
         onClick={onClose}
-        style={{ animation: 'fadeIn 0.2s ease-out' }}
       />
 
-      {/* Modal Panel - 居中显示，可拖动 */}
-      <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none">
-        <div
-          style={modalStyle}
-          className={`
-            bg-white rounded-2xl shadow-xl border border-gray-200
-            w-full max-w-lg mx-4
-            max-h-[80vh]
-            overflow-hidden flex flex-col
-            pointer-events-auto
-            ${isDragging ? 'select-none' : ''}
-          `}
-          onClick={(e) => e.stopPropagation()}
-        >
+      {/* Modal Panel - 直接 fixed 定位，可拖动 */}
+      <div
+        style={modalStyle}
+        className={`
+          bg-white rounded-2xl shadow-2xl border border-gray-200
+          w-full max-w-lg mx-4
+          max-h-[80vh]
+          overflow-hidden flex flex-col
+          ${isDragging ? 'select-none' : ''}
+        `}
+        onClick={(e) => e.stopPropagation()}
+      >
           {/* 可拖动的标题栏 */}
           <div
             className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl cursor-grab active:cursor-grabbing"
@@ -444,19 +443,6 @@ export function StreamHintModal({
             </div>
           </div>
         </div>
-      </div>
-
-      {/* CSS Animations */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 0; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
     </>
   );
 }
