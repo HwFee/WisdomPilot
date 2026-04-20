@@ -196,14 +196,21 @@ class SectionBaseQuestionService:
             ))
 
         # 更新用户精进之路经验值（如果提供了 user_id）
+        xp_earned = 0
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[基础题] 提交结果: user_id={user_id}, correct_count={correct_count}")
+
         if user_id and correct_count > 0:
             user_result = await db.execute(
                 select(User).where(User.id == user_id)
             )
             user = user_result.scalar_one_or_none()
+            logger.info(f"[基础题] 查询用户: user={'存在' if user else '不存在'}")
             if user:
                 from app.services.mastery_xp_transaction_service import MasteryXpTransactionService
                 xp_earned = correct_count * 10  # 每题 10 XP
+                logger.info(f"[基础题] 准备加经验: xp_earned={xp_earned}")
                 mastery_xp_service = MasteryXpTransactionService(db)
                 await mastery_xp_service.earn_xp(
                     user_id=user.id,
@@ -213,6 +220,9 @@ class SectionBaseQuestionService:
                     reference_id=str(section_id),
                     description=f"小节基础测试答对 {correct_count} 题"
                 )
+                logger.info(f"[基础题] 经验已添加: xp_earned={xp_earned}")
+        else:
+            logger.info(f"[基础题] 跳过加经验: user_id={user_id}, correct_count={correct_count}")
 
         accuracy = correct_count / len(questions) if questions else 0
 
@@ -224,6 +234,7 @@ class SectionBaseQuestionService:
             results=results,
             weak_points=weak_points,
             strong_points=strong_points,
+            xp_earned=xp_earned,
         )
 
     async def generate_enhanced_quiz(

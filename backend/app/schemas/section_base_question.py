@@ -81,6 +81,7 @@ class BaseAnswersSubmitResponse(BaseModel):
         default_factory=list,
         description="掌握较好的知识点"
     )
+    xp_earned: int = Field(default=0, description="获得的经验值")
 
 
 # ========================================

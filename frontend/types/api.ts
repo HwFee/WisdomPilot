@@ -1200,6 +1200,7 @@ export interface BaseAnswersSubmitResponse {
   results: BaseQuestionResult[]
   weak_points: string[]
   strong_points: string[]
+  xp_earned: number
 }
 
 export interface EnhancedQuizGenerateRequest {

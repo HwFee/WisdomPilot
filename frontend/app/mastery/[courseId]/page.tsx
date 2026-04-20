@@ -17,6 +17,8 @@ import {
   Star,
 } from "lucide-react";
 import { FavoriteButton } from "@/components/exercise/FavoriteButton";
+import { NoteButton } from "@/components/exercise/NoteButton";
+import { NoteEditor } from "@/components/notes/NoteEditor";
 import { KnowledgeOrb } from "@/components/ui/knowledge-orb";
 import { CourseMasteryOverview } from "@/components/mastery/MasteryComponents";
 
@@ -145,6 +147,11 @@ export default function MasteryPathPage() {
   const sessionInitializedRef = useRef(false); // 防止 StrictMode 重复初始化
   const sessionEndedRef = useRef(false); // 防止 StrictMode 重复结束
   const currentSectionIdRef = useRef<number | null>(null); // 保存当前 sectionId，避免 state 丢失
+
+  // Note editor state
+  const [showNoteEditor, setShowNoteEditor] = useState(false);
+  const [editingNote, setEditingNote] = useState<import('@/types/api').NoteResponse | null>(null);
+  const [noteRefreshKey, setNoteRefreshKey] = useState(0);
 
   const fetchOverview = useCallback(async () => {
     const token = getStoredToken();
@@ -1622,21 +1629,37 @@ export default function MasteryPathPage() {
                   {currentQuestion.difficulty === 1 ? "入门" : "基础"}
                 </span>
               </div>
-              {/* 收藏按钮 */}
-              <FavoriteButton
-                exerciseKey={`mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`}
-                courseId={courseId}
-                exerciseId={currentQuestion.id}
-                chapterId={selectedChapterId || undefined}
-                exerciseContent={{
-                  text: currentQuestion.text,
-                  options: currentQuestion.options,
-                }}
-                exerciseType={getQuestionType(currentQuestion)}
-                exerciseDifficulty={currentQuestion.difficulty}
-                knowledgePoints={currentQuestion.knowledge_points}
-                size="sm"
-              />
+              {/* 收藏和笔记按钮 */}
+              <div className="flex items-center gap-2">
+                <FavoriteButton
+                  exerciseKey={`mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`}
+                  courseId={courseId}
+                  exerciseId={currentQuestion.id}
+                  chapterId={selectedChapterId || undefined}
+                  sectionId={selectedSectionId || undefined}
+                  exerciseContent={{
+                    text: currentQuestion.text,
+                    options: currentQuestion.options,
+                  }}
+                  exerciseType={getQuestionType(currentQuestion)}
+                  exerciseDifficulty={currentQuestion.difficulty}
+                  knowledgePoints={currentQuestion.knowledge_points}
+                  size="sm"
+                />
+                <NoteButton
+                  courseId={courseId}
+                  exerciseId={currentQuestion.id}
+                  chapterId={selectedChapterId || undefined}
+                  knowledgePoints={currentQuestion.knowledge_points}
+                  size="sm"
+                  refreshKey={noteRefreshKey}
+                  onClick={(existingNote) => {
+                    console.log('[精进之路] NoteButton onClick:', existingNote);
+                    setEditingNote(existingNote);
+                    setShowNoteEditor(true);
+                  }}
+                />
+              </div>
             </div>
 
             {/* Question type indicator */}
@@ -1859,6 +1882,14 @@ export default function MasteryPathPage() {
           }`}
         >
           <div className="max-w-2xl mx-auto px-4 py-4">
+            {/* 进度提示 */}
+            <div className="text-center text-sm text-muted-foreground mb-3">
+              {isLastQuestion ? (
+                <span className="text-amber-500 font-medium">🎉 完成本题即可获得经验奖励！</span>
+              ) : (
+                <span>进度: {currentQuestionIndex + 1}/{baseQuestions.length} · 完成所有题目可获得经验奖励</span>
+              )}
+            </div>
             {submitted ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1912,6 +1943,27 @@ export default function MasteryPathPage() {
           exerciseId={currentQuestion.id}
           knowledgePoints={currentQuestion.knowledge_points}
         />
+
+        {/* Note Editor Modal */}
+        {showNoteEditor && (
+          <NoteEditor
+            note={editingNote}
+            exerciseId={currentQuestion.id}
+            chapterId={selectedChapterId || undefined}
+            knowledgePoints={currentQuestion.knowledge_points}
+            prefillContent={currentQuestion.text}
+            prefillTitle={currentQuestion.text ? `题目笔记: ${currentQuestion.text.slice(0, 30)}...` : undefined}
+            source="question"
+            onSave={(savedNote) => {
+              console.log('[精进之路] 笔记已保存:', savedNote);
+              setNoteRefreshKey((prev) => prev + 1); // 触发 NoteButton 重新检查
+            }}
+            onClose={() => {
+              setShowNoteEditor(false);
+              setEditingNote(null);
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -2102,6 +2154,26 @@ export default function MasteryPathPage() {
           )}
         </div>
       </main>
+
+      {/* Note Editor Modal */}
+      {showNoteEditor && (
+        <NoteEditor
+          note={editingNote}
+          exerciseId={baseQuestions[currentQuestionIndex]?.id}
+          chapterId={selectedChapterId || undefined}
+          knowledgePoints={baseQuestions[currentQuestionIndex]?.knowledge_points}
+          prefillContent={baseQuestions[currentQuestionIndex]?.text}
+          prefillTitle={baseQuestions[currentQuestionIndex]?.text ? `题目笔记: ${baseQuestions[currentQuestionIndex].text.slice(0, 30)}...` : undefined}
+          source="question"
+          onSave={(savedNote) => {
+            console.log('[精进之路] 笔记已保存:', savedNote);
+          }}
+          onClose={() => {
+            setShowNoteEditor(false);
+            setEditingNote(null);
+          }}
+        />
+      )}
     </div>
   );
 }
