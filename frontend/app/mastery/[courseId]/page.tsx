@@ -1904,7 +1904,14 @@ export default function MasteryPathPage() {
         </div>
 
         {/* AI Knowledge Assistant Orb - only available after submitting answer */}
-        <KnowledgeOrb disabledForQuestion={!submitted} />
+        <KnowledgeOrb
+          disabledForQuestion={!submitted}
+          courseId={courseId}
+          chapterId={selectedChapterId ?? undefined}
+          sectionId={selectedSectionId ?? undefined}
+          exerciseId={currentQuestion.id}
+          knowledgePoints={currentQuestion.knowledge_points}
+        />
       </div>
     );
   }

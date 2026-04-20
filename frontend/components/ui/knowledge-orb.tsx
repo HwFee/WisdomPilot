@@ -7,6 +7,9 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { useAIContext, type KnowledgePointContext } from "@/contexts/AIContext"
 import { cn } from "@/lib/utils"
+import { createNoteFromQuestion } from "@/lib/api/notes"
+import { getStoredToken } from "@/lib/api"
+import { FileText } from "lucide-react"
 
 // ── Dimensions ─────────────────────────────────────────────
 const ORB_SIZE = 52
@@ -105,46 +108,101 @@ function PanelOrb({ size = 22 }: { size?: number }) {
 }
 
 // ── Message bubble with Markdown ─────────────────────────
-function MessageBubble({ role, content }: { role: "user" | "ai"; content: string }) {
+interface MessageBubbleProps {
+  role: "user" | "ai"
+  content: string
+  /** Context IDs for saving as note */
+  courseId?: number
+  chapterId?: number
+  sectionId?: number
+  exerciseId?: number
+  knowledgePoints?: string[]
+}
+
+function MessageBubble({ role, content, courseId, chapterId, sectionId, exerciseId, knowledgePoints }: MessageBubbleProps) {
   const isUser = role === "user"
+  const [isSaving, setIsSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleSaveAsNote = useCallback(async () => {
+    if (!content || isSaving || saved) return
+    const token = getStoredToken()
+    if (!token) return
+
+    setIsSaving(true)
+    try {
+      await createNoteFromQuestion(token, {
+        title: "AI 回答笔记",
+        content: content,
+        course_id: courseId,
+        chapter_id: chapterId,
+        section_id: sectionId,
+        exercise_id: exerciseId,
+        source: "ai_answer",
+        ai_answer_content: content,
+        knowledge_points: knowledgePoints || [],
+      })
+      setSaved(true)
+    } catch (error) {
+      console.error("[笔记] 保存失败:", error)
+      alert("笔记保存失败，请重试")
+    } finally {
+      setIsSaving(false)
+    }
+  }, [content, isSaving, saved, courseId, chapterId, sectionId, exerciseId, knowledgePoints])
+
   return (
-    <div
-      className="rounded-2xl px-3 py-2 leading-relaxed"
-      style={{
-        maxWidth: "88%",
-        background: isUser ? "hsl(var(--primary))" : "hsl(var(--secondary))",
-        color: isUser ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
-        fontSize: "0.75rem",
-      }}
-    >
-      {isUser ? (
-        <span className="whitespace-pre-wrap">{content}</span>
-      ) : (
-        <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
-              code: ({ children }) => (
-                <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>
-                  {children}
-                </code>
-              ),
-              pre: ({ children }) => (
-                <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ background: "hsl(var(--muted))" }}>
-                  {children}
-                </pre>
-              ),
-              ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
-              li: ({ children }) => <li className="leading-snug">{children}</li>,
-              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-              em: ({ children }) => <em>{children}</em>,
-            }}
-          >
-            {content}
-          </ReactMarkdown>
-        </div>
+    <div className="flex flex-col gap-1">
+      <div
+        className="rounded-2xl px-3 py-2 leading-relaxed"
+        style={{
+          maxWidth: "88%",
+          background: isUser ? "hsl(var(--primary))" : "hsl(var(--secondary))",
+          color: isUser ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))",
+          fontSize: "0.75rem",
+        }}
+      >
+        {isUser ? (
+          <span className="whitespace-pre-wrap">{content}</span>
+        ) : (
+          <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
+                code: ({ children }) => (
+                  <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>
+                    {children}
+                  </code>
+                ),
+                pre: ({ children }) => (
+                  <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ background: "hsl(var(--muted))" }}>
+                    {children}
+                  </pre>
+                ),
+                ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
+                li: ({ children }) => <li className="leading-snug">{children}</li>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                em: ({ children }) => <em>{children}</em>,
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+        )}
+      </div>
+      {/* Save as note button for AI messages */}
+      {!isUser && (
+        <button
+          onClick={handleSaveAsNote}
+          disabled={isSaving || saved}
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg transition-colors hover:bg-black/10 disabled:opacity-50 w-fit"
+          style={{ color: saved ? "hsl(var(--success))" : "hsl(var(--primary))" }}
+        >
+          <FileText className="w-3 h-3" />
+          {saved ? "已保存" : isSaving ? "保存中..." : "记为笔记"}
+        </button>
       )}
     </div>
   )
@@ -161,9 +219,22 @@ type ContextMode = "knowledge" | "question" | null
 interface KnowledgeOrbProps {
   /** 如果为 true，拖动到题目时会显示提示而不是打开面板 */
   disabledForQuestion?: boolean
+  /** Context IDs for saving AI answers as notes */
+  courseId?: number
+  chapterId?: number
+  sectionId?: number
+  exerciseId?: number
+  knowledgePoints?: string[]
 }
 
-export function KnowledgeOrb({ disabledForQuestion = false }: KnowledgeOrbProps) {
+export function KnowledgeOrb({
+  disabledForQuestion = false,
+  courseId,
+  chapterId,
+  sectionId,
+  exerciseId,
+  knowledgePoints
+}: KnowledgeOrbProps) {
   const router = useRouter()
   const {
     activeKnowledgeQuestion,
@@ -840,7 +911,15 @@ ${kp.title}${optsStr}
                 className="flex"
                 style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
               >
-                <MessageBubble role={msg.role} content={msg.content} />
+                <MessageBubble
+                  role={msg.role}
+                  content={msg.content}
+                  courseId={courseId}
+                  chapterId={chapterId}
+                  sectionId={sectionId}
+                  exerciseId={exerciseId}
+                  knowledgePoints={knowledgePoints}
+                />
               </div>
             ))}
             {/* Streaming bubble */}

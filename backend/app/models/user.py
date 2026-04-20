@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.user_weak_point import UserWeakPoint
     from app.models.spaced_repetition import SpacedRepetition
     from app.models.favorite import Favorite
-    from app.models.note import Note
+    from app.models.note import Note, NoteTag
     from app.models.chapter_mastery import ChapterMastery
     from app.models.wrong_question import WrongQuestion
     from app.models.core_transaction import CoreTransaction
@@ -237,4 +237,7 @@ class User(Base):
     )
     mastery_xp_transactions: Mapped[List["MasteryXpTransaction"]] = relationship(
         "MasteryXpTransaction", back_populates="user"
+    )
+    note_tags: Mapped[List["NoteTag"]] = relationship(
+        "NoteTag", back_populates="user"
     )

@@ -13,7 +13,7 @@ from app.models.challenge import Challenge, ChallengeType
 from app.models.user_challenge import UserChallenge, UserChallengeStatus
 from app.models.achievement import Achievement, AchievementType, UserAchievement
 from app.models.favorite import Favorite
-from app.models.note import Note
+from app.models.note import Note, NoteTag
 from app.models.chapter_mastery import ChapterMastery
 from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
@@ -60,6 +60,7 @@ __all__ = [
     # Favorites & Notes
     "Favorite",
     "Note",
+    "NoteTag",
     # Mastery System
     "ChapterMastery",
     # Challenge Path System

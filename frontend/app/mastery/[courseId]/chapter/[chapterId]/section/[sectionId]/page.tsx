@@ -326,7 +326,11 @@ export default function SectionLearningPage() {
       </div>
 
       {/* AI Knowledge Assistant Orb */}
-      <KnowledgeOrb />
+      <KnowledgeOrb
+        courseId={courseId}
+        chapterId={chapterId}
+        sectionId={sectionId}
+      />
     </div>
   )
 }
