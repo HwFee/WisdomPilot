@@ -66,10 +66,10 @@ export function QuickTools({
   // Calculate next tier info
   const getNextTierInfo = () => {
     if (streakDays >= 100) return null
-    if (streakDays >= 30) return { days: 100 - streakDays, tier: '100天成就', icon: '👑' }
-    if (streakDays >= 14) return { days: 30 - streakDays, tier: '30天成就', icon: '🏆' }
-    if (streakDays >= 7) return { days: 14 - streakDays, tier: '14天成就', icon: '🌟' }
-    return { days: 7 - streakDays, tier: '7天成就', icon: '🔥' }
+    if (streakDays >= 30) return { days: 100 - streakDays, tier: '100天成就', icon: '👑', targetDays: 100 }
+    if (streakDays >= 14) return { days: 30 - streakDays, tier: '30天成就', icon: '🏆', targetDays: 30 }
+    if (streakDays >= 7) return { days: 14 - streakDays, tier: '14天成就', icon: '🌟', targetDays: 14 }
+    return { days: 7 - streakDays, tier: '7天成就', icon: '🔥', targetDays: 7 }
   }
 
   const nextTierInfo = getNextTierInfo()
@@ -177,7 +177,7 @@ export function QuickTools({
                     <div
                       className="bg-orange-500 h-1.5 rounded-full"
                       style={{
-                        width: `${Math.min(100, (streakDays / nextTierInfo.days) * 100)}%`
+                        width: `${Math.min(100, (streakDays / nextTierInfo.targetDays) * 100)}%`
                       }}
                     />
                   </div>
@@ -245,7 +245,7 @@ export function QuickTools({
                   <div
                     className="bg-orange-500 h-1.5 rounded-full transition-all"
                     style={{
-                      width: `${Math.min(100, (streakDays / nextTierInfo.days) * 100)}%`
+                      width: `${Math.min(100, (streakDays / nextTierInfo.targetDays) * 100)}%`
                     }}
                   />
                 </div>
