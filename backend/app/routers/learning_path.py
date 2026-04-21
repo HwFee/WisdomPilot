@@ -21,6 +21,7 @@ from app.models.user_arena import UserArenaProfile
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.course import Course
 from app.models.chapter import Chapter
+from app.models.section import Section
 from app.models.exercise import Exercise
 from app.services.challenge_service import ChallengeService, get_challenge_service
 from app.services.leaderboard_service import (
@@ -133,8 +134,14 @@ async def get_mastery_overview(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get user's mastery path overview for a course"""
-    from app.models.knowledge_point_mastery import KnowledgePointMastery, MASTERY_THRESHOLD
+    """Get user's mastery path overview for a course
+
+    章节掌握度 = Σ(小节掌握度 × 小节知识点数) / 总知识点数
+    小节掌握度：未开始测试 → 0%，开始测试后 → BKT实际值（初始15%）
+    """
+    from app.models.section_knowledge_point import SectionKnowledgePoint
+    from app.models.section_mastery import SectionMastery
+    from app.models.section import Section
 
     # Get all chapters for the course
     chapters_result = await db.execute(
@@ -153,39 +160,91 @@ async def get_mastery_overview(
             chapters=[],
         )
 
-    # 从KnowledgePointMastery实时计算每个章节的掌握度
     chapter_ids = [ch.id for ch in chapters]
-    kp_result = await db.execute(
-        select(KnowledgePointMastery).where(
-            KnowledgePointMastery.user_id == current_user.id,
-            KnowledgePointMastery.chapter_id.in_(chapter_ids),
+
+    # 获取所有章节的小节
+    sections_result = await db.execute(
+        select(Section).where(Section.chapter_id.in_(chapter_ids))
+    )
+    sections = sections_result.scalars().all()
+    section_ids = [s.id for s in sections]
+
+    # 构建小节到章节的映射
+    section_to_chapter = {s.id: s.chapter_id for s in sections}
+
+    # 获取每个小节的知识点数量
+    kp_count_result = await db.execute(
+        select(
+            SectionKnowledgePoint.section_id,
+            func.count(SectionKnowledgePoint.id).label("kp_count")
+        ).where(
+            SectionKnowledgePoint.section_id.in_(section_ids),
+            SectionKnowledgePoint.is_active == True
+        ).group_by(SectionKnowledgePoint.section_id)
+    )
+    section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
+
+    # 获取每个章节的知识点总数
+    chapter_kp_counts = {}
+    for section_id, kp_count in section_kp_counts.items():
+        chapter_id = section_to_chapter.get(section_id)
+        if chapter_id:
+            chapter_kp_counts[chapter_id] = chapter_kp_counts.get(chapter_id, 0) + kp_count
+
+    # 获取每个小节的掌握度（已开始测试的）
+    section_mastery_result = await db.execute(
+        select(SectionMastery).where(
+            SectionMastery.user_id == current_user.id,
+            SectionMastery.section_id.in_(section_ids),
         )
     )
-    kp_masteries = kp_result.scalars().all()
-
-    # 按chapter_id分组
-    from collections import defaultdict
-    chapter_kps = defaultdict(list)
-    for kp in kp_masteries:
-        chapter_kps[kp.chapter_id].append(kp)
+    section_masteries = section_mastery_result.scalars().all()
+    section_mastery_map = {sm.section_id: sm for sm in section_masteries}
 
     # 构建章节列表
     chapter_list = []
-    total_mastery_points = 0  # 保留（用于各章节展示）
-    total_kp_count = 0       # 总知识点数（用于加权平均）
-    weighted_mastery_sum = 0 # 加权掌握度之和 Σ(kp_count × mastery_pct)
+    total_mastery_points = 0
+    total_kp_count = 0
+    weighted_mastery_sum = 0
     mastered_count = 0
     current_chapter = None
 
     for ch in chapters:
-        kps = chapter_kps.get(ch.id, [])
-        if kps:
-            # 从知识点实时计算章节掌握度
-            avg_p_l = sum(kp.p_l for kp in kps) / len(kps)
-            mastery_score = avg_p_l * 100
-            kp_count = len(kps)
-            mastered_kps = sum(1 for kp in kps if kp.p_l >= MASTERY_THRESHOLD)
-            is_mastered = mastered_kps == kp_count and kp_count > 0
+        ch_kp_count = chapter_kp_counts.get(ch.id, 0)
+
+        if ch_kp_count > 0:
+            # 计算章节加权掌握度 = Σ(小节掌握度 × 小节知识点数) / 章节总知识点数
+            ch_weighted_sum = 0.0
+            ch_started_sections = 0
+            ch_total_sections = 0
+
+            # 获取该章节的所有小节
+            ch_sections = [s for s in sections if s.chapter_id == ch.id]
+
+            for s in ch_sections:
+                s_kp_count = section_kp_counts.get(s.id, 0)
+                if s_kp_count == 0:
+                    continue
+
+                ch_total_sections += 1
+                sm = section_mastery_map.get(s.id)
+
+                if sm and sm.first_attempt_at:
+                    # 小节已开始测试，使用实际掌握度
+                    section_p_l = sm.bkt_aggregated_p_l
+                    ch_started_sections += 1
+                else:
+                    # 小节未开始，掌握度为 0
+                    section_p_l = 0.0
+
+                ch_weighted_sum += section_p_l * s_kp_count
+
+            # 章节平均掌握度
+            ch_avg_p_l = ch_weighted_sum / ch_kp_count
+            mastery_score = ch_avg_p_l * 100
+
+            # 判断是否完成：所有小节都开始且掌握
+            is_mastered = ch_started_sections == ch_total_sections and ch_avg_p_l >= 0.95
 
             # 章节等级
             if mastery_score >= 95:
@@ -200,8 +259,8 @@ async def get_mastery_overview(
                 mastery_level = "入门"
 
             total_mastery_points += mastery_score
-            total_kp_count += kp_count
-            weighted_mastery_sum += kp_count * mastery_score
+            total_kp_count += ch_kp_count
+            weighted_mastery_sum += ch_kp_count * mastery_score
             if is_mastered:
                 mastered_count += 1
 
@@ -784,6 +843,44 @@ from app.schemas.mastery_progress import (
     MasteryChapterProgressResponse,
     MasteryQuizCompleteRequest,
 )
+
+
+@router.get("/mastery/section/{section_id}/knowledge-points")
+async def get_section_knowledge_points(
+    section_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取小节知识点内容（精进之路）
+
+    返回该小节的所有知识点及其学习内容，用户先学习知识点再做测试。
+    """
+    from app.models.section_knowledge_point import SectionKnowledgePoint
+
+    result = await db.execute(
+        select(SectionKnowledgePoint)
+        .where(
+            SectionKnowledgePoint.section_id == section_id,
+            SectionKnowledgePoint.is_active == True
+        )
+        .order_by(SectionKnowledgePoint.order_index)
+    )
+    knowledge_points = result.scalars().all()
+
+    # 获取小节信息
+    section_result = await db.execute(
+        select(Section).where(Section.id == section_id)
+    )
+    section = section_result.scalar_one_or_none()
+
+    return {
+        "section_id": section_id,
+        "section_title": section.title if section else "",
+        "chapter_id": section.chapter_id if section else None,
+        "total_knowledge_points": len(knowledge_points),
+        "knowledge_points": [kp.to_dict() for kp in knowledge_points],
+    }
 
 
 @router.get("/mastery/section/{section_id}/base-questions")

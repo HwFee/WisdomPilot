@@ -15,12 +15,14 @@ import {
   Zap,
   AlertTriangle,
   Star,
+  PartyPopper,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { FavoriteButton } from "@/components/exercise/FavoriteButton";
 import { NoteButton } from "@/components/exercise/NoteButton";
 import { NoteEditor } from "@/components/notes/NoteEditor";
 import { KnowledgeOrb } from "@/components/ui/knowledge-orb";
-import { CourseMasteryOverview } from "@/components/mastery/MasteryComponents";
+import { staggerContainer, staggerItem, fadeIn, scaleIn } from "@/lib/animations";
 
 import {
   getMasteryOverview,
@@ -33,8 +35,6 @@ import {
   MASTERY_LEVEL_COLORS,
   startLearningSession,
   endLearningSession,
-  getCourseMastery,
-  type CourseMasteryResponse,
 } from "@/lib/api";
 import { endLearningSessionKeepalive } from "@/lib/api/stats";
 import {
@@ -86,9 +86,6 @@ export default function MasteryPathPage() {
   const [overview, setOverview] = useState<MasteryOverviewResponse | null>(
     null,
   );
-
-  // BKT Course Mastery state
-  const [courseMastery, setCourseMastery] = useState<CourseMasteryResponse | null>(null);
 
   // Chapter selection state
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(
@@ -162,13 +159,8 @@ export default function MasteryPathPage() {
     }
 
     try {
-      // 并行获取 overview 和 course mastery
-      const [data, masteryData] = await Promise.all([
-        getMasteryOverview(courseId, token),
-        getCourseMastery(courseId, token).catch(() => null),
-      ]);
+      const data = await getMasteryOverview(courseId, token);
       setOverview(data);
-      setCourseMastery(masteryData);
     } catch (error) {
       console.error("Failed to fetch mastery overview:", error);
     } finally {
@@ -444,6 +436,7 @@ export default function MasteryPathPage() {
           results: [],
           weak_points: weakPoints,
           strong_points: strongPoints,
+          xp_earned: 0,
         });
         setStep("analysis");
         console.log(
@@ -620,6 +613,7 @@ export default function MasteryPathPage() {
           results: [],
           weak_points: weakPoints,
           strong_points: strongPoints,
+          xp_earned: 0,
         });
         setStep("analysis");
         console.log(
@@ -1112,10 +1106,18 @@ export default function MasteryPathPage() {
   if (loading && step === "select_chapter") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
+          />
           <p className="text-muted-foreground">加载中...</p>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -1146,33 +1148,57 @@ export default function MasteryPathPage() {
 
         <main className="pt-24 pb-12 px-4">
           <div className="max-w-md mx-auto">
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
               className={`rounded-2xl border p-8 text-center mb-6 ${
                 passed
                   ? "bg-emerald-500/10 border-emerald-500/30"
                   : "bg-orange-500/10 border-orange-500/30"
               }`}
             >
-              {passed ? (
-                <CheckCircle className="w-20 h-20 text-emerald-500 mx-auto mb-4" />
-              ) : (
-                <XCircle className="w-20 h-20 text-orange-400 mx-auto mb-4" />
-              )}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
+              >
+                {passed ? (
+                  <CheckCircle className="w-20 h-20 text-emerald-500 mx-auto mb-4" />
+                ) : (
+                  <XCircle className="w-20 h-20 text-orange-400 mx-auto mb-4" />
+                )}
+              </motion.div>
 
-              <h2 className="text-2xl font-bold text-foreground mb-2">
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-2xl font-bold text-foreground mb-2"
+              >
                 {passed ? "恭喜通过！" : "继续努力"}
-              </h2>
+              </motion.h2>
 
-              <p className="text-muted-foreground mb-6">
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-muted-foreground mb-6"
+              >
                 {finalResult.total_questions > 0 && (
                   <>
                     答对 {finalResult.correct_answers}/
                     {finalResult.total_questions} 题 ({accuracy}%)
                   </>
                 )}
-              </p>
+              </motion.p>
 
-              <div className="bg-card rounded-xl p-4 mb-6 space-y-3">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="bg-card rounded-xl p-4 mb-6 space-y-3"
+              >
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">获得经验值</span>
                   <span className="font-medium text-blue-500">
@@ -1185,26 +1211,36 @@ export default function MasteryPathPage() {
                     +{finalResult.mastery_points_earned}
                   </span>
                 </div>
-              </div>
+              </motion.div>
 
               {finalResult.recommendations.length > 0 && (
-                <div className="bg-muted/50 rounded-xl p-4 text-left text-sm">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="bg-muted/50 rounded-xl p-4 text-left text-sm"
+                >
                   <p className="font-medium text-foreground mb-2">学习建议</p>
                   <ul className="text-muted-foreground space-y-1">
                     {finalResult.recommendations.map((rec, i) => (
                       <li key={i}>• {rec}</li>
                     ))}
                   </ul>
-                </div>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
 
-            <button
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               onClick={handleBackToChapters}
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all"
             >
               返回章节列表
-            </button>
+            </motion.button>
           </div>
         </main>
       </div>
@@ -1802,8 +1838,18 @@ export default function MasteryPathPage() {
                   <div
                     className={`p-4 rounded-xl ${isCorrect ? "bg-emerald-500/10" : "bg-red-500/10"}`}
                   >
-                    <p className="text-sm font-medium text-foreground mb-1">
-                      {isCorrect ? "✅ 正确！" : "❌ 错误"}
+                    <p className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
+                      {isCorrect ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-emerald-500" />
+                          正确！
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-4 h-4 text-red-500" />
+                          错误
+                        </>
+                      )}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       正确答案：
@@ -1885,7 +1931,10 @@ export default function MasteryPathPage() {
             {/* 进度提示 */}
             <div className="text-center text-sm text-muted-foreground mb-3">
               {isLastQuestion ? (
-                <span className="text-amber-500 font-medium">🎉 完成本题即可获得经验奖励！</span>
+                <span className="text-amber-500 font-medium flex items-center justify-center gap-1">
+                  <PartyPopper className="w-4 h-4" />
+                  完成本题即可获得经验奖励！
+                </span>
               ) : (
                 <span>进度: {currentQuestionIndex + 1}/{baseQuestions.length} · 完成所有题目可获得经验奖励</span>
               )}
@@ -1990,84 +2039,6 @@ export default function MasteryPathPage() {
 
       <main className="pt-20 pb-12 px-4">
         <div className="max-w-4xl mx-auto">
-          {/* BKT Course Mastery Overview */}
-          {courseMastery && (
-            <div className="mb-8">
-              {(() => {
-                // 详细日志：每个章节的掌握度计算
-                console.log("========== 课程掌握度计算 ==========");
-                console.log(`API返回: courseMastery.mastery_score = ${courseMastery.mastery_score} (渲染到页面应该是 ${courseMastery.mastery_score.toFixed(0)}%)`);
-                console.log(`章节数: ${courseMastery.chapters_count}, 已完成: ${courseMastery.completed_chapters}`);
-                console.log("--- 各章节掌握度 ---");
-                courseMastery.chapters.forEach((ch: any, idx: number) => {
-                  if (idx < 2) {
-                    console.log(`章节 ${idx + 1} (id=${ch.chapter_id}): mastery_score = ${ch.mastery_score} (${ch.mastery_score.toFixed(2)}%), 完成=${ch.is_completed}`);
-                  }
-                });
-
-                // 按你的算法验证
-                const ch1 = courseMastery.chapters[0];
-                const ch2 = courseMastery.chapters[1];
-                const kp1 = 64, kp2 = 10;
-                const p1 = ch1.mastery_score / 100, p2 = ch2.mastery_score / 100;
-                const totalKp = kp1 + kp2;
-                const weighted = (kp1 * p1 + kp2 * p2) / totalKp;
-                console.log("--- 验证课程整体（按你的算法）---");
-                console.log(`第1章: ${kp1}个知识点 × ${ch1.mastery_score.toFixed(2)}% = ${(kp1 * p1).toFixed(2)}`);
-                console.log(`第2章: ${kp2}个知识点 × ${ch2.mastery_score.toFixed(2)}% = ${(kp2 * p2).toFixed(2)}`);
-                console.log(`总计: (${(kp1 * p1).toFixed(2)} + ${(kp2 * p2).toFixed(2)}) / ${totalKp} = ${(weighted * 100).toFixed(2)}%`);
-                console.log(`API返回的 courseMastery.mastery_score = ${courseMastery.mastery_score.toFixed(2)}%`);
-                console.log("=====================================");
-                return null;
-              })()}
-              <CourseMasteryOverview
-                courseName={courseMastery.course_name || overview?.chapters?.[0]?.title || `课程 ${courseId}`}
-                masteryScore={courseMastery.mastery_score}
-                progressPercentage={courseMastery.progress_percentage}
-                chaptersCount={courseMastery.chapters_count}
-                completedChaptersCount={courseMastery.completed_chapters}
-                chapters={courseMastery.chapters}
-                onChapterClick={(chapterId) => {
-                  const chapter = overview?.chapters?.find(c => c.chapter_id === chapterId);
-                  if (chapter) {
-                    handleSelectChapter(chapterId, chapter.title);
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          {/* Legacy Progress Overview (fallback when BKT data not available) */}
-          {!courseMastery && overview && (
-            <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-2xl border border-amber-500/20 p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">
-                    学习进度
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    已完成 {overview.mastered_chapters}/
-                    {overview.total_chapters} 章节
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-amber-500">
-                    {overview.total_mastery_points?.toFixed(0) ?? 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground">掌握分数</p>
-                </div>
-              </div>
-              <div className="h-2 bg-amber-500/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
-                  style={{
-                    width: `${overview.total_chapters > 0 ? (overview.mastered_chapters / overview.total_chapters) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
           {/* Chapter List */}
           <h3 className="text-lg font-semibold text-foreground mb-4">
             选择章节开始学习
@@ -2078,35 +2049,20 @@ export default function MasteryPathPage() {
               {overview.chapters.map((chapter) => {
                 const masteryPercent = chapter.mastery_score ?? 0;
                 const masteryLevel = chapter.mastery_level as MasteryLevel;
-                const isUnlocked =
-                  chapter.order_index === 1 ||
-                  overview.chapters.find(
-                    (c) => c.order_index === chapter.order_index - 1,
-                  )?.can_advance ||
-                  (chapter.mastery_score ?? 0) > 0;
+                // 所有章节直接解锁
+                const isUnlocked = true;
 
                 return (
                   <button
                     key={chapter.chapter_id}
                     onClick={() =>
-                      isUnlocked &&
                       handleSelectChapter(chapter.chapter_id, chapter.title)
                     }
-                    disabled={!isUnlocked}
-                    className={`w-full p-4 rounded-xl border text-left transition-all ${
-                      isUnlocked
-                        ? "border-border hover:border-amber-500/50 hover:bg-amber-500/5"
-                        : "border-border/50 bg-muted/30 cursor-not-allowed opacity-60"
-                    }`}
+                    className="w-full p-4 rounded-xl border text-left transition-all border-border hover:border-amber-500/50 hover:bg-amber-500/5"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center font-medium ${
-                            isUnlocked
-                              ? "bg-amber-500/20 text-amber-600"
-                              : "bg-muted text-muted-foreground"
-                          }`}
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center font-medium bg-amber-500/20 text-amber-600"
                         >
                           {chapter.order_index}
                         </div>
@@ -2128,9 +2084,7 @@ export default function MasteryPathPage() {
                           </div>
                         </div>
                       </div>
-                      <ChevronRight
-                        className={`w-5 h-5 ${isUnlocked ? "text-muted-foreground" : "text-muted-foreground/50"}`}
-                      />
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </div>
 
                     {/* Progress bar */}

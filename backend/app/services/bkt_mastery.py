@@ -469,59 +469,94 @@ class BKTMasteryService:
 
         小节掌握度 = 该小节内所有知识点的平均 P(L)
 
-        重要：使用 section_id 过滤知识点，确保每个小节有独立的掌握度
+        重要：
+        - 使用 section_knowledge_points 表获取小节的所有知识点
+        - 对于用户没有练习过的知识点，使用初始掌握度 0.15
+        - 这样确保小节掌握度正确反映小节的整体掌握情况
 
         Returns:
             (聚合掌握度, 是否完成)
         """
-        # 获取小节内所有知识点的掌握状态 - 使用 section_id 过滤
-        result = await self.db.execute(
-            select(KnowledgePointMastery).where(
-                KnowledgePointMastery.user_id == user_id,
-                KnowledgePointMastery.section_id == section_id,
+        from app.models.section_knowledge_point import SectionKnowledgePoint
+
+        # Step 1: 获取小节的所有知识点（从 section_knowledge_points 表）
+        kp_list_result = await self.db.execute(
+            select(SectionKnowledgePoint).where(
+                SectionKnowledgePoint.section_id == section_id,
+                SectionKnowledgePoint.is_active == True,
             )
         )
-        kp_masteries = result.scalars().all()
+        all_kp_list = kp_list_result.scalars().all()
 
-        logger.info(f"[BKT] │ 小节 {section_id} 内知识点数: {len(kp_masteries)}")
+        logger.info(f"[BKT] │ 小节 {section_id} 知识点总数: {len(all_kp_list)}")
 
         # 获取或创建 SectionMastery
         section_mastery = await self._get_or_create_section_mastery(
             user_id, section_id, chapter_id, course_id
         )
 
-        if not kp_masteries:
+        if not all_kp_list:
+            # 小节没有定义知识点
             section_mastery.bkt_aggregated_p_l = 0.15
             section_mastery.mastery_score = 15.0
             section_mastery.knowledge_points_count = 0
             section_mastery.mastered_points_count = 0
-            logger.info(f"[BKT] │ 无知识点数据，使用默认值 15%")
+            logger.info(f"[BKT] │ 小节无知识点定义，使用默认值 15%")
             return 0.15, False
 
-        # 计算聚合掌握度
-        avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
-        mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
+        # Step 2: 获取用户已练习的知识点的掌握状态
+        result = await self.db.execute(
+            select(KnowledgePointMastery).where(
+                KnowledgePointMastery.user_id == user_id,
+                KnowledgePointMastery.section_id == section_id,
+            )
+        )
+        user_kp_masteries = result.scalars().all()
+        user_kp_map = {kp.knowledge_point: kp for kp in user_kp_masteries}
 
-        # 打印每个知识点的详细数据
-        for kp in kp_masteries:
-            status = "[OK] 已掌握" if kp.p_l >= MASTERY_THRESHOLD else "学习中"
-            logger.info(f"[BKT] │   知识点 '{kp.knowledge_point}': P(L)={kp.p_l:.4f} ({status})")
+        logger.info(f"[BKT] │ 用户已练习知识点数: {len(user_kp_masteries)}")
 
-        logger.info(f"[BKT] │ 平均 P(L) = {sum(kp.p_l for kp in kp_masteries):.4f} / {len(kp_masteries)} = {avg_p_l:.4f}")
-        logger.info(f"[BKT] │ 已掌握知识点: {mastered_count} / {len(kp_masteries)}")
+        # Step 3: 计算所有知识点的掌握度
+        # 对于未练习的知识点，使用初始掌握度 DEFAULT_P_L0
+        total_p_l = 0.0
+        mastered_count = 0
+
+        for skp in all_kp_list:
+            kp_name = skp.name
+            if kp_name in user_kp_map:
+                # 用户已练习过该知识点
+                kp_mastery = user_kp_map[kp_name]
+                p_l = kp_mastery.p_l
+                status = "[OK] 已掌握" if kp_mastery.p_l >= MASTERY_THRESHOLD else "学习中"
+                logger.info(f"[BKT] │   知识点 '{kp_name}': P(L)={p_l:.4f} ({status}, 已练习)")
+            else:
+                # 用户未练习过该知识点，使用初始掌握度
+                p_l = DEFAULT_P_L0
+                logger.info(f"[BKT] │   知识点 '{kp_name}': P(L)={p_l:.4f} (未练习)")
+
+            total_p_l += p_l
+            if p_l >= MASTERY_THRESHOLD:
+                mastered_count += 1
+
+        # Step 4: 计算平均掌握度
+        avg_p_l = total_p_l / len(all_kp_list)
+
+        logger.info(f"[BKT] │ 总 P(L) = {total_p_l:.4f}, 知识点数 = {len(all_kp_list)}")
+        logger.info(f"[BKT] │ 平均 P(L) = {avg_p_l:.4f} ({avg_p_l*100:.2f}%)")
+        logger.info(f"[BKT] │ 已掌握知识点: {mastered_count} / {len(all_kp_list)}")
 
         # 更新小节掌握度
         section_mastery.bkt_aggregated_p_l = avg_p_l
         section_mastery.mastery_score = avg_p_l * 100
-        section_mastery.knowledge_points_count = len(kp_masteries)
+        section_mastery.knowledge_points_count = len(all_kp_list)
         section_mastery.mastered_points_count = mastered_count
         section_mastery.last_attempt_at = utc_now()
 
         if not section_mastery.first_attempt_at:
             section_mastery.first_attempt_at = utc_now()
 
-        # 判断是否完成
-        is_completed = mastered_count == len(kp_masteries) and len(kp_masteries) > 0
+        # 判断是否完成：所有知识点都掌握
+        is_completed = mastered_count == len(all_kp_list)
         section_mastery.is_completed = is_completed
 
         if is_completed and not section_mastery.completed_at:
@@ -567,13 +602,98 @@ class BKTMasteryService:
         """
         更新章节聚合掌握度
 
-        章节掌握度 = 该章节内所有知识点的平均 P(L)
-        （不再通过小节聚合，直接统计所有知识点）
+        章节掌握度 = Σ(小节掌握度 × 小节知识点数) / 总知识点数
+
+        重要：
+        - 未开始测试的小节掌握度为 0%
+        - 开始测试后的小节才有实际掌握度（初始15%，随答题变化）
 
         Returns:
             (聚合掌握度, 是否完成)
         """
-        # 直接获取章节内所有知识点的掌握状态（不经过小节聚合）
+        from app.models.section_knowledge_point import SectionKnowledgePoint
+        from app.models.section import Section
+
+        # Step 1: 获取章节内所有小节
+        sections_result = await self.db.execute(
+            select(Section).where(Section.chapter_id == chapter_id)
+        )
+        sections = sections_result.scalars().all()
+        section_ids = [s.id for s in sections]
+
+        # Step 2: 获取每个小节的知识点数量
+        kp_count_result = await self.db.execute(
+            select(
+                SectionKnowledgePoint.section_id,
+                func.count(SectionKnowledgePoint.id).label("kp_count")
+            ).where(
+                SectionKnowledgePoint.section_id.in_(section_ids),
+                SectionKnowledgePoint.is_active == True
+            ).group_by(SectionKnowledgePoint.section_id)
+        )
+        section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
+
+        # 计算章节总知识点数
+        total_kp_count = sum(section_kp_counts.values())
+        logger.info(f"[BKT] │ 章节 {chapter_id} 总知识点数: {total_kp_count}")
+        logger.info(f"[BKT] │ 各小节知识点数: {section_kp_counts}")
+
+        # 获取或创建 ChapterMastery
+        chapter_mastery = await self._get_or_create_chapter_mastery(
+            user_id, chapter_id, course_id
+        )
+
+        if total_kp_count == 0:
+            chapter_mastery.bkt_aggregated_p_l = 0.0
+            chapter_mastery.mastery_score = 0.0
+            chapter_mastery.knowledge_points_count = 0
+            chapter_mastery.mastered_points_count = 0
+            logger.info(f"[BKT] │ 章节无知识点，使用默认值 0%")
+            return 0.0, False
+
+        # Step 3: 获取每个小节的掌握度
+        # 只有开始了测试（有 first_attempt_at）的小节才有实际掌握度
+        section_mastery_result = await self.db.execute(
+            select(SectionMastery).where(
+                SectionMastery.user_id == user_id,
+                SectionMastery.section_id.in_(section_ids),
+            )
+        )
+        section_masteries = section_mastery_result.scalars().all()
+        section_mastery_map = {sm.section_id: sm for sm in section_masteries}
+
+        # Step 4: 计算加权平均掌握度
+        # 章节掌握度 = Σ(小节掌握度 × 小节知识点数) / 总知识点数
+        weighted_sum = 0.0
+        started_sections = 0
+
+        for section_id in section_ids:
+            kp_count = section_kp_counts.get(section_id, 0)
+            if kp_count == 0:
+                continue
+
+            sm = section_mastery_map.get(section_id)
+            if sm and sm.first_attempt_at:
+                # 小节已开始测试，使用实际掌握度
+                section_p_l = sm.bkt_aggregated_p_l
+                started_sections += 1
+                logger.info(f"[BKT] │   小节 {section_id}: P(L)={section_p_l:.4f} (已开始, {kp_count}个知识点)")
+            else:
+                # 小节未开始，掌握度为 0
+                section_p_l = 0.0
+                logger.info(f"[BKT] │   小节 {section_id}: P(L)={section_p_l:.4f} (未开始, {kp_count}个知识点)")
+
+            weighted_sum += section_p_l * kp_count
+
+        # 章节平均掌握度
+        avg_p_l = weighted_sum / total_kp_count if total_kp_count > 0 else 0.0
+
+        logger.info(f"[BKT] │ 加权和 = {weighted_sum:.4f}, 总知识点 = {total_kp_count}")
+        logger.info(f"[BKT] │ 章节掌握度 = {avg_p_l:.4f} ({avg_p_l*100:.1f}%)")
+        logger.info(f"[BKT] │ 已开始小节数: {started_sections} / {len(sections)}")
+
+        # Step 5: 计算已掌握知识点数（用于统计）
+        # 需要从知识点级别统计
         result = await self.db.execute(
             select(KnowledgePointMastery).where(
                 KnowledgePointMastery.user_id == user_id,
@@ -581,50 +701,24 @@ class BKTMasteryService:
             )
         )
         kp_masteries = result.scalars().all()
-
-        logger.info(f"[BKT] │ 章节 {chapter_id} 内知识点数: {len(kp_masteries)}")
-
-        # 获取或创建 ChapterMastery
-        chapter_mastery = await self._get_or_create_chapter_mastery(
-            user_id, chapter_id, course_id
-        )
-
-        if not kp_masteries:
-            chapter_mastery.bkt_aggregated_p_l = 0.15
-            chapter_mastery.mastery_score = 15.0
-            chapter_mastery.knowledge_points_count = 0
-            chapter_mastery.mastered_points_count = 0
-            logger.info(f"[BKT] │ 无知识点数据，使用默认值 15%")
-            return 0.15, False
-
-        # 直接计算所有知识点的平均 P(L)
-        avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
         mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
-
-        # 打印每个知识点的详细数据
-        for kp in kp_masteries:
-            status = "[OK] 已掌握" if kp.p_l >= MASTERY_THRESHOLD else "学习中"
-            logger.info(f"[BKT] │   知识点 '{kp.knowledge_point}': P(L)={kp.p_l:.4f} ({status})")
-
-        logger.info(f"[BKT] │ 平均 P(L) = {sum(kp.p_l for kp in kp_masteries):.4f} / {len(kp_masteries)} = {avg_p_l:.4f}")
-        logger.info(f"[BKT] │ 已掌握知识点: {mastered_count} / {len(kp_masteries)}")
 
         # 更新章节掌握度
         chapter_mastery.bkt_aggregated_p_l = avg_p_l
         chapter_mastery.mastery_score = avg_p_l * 100
-        chapter_mastery.knowledge_points_count = len(kp_masteries)
+        chapter_mastery.knowledge_points_count = total_kp_count
         chapter_mastery.mastered_points_count = mastered_count
 
         from app.services.chapter_mastery import ChapterMasteryService
         chapter_mastery.mastery_level = ChapterMasteryService(None).get_mastery_level(avg_p_l * 100)
         chapter_mastery.last_practiced_at = utc_now()
 
-        # 判断是否完成：所有知识点都掌握
-        is_completed = mastered_count == len(kp_masteries) and len(kp_masteries) > 0
+        # 判断是否完成：所有知识点都掌握（需要所有小节都开始并掌握）
+        is_completed = mastered_count == total_kp_count and total_kp_count > 0 and started_sections == len(sections)
 
         if is_completed and not chapter_mastery.mastered_at:
             chapter_mastery.mastered_at = utc_now()
-            logger.info(f"[BKT] [*] 章节 {chapter_id} 完成！所有知识点已掌握！")
+            logger.info(f"[BKT] [*] 章节 {chapter_id} 完成！所有 {total_kp_count} 个知识点已掌握！")
 
         return avg_p_l, is_completed
 
@@ -803,66 +897,166 @@ class BKTMasteryService:
         """
         更新课程聚合掌握度
 
-        课程掌握度 = 该课程内所有知识点的平均 P(L)
-        （不再通过章节聚合，直接统计所有知识点）
+        课程掌握度 = Σ(章节掌握度 × 章节知识点数) / 总知识点数
+
+        重要：
+        - 未开始测试的小节掌握度为 0%
+        - 开始测试后的小节才有实际掌握度（初始15%，随答题变化）
 
         Returns:
             (聚合掌握度, 是否完成)
         """
-        # 直接获取课程内所有知识点的掌握状态（不经过章节聚合）
-        result = await self.db.execute(
+        from app.models.section_knowledge_point import SectionKnowledgePoint
+        from app.models.section import Section
+        from app.models.chapter import Chapter
+
+        # Step 1: 获取课程内所有章节
+        chapters_result = await self.db.execute(
+            select(Chapter).where(Chapter.course_id == course_id)
+        )
+        all_chapters = chapters_result.scalars().all()
+        chapter_ids = [ch.id for ch in all_chapters]
+        chapters_count = len(all_chapters)
+
+        # Step 2: 获取所有章节的小节
+        sections_result = await self.db.execute(
+            select(Section).where(Section.chapter_id.in_(chapter_ids))
+        )
+        sections = sections_result.scalars().all()
+        section_ids = [s.id for s in sections]
+
+        # Step 3: 获取每个章节的知识点总数
+        # 先获取每个小节的知识点数
+        kp_count_result = await self.db.execute(
+            select(
+                SectionKnowledgePoint.section_id,
+                func.count(SectionKnowledgePoint.id).label("kp_count")
+            ).where(
+                SectionKnowledgePoint.section_id.in_(section_ids),
+                SectionKnowledgePoint.is_active == True
+            ).group_by(SectionKnowledgePoint.section_id)
+        )
+        section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
+
+        # 构建小节到章节的映射，并计算每章的知识点数
+        section_to_chapter = {s.id: s.chapter_id for s in sections}
+        chapter_kp_counts = {}
+        for section_id, kp_count in section_kp_counts.items():
+            chapter_id = section_to_chapter.get(section_id)
+            if chapter_id:
+                chapter_kp_counts[chapter_id] = chapter_kp_counts.get(chapter_id, 0) + kp_count
+
+        # 计算课程总知识点数
+        total_kp_count = sum(chapter_kp_counts.values())
+
+        # 获取或创建 CourseMastery
+        course_mastery = await self._get_or_create_course_mastery(user_id, course_id)
+
+        if total_kp_count == 0:
+            course_mastery.bkt_aggregated_p_l = 0.0
+            course_mastery.mastery_score = 0.0
+            course_mastery.knowledge_points_count = 0
+            course_mastery.mastered_points_count = 0
+            course_mastery.chapters_count = chapters_count
+            course_mastery.completed_chapters_count = 0
+            return 0.0, False
+
+        # Step 4: 获取每个小节的掌握度
+        section_mastery_result = await self.db.execute(
+            select(SectionMastery).where(
+                SectionMastery.user_id == user_id,
+                SectionMastery.section_id.in_(section_ids),
+            )
+        )
+        section_masteries = section_mastery_result.scalars().all()
+        section_mastery_map = {sm.section_id: sm for sm in section_masteries}
+
+        # Step 5: 计算每个章节的掌握度（加权平均）
+        from collections import defaultdict
+        chapter_sections = defaultdict(list)
+        for s in sections:
+            chapter_sections[s.chapter_id].append(s)
+
+        chapter_mastery_map = {}
+        for chapter_id in chapter_ids:
+            ch_kp_count = chapter_kp_counts.get(chapter_id, 0)
+            ch_sections_list = chapter_sections.get(chapter_id, [])
+
+            if ch_kp_count == 0:
+                chapter_mastery_map[chapter_id] = 0.0
+                continue
+
+            # 计算章节加权掌握度
+            ch_weighted_sum = 0.0
+            for s in ch_sections_list:
+                s_kp_count = section_kp_counts.get(s.id, 0)
+                if s_kp_count == 0:
+                    continue
+
+                sm = section_mastery_map.get(s.id)
+                if sm and sm.first_attempt_at:
+                    # 小节已开始测试，使用实际掌握度
+                    section_p_l = sm.bkt_aggregated_p_l
+                else:
+                    # 小节未开始，掌握度为 0
+                    section_p_l = 0.0
+
+                ch_weighted_sum += section_p_l * s_kp_count
+
+            chapter_mastery_map[chapter_id] = ch_weighted_sum / ch_kp_count
+
+        # Step 6: 计算课程加权平均掌握度
+        weighted_sum = 0.0
+        started_chapters = 0
+
+        for chapter_id in chapter_ids:
+            kp_count = chapter_kp_counts.get(chapter_id, 0)
+            if kp_count == 0:
+                continue
+
+            chapter_p_l = chapter_mastery_map.get(chapter_id, 0.0)
+            if chapter_p_l > 0:
+                started_chapters += 1
+                logger.info(f"[BKT] │   章节 {chapter_id}: P(L)={chapter_p_l:.4f} (已开始, {kp_count}个知识点)")
+            else:
+                logger.info(f"[BKT] │   章节 {chapter_id}: P(L)={chapter_p_l:.4f} (未开始, {kp_count}个知识点)")
+
+            weighted_sum += chapter_p_l * kp_count
+
+        # 课程平均掌握度
+        avg_p_l = weighted_sum / total_kp_count if total_kp_count > 0 else 0.0
+
+        logger.info(f"[BKT] │ 加权和 = {weighted_sum:.4f}, 总知识点 = {total_kp_count}")
+        logger.info(f"[BKT] │ 课程掌握度 = {avg_p_l:.4f} ({avg_p_l*100:.1f}%)")
+        logger.info(f"[BKT] │ 已开始章节数: {started_chapters} / {chapters_count}")
+
+        # Step 7: 计算已完成章节数和已掌握知识点数
+        # 获取 ChapterMastery 记录
+        cm_result = await self.db.execute(
+            select(ChapterMastery).where(
+                ChapterMastery.user_id == user_id,
+                ChapterMastery.chapter_id.in_(chapter_ids),
+            )
+        )
+        chapter_masteries = cm_result.scalars().all()
+        completed_chapters_count = sum(
+            1 for cm in chapter_masteries if cm.mastered_at is not None
+        )
+
+        # 获取已掌握知识点数
+        kp_result = await self.db.execute(
             select(KnowledgePointMastery).where(
                 KnowledgePointMastery.user_id == user_id,
                 KnowledgePointMastery.course_id == course_id,
             )
         )
-        kp_masteries = result.scalars().all()
-
-        # 获取或创建 CourseMastery
-        course_mastery = await self._get_or_create_course_mastery(user_id, course_id)
-
-        if not kp_masteries:
-            # 统计章节数：获取该课程的实际章节数
-            from app.models.chapter import Chapter
-            chapters_result = await self.db.execute(
-                select(Chapter).where(Chapter.course_id == course_id)
-            )
-            all_chapters = chapters_result.scalars().all()
-            course_mastery.bkt_aggregated_p_l = 0.15
-            course_mastery.mastery_score = 15.0
-            course_mastery.knowledge_points_count = 0
-            course_mastery.mastered_points_count = 0
-            course_mastery.chapters_count = len(all_chapters)
-            course_mastery.completed_chapters_count = 0
-            return 0.15, False
-
-        # 直接计算所有知识点的平均 P(L)
-        avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
+        kp_masteries = kp_result.scalars().all()
         mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
-
-        # 统计章节数：获取该课程的实际章节数
-        from app.models.chapter import Chapter
-        chapters_result = await self.db.execute(
-            select(Chapter).where(Chapter.course_id == course_id)
-        )
-        all_chapters = chapters_result.scalars().all()
-        chapters_count = len(all_chapters)
-
-        # 统计已完成章节数：获取该课程下所有章节中已完成的
-        from app.models.chapter_mastery import ChapterMastery
-        completed_result = await self.db.execute(
-            select(ChapterMastery).where(
-                ChapterMastery.user_id == user_id,
-                ChapterMastery.course_id == course_id,
-                ChapterMastery.mastered_at.isnot(None),
-            )
-        )
-        completed_chapters_count = len(completed_result.scalars().all())
 
         # 更新课程掌握度
         course_mastery.bkt_aggregated_p_l = avg_p_l
         course_mastery.mastery_score = avg_p_l * 100
-        course_mastery.knowledge_points_count = len(kp_masteries)
+        course_mastery.knowledge_points_count = total_kp_count
         course_mastery.mastered_points_count = mastered_count
         course_mastery.chapters_count = chapters_count
         course_mastery.completed_chapters_count = completed_chapters_count
@@ -871,13 +1065,13 @@ class BKTMasteryService:
         if not course_mastery.first_practiced_at:
             course_mastery.first_practiced_at = utc_now()
 
-        # 判断是否完成：所有知识点都掌握
-        is_completed = mastered_count == len(kp_masteries) and len(kp_masteries) > 0
+        # 判断是否完成：所有知识点都掌握（需要所有章节都开始并掌握）
+        is_completed = mastered_count == total_kp_count and total_kp_count > 0 and started_chapters == chapters_count
         course_mastery.is_completed = is_completed
 
         if is_completed and not course_mastery.completed_at:
             course_mastery.completed_at = utc_now()
-            logger.info(f"[BKT] 课程 {course_id} 完成！用户 {user_id[:8]}... P(L)={avg_p_l:.3f}")
+            logger.info(f"[BKT] 课程 {course_id} 完成！所有 {total_kp_count} 个知识点已掌握！")
 
         return avg_p_l, is_completed
 
@@ -930,6 +1124,11 @@ class BKTMasteryService:
         """
         获取课程掌握度摘要
 
+        计算逻辑：
+        1. 小节掌握度：未开始测试 → 0%，开始测试后 → BKT实际值（初始15%）
+        2. 章节掌握度 = Σ(小节掌握度 × 小节知识点数) / 章节总知识点数
+        3. 课程掌握度 = Σ(章节掌握度 × 章节知识点数) / 课程总知识点数
+
         Returns:
             {
                 "mastery_score": float,
@@ -940,10 +1139,12 @@ class BKTMasteryService:
                 "chapters": List[Dict],
             }
         """
-        course_mastery = await self.get_course_mastery(user_id, course_id)
-
-        # 总是从数据库查询真实的章节数
+        from app.models.section_knowledge_point import SectionKnowledgePoint
+        from app.models.section_mastery import SectionMastery
+        from app.models.section import Section
         from app.models.chapter import Chapter
+
+        # Step 1: 获取课程内所有章节
         chapters_result = await self.db.execute(
             select(Chapter).where(Chapter.course_id == course_id)
         )
@@ -952,77 +1153,148 @@ class BKTMasteryService:
 
         logger.info(f"[BKT] get_course_mastery_summary: course_id={course_id}, chapters_count={chapters_count}")
 
-        # ========== 关键修复：总是从知识点计算真实掌握度，不使用 stored mastery_score ==========
-        # 获取课程内所有知识点的掌握状态
+        # Step 2: 获取所有章节的小节
         chapter_ids = [ch.id for ch in all_chapters]
-        kp_result = await self.db.execute(
-            select(KnowledgePointMastery).where(
-                KnowledgePointMastery.user_id == user_id,
-                KnowledgePointMastery.chapter_id.in_(chapter_ids),
+        sections_result = await self.db.execute(
+            select(Section).where(Section.chapter_id.in_(chapter_ids))
+        )
+        sections = sections_result.scalars().all()
+        section_ids = [s.id for s in sections]
+
+        # Step 3: 获取每个小节的知识点数量
+        kp_count_result = await self.db.execute(
+            select(
+                SectionKnowledgePoint.section_id,
+                func.count(SectionKnowledgePoint.id).label("kp_count")
+            ).where(
+                SectionKnowledgePoint.section_id.in_(section_ids),
+                SectionKnowledgePoint.is_active == True
+            ).group_by(SectionKnowledgePoint.section_id)
+        )
+        section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
+
+        # Step 4: 获取每个小节的掌握度（已开始测试的）
+        section_mastery_result = await self.db.execute(
+            select(SectionMastery).where(
+                SectionMastery.user_id == user_id,
+                SectionMastery.section_id.in_(section_ids),
             )
         )
-        kp_masteries = kp_result.scalars().all()
+        section_masteries = section_mastery_result.scalars().all()
+        section_mastery_map = {sm.section_id: sm for sm in section_masteries}
 
-        logger.info(f"[BKT] get_course_mastery_summary: course_id={course_id}, chapters={chapter_ids}, kp_count={len(kp_masteries)}")
+        # Step 5: 构建小节到章节的映射
+        section_to_chapter = {s.id: s.chapter_id for s in sections}
 
-        # 按 chapter_id 分组计算每个章节的掌握度
+        # Step 6: 计算每个章节的知识点总数
+        chapter_kp_counts = {}
+        for section_id, kp_count in section_kp_counts.items():
+            chapter_id = section_to_chapter.get(section_id)
+            if chapter_id:
+                chapter_kp_counts[chapter_id] = chapter_kp_counts.get(chapter_id, 0) + kp_count
+
+        total_kp_count = sum(chapter_kp_counts.values())
+        logger.info(f"[BKT] get_course_mastery_summary: 课程总知识点数={total_kp_count}")
+
+        # Step 7: 计算各章节掌握度（加权平均）
         from collections import defaultdict
-        chapter_kps = defaultdict(list)
-        for kp in kp_masteries:
-            chapter_kps[kp.chapter_id].append(kp)
+        chapter_sections = defaultdict(list)
+        for s in sections:
+            chapter_sections[s.chapter_id].append(s)
 
-        # 构建章节列表：每个章节的掌握度从知识点实时计算
         chapters = []
-        total_mastered = 0
+        completed_chapters = 0
+        course_weighted_sum = 0.0
+
         for chapter in all_chapters:
-            kps = chapter_kps.get(chapter.id, [])
-            if kps:
-                chapter_avg_p_l = sum(kp.p_l for kp in kps) / len(kps)
-                chapter_mastered = sum(1 for kp in kps if kp.p_l >= MASTERY_THRESHOLD)
-                is_completed = chapter_mastered == len(kps) and len(kps) > 0
-                if is_completed:
-                    total_mastered += 1
-                chapters.append({
-                    "chapter_id": chapter.id,
-                    "mastery_score": chapter_avg_p_l * 100,
-                    "is_completed": is_completed,
-                })
-            else:
+            ch_kp_count = chapter_kp_counts.get(chapter.id, 0)
+            ch_sections_list = chapter_sections.get(chapter.id, [])
+
+            if ch_kp_count == 0:
                 chapters.append({
                     "chapter_id": chapter.id,
                     "mastery_score": 0.0,
                     "is_completed": False,
                 })
+                continue
 
-        completed_chapters = total_mastered
+            # 计算章节加权掌握度 = Σ(小节掌握度 × 小节知识点数) / 章节总知识点数
+            ch_weighted_sum = 0.0
+            ch_started_sections = 0
+            ch_mastered_kps = 0
 
-        if not kp_masteries:
-            # 没有知识点数据，返回默认值
+            for s in ch_sections_list:
+                s_kp_count = section_kp_counts.get(s.id, 0)
+                if s_kp_count == 0:
+                    continue
+
+                sm = section_mastery_map.get(s.id)
+                if sm and sm.first_attempt_at:
+                    # 小节已开始测试，使用实际掌握度
+                    section_p_l = sm.bkt_aggregated_p_l
+                    ch_started_sections += 1
+                    if sm.is_completed:
+                        ch_mastered_kps += s_kp_count
+                else:
+                    # 小节未开始，掌握度为 0
+                    section_p_l = 0.0
+
+                ch_weighted_sum += section_p_l * s_kp_count
+
+            # 章节平均掌握度
+            ch_avg_p_l = ch_weighted_sum / ch_kp_count
+            ch_mastery_score = ch_avg_p_l * 100
+
+            # 判断是否完成：所有小节都开始且掌握
+            is_completed = ch_started_sections == len([s for s in ch_sections_list if section_kp_counts.get(s.id, 0) > 0]) and ch_avg_p_l >= MASTERY_THRESHOLD
+
+            if is_completed:
+                completed_chapters += 1
+
+            chapters.append({
+                "chapter_id": chapter.id,
+                "mastery_score": round(ch_mastery_score, 2),
+                "is_completed": is_completed,
+            })
+
+            # 累加到课程加权平均
+            course_weighted_sum += ch_avg_p_l * ch_kp_count
+
+        # 课程平均掌握度
+        avg_p_l = course_weighted_sum / total_kp_count if total_kp_count > 0 else 0.0
+        mastery_score = avg_p_l * 100
+
+        # 计算已掌握知识点数（用于进度百分比）
+        # 获取用户已学知识点的掌握状态
+        mastery_result = await self.db.execute(
+            select(KnowledgePointMastery).where(
+                KnowledgePointMastery.user_id == user_id,
+                KnowledgePointMastery.course_id == course_id,
+            )
+        )
+        kp_masteries = mastery_result.scalars().all()
+        mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
+
+        # 进度百分比 = 已掌握知识点 / 总知识点
+        progress_percentage = (mastered_count / total_kp_count) * 100 if total_kp_count > 0 else 0.0
+
+        logger.info(f"[BKT] get_course_mastery_summary 课程整体: mastery_score={mastery_score:.2f}%, progress_percentage={progress_percentage:.2f}%")
+
+        if total_kp_count == 0:
             return {
                 "mastery_score": 0.0,
                 "progress_percentage": 0.0,
                 "chapters_count": chapters_count,
-                "completed_chapters": completed_chapters,
+                "completed_chapters": 0,
                 "is_completed": False,
                 "chapters": chapters,
             }
 
-        # 从所有知识点计算真实的平均 P(L)
-        avg_p_l = sum(kp.p_l for kp in kp_masteries) / len(kp_masteries)
-        mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
-
-        # 真实课程掌握度分数
-        mastery_score = avg_p_l * 100
-        # 进度百分比 = 已掌握知识点 / 总知识点
-        progress_percentage = (mastered_count / len(kp_masteries)) * 100 if kp_masteries else 0.0
-
-        logger.info(f"[BKT] get_course_mastery_summary 真实计算: mastery_score={mastery_score:.2f}%, progress_percentage={progress_percentage:.2f}%")
-
         return {
-            "mastery_score": mastery_score,
-            "progress_percentage": progress_percentage,
+            "mastery_score": round(mastery_score, 2),
+            "progress_percentage": round(progress_percentage, 2),
             "chapters_count": chapters_count,
             "completed_chapters": completed_chapters,
-            "is_completed": mastered_count == len(kp_masteries) and len(kp_masteries) > 0,
+            "is_completed": mastered_count == total_kp_count,
             "chapters": chapters,
         }

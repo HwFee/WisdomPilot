@@ -178,16 +178,7 @@ export const TIER_THRESHOLDS: Record<string, number> = {
   diamond: 10000,
 }
 
-export const TIER_ICONS: Record<string, string> = {
-  bronze: '🥉',
-  silver: '🥈',
-  gold: '🥇',
-  platinum: '💎',
-  diamond: '💠',
-  master: '⭐',
-  king: '👑',
-}
-
+// 段位名称映射（用于文本显示）
 export const TIER_NAMES: Record<string, string> = {
   bronze: '青铜',
   silver: '白银',
@@ -198,6 +189,9 @@ export const TIER_NAMES: Record<string, string> = {
   king: '王者',
 }
 
+// 注意：段位图标现在从 @/lib/icons/tier-icons 导入 React 组件
+// 使用 getTierConfig(tier).icon 获取图标组件
+
 export const MASTERY_LEVEL_COLORS: Record<string, string> = {
   '入门': 'text-gray-500',
   '学习': 'text-blue-500',
@@ -206,13 +200,8 @@ export const MASTERY_LEVEL_COLORS: Record<string, string> = {
   '精通': 'text-purple-500',
 }
 
-export const MASTERY_LEVEL_ICONS: Record<string, string> = {
-  '入门': '🌱',
-  '学习': '📖',
-  '练习': '💪',
-  '熟练': '⭐',
-  '精通': '👑',
-}
+// 注意：掌握等级图标现在从 @/lib/icons/course-icons 导入 React 组件
+// 使用 MASTERY_LEVEL_ICONS[level] 获取图标组件
 
 // ========================================
 // Mastery Quiz APIs (精进之路测试)
