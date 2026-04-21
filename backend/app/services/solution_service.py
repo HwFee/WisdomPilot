@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 
 from app.models.solution import Solution
+from app.models.solution_like import SolutionLike
 from app.models.user import User
 from app.schemas.solution import SolutionCreate, SolutionUpdate
 
@@ -191,12 +192,34 @@ async def delete_solution(db: AsyncSession, solution: Solution) -> None:
     logger.info(f"题解 {solution_id} 已删除")
 
 
-async def toggle_like(db: AsyncSession, solution: Solution) -> Solution:
-    """点赞"""
-    solution.like_count += 1
+async def toggle_like(db: AsyncSession, solution: Solution, user_id: str) -> Solution:
+    """点赞/取消点赞（每人只能点赞一次）"""
+    # 先尝试查找是否已点赞
+    existing = await db.execute(
+        select(SolutionLike).where(
+            SolutionLike.user_id == user_id,
+            SolutionLike.solution_id == solution.id
+        )
+    )
+    existing_like = existing.scalar_one_or_none()
+
+    if existing_like:
+        # 已点赞，取消点赞
+        await db.delete(existing_like)
+        solution.like_count = max(0, solution.like_count - 1)
+        logger.info(f"用户 {user_id} 取消点赞题解 {solution.id}，当前点赞数: {solution.like_count}")
+    else:
+        # 未点赞，先确保 solution.like_count 已同步（处理并发情况）
+        actual_count = await db.execute(
+            select(func.count()).select_from(SolutionLike).where(SolutionLike.solution_id == solution.id)
+        )
+        solution.like_count = actual_count.scalar() + 1
+        new_like = SolutionLike(user_id=user_id, solution_id=solution.id)
+        db.add(new_like)
+        logger.info(f"用户 {user_id} 点赞题解 {solution.id}，当前点赞数: {solution.like_count}")
+
     await db.commit()
     await db.refresh(solution)
-    logger.info(f"题解 {solution.id} 被点赞，当前点赞数: {solution.like_count}")
     return solution
 
 
