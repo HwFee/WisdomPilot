@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MessageSquare, Pin, Eye, Heart, Plus, X, Trash, Megaphone, AlertCircle } from 'lucide-react'
-import { getSolutionSummary, createSolution, likeSolution, deleteSolution, SolutionSummary, SolutionCreate } from '@/lib/api/solutions'
+import { useRouter } from 'next/navigation'
+import { MessageSquare, Pin, Eye, Heart, ArrowRight, Megaphone, AlertCircle } from 'lucide-react'
+import { getSolutionSummary, likeSolution, SolutionSummary } from '@/lib/api/solutions'
 import { getStoredToken, getStoredUser } from '@/lib/api/auth'
 
 type TabType = 'hot' | 'new' | 'pinned' | 'announcement'
@@ -13,16 +14,11 @@ interface SolutionBoardProps {
 }
 
 export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('hot')
   const [solutions, setSolutions] = useState<SolutionSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showEditor, setShowEditor] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newContent, setNewContent] = useState('')
-  const [isAnnouncement, setIsAnnouncement] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -62,34 +58,6 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
     }
   }
 
-  const handleCreate = async () => {
-    if (!newTitle.trim()) return
-    const token = getStoredToken()
-    if (!token) {
-      setSubmitError(t('请先登录', 'Please login first'))
-      return
-    }
-    setSubmitting(true)
-    setSubmitError(null)
-    try {
-      await createSolution(token, {
-        title: newTitle.trim(),
-        content: newContent.trim(),
-        is_announcement: isAnnouncement,
-      })
-      setNewTitle('')
-      setNewContent('')
-      setIsAnnouncement(false)
-      setShowEditor(false)
-      fetchSolutions()
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : t('发布失败', 'Failed to post')
-      setSubmitError(msg)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   const handleLike = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
     const token = getStoredToken()
@@ -106,18 +74,12 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
     }
   }
 
-  const handleDelete = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const token = getStoredToken()
-    if (!token) return
-    if (!confirm(t('确定删除这条题解吗？', 'Delete this solution?'))) return
-    try {
-      await deleteSolution(token, id)
-      setSolutions(prev => prev.filter(s => s.id !== id))
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : t('删除失败', 'Failed to delete')
-      alert(msg)
-    }
+  const handleItemClick = (id: number) => {
+    router.push(`/solutions/${id}`)
+  }
+
+  const handleEnterSolutions = () => {
+    router.push('/solutions')
   }
 
   const formatTime = (dateStr: string) => {
@@ -165,11 +127,11 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
 
   const renderSolutionItem = (solution: SolutionSummary) => {
     const isAnnouncementItem = solution.is_announcement
-    const canDelete = currentUserId === solution.user_id || isAdmin
 
     return (
       <div
         key={solution.id}
+        onClick={() => handleItemClick(solution.id)}
         className={`group p-3 rounded-xl hover:bg-muted transition-colors cursor-pointer ${
           isAnnouncementItem ? 'bg-amber-50/50 border border-amber-200 hover:bg-amber-100/50 dark:bg-amber-950/20 dark:border-amber-800' : 'bg-muted/50'
         }`}
@@ -193,15 +155,6 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
         }`}>
           <span>{solution.username}</span>
           <div className="flex items-center gap-3">
-            {canDelete && (
-              <button
-                onClick={(e) => handleDelete(solution.id, e)}
-                className="flex items-center gap-1 hover:text-red-500 transition-colors"
-                title={t('删除', 'Delete')}
-              >
-                <Trash className="w-3.5 h-3.5" />
-              </button>
-            )}
             <button
               onClick={(e) => handleLike(solution.id, e)}
               className="flex items-center gap-1 hover:text-red-500 transition-colors"
@@ -230,11 +183,11 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
           {t('题解广场', 'Solutions')}
         </h3>
         <button
-          onClick={() => setShowEditor(true)}
+          onClick={handleEnterSolutions}
           className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
         >
-          <Plus className="w-4 h-4" />
-          {t('发布', 'Post')}
+          {t('进入', 'Enter')}
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
 
@@ -283,85 +236,6 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
           </div>
         )}
       </div>
-
-      {/* Editor Modal */}
-      {showEditor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl border border-border w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">{t('发布内容', 'Post Content')}</h3>
-              <button
-                onClick={() => {
-                  setShowEditor(false)
-                  setSubmitError(null)
-                }}
-                className="p-1 hover:bg-muted rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Error message */}
-              {submitError && (
-                <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{submitError}</span>
-                </div>
-              )}
-
-              {/* Announcement toggle - admin only */}
-              {isAdmin && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isAnnouncement}
-                    onChange={e => setIsAnnouncement(e.target.checked)}
-                    className="w-4 h-4 rounded border-amber-400 text-amber-500 focus:ring-amber-500"
-                  />
-                  <Megaphone className="w-4 h-4 text-amber-500" />
-                  <span className="text-sm text-foreground">{t('发布为公告', 'Post as Announcement')}</span>
-                </label>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  {t('标题', 'Title')} *
-                </label>
-                <input
-                  type="text"
-                  value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)}
-                  placeholder={isAnnouncement ? t('输入公告标题...', 'Enter announcement title...') : t('输入题解标题...', 'Enter solution title...')}
-                  className="w-full px-3 py-2 bg-muted rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  maxLength={200}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  {t('内容', 'Content')}
-                </label>
-                <textarea
-                  value={newContent}
-                  onChange={e => setNewContent(e.target.value)}
-                  placeholder={t('详细描述...', 'Describe in detail...')}
-                  className="w-full px-3 py-2 bg-muted rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                  rows={6}
-                />
-              </div>
-
-              <button
-                onClick={handleCreate}
-                disabled={!newTitle.trim() || submitting}
-                className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? t('发布中...', 'Posting...') : t('发布', 'Post')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
