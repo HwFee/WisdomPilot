@@ -27,7 +27,9 @@ export default function NotesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
   const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
+  const [isFullPageEditor, setIsFullPageEditor] = useState(false)
   const hasFetched = useRef(false)
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchData = useCallback(async (token: string) => {
     try {
@@ -43,6 +45,29 @@ export default function NotesPage() {
       setIsLoading(false)
     }
   }, [])
+
+  // 自动轮询：当有处理中的笔记时，每3秒刷新一次
+  useEffect(() => {
+    const hasProcessing = notes.some(
+      (n) => n.processing_status === 'pending' || n.processing_status === 'processing'
+    )
+
+    if (hasProcessing) {
+      const token = getStoredToken()
+      if (token) {
+        pollingRef.current = setInterval(() => {
+          fetchData(token)
+        }, 3000)
+      }
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [notes, fetchData])
 
   useEffect(() => {
     if (hasFetched.current) return
@@ -88,11 +113,13 @@ export default function NotesPage() {
 
   const handleEdit = useCallback((note: NoteResponse) => {
     setEditingNote(note)
+    setIsFullPageEditor(true)
     setShowEditor(true)
   }, [])
 
   const handleCreate = useCallback(() => {
     setEditingNote(null)
+    setIsFullPageEditor(true)
     setShowEditor(true)
   }, [])
 
@@ -245,13 +272,19 @@ export default function NotesPage() {
         </div>
       </main>
 
-      {/* Note Editor Modal */}
-      {showEditor && (
-        <NoteEditor
-          note={editingNote}
-          onSave={handleSave}
-          onClose={() => setShowEditor(false)}
-        />
+      {/* Note Editor - Full Page Mode */}
+      {showEditor && isFullPageEditor && (
+        <div className="fixed inset-0 z-50 bg-background p-6">
+          <NoteEditor
+            note={editingNote}
+            onSave={handleSave}
+            onClose={() => {
+              setShowEditor(false)
+              setIsFullPageEditor(false)
+            }}
+            isFullPage
+          />
+        </div>
       )}
     </div>
   )

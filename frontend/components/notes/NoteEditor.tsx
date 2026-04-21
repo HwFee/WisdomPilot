@@ -3,8 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import rehypeHighlight from 'rehype-highlight'
-import { X, Save, Eye, Edit3, Tags } from 'lucide-react'
+import 'katex/dist/katex.min.css'
+import 'highlight.js/styles/github-dark.css'
+import { X, Save, Eye, Edit3, Tags, Minimize2 } from 'lucide-react'
 import { getStoredToken } from '@/lib/api'
 import { createNote, updateNote, createNoteTag, getNoteTags } from '@/lib/api/notes'
 import type { NoteCreate, NoteResponse, NoteTagResponse } from '@/types/api'
@@ -21,6 +25,8 @@ interface NoteEditorProps {
   onSave?: (note: NoteResponse) => void
   onClose?: () => void
   lang?: 'zh' | 'en'
+  /** 完整页面模式 - 用于笔记页面，启用分屏预览 */
+  isFullPage?: boolean
 }
 
 export function NoteEditor({
@@ -35,13 +41,13 @@ export function NoteEditor({
   onSave,
   onClose,
   lang = 'zh',
+  isFullPage = false,
 }: NoteEditorProps) {
   const [title, setTitle] = useState(note?.title || prefillTitle || '')
   const [content, setContent] = useState(note?.content || prefillContent || '')
   const [selectedTags, setSelectedTags] = useState<string[]>(note?.tags || [])
   const [availableTags, setAvailableTags] = useState<NoteTagResponse[]>([])
   const [newTagName, setNewTagName] = useState('')
-  const [isPreview, setIsPreview] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showTagSelector, setShowTagSelector] = useState(false)
 
@@ -129,9 +135,156 @@ export function NoteEditor({
     )
   }, [])
 
+  // ========== 完整页面模式（分屏预览）==========
+  if (isFullPage) {
+    return (
+      <div className="bg-card rounded-2xl border border-border overflow-hidden h-full flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/30">
+          <h2 className="text-lg font-semibold">
+            {note ? t('编辑笔记', 'Edit Note') : t('新建笔记', 'New Note')}
+          </h2>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowTagSelector(!showTagSelector)}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors text-sm"
+              title={t('管理标签', 'Manage Tags')}
+            >
+              <Tags className="w-4 h-4" />
+              <span>{t('标签', 'Tags')}</span>
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                title={t('关闭', 'Close')}
+              >
+                <Minimize2 className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tags selector */}
+        {showTagSelector && (
+          <div className="px-6 py-4 border-b bg-muted/30">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-2"
+                >
+                  {tag}
+                  <button
+                    onClick={() => toggleTag(tag)}
+                    className="hover:text-primary/70"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-3 mb-4">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
+                placeholder={t('输入新标签名', 'New tag name')}
+                className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
+              />
+              <button
+                onClick={handleCreateTag}
+                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+              >
+                {t('创建', 'Create')}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {availableTags
+                .filter((tag) => !selectedTags.includes(tag.name))
+                .map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.name)}
+                    className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
+                    style={{ borderColor: tag.color }}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Title input */}
+        <div className="px-6 py-4 border-b">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t('笔记标题（可选）', 'Note title (optional)')}
+            className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
+          />
+        </div>
+
+        {/* Split pane editor */}
+        <div className="flex-1 flex min-h-0">
+          {/* Left: Editor */}
+          <div className="flex-1 flex flex-col min-w-0 border-r">
+            <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4" />
+                <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
+              </div>
+            </div>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder={t('使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
+              className="flex-1 w-full p-6 resize-none bg-background font-mono text-base leading-relaxed focus:outline-none"
+            />
+          </div>
+
+          {/* Right: Preview */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                <span>{t('实时预览', 'Live Preview')}</span>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
+              <div className="prose prose-lg dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex, rehypeHighlight]}
+                >
+                  {content || t('暂无内容', 'No content yet')}
+                </ReactMarkdown>
+              </div>
+            </div>
+            {/* Save button in preview footer */}
+            <div className="px-6 py-3 border-t border-border bg-muted/30">
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !content.trim()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ========== 方形弹窗模式（用于做题页面）==========
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl aspect-square max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b">
           <h2 className="text-xl font-semibold">
@@ -145,14 +298,6 @@ export function NoteEditor({
             >
               <Tags className="w-5 h-5" />
               <span className="text-sm">{t('标签', 'Tags')}</span>
-            </button>
-            <button
-              onClick={() => setIsPreview(!isPreview)}
-              className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors"
-              title={isPreview ? t('编辑', 'Edit') : t('预览', 'Preview')}
-            >
-              {isPreview ? <Edit3 className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              <span className="text-sm">{isPreview ? t('编辑', 'Edit') : t('预览', 'Preview')}</span>
             </button>
             <button
               onClick={onClose}
@@ -226,31 +371,49 @@ export function NoteEditor({
           />
         </div>
 
-        {/* Content area */}
-        <div className="flex-1 overflow-hidden">
-          {isPreview ? (
-            <div className="h-full overflow-y-auto p-6 prose prose-lg dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-              >
-                {content || t('暂无内容', 'No content yet')}
-              </ReactMarkdown>
+        {/* Split pane editor - 方形弹窗内也有分屏预览 */}
+        <div className="flex-1 flex gap-4 p-5 overflow-hidden min-h-0">
+          {/* Left: Editor */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4" />
+                <span>{t('编辑', 'Edit')}</span>
+              </div>
             </div>
-          ) : (
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder={t('使用 Markdown 编写笔记...', 'Write your note in Markdown...')}
-              className="w-full h-full p-6 resize-none bg-transparent focus:outline-none font-mono text-base leading-relaxed"
+              placeholder={t('使用 Markdown 编写...', 'Write in Markdown...')}
+              className="flex-1 w-full p-4 resize-none rounded-xl border border-border bg-muted/30 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
             />
-          )}
+          </div>
+
+          {/* Right: Preview */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                <span>{t('预览', 'Preview')}</span>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 rounded-xl border border-border bg-muted/30">
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex, rehypeHighlight]}
+                >
+                  {content || t('暂无内容', 'No content yet')}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between p-5 border-t bg-muted/30">
           <div className="text-sm text-muted-foreground">
-            {t('支持 Markdown 格式', 'Supports Markdown format')}
+            {t('支持 Markdown，数学公式 $...$ 和代码高亮', 'Markdown, math $...$ and code highlighting')}
           </div>
           <div className="flex gap-3">
             <button
