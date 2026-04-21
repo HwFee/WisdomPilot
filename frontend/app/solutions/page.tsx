@@ -65,7 +65,7 @@ export default function SolutionsPage() {
   const fetchSolutions = async (token: string) => {
     try {
       setLoading(true)
-      const data = await getSolutionSummary(token, 100)
+      const data = await getSolutionSummary(token, 50)
       setSolutions(data)
     } catch (error) {
       console.error('Failed to fetch solutions:', error)
