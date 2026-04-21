@@ -120,11 +120,11 @@ async def toggle_like(
     db: db_dependency,
     current_user: User = Depends(get_current_user),
 ):
-    """点赞"""
+    """点赞/取消点赞（每人只能点赞一次）"""
     solution = await solution_service.get_solution_by_id(db, solution_id)
     if not solution:
         raise HTTPException(status_code=404, detail="题解不存在")
-    updated = await solution_service.toggle_like(db, solution)
+    updated = await solution_service.toggle_like(db, solution, current_user.id)
     return await solution_service.get_solution_with_username(db, updated)
 
 

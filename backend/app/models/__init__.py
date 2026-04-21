@@ -32,6 +32,7 @@ from app.models.course_mastery import CourseMastery
 from app.models.tier_transaction import TierTransaction
 from app.models.mastery_xp_transaction import MasteryXpTransaction
 from app.models.solution import Solution
+from app.models.solution_like import SolutionLike
 
 __all__ = [
     # User & Auth
@@ -95,4 +96,5 @@ __all__ = [
     "MasteryXpTransaction",
     # Solution (题解广场) System
     "Solution",
+    "SolutionLike",
 ]
