@@ -42,7 +42,7 @@ class BKTParams:
     p_t: float = 0.1     # 学习率（从未掌握到掌握）
     p_g: float = 0.2     # 猜测率（未掌握但答对）
     p_s: float = 0.05    # 失误率（已掌握但答错）
-    mastery_threshold: float = 0.95  # 掌握阈值
+    mastery_threshold: float = 0.80  # 掌握阈值 - 全对3题可达，答对概率约81%
 
     def validate(self) -> bool:
         """验证参数有效性"""

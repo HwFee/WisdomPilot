@@ -163,10 +163,10 @@ class SectionBaseQuestionService:
         questions_map = {q.id: q for q in questions}
 
         # 计算结果
+        # 使用字典统计每个知识点的正确/错误次数
+        knowledge_point_stats = defaultdict(lambda: {"correct": 0, "wrong": 0})
         results = []
         correct_count = 0
-        weak_points = []
-        strong_points = []
 
         for answer_submit in request.answers:
             question = questions_map.get(answer_submit.question_id)
@@ -176,15 +176,13 @@ class SectionBaseQuestionService:
             is_correct = answer_submit.answer.strip().upper() == question.correct_answer.strip().upper()
             if is_correct:
                 correct_count += 1
-                # 收集知识点作为强项
+                # 统计知识点正确次数
                 for kp in question.knowledge_points:
-                    if kp not in strong_points:
-                        strong_points.append(kp)
+                    knowledge_point_stats[kp]["correct"] += 1
             else:
-                # 错题的知识点作为薄弱点
+                # 统计知识点错误次数
                 for kp in question.knowledge_points:
-                    if kp not in weak_points:
-                        weak_points.append(kp)
+                    knowledge_point_stats[kp]["wrong"] += 1
 
             results.append(BaseQuestionResult(
                 question_id=question.id,
@@ -194,6 +192,20 @@ class SectionBaseQuestionService:
                 explanation=question.explanation,
                 knowledge_points=question.knowledge_points,
             ))
+
+        # 根据统计结果分类知识点
+        # 薄弱点：错误次数 >= 正确次数（掌握度 <= 50%）
+        # 已掌握：正确次数 > 错误次数 且 有正确记录
+        weak_points = []
+        strong_points = []
+
+        for kp, stats in knowledge_point_stats.items():
+            if stats["wrong"] >= stats["correct"]:
+                # 错误次数 >= 正确次数，归类为薄弱点
+                weak_points.append(kp)
+            else:
+                # 正确次数 > 错误次数，归类为已掌握
+                strong_points.append(kp)
 
         # 更新用户精进之路经验值（如果提供了 user_id）
         xp_earned = 0

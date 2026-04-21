@@ -33,8 +33,9 @@ DEFAULT_P_T = 0.1     # 学习率
 DEFAULT_P_G = 0.2     # 猜测率
 DEFAULT_P_S = 0.05    # 失误率
 
-# 掌握阈值
-MASTERY_THRESHOLD = 0.6
+# 掌握阈值 - P(L) 达到此值视为掌握
+# 设为 0.80：用户全对 3 题即可掌握，达到后答对概率约 81%
+MASTERY_THRESHOLD = 0.80
 
 
 class KnowledgePointMastery(Base):
@@ -143,7 +144,7 @@ class KnowledgePointMastery(Base):
     mastered_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime,
         nullable=True,
-        comment="达到掌握阈值(P(L)>=0.95)的时间"
+        comment="达到掌握阈值(P(L)>=0.80)的时间"
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -194,13 +195,11 @@ class KnowledgePointMastery(Base):
     def mastery_level(self) -> str:
         """掌握等级"""
         score = self.mastery_score
-        if score >= 95:
-            return "精通"
-        elif score >= 85:
-            return "熟练"
-        elif score >= 70:
-            return "练习"
-        elif score >= 50:
-            return "学习"
-        else:
+        if score >= 80:
+            return "掌握"
+        elif score >= 60:
+            return "学习中"
+        elif score >= 40:
             return "入门"
+        else:
+            return "未学"
