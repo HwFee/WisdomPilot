@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trophy, Swords, ChevronRight, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Trophy, Swords, ChevronRight, CheckCircle, XCircle, Loader2, Star } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { CourseSwitcher } from './CourseSwitcher'
 import { useRouter } from 'next/navigation'
 import { startChallengeSession, getArenaProfile, getMasteryOverview, type MasteryOverviewResponse } from '@/lib/api/learning-path'
 import { getStoredToken } from '@/lib/api'
 import type { CourseProgress } from '@/lib/api/courses'
+import { getTierConfig } from '@/lib/icons/tier-icons'
+import { staggerContainer, staggerItem, scaleIn } from '@/lib/animations'
 
 interface RecentExercise {
   stageName: string
@@ -32,15 +35,8 @@ const TIER_NAMES: Record<string, string> = {
   king: '王者',
 }
 
-const TIER_ICONS: Record<string, string> = {
-  bronze: '🥉',
-  silver: '🥈',
-  gold: '🥇',
-  platinum: '💎',
-  diamond: '💠',
-  master: '⭐',
-  king: '👑',
-}
+// 不再使用emoji，改用 tier-icons 中的 SVG 组件
+// TIER_ICONS 已被 getTierConfig() 替代
 
 const TIER_COLORS: Record<string, string> = {
   bronze: '#CD7F32',
@@ -170,7 +166,12 @@ export function CurrentLearningPanel({
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-5 h-full flex flex-col overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="bg-card rounded-2xl border border-border p-5 h-full flex flex-col overflow-hidden"
+    >
       {/* Header with course switcher */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <CourseSwitcher
@@ -182,9 +183,18 @@ export function CurrentLearningPanel({
       </div>
 
       {/* Dual Path Cards */}
-      <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
+      <motion.div
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        className="flex-1 grid grid-cols-2 gap-4 min-h-0"
+      >
         {/* Mastery Path Card */}
-        <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl border border-amber-500/20 p-4 flex flex-col overflow-hidden">
+        <motion.div
+          variants={staggerItem}
+          whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
+          className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl border border-amber-500/20 p-4 flex flex-col overflow-hidden"
+        >
           <div className="flex items-center gap-2 mb-3 flex-shrink-0">
             <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Trophy className="w-4 h-4 text-amber-500" />
@@ -218,7 +228,7 @@ export function CurrentLearningPanel({
             {/* Progress bar */}
             <div className="mb-3">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{t('进度', 'Progress')}</span>
+                <span>{t('掌握度', 'Mastery')}</span>
                 <span>{progress}%</span>
               </div>
               <div className="h-2 bg-amber-500/20 rounded-full overflow-hidden">
@@ -230,7 +240,7 @@ export function CurrentLearningPanel({
             </div>
 
             {/* Mastery score */}
-            <div className="flex items-center justify-between text-xs mb-2">
+            <div className="flex items-center justify-between text-xs mt-auto pt-2">
               <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
               <span className={`font-medium ${masteryLevel.color}`}>
                 {masteryScore.toFixed(0)} ({masteryLevel.name})
@@ -253,10 +263,14 @@ export function CurrentLearningPanel({
               </>
             )}
           </button>
-        </div>
+        </motion.div>
 
         {/* Challenge Path Card */}
-        <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 p-4 flex flex-col overflow-hidden">
+        <motion.div
+          variants={staggerItem}
+          whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
+          className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 p-4 flex flex-col overflow-hidden"
+        >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
               <Swords className="w-4 h-4 text-blue-500" />
@@ -269,49 +283,54 @@ export function CurrentLearningPanel({
 
           {currentCourse.arena_tier ? (
             <>
-              {/* Tier display */}
-              <div className="mb-2">
-                <p className="text-xs text-muted-foreground mb-1">{t('当前段位', 'Current Tier')}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{TIER_ICONS[currentCourse.arena_tier] || '🥉'}</span>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: TIER_COLORS[currentCourse.arena_tier] || '#CD7F32' }}>
-                      {getTierFullName(currentCourse.arena_tier, currentCourse.arena_sub_tier)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {currentCourse.arena_stars !== null ? (
-                        <>
-                          ⭐ <span className="font-medium">{currentCourse.arena_stars}</span> {t('星', 'stars')}
-                        </>
-                      ) : (
-                        t('开始挑战获取星星', 'Start to earn stars')
-                      )}
-                    </p>
+              {/* Tier display with recent exercises on the right */}
+              <div className="flex-1 flex gap-3">
+                {/* Left: Current tier info */}
+                <div className="flex-shrink-0">
+                  <p className="text-xs text-muted-foreground mb-1">{t('当前段位', 'Current Tier')}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 flex items-center justify-center">
+                      {getTierConfig(currentCourse.arena_tier)?.icon}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: TIER_COLORS[currentCourse.arena_tier] || '#CD7F32' }}>
+                        {getTierFullName(currentCourse.arena_tier, currentCourse.arena_sub_tier)}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        {currentCourse.arena_stars !== null ? (
+                          <>
+                            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                            <span className="font-medium">{currentCourse.arena_stars}</span> {t('星', 'stars')}
+                          </>
+                        ) : (
+                          t('开始挑战获取星星', 'Start to earn stars')
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* 最近练习 */}
-              {recentExercises.length > 0 && (
-                <div className="flex-1 w-full space-y-1">
-                  <p className="text-xs text-muted-foreground mb-1">{t('最近练习', 'Recent Exercises')}</p>
-                  {recentExercises.slice(0, 2).map((ex, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs">
-                      {ex.isCorrect ? (
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                      ) : (
-                        <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                      )}
-                      <span className="truncate text-foreground">
-                        {ex.stageName}
-                        <span className={ex.isCorrect ? 'text-emerald-500 ml-1' : 'text-red-500 ml-1'}>
-                          {ex.isCorrect ? t('正确', 'Correct') : t('错误', 'Wrong')}
-                        </span>
-                      </span>
+                {/* Right: Recent exercises */}
+                {recentExercises.length > 0 && (
+                  <div className="flex-1 min-w-0 pl-3 border-l border-blue-500/20">
+                    <p className="text-xs text-muted-foreground mb-1">{t('最近练习', 'Recent')}</p>
+                    <div className="space-y-1">
+                      {recentExercises.slice(0, 2).map((ex, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5 text-xs">
+                          {ex.isCorrect ? (
+                            <CheckCircle className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                          )}
+                          <span className="truncate text-foreground">
+                            {ex.stageName}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>
@@ -360,20 +379,34 @@ export function CurrentLearningPanel({
               </>
             )}
           </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Difficulty Selection Modal */}
-      {showDifficultyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-card rounded-2xl border border-border p-6 w-80 shadow-xl">
+      <AnimatePresence>
+        {showDifficultyModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          >
+            <motion.div
+              variants={scaleIn}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="bg-card rounded-2xl border border-border p-6 w-80 shadow-xl"
+            >
             <h3 className="text-lg font-semibold text-foreground mb-4 text-center">
               {t('选择难度', 'Select Difficulty')}
             </h3>
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((level) => (
-                <button
+                <motion.button
                   key={level}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleDifficultySelect(level)}
                   disabled={isNavigating === 'challenge'}
                   className={`w-full py-3 rounded-xl font-medium text-sm transition-all flex items-center justify-between px-4 ${
@@ -389,13 +422,17 @@ export function CurrentLearningPanel({
                   } ${isNavigating === 'challenge' ? 'opacity-50' : ''}`}
                 >
                   <span className="flex items-center gap-2">
-                    {'⭐'.repeat(level)}
+                    <span className="flex">
+                      {Array.from({ length: level }).map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      ))}
+                    </span>
                     {t(`${level}星难度`, `${level}-Star Difficulty`)}
                   </span>
                   <span className="text-xs opacity-70">
                     {level === 1 ? '+10' : level === 2 ? '+20' : level === 3 ? '+35' : level === 4 ? '+50' : '+70'}
                   </span>
-                </button>
+                </motion.button>
               ))}
             </div>
             <button
@@ -404,9 +441,10 @@ export function CurrentLearningPanel({
             >
               {t('取消', 'Cancel')}
             </button>
-          </div>
-        </div>
-      )}
-    </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
