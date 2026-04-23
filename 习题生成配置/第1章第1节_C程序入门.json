@@ -1,0 +1,165 @@
+{
+  "chapter_id": 1,
+  "chapter_title": "简单C程序设计",
+  "section_id": 1,
+  "section_title": "C程序入门",
+  "total_knowledge_points": 7,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "92": 2,
+    "93": 2,
+    "94": 3,
+    "95": 3,
+    "96": 2,
+    "97": 2,
+    "98": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 92,
+      "name": "C程序的基本结构"
+    },
+    {
+      "id": 93,
+      "name": "main函数详解"
+    },
+    {
+      "id": 94,
+      "name": "语句与注释"
+    },
+    {
+      "id": 95,
+      "name": "格式化输出函数printf"
+    },
+    {
+      "id": 96,
+      "name": "格式化输入函数scanf"
+    },
+    {
+      "id": 97,
+      "name": "C语言开发环境"
+    },
+    {
+      "id": 98,
+      "name": "软件开发基本过程"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        92,
+        93,
+        94
+      ],
+      "knowledge_point_names": [
+        "C程序的基本结构",
+        "main函数详解",
+        "语句与注释"
+      ],
+      "description": "考察知识点：C程序的基本结构、main函数详解、语句与注释",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        95,
+        96,
+        97
+      ],
+      "knowledge_point_names": [
+        "格式化输出函数printf",
+        "格式化输入函数scanf",
+        "C语言开发环境"
+      ],
+      "description": "考察知识点：格式化输出函数printf、格式化输入函数scanf、C语言开发环境",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        98
+      ],
+      "knowledge_point_names": [
+        "软件开发基本过程"
+      ],
+      "description": "考察知识点：软件开发基本过程",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        94,
+        95,
+        96
+      ],
+      "knowledge_point_names": [
+        "语句与注释",
+        "格式化输出函数printf",
+        "格式化输入函数scanf"
+      ],
+      "description": "考察知识点：语句与注释、格式化输出函数printf、格式化输入函数scanf（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        97,
+        98,
+        92
+      ],
+      "knowledge_point_names": [
+        "C语言开发环境",
+        "软件开发基本过程",
+        "C程序的基本结构"
+      ],
+      "description": "考察知识点：C语言开发环境、软件开发基本过程、C程序的基本结构（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        93,
+        94,
+        95
+      ],
+      "knowledge_point_names": [
+        "main函数详解",
+        "语句与注释",
+        "格式化输出函数printf"
+      ],
+      "description": "考察知识点：main函数详解、语句与注释、格式化输出函数printf（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

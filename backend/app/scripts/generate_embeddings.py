@@ -7,6 +7,7 @@ Usage:
 
 import asyncio
 import json
+import os
 import argparse
 from pathlib import Path
 from typing import Optional, List
@@ -17,10 +18,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.database import AsyncSessionLocal
 from app.models.exercise import Exercise
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 # 硅基流动 API 配置
-SILICONFLOW_API_KEY = 'sk-yqkegkufipudxriumrrobugmlnrlpxdyngzhpwtmzxyfydqg'
+SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY", "")
 SILICONFLOW_BASE_URL = 'https://api.siliconflow.cn/v1'
 EMBEDDING_MODEL = 'BAAI/bge-large-zh-v1.5'  # 中文嵌入模型，1024维
 
@@ -80,7 +81,7 @@ async def generate_all_embeddings(batch_size: int = 50):
         result = await session.execute(
             select(Exercise)
             .where(Exercise.source == 'loj')
-            .where((Exercise.embedding == None) | (Exercise.embedding == ''))
+            .where(or_(Exercise.embedding.is_(None), Exercise.embedding == ''))
             .order_by(Exercise.id)
         )
         exercises = result.scalars().all()

@@ -1,0 +1,48 @@
+{
+  "id": 170,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "2001",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "数据结构",
+    "SDOI",
+    "2017",
+    "Link-Cut Tree",
+    "DFS 序",
+    "线段树"
+  ],
+  "content": {
+    "title": "「SDOI2017」树点涂色",
+    "description": "## 题目描述\nBob 有一棵 $ n $ 个点的有根树，其中 $ 1 $ 号点是根节点。Bob 在每个节点上涂了颜色，并且每个点上的颜色不同。\r\n\r\n定义一条路径的权值是，这条路径上的点（包括起点和终点）共有多少种不同的颜色。\r\n\r\nBob 可能会进行这几种操作：\r\n\r\n* ``1 x``，把点 $ x $ 到根节点的路径上的所有的点染上一种没有用过的新颜色；\r\n* ``2 x y``，求 $ x $ 到 $ y $ 的路径的权值；\r\n* ``3 x``，在以 $ x $ 为根的子树中选择一个点，使得这个点到根节点的路径权值最大，求最大权值。\r\n\r\nBob 一共会进行 $ m $ 次操作。\n\n## 输入格式\n第一行两个数 $ n $、$ m $。  \r\n接下来 $ n - 1 $ 行，每行两个数 $ a $、$ b $ 表示 $ a $ 和 $ b $ 之间有一条边。  \r\n接下来 $ m $ 行，表示操作，格式见题目描述。\n\n## 输出格式\n每当出现 ``2``、``3`` 操作，输出一行。\r\n\r\n如果是 ``2`` 操作，输出一个数表示路径的权值。  \r\n如果是 ``3`` 操作，输出一个数表示权值的最大值。\n\n## 数据范围与提示\n测试点 $1$，$ 1 \\leq n, m \\leq 1000 $；  \r\n测试点 $2$、$3$，没有 ``2`` 操作；  \r\n测试点 $4$、$5$，没有 ``3`` 操作；  \r\n测试点 $6$，树的生成方式是，对于 $ i $（$ 2 \\leq i \\leq n $），在 $ i $ 到 $ i - 1 $ 中随机选一个点作为 $ i $ 的父节点；  \r\n测试点 $7$，$ 1 \\leq n, m \\leq 50000 $；  \r\n测试点 $8$，$ 1 \\leq n \\leq 50000 $；  \r\n测试点 $9$、$10$，无特殊限制。\r\n\r\n对所有数据，$ 1 \\leq n, m \\leq 10 ^ 5 $。\r\n",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #2001",
+    "loj_url": "https://loj.ac/p/2001",
+    "samples": [
+      {
+        "input": "5 6\n1 2\n2 3\n3 4\n3 5\n2 4 5\n3 3\n1 4\n2 4 5\n1 5\n2 4 5",
+        "output": "3\n4\n2\n2"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "5 6\n1 2\n2 3\n3 4\n3 5\n2 4 5\n3 3\n1 4\n2 4 5\n1 5\n2 4 5",
+      "output": "3\n4\n2\n2"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:17.223623",
+  "updated_at": "2026-04-22 04:23:56.870222",
+  "z_id": "Z2001"
+}

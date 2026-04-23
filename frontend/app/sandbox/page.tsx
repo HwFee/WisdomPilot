@@ -287,13 +287,13 @@ export default function SandboxPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button onClick={handleGoBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={handleGoBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">沙箱测试</span>
           </button>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">{username}</span>
-            <button onClick={fetchData} disabled={loading !== null}
+            <button type="button" onClick={fetchData} disabled={loading !== null}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               刷新
@@ -355,42 +355,42 @@ export default function SandboxPage() {
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <button onClick={testCheckin} disabled={loading !== null}
+            <button type="button" onClick={testCheckin} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-green-500/10 hover:bg-green-500/20 rounded-lg border border-green-500/30 disabled:opacity-50">
               {loading === 'checkin' ? <Loader2 className="w-5 h-5 text-green-500 animate-spin" /> : <Calendar className="w-5 h-5 text-green-500" />}
               <span className="text-sm font-medium">签到</span>
               <span className="text-xs text-muted-foreground">+5 智核</span>
             </button>
 
-            <button onClick={() => testArenaSubmit(true)} disabled={loading !== null}
+            <button type="button" onClick={() => testArenaSubmit(true)} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg border border-blue-500/30 disabled:opacity-50">
               {loading === 'arena' ? <Loader2 className="w-5 h-5 text-blue-500 animate-spin" /> : <Swords className="w-5 h-5 text-blue-500" />}
               <span className="text-sm font-medium">挑战正确</span>
               <span className="text-xs text-muted-foreground">+3 智核</span>
             </button>
 
-            <button onClick={() => testStudyTime(30)} disabled={loading !== null}
+            <button type="button" onClick={() => testStudyTime(30)} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg border border-cyan-500/30 disabled:opacity-50">
               {loading === 'studyTime' ? <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" /> : <span className="text-lg">⏱️</span>}
               <span className="text-sm font-medium">学习30分钟</span>
               <span className="text-xs text-muted-foreground">+5 智核</span>
             </button>
 
-            <button onClick={() => testDailyExercises(20)} disabled={loading !== null}
+            <button type="button" onClick={() => testDailyExercises(20)} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-teal-500/10 hover:bg-teal-500/20 rounded-lg border border-teal-500/30 disabled:opacity-50">
               {loading === 'dailyExercises' ? <Loader2 className="w-5 h-5 text-teal-500 animate-spin" /> : <span className="text-lg">📝</span>}
               <span className="text-sm font-medium">每日练习20题</span>
               <span className="text-xs text-muted-foreground">+5 智核</span>
             </button>
 
-            <button onClick={() => testDailyAccuracy(80)} disabled={loading !== null}
+            <button type="button" onClick={() => testDailyAccuracy(80)} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-orange-500/10 hover:bg-orange-500/20 rounded-lg border border-orange-500/30 disabled:opacity-50">
               {loading === 'dailyAccuracy' ? <Loader2 className="w-5 h-5 text-orange-500 animate-spin" /> : <span className="text-lg">🎯</span>}
               <span className="text-sm font-medium">正确率80%</span>
               <span className="text-xs text-muted-foreground">+5 智核</span>
             </button>
 
-            <button onClick={() => testBonus(10)} disabled={loading !== null}
+            <button type="button" onClick={() => testBonus(10)} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-pink-500/10 hover:bg-pink-500/20 rounded-lg border border-pink-500/30 disabled:opacity-50">
               {loading === 'bonus' ? <Loader2 className="w-5 h-5 text-pink-500 animate-spin" /> : <span className="text-lg">🎁</span>}
               <span className="text-sm font-medium">系统奖励</span>
@@ -403,7 +403,7 @@ export default function SandboxPage() {
             <div className="border-t pt-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">精进之路测试题</h3>
-                <button onClick={testMasterySubmit} disabled={loading !== null}
+                <button type="button" onClick={testMasterySubmit} disabled={loading !== null}
                   className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 flex items-center gap-2">
                   {loading === 'mastery' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Target className="w-4 h-4" />}
                   提交答案
@@ -415,7 +415,7 @@ export default function SandboxPage() {
                     <div className="font-medium mb-1">{idx + 1}. {q.question}</div>
                     <div className="flex flex-wrap gap-2">
                       {q.options.map((opt, i) => (
-                        <button key={i} onClick={() => setUserAnswers({ ...userAnswers, [q.id]: ['A', 'B', 'C', 'D'][i] })}
+                        <button type="button" key={i} onClick={() => setUserAnswers({ ...userAnswers, [q.id]: ['A', 'B', 'C', 'D'][i] })}
                           className={`px-2 py-1 text-xs rounded border ${userAnswers[q.id] === ['A', 'B', 'C', 'D'][i] ? 'bg-primary/20 border-primary' : 'bg-background'}`}>
                           {['A', 'B', 'C', 'D'][i]}. {opt}
                         </button>
@@ -435,21 +435,21 @@ export default function SandboxPage() {
             消耗智核测试（AI提示）
           </h2>
           <div className="grid grid-cols-3 gap-3">
-            <button onClick={() => testAIHint('light')} disabled={loading !== null}
+            <button type="button" onClick={() => testAIHint('light')} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg border border-purple-500/30 disabled:opacity-50">
               {loading === 'hint_light' ? <Loader2 className="w-5 h-5 text-purple-400 animate-spin" /> : <Lightbulb className="w-5 h-5 text-purple-400" />}
               <span className="text-sm font-medium">轻度提示</span>
               <span className="text-xs text-muted-foreground">-1 智核</span>
             </button>
 
-            <button onClick={() => testAIHint('medium')} disabled={loading !== null}
+            <button type="button" onClick={() => testAIHint('medium')} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg border border-purple-500/30 disabled:opacity-50">
               {loading === 'hint_medium' ? <Loader2 className="w-5 h-5 text-purple-500 animate-spin" /> : <Sparkles className="w-5 h-5 text-purple-500" />}
               <span className="text-sm font-medium">中度提示</span>
               <span className="text-xs text-muted-foreground">-3 智核</span>
             </button>
 
-            <button onClick={() => testAIHint('deep')} disabled={loading !== null}
+            <button type="button" onClick={() => testAIHint('deep')} disabled={loading !== null}
               className="flex flex-col items-center gap-1 p-3 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg border border-purple-500/30 disabled:opacity-50">
               {loading === 'hint_deep' ? <Loader2 className="w-5 h-5 text-purple-600 animate-spin" /> : <BookOpen className="w-5 h-5 text-purple-600" />}
               <span className="text-sm font-medium">深度解析</span>

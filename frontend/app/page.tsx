@@ -156,7 +156,7 @@ export default function Home() {
                 <Code2 className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground">GAI 编程教学平台</h1>
+                <h1 className="text-lg font-bold text-foreground">智码领航</h1>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -397,10 +397,10 @@ export default function Home() {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Code2 className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">GAI 编程教学平台</span>
+              <span className="font-semibold text-foreground">智码领航</span>
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              © 2026 GAI 编程教学平台 · 计算机大赛项目
+              © 2026 智码领航 · 计算机大赛项目
             </p>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <span className="hover:text-foreground transition-colors cursor-pointer">关于我们</span>

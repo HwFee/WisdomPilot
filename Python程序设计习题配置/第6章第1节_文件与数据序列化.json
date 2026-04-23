@@ -1,0 +1,106 @@
+{
+  "chapter_id": 6,
+  "chapter_title": "面向数据应用程序设计",
+  "section_id": 1,
+  "section_title": "文件与数据序列化",
+  "total_knowledge_points": 4,
+  "total_exercises": 4,
+  "knowledge_point_coverage": {
+    "80": 2,
+    "81": 2,
+    "82": 2,
+    "83": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 80,
+      "name": "文件的基本操作"
+    },
+    {
+      "id": 81,
+      "name": "文件相关程序设计"
+    },
+    {
+      "id": 82,
+      "name": "数据的封装技术"
+    },
+    {
+      "id": 83,
+      "name": "序列化程序设计"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        80,
+        81
+      ],
+      "knowledge_point_names": [
+        "文件的基本操作",
+        "文件相关程序设计"
+      ],
+      "description": "考察知识点：文件的基本操作、文件相关程序设计",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        82,
+        83
+      ],
+      "knowledge_point_names": [
+        "数据的封装技术",
+        "序列化程序设计"
+      ],
+      "description": "考察知识点：数据的封装技术、序列化程序设计",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        80,
+        81
+      ],
+      "knowledge_point_names": [
+        "文件的基本操作",
+        "文件相关程序设计"
+      ],
+      "description": "考察知识点：文件的基本操作、文件相关程序设计（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        82,
+        83
+      ],
+      "knowledge_point_names": [
+        "数据的封装技术",
+        "序列化程序设计"
+      ],
+      "description": "考察知识点：数据的封装技术、序列化程序设计（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

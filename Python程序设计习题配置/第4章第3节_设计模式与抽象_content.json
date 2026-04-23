@@ -1,0 +1,185 @@
+{
+  "chapter_id": 4,
+  "chapter_title": "面向对象程序设计",
+  "section_id": 3,
+  "section_title": "设计模式与抽象",
+  "total_knowledge_points": 8,
+  "knowledge_points": [
+    {
+      "id": 1,
+      "name": "系统自带类的方法装饰",
+      "content": "系统自带类的方法装饰是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "系统自带类的方法装饰相关知识点总结",
+      "code_example": "# 系统自带类的方法装饰示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "单例模式的设计",
+      "content": "单例模式的设计是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "单例模式的设计相关知识点总结",
+      "code_example": "# 单例模式的设计示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "单例模式的应用",
+      "content": "单例模式的应用是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "单例模式的应用相关知识点总结",
+      "code_example": "# 单例模式的应用示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "工厂模式的设计",
+      "content": "工厂模式的设计是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "工厂模式的设计相关知识点总结",
+      "code_example": "# 工厂模式的设计示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "工厂模式的应用",
+      "content": "工厂模式的应用是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "工厂模式的应用相关知识点总结",
+      "code_example": "# 工厂模式的应用示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "类的抽象方法设计",
+      "content": "类的抽象方法设计是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "类的抽象方法设计相关知识点总结",
+      "code_example": "# 类的抽象方法设计示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "类的抽象方法应用",
+      "content": "类的抽象方法应用是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "类的抽象方法应用相关知识点总结",
+      "code_example": "# 类的抽象方法应用示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "综合应用设计与实现",
+      "content": "综合应用设计与实现是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "综合应用设计与实现相关知识点总结",
+      "code_example": "# 综合应用设计与实现示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 4,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    }
+  ]
+}

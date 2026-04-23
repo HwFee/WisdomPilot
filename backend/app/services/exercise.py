@@ -3,13 +3,13 @@
 from typing import Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.models.user import User
 from app.models.exercise import Exercise
 from app.models.chapter import Chapter
 from app.services.ai import ai_service
 from app.services.wrong_question import wrong_question_service
+import logging
 
 
 class ExerciseService:
@@ -26,7 +26,7 @@ class ExerciseService:
             select(Exercise)
             .where(
                 Exercise.chapter_id == chapter_id,
-                Exercise.is_verified == True,
+                Exercise.is_verified,
             )
             .order_by(Exercise.difficulty, Exercise.id)
             .limit(limit)
@@ -231,3 +231,6 @@ class ExerciseService:
 
 
 exercise_service = ExerciseService()
+
+
+logger = logging.getLogger(__name__)

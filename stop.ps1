@@ -8,7 +8,7 @@ $PythonScript = Join-Path $ScriptDir "stop_services.py"
 
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Yellow
-Write-Host " AIcodiingTeach 停止脚本 (PowerShell)" -ForegroundColor Yellow
+Write-Host " 智码领航 停止脚本 (PowerShell)" -ForegroundColor Yellow
 Write-Host "==================================================" -ForegroundColor Yellow
 Write-Host ""
 

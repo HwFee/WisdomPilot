@@ -1,0 +1,106 @@
+{
+  "chapter_id": 6,
+  "chapter_title": "面向数据应用程序设计",
+  "section_id": 2,
+  "section_title": "PIL库与numpy库",
+  "total_knowledge_points": 4,
+  "total_exercises": 4,
+  "knowledge_point_coverage": {
+    "84": 2,
+    "85": 2,
+    "86": 2,
+    "87": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 84,
+      "name": "PIL库在应用程序中的应用"
+    },
+    {
+      "id": 85,
+      "name": "numpy库在应用程序中的应用"
+    },
+    {
+      "id": 86,
+      "name": "数据库基本概念"
+    },
+    {
+      "id": 87,
+      "name": "数据库应用设计"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        84,
+        85
+      ],
+      "knowledge_point_names": [
+        "PIL库在应用程序中的应用",
+        "numpy库在应用程序中的应用"
+      ],
+      "description": "考察知识点：PIL库在应用程序中的应用、numpy库在应用程序中的应用",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        86,
+        87
+      ],
+      "knowledge_point_names": [
+        "数据库基本概念",
+        "数据库应用设计"
+      ],
+      "description": "考察知识点：数据库基本概念、数据库应用设计",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        84,
+        85
+      ],
+      "knowledge_point_names": [
+        "PIL库在应用程序中的应用",
+        "numpy库在应用程序中的应用"
+      ],
+      "description": "考察知识点：PIL库在应用程序中的应用、numpy库在应用程序中的应用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        86,
+        87
+      ],
+      "knowledge_point_names": [
+        "数据库基本概念",
+        "数据库应用设计"
+      ],
+      "description": "考察知识点：数据库基本概念、数据库应用设计（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

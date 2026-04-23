@@ -151,7 +151,7 @@ export function SolutionEditor({
             </div>
             {/* Save button in preview footer */}
             <div className="px-6 py-3 border-t border-border bg-muted/30">
-              <button
+              <button type="button"
                 onClick={handleSave}
                 disabled={isSaving || !title.trim()}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
@@ -175,7 +175,7 @@ export function SolutionEditor({
           <h2 className="text-xl font-semibold">
             {initialTitle ? t('编辑题解', 'Edit Solution') : t('发布题解', 'New Solution')}
           </h2>
-          <button onClick={onCancel} className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button type="button" onClick={onCancel} className="p-2 hover:bg-muted rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -277,13 +277,13 @@ export function SolutionEditor({
             {t('支持 Markdown 格式，支持数学公式 $...$ 和 $$...$$，支持代码高亮', 'Supports Markdown, math formulas $...$ and $$...$$, code highlighting')}
           </div>
           <div className="flex gap-3">
-            <button
+            <button type="button"
               onClick={onCancel}
               className="px-5 py-2.5 text-sm border-2 rounded-xl hover:bg-muted transition-colors"
             >
               {t('取消', 'Cancel')}
             </button>
-            <button
+            <button type="button"
               onClick={handleSave}
               disabled={isSaving || !title.trim()}
               className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"

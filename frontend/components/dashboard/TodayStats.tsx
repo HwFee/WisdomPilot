@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
   Target,
   CheckCircle,
@@ -8,6 +9,8 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { staggerContainer, staggerItem } from "@/lib/animations";
 
 interface TodayStatsProps {
   stats: {
@@ -34,7 +37,9 @@ interface StatCardProps {
   guide?: string;
   trend?: number;
   color: string;
+  gradient?: string;
   onClick?: () => void;
+  delay?: number;
 }
 
 function StatCard({
@@ -44,41 +49,96 @@ function StatCard({
   guide,
   trend,
   color,
+  gradient,
   onClick,
+  delay = 0,
 }: StatCardProps) {
   return (
-    <div
-      className={`bg-card rounded-2xl border border-border p-5 hover:shadow-lg hover:border-primary/20 transition-all min-h-[100px] flex flex-col ${onClick ? "cursor-pointer" : ""}`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className={cn(
+        "relative bg-card rounded-2xl border border-border p-5",
+        "hover:shadow-xl hover:border-primary/30 transition-all duration-300",
+        "min-h-[120px] flex flex-col overflow-hidden group",
+        onClick && "cursor-pointer"
+      )}
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}
+      {/* 背景渐变装饰 */}
+      {gradient && (
+        <div className={cn(
+          "absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+          gradient
+        )} />
+      )}
+
+      <div className="relative z-10 flex items-center justify-between mb-3">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3, delay: delay + 0.1 }}
+          className={cn(
+            "w-12 h-12 rounded-xl flex items-center justify-center shadow-sm",
+            color
+          )}
         >
           {icon}
-        </div>
+        </motion.div>
+
         {trend !== undefined && trend !== 0 && (
-          <div
-            className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${trend > 0 ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10"}`}
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: delay + 0.2 }}
+            className={cn(
+              "flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium",
+              trend > 0
+                ? "text-emerald-600 bg-emerald-500/10 border border-emerald-500/20"
+                : "text-red-600 bg-red-500/10 border border-red-500/20"
+            )}
           >
             {trend > 0 ? (
-              <TrendingUp className="w-3 h-3" />
+              <TrendingUp className="w-3.5 h-3.5" />
             ) : (
-              <TrendingDown className="w-3 h-3" />
+              <TrendingDown className="w-3.5 h-3.5" />
             )}
-            {trend > 0 ? "+" : ""}
-            {trend}%
-          </div>
+            <span>{trend > 0 ? "+" : ""}{trend}%</span>
+          </motion.div>
         )}
       </div>
-      <div className="flex-1 flex flex-col justify-end">
-        <p className="text-2xl font-bold text-foreground">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
+
+      <div className="relative z-10 flex-1 flex flex-col justify-end">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: delay + 0.15 }}
+          className="text-3xl font-bold text-foreground tracking-tight"
+        >
+          {value}
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: delay + 0.2 }}
+          className="text-sm text-muted-foreground mt-1"
+        >
+          {label}
+        </motion.p>
         {guide && (
-          <p className="text-xs text-primary mt-1 hover:underline">{guide}</p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: delay + 0.25 }}
+            className="text-xs text-primary mt-2 hover:underline font-medium"
+          >
+            {guide}
+          </motion.p>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -92,49 +152,56 @@ export function TodayStats({
 }: TodayStatsProps) {
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en);
 
+  const statCards = [
+    {
+      icon: <Target className="w-5 h-5 text-blue-500" />,
+      value: stats.exercisesToday,
+      label: t("今日做题", "Exercises"),
+      guide: stats.exercisesToday === 0 ? t("目标：10题 →", "Goal: 10") : undefined,
+      trend: trend?.exercises,
+      color: "bg-blue-500/10",
+      gradient: "bg-blue-500/10",
+      onClick: onExercisesClick,
+    },
+    {
+      icon: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+      value: `${stats.accuracy}%`,
+      label: t("正确率", "Accuracy"),
+      guide: stats.accuracy === 0 ? t("保持专注 →", "Stay focused!") : undefined,
+      trend: trend?.accuracy,
+      color: "bg-emerald-500/10",
+      gradient: "bg-emerald-500/10",
+      onClick: onAccuracyClick,
+    },
+    {
+      icon: <Clock className="w-5 h-5 text-purple-500" />,
+      value: t(`${stats.learningMinutes}分钟`, `${stats.learningMinutes}min`),
+      label: t("学习时长", "Time"),
+      guide: stats.learningMinutes === 0 ? t("目标：30分钟 →", "Goal: 30min") : undefined,
+      trend: trend?.time,
+      color: "bg-purple-500/10",
+      gradient: "bg-purple-500/10",
+      onClick: onTimeClick,
+    },
+    {
+      icon: <Flame className="w-5 h-5 text-orange-500" />,
+      value: stats.streakDays ?? 0,
+      label: t("连续打卡", "Streak"),
+      color: "bg-orange-500/10",
+      gradient: "bg-orange-500/10",
+      onClick: undefined,
+    },
+  ];
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <StatCard
-        icon={<Target className="w-5 h-5 text-blue-500" />}
-        value={stats.exercisesToday}
-        label={t("今日做题（挑战之路）", "Exercises (Challenge Path)")}
-        guide={
-          stats.exercisesToday === 0 ? t("目标：10题 →", "Goal: 10") : undefined
-        }
-        trend={trend?.exercises}
-        color="bg-blue-500/10"
-        onClick={onExercisesClick}
-      />
-      <StatCard
-        icon={<CheckCircle className="w-5 h-5 text-emerald-500" />}
-        value={`${stats.accuracy}%`}
-        label={t("正确率（挑战之路）", "Accuracy (Challenge Path)")}
-        guide={
-          stats.accuracy === 0 ? t("保持专注 →", "Stay focused!") : undefined
-        }
-        trend={trend?.accuracy}
-        color="bg-emerald-500/10"
-        onClick={onAccuracyClick}
-      />
-      <StatCard
-        icon={<Clock className="w-5 h-5 text-purple-500" />}
-        value={t(`${stats.learningMinutes}分钟`, `${stats.learningMinutes}min`)}
-        label={t("学习时长（双路径总计）", "Time (All Paths)")}
-        guide={
-          stats.learningMinutes === 0
-            ? t("目标：30分钟 →", "Goal: 30min")
-            : undefined
-        }
-        trend={trend?.time}
-        color="bg-purple-500/10"
-        onClick={onTimeClick}
-      />
-      <StatCard
-        icon={<Flame className="w-5 h-5 text-orange-500" />}
-        value={stats.streakDays ?? 0}
-        label={t("连续打卡", "Streak")}
-        color="bg-orange-500/10"
-      />
+      {statCards.map((card, index) => (
+        <StatCard
+          key={index}
+          {...card}
+          delay={index * 0.1}
+        />
+      ))}
     </div>
   );
 }

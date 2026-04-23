@@ -1,0 +1,210 @@
+{
+  "course_name": "高级语言程序设计II",
+  "course_code": "C++",
+  "chapters": [
+    {
+      "title": "C++基础与入门",
+      "order_index": 1,
+      "sections": [
+        {
+          "title": "C++的初步知识",
+          "order_index": 1,
+          "estimated_minutes": 20,
+          "knowledge_points": [
+            {"name": "C++与C语言的区别", "difficulty": 1, "importance": 4},
+            {"name": "C++语言扩展实例", "difficulty": 1, "importance": 4},
+            {"name": "输出功能增强", "difficulty": 1, "importance": 5},
+            {"name": "键盘响应与输入", "difficulty": 1, "importance": 5},
+            {"name": "三种程序结构", "difficulty": 1, "importance": 5},
+            {"name": "菜单结构与主程序结构", "difficulty": 2, "importance": 4},
+            {"name": "C++开发环境", "difficulty": 1, "importance": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "面向对象程序设计基础",
+      "order_index": 2,
+      "sections": [
+        {
+          "title": "基于过程的程序设计",
+          "order_index": 1,
+          "estimated_minutes": 30,
+          "knowledge_points": [
+            {"name": "面向过程编程思想", "difficulty": 1, "importance": 4},
+            {"name": "面向对象编程思想", "difficulty": 2, "importance": 5},
+            {"name": "类的概念与作用", "difficulty": 2, "importance": 5},
+            {"name": "类的定义与使用", "difficulty": 2, "importance": 5},
+            {"name": "类成员的属性", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "类和对象基础",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "类的初始化概念", "difficulty": 2, "importance": 5},
+            {"name": "构造函数的概念", "difficulty": 2, "importance": 5},
+            {"name": "构造函数的使用", "difficulty": 2, "importance": 5},
+            {"name": "函数重载", "difficulty": 2, "importance": 4},
+            {"name": "构造函数的重载", "difficulty": 2, "importance": 5}
+          ]
+        },
+        {
+          "title": "指针与引用",
+          "order_index": 3,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "指针的概念与定义", "difficulty": 3, "importance": 5},
+            {"name": "指针的用法", "difficulty": 3, "importance": 5},
+            {"name": "引用的概念", "difficulty": 2, "importance": 5},
+            {"name": "引用的用途", "difficulty": 2, "importance": 4},
+            {"name": "指针类型对象", "difficulty": 3, "importance": 4},
+            {"name": "引用作为函数参数", "difficulty": 2, "importance": 5}
+          ]
+        },
+        {
+          "title": "继承与派生",
+          "order_index": 4,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "继承与派生的概念", "difficulty": 2, "importance": 5},
+            {"name": "派生类的定义", "difficulty": 2, "importance": 5},
+            {"name": "派生类的构造函数", "difficulty": 3, "importance": 5},
+            {"name": "父类重载构造函数时子类的写法", "difficulty": 3, "importance": 4},
+            {"name": "类的组合", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "运算符重载",
+          "order_index": 5,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "运算符重载的概念", "difficulty": 2, "importance": 4},
+            {"name": "运算符重载的用途", "difficulty": 2, "importance": 4},
+            {"name": "输入输出运算符重载", "difficulty": 3, "importance": 5},
+            {"name": "双目运算符重载", "difficulty": 2, "importance": 5},
+            {"name": "单目运算符重载", "difficulty": 2, "importance": 5}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "数据处理与容器",
+      "order_index": 3,
+      "sections": [
+        {
+          "title": "利用数组处理批量数据",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "C++数组的局限性", "difficulty": 2, "importance": 4},
+            {"name": "数组作为函数参数", "difficulty": 2, "importance": 5},
+            {"name": "Vector容器的定义", "difficulty": 2, "importance": 5},
+            {"name": "Vector容器的使用", "difficulty": 2, "importance": 5},
+            {"name": "容器作为函数参数", "difficulty": 2, "importance": 4},
+            {"name": "容器的相关操作", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "字符串类与字符串变量",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "字符串类的定义与使用", "difficulty": 1, "importance": 5},
+            {"name": "字符串的基本操作", "difficulty": 1, "importance": 5},
+            {"name": "字符串赋值与连接", "difficulty": 1, "importance": 5},
+            {"name": "字符串长度与检索", "difficulty": 1, "importance": 5},
+            {"name": "取子串与删除子串", "difficulty": 2, "importance": 4},
+            {"name": "插入子串操作", "difficulty": 2, "importance": 4},
+            {"name": "字符串与数据库关系", "difficulty": 2, "importance": 3}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "输入输出与文件",
+      "order_index": 4,
+      "sections": [
+        {
+          "title": "输入输出流",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "文件的用途", "difficulty": 1, "importance": 4},
+            {"name": "文本文件与二进制文件区别", "difficulty": 2, "importance": 5},
+            {"name": "文本文件的使用方法", "difficulty": 2, "importance": 5},
+            {"name": "二进制文件的使用方法", "difficulty": 2, "importance": 5},
+            {"name": "数据处理模式", "difficulty": 2, "importance": 4},
+            {"name": "数据处理效率与模式关系", "difficulty": 2, "importance": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "交互与动画",
+      "order_index": 5,
+      "sections": [
+        {
+          "title": "简单动画程序设计",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "简单动画程序的实现", "difficulty": 3, "importance": 4},
+            {"name": "键盘码接收方法", "difficulty": 2, "importance": 5},
+            {"name": "交互式键盘控制动画", "difficulty": 3, "importance": 5},
+            {"name": "计时器的工作原理", "difficulty": 3, "importance": 4},
+            {"name": "使用计时器编制多线程代码", "difficulty": 3, "importance": 4},
+            {"name": "组合键的接收", "difficulty": 3, "importance": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "多态与模板",
+      "order_index": 6,
+      "sections": [
+        {
+          "title": "多态性与虚函数",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "虚函数的概念", "difficulty": 2, "importance": 5},
+            {"name": "虚函数的用途", "difficulty": 2, "importance": 5},
+            {"name": "虚函数的使用方法", "difficulty": 2, "importance": 5},
+            {"name": "函数模板的概念", "difficulty": 2, "importance": 4},
+            {"name": "函数模板的作用", "difficulty": 2, "importance": 4},
+            {"name": "类模板的定义方法", "difficulty": 3, "importance": 4},
+            {"name": "命名空间的作用", "difficulty": 2, "importance": 3},
+            {"name": "命名空间的定义方法", "difficulty": 2, "importance": 3},
+            {"name": "析构函数", "difficulty": 2, "importance": 5},
+            {"name": "数/串类型转换", "difficulty": 2, "importance": 4},
+            {"name": "对象作为函数参数", "difficulty": 2, "importance": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "对话框程序设计",
+      "order_index": 7,
+      "sections": [
+        {
+          "title": "对话框程序的建立",
+          "order_index": 1,
+          "estimated_minutes": 30,
+          "knowledge_points": [
+            {"name": "对话框程序的用途", "difficulty": 2, "importance": 4},
+            {"name": "对话框程序的建立方法", "difficulty": 3, "importance": 5},
+            {"name": "文本框控件", "difficulty": 2, "importance": 5},
+            {"name": "复选按钮控件", "difficulty": 2, "importance": 4},
+            {"name": "单选按钮控件", "difficulty": 2, "importance": 4},
+            {"name": "列表框控件", "difficulty": 2, "importance": 5},
+            {"name": "组合框控件", "difficulty": 2, "importance": 4},
+            {"name": "对话框数据的传递方法", "difficulty": 3, "importance": 5},
+            {"name": "多个对话框之间数据交换", "difficulty": 3, "importance": 5}
+          ]
+        }
+      ]
+    }
+  ]
+}

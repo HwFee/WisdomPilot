@@ -9,13 +9,10 @@ This replaces the old QuotaService. The new Core system:
 """
 
 import logging
-from datetime import datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
-from app.models.core_transaction import CoreTransaction
-from app.utils.time import utc_now
 
 logger = logging.getLogger(__name__)
 

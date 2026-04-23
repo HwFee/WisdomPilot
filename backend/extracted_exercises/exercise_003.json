@@ -1,0 +1,53 @@
+{
+  "id": 3,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "3",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "系统测试",
+    "文件 IO",
+    "子任务"
+  ],
+  "content": {
+    "title": "复读机",
+    "description": "## 题目描述\n输入一些正整数，将它们原样输出。\n\n## 提示\n这道题用于测试文件输入输出，**请注意使用文件输入输出，而非标准输入输出。**\n\n请将鼠标移至上方的 <span class=\"ui orange label ui-font\"><i aria-hidden=\"true\" class=\"file icon\"></i>文件 IO</span> 图标，查看输入输出文件名。\n\n\n## 输入格式\n第一行一个正整数 $ T $，表示有 $ T $ 组测试数据。  \r\n接下来 $ T $ 行，每行一个正整数 $ a $。\n\n## 输出格式\n输出 $ T $ 行，每行一个正整数 $ a $。\n\n## 数据范围\n对于所有测试点，$ 1 \\leq T \\leq 10, 1 \\leq a \\leq 10 ^ {1000} $。\r\n\r\n**子任务 1**（10 分）$ 1 \\leq a \\leq 3 $；  \r\n**子任务 2**（20 分）$ 1 \\leq a \\leq 100000 $；  \r\n**子任务 3**（70 分）没有附加限制。",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #3",
+    "loj_url": "https://loj.ac/p/3",
+    "samples": [
+      {
+        "input": "3\n1\n2\n3",
+        "output": "1\n2\n3"
+      },
+      {
+        "input": "1\n1000000000000000000000000000000000",
+        "output": "1000000000000000000000000000000000"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "3\n1\n2\n3",
+      "output": "1\n2\n3"
+    },
+    {
+      "input": "1\n1000000000000000000000000000000000",
+      "output": "1000000000000000000000000000000000"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:37.816830",
+  "updated_at": "2026-04-22 04:23:09.657223",
+  "z_id": "Z3"
+}

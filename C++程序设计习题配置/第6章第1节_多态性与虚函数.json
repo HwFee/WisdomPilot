@@ -1,0 +1,227 @@
+{
+  "chapter_id": 6,
+  "chapter_title": "多态与模板",
+  "section_id": 1,
+  "section_title": "多态性与虚函数",
+  "total_knowledge_points": 11,
+  "total_exercises": 8,
+  "knowledge_point_coverage": {
+    "59": 2,
+    "60": 2,
+    "61": 3,
+    "62": 2,
+    "63": 2,
+    "64": 2,
+    "65": 2,
+    "66": 2,
+    "67": 2,
+    "68": 2,
+    "69": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 59,
+      "name": "虚函数的概念"
+    },
+    {
+      "id": 60,
+      "name": "虚函数的用途"
+    },
+    {
+      "id": 61,
+      "name": "虚函数的使用方法"
+    },
+    {
+      "id": 62,
+      "name": "函数模板的概念"
+    },
+    {
+      "id": 63,
+      "name": "函数模板的作用"
+    },
+    {
+      "id": 64,
+      "name": "类模板的定义方法"
+    },
+    {
+      "id": 65,
+      "name": "命名空间的作用"
+    },
+    {
+      "id": 66,
+      "name": "命名空间的定义方法"
+    },
+    {
+      "id": 67,
+      "name": "析构函数"
+    },
+    {
+      "id": 68,
+      "name": "数/串类型转换"
+    },
+    {
+      "id": 69,
+      "name": "对象作为函数参数"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        59,
+        60,
+        61
+      ],
+      "knowledge_point_names": [
+        "虚函数的概念",
+        "虚函数的用途",
+        "虚函数的使用方法"
+      ],
+      "description": "考察知识点：虚函数的概念、虚函数的用途、虚函数的使用方法",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        62,
+        63,
+        64
+      ],
+      "knowledge_point_names": [
+        "函数模板的概念",
+        "函数模板的作用",
+        "类模板的定义方法"
+      ],
+      "description": "考察知识点：函数模板的概念、函数模板的作用、类模板的定义方法",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        65,
+        66,
+        67
+      ],
+      "knowledge_point_names": [
+        "命名空间的作用",
+        "命名空间的定义方法",
+        "析构函数"
+      ],
+      "description": "考察知识点：命名空间的作用、命名空间的定义方法、析构函数",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        68,
+        69
+      ],
+      "knowledge_point_names": [
+        "数/串类型转换",
+        "对象作为函数参数"
+      ],
+      "description": "考察知识点：数/串类型转换、对象作为函数参数",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        61,
+        62,
+        63
+      ],
+      "knowledge_point_names": [
+        "虚函数的使用方法",
+        "函数模板的概念",
+        "函数模板的作用"
+      ],
+      "description": "考察知识点：虚函数的使用方法、函数模板的概念、函数模板的作用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        64,
+        65,
+        66
+      ],
+      "knowledge_point_names": [
+        "类模板的定义方法",
+        "命名空间的作用",
+        "命名空间的定义方法"
+      ],
+      "description": "考察知识点：类模板的定义方法、命名空间的作用、命名空间的定义方法（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 7,
+      "knowledge_points": [
+        67,
+        68,
+        69
+      ],
+      "knowledge_point_names": [
+        "析构函数",
+        "数/串类型转换",
+        "对象作为函数参数"
+      ],
+      "description": "考察知识点：析构函数、数/串类型转换、对象作为函数参数（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 8,
+      "knowledge_points": [
+        59,
+        60,
+        61
+      ],
+      "knowledge_point_names": [
+        "虚函数的概念",
+        "虚函数的用途",
+        "虚函数的使用方法"
+      ],
+      "description": "考察知识点：虚函数的概念、虚函数的用途、虚函数的使用方法（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

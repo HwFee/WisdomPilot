@@ -17,14 +17,10 @@ FPS Format Reference:
     http://code.google.com/p/freeproblemset/
 """
 
-import os
-import re
-import json
 import argparse
 import asyncio
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from datetime import datetime
 from xml.etree import ElementTree as ET
 
 import sys
@@ -36,7 +32,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import AsyncSessionLocal, init_db
 from app.models.exercise import Exercise
 from app.models.course import Course
-from app.models.chapter import Chapter
 
 
 # Course code mapping based on problem tags/content

@@ -5,6 +5,7 @@ from app.schemas import UserCreate, UserLogin, Token, UserResponse, ForgotPasswo
 from app.services.auth import AuthService
 from app.utils.deps import get_current_active_user
 from app.models import User
+import logging
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -70,3 +71,6 @@ async def get_current_user_info(
 ):
     """Get current authenticated user info"""
     return UserResponse.model_validate(current_user)
+
+
+logger = logging.getLogger(__name__)

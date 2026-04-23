@@ -17,11 +17,9 @@ import json
 import logging
 import math
 from typing import Optional
-from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 
 from app.models.exercise import Exercise
 from app.models.user_arena import UserArenaProfile
@@ -57,13 +55,12 @@ class UserProfileService:
     async def get_or_create_profile(
         self,
         user_id: str,
-        course_id: int,
+        course_id: Optional[int] = None,
     ) -> UserArenaProfile:
-        """Get or create user arena profile."""
+        """Get or create user arena profile (global, not per-course)."""
         result = await self.db.execute(
             select(UserArenaProfile).where(
                 UserArenaProfile.user_id == user_id,
-                UserArenaProfile.course_id == course_id,
             )
         )
         profile = result.scalar_one_or_none()
@@ -71,7 +68,6 @@ class UserProfileService:
         if not profile:
             profile = UserArenaProfile(
                 user_id=user_id,
-                course_id=course_id,
             )
             self.db.add(profile)
             await self.db.flush()
@@ -81,9 +77,9 @@ class UserProfileService:
     async def update_after_exercise(
         self,
         user_id: str,
-        course_id: int,
         exercise_id: int,
         is_correct: bool,
+        course_id: Optional[int] = None,
         time_spent: Optional[int] = None,
         hint_used: bool = False,
         first_attempt_correct: Optional[bool] = None,
@@ -93,9 +89,9 @@ class UserProfileService:
 
         Args:
             user_id: User ID
-            course_id: Course ID
             exercise_id: Exercise ID
             is_correct: Whether the answer was correct
+            course_id: Course ID (optional, None for global Arena)
             time_spent: Time spent in seconds
             hint_used: Whether hint was used
             first_attempt_correct: Whether first attempt was correct
@@ -103,7 +99,7 @@ class UserProfileService:
         Returns:
             Updated profile stats
         """
-        profile = await self.get_or_create_profile(user_id, course_id)
+        profile = await self.get_or_create_profile(user_id, course_id=course_id or 0)
 
         # Get exercise embedding
         exercise_result = await self.db.execute(
@@ -205,11 +201,10 @@ class UserProfileService:
         hint_used: bool,
     ) -> None:
         """Update user statistics."""
-        # Get all progress for this course
+        # Get all progress for challenge path
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == profile.user_id,
-                ArenaExerciseProgress.course_id == profile.course_id,
             )
         )
         progresses = list(result.scalars().all())
@@ -254,7 +249,7 @@ class UserProfileService:
             .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
             .where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
                 Exercise.embedding.isnot(None),
             )
         )
@@ -283,7 +278,7 @@ class UserProfileService:
                     correct_embeddings.append((embedding, weight))
                 else:
                     incorrect_embeddings.append(embedding)
-            except:
+            except Exception:
                 continue
 
         # Calculate weighted average for correct
@@ -345,7 +340,7 @@ class UserProfileService:
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
             )
         )
         progresses = list(result.scalars().all())

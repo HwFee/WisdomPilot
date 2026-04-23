@@ -49,7 +49,7 @@ export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse
               <p className="text-sm text-muted-foreground mb-4">{t('推荐课程', 'Recommended Courses')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {recommendedCourses.slice(0, 4).map((course) => (
-                  <button
+                  <button type="button"
                     key={course.id}
                     onClick={() => onSelectCourse(course.id)}
                     className="group p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-primary/30 text-left transition-all"

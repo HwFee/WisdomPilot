@@ -14,7 +14,7 @@ interface FavoriteButtonProps {
   /** 题目标识 (格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId} 或 enhanced-{courseId}-{sectionId}-{exerciseId}) */
   exerciseKey?: string;
   /** 课程ID */
-  courseId: number;
+  courseId?: number;
   /** 原始练习题ID */
   exerciseId?: number;
   /** 章节ID（精进之路来源） */
@@ -126,7 +126,7 @@ export function FavoriteButton({
         // 与错题本完全一致的请求格式
         const data: FavoriteCreate = {
           exercise_key: exerciseKey || "",
-          course_id: courseId,
+          course_id: courseId ?? 0,
           exercise_id: exerciseId,
           chapter_id: chapterId,
           section_id: sectionId,
@@ -175,7 +175,7 @@ export function FavoriteButton({
   };
 
   return (
-    <button
+    <button type="button"
       onClick={(e) => {
         e.stopPropagation();
         handleToggleFavorite();

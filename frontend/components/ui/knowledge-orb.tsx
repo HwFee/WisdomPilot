@@ -194,7 +194,7 @@ function MessageBubble({ role, content, courseId, chapterId, sectionId, exercise
       </div>
       {/* Save as note button for AI messages */}
       {!isUser && (
-        <button
+        <button type="button"
           onClick={handleSaveAsNote}
           disabled={isSaving || saved}
           className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg transition-colors hover:bg-black/10 disabled:opacity-50 w-fit"
@@ -815,7 +815,7 @@ ${kp.title}${optsStr}
                 </p>
               </div>
             </div>
-            <button
+            <button type="button"
               onClick={handleClose}
               className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
               style={{ color: "hsl(var(--muted-foreground))" }}
@@ -835,7 +835,7 @@ ${kp.title}${optsStr}
                 { label: "提示思路", prompt: "这道题的解题思路是什么？" },
                 { label: "类似题", prompt: "请给我一道类似的练习题" },
               ].map(qp => (
-                <button
+                <button type="button"
                   key={qp.label}
                   onClick={() => handleQuickPrompt(qp.prompt)}
                   className="px-2.5 py-1 rounded-full text-xs border transition-all hover:bg-black/5"
@@ -856,7 +856,7 @@ ${kp.title}${optsStr}
                 { label: "注意事项", prompt: "使用这个知识点有什么需要注意的地方？" },
                 { label: "相关知识点", prompt: "有哪些相关的知识点需要一起学习？" },
               ].map(qp => (
-                <button
+                <button type="button"
                   key={qp.label}
                   onClick={() => handleQuickPrompt(qp.prompt)}
                   className="px-2.5 py-1 rounded-full text-xs border transition-all hover:bg-black/5"
@@ -876,7 +876,7 @@ ${kp.title}${optsStr}
                 { label: "举例说明", prompt: "请给我一个实际的应用例子" },
                 { label: "常见问题", prompt: "这个知识点有哪些常见的问题？" },
               ].map(qp => (
-                <button
+                <button type="button"
                   key={qp.label}
                   onClick={() => handleQuickPrompt(qp.prompt)}
                   className="px-2.5 py-1 rounded-full text-xs border transition-all hover:bg-black/5"
@@ -998,7 +998,7 @@ ${kp.title}${optsStr}
                 }}
                 disabled={isStreaming}
               />
-              <button
+              <button type="button"
                 type="submit"
                 disabled={!inputValue.trim() || isStreaming}
                 className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"

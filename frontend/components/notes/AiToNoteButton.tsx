@@ -48,7 +48,7 @@ export function AiToNoteButton({
   }
 
   return (
-    <button
+    <button type="button"
       onClick={handleCreateNote}
       className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
       title={t('将AI回答保存为笔记', 'Save AI answer as note')}

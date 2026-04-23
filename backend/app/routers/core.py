@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.utils.deps import get_current_user
 from app.models.user import User
 from app.services.core_service import CoreService, get_core_service
+import logging
+
 from app.schemas.core import (
     CoreBalanceResponse,
     CoreSpendRequest,
@@ -172,3 +174,6 @@ async def test_spend_cores(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+
+logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getStoredToken, logout, getFavorites, removeFavorite, getFavoriteFolders, updateFavorite, batchRemoveFavorites, getActiveChallengeSession } from '@/lib/api'
+import { getStoredToken, logout, getFavorites, removeFavorite, getFavoriteFolders, updateFavorite, batchRemoveFavorites } from '@/lib/api'
 import { ArrowLeft, Star, Trash2, CheckSquare, Square } from 'lucide-react'
 import type { FavoriteResponse, FavoriteFolderResponse } from '@/types/api'
 
@@ -182,7 +182,7 @@ export default function FavoritesPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button
+          <button type="button"
             onClick={() => router.back()}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
           >
@@ -191,7 +191,7 @@ export default function FavoritesPage() {
           <h1 className="text-lg font-semibold">收藏夹</h1>
           <span className="ml-auto text-sm text-muted-foreground">{favorites.length} 题</span>
           {favorites.length > 0 && (
-            <button
+            <button type="button"
               onClick={() => {
                 setIsSelectMode(!isSelectMode)
                 setSelectedIds(new Set())
@@ -208,7 +208,7 @@ export default function FavoritesPage() {
         {/* Folders */}
         {folders.length > 0 && (
           <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-            <button
+            <button type="button"
               onClick={() => handleFolderChange(null)}
               className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
                 selectedFolder === null
@@ -219,7 +219,7 @@ export default function FavoritesPage() {
               全部
             </button>
             {folders.map(folder => (
-              <button
+              <button type="button"
                 key={folder.name}
                 onClick={() => handleFolderChange(folder.name)}
                 className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
@@ -253,7 +253,7 @@ export default function FavoritesPage() {
                 <option value="待复习">待复习</option>
                 <option value="易错题">易错题</option>
               </select>
-              <button
+              <button type="button"
                 onClick={handleBatchDelete}
                 className="px-2 py-1 rounded text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20"
               >
@@ -349,7 +349,7 @@ export default function FavoritesPage() {
 
                       {/* 选择按钮 - 放在底部 */}
                       {isSelectMode && (
-                        <button
+                        <button type="button"
                           onClick={() => handleToggleSelect(fav.id)}
                           className="mt-2 p-1"
                         >
@@ -364,25 +364,13 @@ export default function FavoritesPage() {
 
                     <div className="flex flex-col items-end gap-2">
                       {/* 复习按钮 */}
-                      <button
+                      <button type="button"
                         onClick={async () => {
                           const token = localStorage.getItem('token')
                           // 根据来源类型跳转到不同页面
-                          if (sourceType === 'arena' && fav.course_id && token) {
-                            // 挑战之路: 跳转到挑战之路页面
-                            try {
-                              const result = await getActiveChallengeSession(fav.course_id, token)
-                              if (result.session) {
-                                const questionIdNum = parseInt(questionIdFromKey)
-                                const exerciseInfo = result.exercise_map[questionIdNum]
-                                const targetIndex = exerciseInfo?.exercise_index ?? result.session.current_index
-                                router.push(`/arena/${fav.course_id}?exerciseIndex=${targetIndex}`)
-                              } else {
-                                router.push('/dashboard?tab=challenge')
-                              }
-                            } catch {
-                              router.push('/dashboard?tab=challenge')
-                            }
+                          if (sourceType === 'arena' && token) {
+                            // 挑战之路: 直接跳转到挑战之路页面（独立于课程）
+                            router.push('/arena')
                           } else if (sourceType === 'mastery' && fav.course_id) {
                             // 精进之路: 直接用收藏记录里的 chapter_id 和 section_id
                             const chapterParam = fav.chapter_id || ''
@@ -400,7 +388,7 @@ export default function FavoritesPage() {
 
                       {/* 删除按钮 */}
                       {!isSelectMode && (
-                        <button
+                        <button type="button"
                           onClick={() => handleRemove(fav.id)}
                           className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                         >

@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -10,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.models.user import User
 from app.models.challenge import Challenge, ChallengeType
 from app.models.user_challenge import UserChallenge, UserChallengeStatus
+import logging
 
 
 class ChallengeService:
@@ -19,7 +19,7 @@ class ChallengeService:
         """Get all active challenges"""
         result = await db.execute(
             select(Challenge)
-            .where(Challenge.is_active == True)
+            .where(Challenge.is_active)
             .order_by(Challenge.difficulty, Challenge.code)
         )
         return list(result.scalars().all())
@@ -188,3 +188,6 @@ class ChallengeService:
 
 
 challenge_service = ChallengeService()
+
+
+logger = logging.getLogger(__name__)

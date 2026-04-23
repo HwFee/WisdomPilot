@@ -1,6 +1,5 @@
 """Exercise API Schemas - Question Bank and AI Generation"""
 
-from datetime import datetime
 from typing import Optional, Any
 from pydantic import BaseModel, Field
 

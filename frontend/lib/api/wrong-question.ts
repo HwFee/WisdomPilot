@@ -8,7 +8,7 @@ import { post } from './client'
 export interface CollectWrongQuestionRequest {
   exercise_key: string // 格式：chapterId-subsectionIndex-exerciseId 或 arena-sessionId-exerciseId
   user_answer: unknown // 用户答案
-  course_id: number // 课程ID
+  course_id?: number // 课程ID（可选，挑战之路没有课程关联）
   chapter_id?: number // 章节ID
   section_id?: number // 小节ID（强化测试来源）
   exercise_id?: number // 练习题ID（可选）
@@ -36,7 +36,6 @@ export async function collectWrongQuestion(
   token: string,
   data: CollectWrongQuestionRequest
 ): Promise<CollectWrongQuestionResponse> {
-  console.log('[错题收集] 发起请求:', data)
 
   try {
     const result = await post<CollectWrongQuestionResponse>(
@@ -44,7 +43,6 @@ export async function collectWrongQuestion(
       token,
       data
     )
-    console.log('[错题收集] 成功:', result)
     return result
   } catch (error) {
     console.error('[错题收集] 失败:', error)
@@ -61,7 +59,6 @@ export async function resolveWrongQuestion(
   token: string,
   exerciseId: number
 ): Promise<{ success: boolean; message: string }> {
-  console.log('[错题解决] 发起请求:', { exerciseId })
 
   try {
     const result = await post<{ success: boolean; message: string }>(
@@ -69,7 +66,6 @@ export async function resolveWrongQuestion(
       token,
       {}
     )
-    console.log('[错题解决] 成功:', result)
     return result
   } catch (error) {
     console.error('[错题解决] 失败:', error)

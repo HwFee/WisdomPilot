@@ -19,9 +19,9 @@ import json
 from typing import Optional
 from dataclasses import dataclass, field, asdict
 
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.ai import ai_service
+import logging
 
 
 @dataclass
@@ -120,7 +120,7 @@ class TagExtractionService:
                         tags.knowledge_points.append(kp)
 
             return tags
-        except Exception as e:
+        except Exception:
             # Fallback to default tags on error
             return self._default_tags(question_text, existing_knowledge_points)
 
@@ -278,3 +278,6 @@ tag_extraction_service = TagExtractionService()
 def get_tag_extraction_service() -> TagExtractionService:
     """Get the tag extraction service singleton."""
     return tag_extraction_service
+
+
+logger = logging.getLogger(__name__)

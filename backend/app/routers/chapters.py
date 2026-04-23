@@ -8,8 +8,8 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.chapter import Chapter
-from app.models.exercise import Exercise
 from app.schemas.course import ChapterDetailResponse, ChapterDetail, ExerciseSummary
+import logging
 
 router = APIRouter(prefix="/api/chapters", tags=["chapters"])
 
@@ -68,3 +68,6 @@ async def get_chapter_by_id(chapter_id: int, db: db_dependency):
     )
 
     return ChapterDetailResponse(chapter=chapter_detail, exercises=exercises)
+
+
+logger = logging.getLogger(__name__)

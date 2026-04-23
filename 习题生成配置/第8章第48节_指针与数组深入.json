@@ -1,0 +1,35 @@
+{
+  "chapter_id": 8,
+  "chapter_title": "综合设计与应用",
+  "section_id": 48,
+  "section_title": "指针与数组深入",
+  "total_knowledge_points": 1,
+  "total_exercises": 1,
+  "knowledge_point_coverage": {
+    "174": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 174,
+      "name": "指针与数组关系深入"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        174
+      ],
+      "knowledge_point_names": [
+        "指针与数组关系深入"
+      ],
+      "description": "考察知识点：指针与数组关系深入",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

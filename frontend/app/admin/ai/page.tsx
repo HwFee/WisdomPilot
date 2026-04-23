@@ -301,7 +301,7 @@ export default function AdminAISettingsPage() {
             <Settings className="w-6 h-6 text-primary" />
             <h1 className="text-xl font-bold text-foreground">AI 配置管理</h1>
           </div>
-          <button
+          <button type="button"
             onClick={() => router.push('/admin')}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
@@ -343,7 +343,7 @@ export default function AdminAISettingsPage() {
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-muted p-1 rounded-lg w-fit">
           {TABS.map(tab => (
-            <button
+            <button type="button"
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
@@ -600,7 +600,7 @@ export default function AdminAISettingsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">连接状态</h2>
-              <button
+              <button type="button"
                 onClick={fetchStatus}
                 disabled={isRefreshing}
                 className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
@@ -699,7 +699,7 @@ function ApiKeyField({
               {maskedPreview}
             </div>
             {/* 替换按钮 */}
-            <button
+            <button type="button"
               type="button"
               onClick={onEnterReplace}
               className="flex items-center gap-1 px-3 py-2 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors shrink-0"
@@ -708,7 +708,7 @@ function ApiKeyField({
               替换
             </button>
             {/* 删除按钮 */}
-            <button
+            <button type="button"
               type="button"
               onClick={onDelete}
               className="flex items-center gap-1 px-3 py-2 text-sm border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition-colors shrink-0"
@@ -736,7 +736,7 @@ function ApiKeyField({
               autoFocus
               className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background font-mono focus:ring-2 focus:ring-primary focus:border-transparent"
             />
-            <button
+            <button type="button"
               type="button"
               onClick={onCancelReplace}
               className="px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors shrink-0"
@@ -764,7 +764,7 @@ function LocalFirstToggle({ checked, onChange }: { checked: boolean; onChange: (
         <div className="text-sm font-medium">本地优先模式</div>
         <div className="text-xs text-muted-foreground">优先使用本地模型，本地不可用时 fallback 到云端</div>
       </div>
-      <button
+      <button type="button"
         type="button"
         onClick={() => onChange(!checked)}
         className={cn(
@@ -816,7 +816,7 @@ function ConfigCard({
 
         {/* Test Connection row */}
         <div className="flex items-center gap-3 pt-2 border-t">
-          <button
+          <button type="button"
             onClick={onTest}
             disabled={isTesting}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 disabled:opacity-50 transition-colors"
@@ -846,7 +846,7 @@ function ConfigCard({
           )}
         </div>
       </div>
-      <button
+      <button type="button"
         onClick={onSave}
         disabled={isSaving}
         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"

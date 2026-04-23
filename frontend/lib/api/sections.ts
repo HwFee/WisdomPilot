@@ -6,6 +6,22 @@ import { getStoredToken } from './index'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+// 知识点详情类型
+export interface KnowledgePointDetail {
+  id: number
+  order_index: number
+  name: string
+  content: string | null
+  summary: string | null
+  code_example: string | null
+  code_language: string
+  code_explanation: string | null
+  difficulty: number
+  importance: number
+  tips: string[] | null
+  common_mistakes: string[] | null
+}
+
 // 类型定义
 export interface SectionSummary {
   id: number
@@ -29,6 +45,7 @@ export interface SectionDetail {
   learning_objectives: string[] | null
   is_completed: boolean
   last_position: string
+  knowledge_points: KnowledgePointDetail[]  // 新增：知识点列表
 }
 
 export interface SectionListResponse {

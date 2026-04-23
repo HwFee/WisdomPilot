@@ -130,7 +130,7 @@ export function SolutionArticleList({
                 <span>{solution.username}</span>
                 <div className="flex items-center gap-4">
                   {onLike && (
-                    <button
+                    <button type="button"
                       onClick={(e) => {
                         e.stopPropagation()
                         onLike(solution.id)
@@ -153,7 +153,7 @@ export function SolutionArticleList({
                   </span>
                   <span>{formatTime(solution.created_at)}</span>
                   {currentUserId === solution.user_id && onDelete && (
-                    <button
+                    <button type="button"
                       onClick={(e) => {
                         e.stopPropagation()
                         onDelete(solution.id)

@@ -1,0 +1,54 @@
+{
+  "id": 142,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "551",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "数学",
+    "构造",
+    "博弈论",
+    "LibreOJ Round"
+  ],
+  "content": {
+    "title": "「LibreOJ Round #8」Matrix",
+    "description": "## 题目描述\nAlex 在和 Ball 玩游戏，他们面前有一个 $n \\times n$ 的空白矩阵 $M$，Alex 和 Ball 轮流往上放标记，**Ball 先手**。  \n矩阵中的一个格子被放置标记后就不能再放置标记，同时我们记 Alex 放的标记为 $A$ 标记，Ball 放的标记为 $B$ 标记。  \n在某一轮游戏结束后（一轮游戏指的是 Ball 先操作，然后 Alex 操作），若存在一个排列 $p[1..n]$ 使得对任意 $i \\in [1,n]$，满足 $M[i][p[i]]=A$，则Alex立即获胜。  \n在 $\\lfloor n^2 /2 \\rfloor$ 轮后，若 Alex 没有获胜，则 Ball 获胜。  \n若 Alex 或 Ball 在某个时刻做了非法的操作（由于遗忘在放过标记的地方重复放），他会直接输掉游戏。  \n狡猾的 Ball 想了一个办法来恶心 Alex ，他每隔很久很久才给出下一个操作，这样 Alex 可能会忘掉双方之前的操作。  \n现在你得到了这个信息，对于一个给定的 $n$，你想知道两件事：\n\n* Alex 在自己每次操作前记得双方之前所有操作的情况下是否有必胜策略。\n* Alex 在自己每次操作前忘掉双方之前所有操作，仅知道 Ball 最后一次操作的情况下是否有必胜策略。\n\nBall 永远记得双方的所有操作。\n\n\n## 输入格式\n从标准输入中读取数据。  \n第一行，一个整数 $T$，表示数据组数。  \n接下来 $T$ 行，每行一个整数$n$，表示矩阵的大小。  \n\n\n\n## 输出格式\n输出到标准输出中。   \n输出共 $T$ 行，对于每一组数据，输出两行 `Yes` 或者 `No`。   \n第一行表示Alex在操作前**记得**双方之前操作的情况下他是否一定能获胜。   \n第二行表示Alex在操作前**忘掉**双方之前操作，仅知道 Ball 最后一次操作的情况下他是否一定能获胜。   \n\n\n\n\n## 数据范围与提示\n对于所有数据， $1\\leq n \\leq 10^{18}$,$1 \\leq T \\leq 100$。\n\n详细的数据限制及约定如下（留空表示和上述所有数据的约定相同）：  \n\n|\t子任务编号\t|\t分值\t(百分比) |\t$n$\t\t\t         \t|\n|:----------------------:|:----------------:|:------------------------------------:|\n|\t$1$\t\t\t|\t10\t\t|\t$\\leq 3$\t\t\t        |\n|\t$2$\t\t\t|\t40\t\t|\t$\\leq 100$\t\t\t|\n|\t$3$\t\t\t|\t20\t\t|\t$\\leq 10^6$\t\t\t|\n|\t$4$\t\t\t|\t30\t\t|\t$\\leq 10^{18}$\t\t|\n\n\n",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #551",
+    "loj_url": "https://loj.ac/p/551",
+    "samples": [
+      {
+        "input": "2\n1\n2",
+        "output": "No\nNo\nNo\nNo"
+      },
+      {
+        "input": "2\n1\n2",
+        "output": "No\nNo\nNo\nNo"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "2\n1\n2",
+      "output": "No\nNo\nNo\nNo"
+    },
+    {
+      "input": "2\n1\n2",
+      "output": "No\nNo\nNo\nNo"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:09.781146",
+  "updated_at": "2026-04-22 04:23:42.727725",
+  "z_id": "Z551"
+}

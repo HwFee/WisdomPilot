@@ -181,8 +181,6 @@ export function postKeepalive(
   body?: unknown,
 ): Promise<void> {
   const url = `${API_BASE_URL}${endpoint}`;
-  console.log("[学习时长-Keepalive] 发送请求到:", url);
-  console.log("[学习时长-Keepalive] 请求体:", JSON.stringify(body, null, 2));
 
   return fetch(url, {
     method: "POST",
@@ -194,9 +192,7 @@ export function postKeepalive(
     body: body ? JSON.stringify(body) : undefined,
   })
     .then((response) => {
-      console.log("[学习时长-Keepalive] 响应状态:", response.status);
       return response.json().then((data) => {
-        console.log("[学习时长-Keepalive] 响应数据:", data);
       });
     })
     .catch((err) => {

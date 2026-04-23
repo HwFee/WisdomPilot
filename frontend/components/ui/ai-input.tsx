@@ -486,13 +486,13 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                       <circle cx="15" cy="19" r="1.5" />
                     </svg>
                   </div>
-                  <button
+                  <button type="button"
                     onClick={clearChat}
                     className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded transition-colors"
                   >
                     清除
                   </button>
-                  <button
+                  <button type="button"
                     onClick={closePanel}
                     className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors"
                   >

@@ -1,7 +1,10 @@
 """Course API Router"""
 
-from typing import Annotated, List, Optional
+import logging
+from typing import Annotated, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -39,7 +42,7 @@ router = APIRouter(prefix="/api/courses", tags=["courses"])
 db_dependency = Annotated[AsyncSession, Depends(get_db)]
 
 # Import dependencies directly from deps module
-from app.utils.deps import get_current_active_user, get_optional_user
+from app.utils.deps import get_current_active_user, get_current_admin_user, get_optional_user
 
 auth_dependency = Annotated[User, Depends(get_current_active_user)]
 optional_user_dependency = Annotated[Optional[User], Depends(get_optional_user)]
@@ -72,7 +75,7 @@ async def get_courses(db: db_dependency):
             func.count(Chapter.id).label("chapter_count")
         )
         .outerjoin(Chapter, Course.id == Chapter.course_id)
-        .where(Course.is_active == True)
+        .where(Course.is_active)
         .group_by(Course.id)
         .order_by(Course.difficulty_level, Course.code)
     )
@@ -299,7 +302,7 @@ async def enroll_course(
     try:
         # Check course exists
         result = await db.execute(
-            select(Course).where(Course.id == course_id, Course.is_active == True)
+            select(Course).where(Course.id == course_id, Course.is_active)
         )
         course = result.scalar_one_or_none()
 
@@ -372,19 +375,18 @@ async def get_user_course_progress(
     - Current chapter
     - Current section (within current chapter)
     """
-    from app.models.chapter_mastery import ChapterMastery
     from app.models.user_arena import UserArenaProfile
 
     # Get all courses
     courses_result = await db.execute(
-        select(Course).where(Course.is_active == True).order_by(Course.difficulty_level, Course.code)
+        select(Course).where(Course.is_active).order_by(Course.difficulty_level, Course.code)
     )
     all_courses = courses_result.scalars().all()
 
     # Get total chapters per course
     total_chapters_result = await db.execute(
         select(Chapter.course_id, func.count(Chapter.id).label('count'))
-        .where(Chapter.is_active == True)
+        .where(Chapter.is_active)
         .group_by(Chapter.course_id)
     )
     total_chapters_map = {row.course_id: row.count for row in total_chapters_result.all()}
@@ -397,11 +399,11 @@ async def get_user_course_progress(
     )
     mastery_map = {row.course_id: {"total": row.total_mastery, "chapters": row.chapter_count} for row in mastery_result.all()}
 
-    # Get user's arena profiles per course
+    # Get user's global arena profile (challenge path is global, not per-course)
     arena_result = await db.execute(
         select(UserArenaProfile).where(UserArenaProfile.user_id == current_user.id)
     )
-    arena_profiles = {p.course_id: p for p in arena_result.scalars().all()}
+    arena_profile = arena_result.scalar_one_or_none()
 
     # Get current chapter per course (first chapter with mastery < 75)
     current_chapter_result = await db.execute(
@@ -423,7 +425,7 @@ async def get_user_course_progress(
         # Get first section of the current chapter (simplified approach)
         section_result = await db.execute(
             select(Section)
-            .where(Section.chapter_id == chapter_id, Section.is_active == True)
+            .where(Section.chapter_id == chapter_id, Section.is_active)
             .order_by(Section.order_index)
             .limit(1)
         )
@@ -443,7 +445,6 @@ async def get_user_course_progress(
 
         # Get mastery and arena data
         mastery_score = round(mastery_data["total"], 2) if mastery_data["total"] else None
-        arena_profile = arena_profiles.get(course.id)
 
         courses_data.append({
             "course_id": course.id,
@@ -455,6 +456,7 @@ async def get_user_course_progress(
             "current_chapter": current_chapter_map.get(course.id),
             "current_section": current_section_map.get(course.id),
             "mastery_score": mastery_score,
+            # Arena profile is global (same for all courses)
             "arena_tier": arena_profile.tier if arena_profile else None,
             "arena_sub_tier": arena_profile.sub_tier if arena_profile else None,
             "arena_stars": arena_profile.stars if arena_profile else None,
@@ -528,7 +530,7 @@ async def get_chapter_sections(
     # Get all sections for this chapter
     sections_result = await db.execute(
         select(Section)
-        .where(Section.chapter_id == chapter_id, Section.is_active == True)
+        .where(Section.chapter_id == chapter_id, Section.is_active)
         .order_by(Section.order_index)
     )
     sections = sections_result.scalars().all()
@@ -579,8 +581,37 @@ async def get_section(
     current_user: auth_dependency
 ):
     """
-    Get section details including content.
+    Get section details including content and knowledge points.
     """
+    from app.models.section_knowledge_point import SectionKnowledgePoint
+    from app.schemas.section import KnowledgePointDetail
+
+    def parse_to_list(value) -> Optional[List[str]]:
+        """将字符串或列表转换为 List[str]，处理数据不一致问题"""
+        if value is None:
+            return None
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            # 尝试解析为 JSON
+            import json
+            try:
+                parsed = json.loads(value)
+                if isinstance(parsed, list):
+                    return parsed
+                # 如果解析后不是列表，包装成列表
+                return [parsed] if parsed else None
+            except (json.JSONDecodeError, TypeError):
+                # 如果不是有效 JSON，按行分割或返回单元素列表
+                stripped = value.strip()
+                if not stripped:
+                    return None
+                # 检查是否是编号列表格式 (如 "1. xxx\n2. xxx")
+                if '\n' in stripped and (stripped[0].isdigit() or stripped.startswith('-')):
+                    return [line.strip() for line in stripped.split('\n') if line.strip()]
+                return [stripped]
+        return None
+
     # Get section
     result = await db.execute(
         select(Section).where(Section.id == section_id)
@@ -601,6 +632,34 @@ async def get_section(
     )
     progress = progress_result.scalar_one_or_none()
 
+    # Get knowledge points for this section
+    kp_result = await db.execute(
+        select(SectionKnowledgePoint)
+        .where(SectionKnowledgePoint.section_id == section_id)
+        .where(SectionKnowledgePoint.is_active)
+        .order_by(SectionKnowledgePoint.order_index)
+    )
+    knowledge_points = kp_result.scalars().all()
+
+    # Convert to schema
+    kp_list = [
+        KnowledgePointDetail(
+            id=kp.id,
+            order_index=kp.order_index,
+            name=kp.name,
+            content=kp.content,
+            summary=kp.summary,
+            code_example=kp.code_example,
+            code_language=kp.code_language,
+            code_explanation=kp.code_explanation,
+            difficulty=kp.difficulty,
+            importance=kp.importance,
+            tips=parse_to_list(kp.tips),
+            common_mistakes=parse_to_list(kp.common_mistakes),
+        )
+        for kp in knowledge_points
+    ]
+
     section_detail = SectionDetail(
         id=section.id,
         chapter_id=section.chapter_id,
@@ -612,6 +671,7 @@ async def get_section(
         learning_objectives=section.learning_objectives,
         is_completed=progress.is_completed if progress else False,
         last_position=progress.last_position if progress else "content",
+        knowledge_points=kp_list,
     )
 
     return SectionDetailResponse(section=section_detail)
@@ -688,7 +748,7 @@ async def get_current_position(
     # Get all chapters for this course
     chapters_result = await db.execute(
         select(Chapter)
-        .where(Chapter.course_id == course_id, Chapter.is_active == True)
+        .where(Chapter.course_id == course_id, Chapter.is_active)
         .order_by(Chapter.order_index)
     )
     chapters = chapters_result.scalars().all()
@@ -703,7 +763,7 @@ async def get_current_position(
     chapter_ids = [c.id for c in chapters]
     sections_result = await db.execute(
         select(Section)
-        .where(Section.chapter_id.in_(chapter_ids), Section.is_active == True)
+        .where(Section.chapter_id.in_(chapter_ids), Section.is_active)
         .order_by(Section.chapter_id, Section.order_index)
     )
     sections = sections_result.scalars().all()
@@ -765,10 +825,10 @@ async def get_current_position(
 
 from app.services.hybrid_recommendation import HybridRecommendationService
 from app.services.user_profile import UserProfileService
-from app.services.embedding import get_embedding_service, get_exercise_embedding_service
+from app.services.embedding import get_exercise_embedding_service
 from app.services.tag_extraction import get_tag_extraction_service
-from app.models.user_arena import UserArenaProfile
 from app.models.chapter_mastery import ChapterMastery
+import logging
 
 
 class HybridRecommendationRequest:
@@ -953,7 +1013,7 @@ async def batch_update_embeddings(
 async def debug_recommendation_system(
     course_id: int,
     db: db_dependency,
-    current_user: auth_dependency,
+    current_user: User = Depends(get_current_admin_user),
     min_difficulty: int = 1,
     max_difficulty: int = 8,
 ):
@@ -977,7 +1037,7 @@ async def debug_recommendation_system(
     # Get exercises with embeddings count
     exercises_with_embedding = await db.execute(
         select(func.count()).select_from(Exercise).where(
-            Exercise.is_verified == True,
+            Exercise.is_verified,
             Exercise.embedding.isnot(None),
         )
     )
@@ -985,11 +1045,10 @@ async def debug_recommendation_system(
 
     # Get total exercises
     total_exercises = await db.execute(
-        select(func.count()).select_from(Exercise).where(Exercise.is_verified == True)
+        select(func.count()).select_from(Exercise).where(Exercise.is_verified)
     )
     total = total_exercises.scalar() or 0
 
-    # Check embedding service configuration
     from app.config import get_settings
     settings = get_settings()
     embedding_configured = bool(settings.EMBEDDING_API_KEY)

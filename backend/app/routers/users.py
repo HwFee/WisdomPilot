@@ -17,6 +17,7 @@ from app.schemas.profile import (
 )
 from app.services.profile import profile_service
 from app.utils.deps import get_current_active_user
+import logging
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -71,7 +72,6 @@ async def get_my_activities(
 ):
     """Get current user's recent activities"""
     from app.models import ActivityLog
-    from app.schemas import ActivityResponse
 
     result = await db.execute(
         select(ActivityLog)
@@ -289,3 +289,6 @@ async def get_user(
         )
 
     return UserResponse.model_validate(user)
+
+
+logger = logging.getLogger(__name__)

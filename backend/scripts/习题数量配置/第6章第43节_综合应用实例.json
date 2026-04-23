@@ -1,0 +1,32 @@
+{
+  "chapter_id": 6,
+  "chapter_title": "深入模块化设计与应用",
+  "section_id": 43,
+  "section_title": "综合应用实例",
+  "total_knowledge_points": 2,
+  "total_exercises": 4,
+  "knowledge_points": [
+    {
+      "id": 164,
+      "name": "排序算法综合应用",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "id": 165,
+      "name": "递归与模块化综合应用",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

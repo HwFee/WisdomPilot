@@ -42,9 +42,7 @@ export default function ChapterSectionsPage() {
       setSections(response.sections)
 
       // 调试日志：显示小节掌握度数据
-      console.log("[小节选择] 加载小节列表:", response.sections.length, "个")
       response.sections.forEach((s, i) => {
-        console.log(`[小节选择] 小节 ${i + 1}: id=${s.id}, title=${s.title}, mastery_score=${s.mastery_score ?? '无数据'}`)
       })
 
       // 从第一个section获取章节信息（如果有的话）
@@ -86,7 +84,7 @@ export default function ChapterSectionsPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
-          <button onClick={handleBack} className="text-primary hover:underline">
+          <button type="button" onClick={handleBack} className="text-primary hover:underline">
             返回章节列表
           </button>
         </div>
@@ -100,7 +98,7 @@ export default function ChapterSectionsPage() {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <button
+            <button type="button"
               onClick={handleBack}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
@@ -141,7 +139,7 @@ export default function ChapterSectionsPage() {
         {/* Section List */}
         <div className="space-y-3">
           {sections.map((section, index) => (
-            <button
+            <button type="button"
               key={section.id}
               onClick={() => handleSelectSection(section)}
               className="w-full bg-card rounded-xl border p-4 hover:border-primary/50 hover:shadow-sm transition-all text-left group"

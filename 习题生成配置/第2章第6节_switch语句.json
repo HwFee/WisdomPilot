@@ -1,0 +1,77 @@
+{
+  "chapter_id": 2,
+  "chapter_title": "选择控制结构与应用",
+  "section_id": 6,
+  "section_title": "switch语句",
+  "total_knowledge_points": 3,
+  "total_exercises": 3,
+  "knowledge_point_coverage": {
+    "120": 1,
+    "121": 1,
+    "122": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 120,
+      "name": "switch语句基础"
+    },
+    {
+      "id": 121,
+      "name": "switch语句深入"
+    },
+    {
+      "id": 122,
+      "name": "switch应用实例"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        120
+      ],
+      "knowledge_point_names": [
+        "switch语句基础"
+      ],
+      "description": "考察知识点：switch语句基础",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        121
+      ],
+      "knowledge_point_names": [
+        "switch语句深入"
+      ],
+      "description": "考察知识点：switch语句深入",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        122
+      ],
+      "knowledge_point_names": [
+        "switch应用实例"
+      ],
+      "description": "考察知识点：switch应用实例",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

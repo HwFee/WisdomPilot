@@ -107,7 +107,7 @@ export function CheckInCard({
             {t('已打卡', 'Done')}
           </div>
         ) : (
-          <button
+          <button type="button"
             onClick={onCheckIn}
             className="px-4 py-1.5 bg-orange-500 text-white rounded-full text-sm font-medium hover:bg-orange-600 transition-colors"
           >

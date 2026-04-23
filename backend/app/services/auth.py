@@ -9,6 +9,7 @@ from app.utils.security import (
     create_access_token,
 )
 from app.config import get_settings
+import logging
 
 settings = get_settings()
 
@@ -107,3 +108,6 @@ class AuthService:
 
         # TODO: Implement actual email sending logic
         return None
+
+
+logger = logging.getLogger(__name__)

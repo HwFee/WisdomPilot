@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Lightbulb, Sparkles, BookOpen, Gem, Loader2, X, AlertCircle, GripVertical } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { cn } from "@/lib/utils";
 
 // ========================================
 // Types
@@ -106,7 +107,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
 
   return (
     <div className="relative">
-      <button
+      <button type="button"
         onClick={handleClick}
         disabled={disabled || loading || !canAfford}
         className={`
@@ -139,24 +140,33 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
 
       {/* Hint display modal */}
       {hint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Icon className={`w-6 h-6 ${config.color}`} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
+          <div className="relative w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm animate-modal-enter"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 顶部光效 */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${config.bgColor}`}>
+                  <Icon className={`w-5 h-5 ${config.color}`} />
+                </div>
                 <h3 className="text-lg font-bold text-foreground">
                   {config.label}
                 </h3>
               </div>
-              <button
+              <button type="button"
                 onClick={handleClose}
-                className="text-muted-foreground hover:text-foreground"
+                className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="prose prose-sm max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {hint}
@@ -164,13 +174,15 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                消耗 <Gem className="w-3 h-3 inline text-purple-500" /> {config.cost} 智核
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-border/50 bg-muted/30 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <Gem className="w-3 h-3 text-purple-500" />
+                消耗 {config.cost} 智核
               </span>
-              <button
+              <button type="button"
                 onClick={handleClose}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                className="px-5 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-primary to-primary-600 text-primary-foreground hover:from-primary-600 hover:to-primary-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
               >
                 知道了
               </button>
@@ -184,7 +196,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
         <div className="fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
           {error}
-          <button onClick={() => setError(null)} className="ml-2">
+          <button type="button" onClick={() => setError(null)} className="ml-2">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -347,94 +359,95 @@ export function StreamHintModal({
   const modalContent = (
     <div
       style={modalStyle}
-      className={`
-        bg-white rounded-2xl shadow-2xl border border-gray-200
-        w-full max-w-lg
-        max-h-[80vh]
-        overflow-hidden flex flex-col
-        ${isDragging ? 'select-none' : ''}
-      `}
+      className={cn(
+        "w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col rounded-2xl",
+        "bg-card/95 backdrop-blur-sm border border-white/10 shadow-2xl",
+        isDragging ? 'select-none' : ''
+      )}
     >
-          {/* 可拖动的标题栏 */}
-          <div
-            className="flex items-center justify-between p-4 sm:p-5 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl cursor-grab active:cursor-grabbing"
-            onMouseDown={handleMouseDown}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${config.bgColor}`}>
-                <Icon className={`w-5 h-5 ${config.color}`} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  {config.label}
-                  {isCached && (
-                    <span className="text-xs font-normal text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                      已购买
-                    </span>
-                  )}
-                </h3>
-                <p className="text-xs text-muted-foreground">{config.description}</p>
-              </div>
-              {isStreaming && !isCached && (
-                <Loader2 className={`w-4 h-4 ${config.color} animate-spin ml-2`} />
+      {/* 顶部光效 */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent z-10" />
+
+      {/* 可拖动的标题栏 */}
+      <div
+        className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent rounded-t-2xl cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${config.bgColor}`}>
+            <Icon className={`w-5 h-5 ${config.color}`} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              {config.label}
+              {isCached && (
+                <span className="text-xs font-normal text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                  已购买
+                </span>
               )}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <GripVertical className="w-4 h-4" />
-                <span>拖动</span>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
+            </h3>
+            <p className="text-xs text-muted-foreground">{config.description}</p>
           </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-            {hintContent ? (
-              <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground/90">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {hintContent}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-purple-500" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow">
-                    <Loader2 className="w-3 h-3 text-purple-500 animate-spin" />
-                  </div>
-                </div>
-                <p className="mt-4 text-sm">AI 正在思考...</p>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="p-4 sm:p-5 border-t bg-gray-50/50 rounded-b-2xl">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                {isCached ? (
-                  <span className="text-green-600">免费查看（已购买）</span>
-                ) : (
-                  <>消耗 <Gem className="w-4 h-4 text-purple-500" /> {cost} 智核</>
-                )}
-              </span>
-              <button
-                onClick={onClose}
-                className="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-blue-600 transition-all"
-              >
-                {isStreaming && !isCached ? "关闭" : "知道了"}
-              </button>
-            </div>
-          </div>
+          {isStreaming && !isCached && (
+            <Loader2 className={`w-4 h-4 ${config.color} animate-spin ml-2`} />
+          )}
         </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <GripVertical className="w-4 h-4" />
+            <span>拖动</span>
+          </div>
+          <button type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
+          >
+            <X className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-5 py-4">
+        {hintContent ? (
+          <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground/90">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {hintContent}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-purple-500" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card flex items-center justify-center shadow border border-border/50">
+                <Loader2 className="w-3 h-3 text-purple-500 animate-spin" />
+              </div>
+            </div>
+            <p className="mt-4 text-sm">AI 正在思考...</p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-5 py-4 border-t border-border/50 bg-muted/30 rounded-b-2xl">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground flex items-center gap-1">
+            {isCached ? (
+              <span className="text-green-600">免费查看（已购买）</span>
+            ) : (
+              <>消耗 <Gem className="w-4 h-4 text-purple-500" /> {cost} 智核</>
+            )}
+          </span>
+          <button type="button"
+            onClick={onClose}
+            className="px-5 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-primary to-primary-600 text-primary-foreground hover:from-primary-600 hover:to-primary-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+          >
+            {isStreaming && !isCached ? "关闭" : "知道了"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 
   // 使用 Portal 渲染到 body，避免被父容器 CSS 影响
@@ -538,7 +551,7 @@ export function StreamHintButton({
   return (
     <>
       <div className="relative">
-        <button
+        <button type="button"
           onClick={handleClick}
           disabled={disabled || !canAfford}
           className={`
@@ -582,7 +595,7 @@ export function StreamHintButton({
         <div className="fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
           {error}
-          <button onClick={() => setError(null)} className="ml-2">
+          <button type="button" onClick={() => setError(null)} className="ml-2">
             <X className="w-4 h-4" />
           </button>
         </div>

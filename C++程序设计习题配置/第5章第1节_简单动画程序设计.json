@@ -1,0 +1,152 @@
+{
+  "chapter_id": 5,
+  "chapter_title": "交互与动画",
+  "section_id": 1,
+  "section_title": "简单动画程序设计",
+  "total_knowledge_points": 6,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "53": 2,
+    "54": 2,
+    "55": 2,
+    "56": 2,
+    "57": 2,
+    "58": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 53,
+      "name": "简单动画程序的实现"
+    },
+    {
+      "id": 54,
+      "name": "键盘码接收方法"
+    },
+    {
+      "id": 55,
+      "name": "交互式键盘控制动画"
+    },
+    {
+      "id": 56,
+      "name": "计时器的工作原理"
+    },
+    {
+      "id": 57,
+      "name": "使用计时器编制多线程代码"
+    },
+    {
+      "id": 58,
+      "name": "组合键的接收"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        53,
+        54
+      ],
+      "knowledge_point_names": [
+        "简单动画程序的实现",
+        "键盘码接收方法"
+      ],
+      "description": "考察知识点：简单动画程序的实现、键盘码接收方法",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        55,
+        56
+      ],
+      "knowledge_point_names": [
+        "交互式键盘控制动画",
+        "计时器的工作原理"
+      ],
+      "description": "考察知识点：交互式键盘控制动画、计时器的工作原理",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        57,
+        58
+      ],
+      "knowledge_point_names": [
+        "使用计时器编制多线程代码",
+        "组合键的接收"
+      ],
+      "description": "考察知识点：使用计时器编制多线程代码、组合键的接收",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        53,
+        54
+      ],
+      "knowledge_point_names": [
+        "简单动画程序的实现",
+        "键盘码接收方法"
+      ],
+      "description": "考察知识点：简单动画程序的实现、键盘码接收方法（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        55,
+        56
+      ],
+      "knowledge_point_names": [
+        "交互式键盘控制动画",
+        "计时器的工作原理"
+      ],
+      "description": "考察知识点：交互式键盘控制动画、计时器的工作原理（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        57,
+        58
+      ],
+      "knowledge_point_names": [
+        "使用计时器编制多线程代码",
+        "组合键的接收"
+      ],
+      "description": "考察知识点：使用计时器编制多线程代码、组合键的接收（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

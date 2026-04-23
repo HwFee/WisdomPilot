@@ -8,15 +8,15 @@ Mastery Service - 章节掌握度计算与更新服务
 """
 
 from typing import Optional
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
 from app.models.chapter import Chapter
 from app.models.chapter_mastery import ChapterMastery
 from app.models.user_stage import UserStageProgress, StageStatus
 from app.models.stage import Stage
 from app.utils.time import utc_now
+import logging
 
 
 # 掌握等级定义
@@ -71,7 +71,7 @@ class MasteryService:
 
         # 获取章节内所有关卡进度
         stages_result = await self.db.execute(
-            select(Stage).where(Stage.chapter_id == chapter_id, Stage.is_active == True)
+            select(Stage).where(Stage.chapter_id == chapter_id, Stage.is_active)
         )
         stages = stages_result.scalars().all()
 
@@ -311,3 +311,6 @@ class MasteryService:
 def get_mastery_service(db: AsyncSession) -> MasteryService:
     """获取掌握度服务实例"""
     return MasteryService(db)
+
+
+logger = logging.getLogger(__name__)

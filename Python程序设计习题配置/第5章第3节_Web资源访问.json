@@ -1,0 +1,106 @@
+{
+  "chapter_id": 5,
+  "chapter_title": "网络程序设计",
+  "section_id": 3,
+  "section_title": "Web资源访问",
+  "total_knowledge_points": 4,
+  "total_exercises": 4,
+  "knowledge_point_coverage": {
+    "76": 2,
+    "77": 2,
+    "78": 2,
+    "79": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 76,
+      "name": "Web资源访问过程解析"
+    },
+    {
+      "id": 77,
+      "name": "基于urllib模块资源访问设计"
+    },
+    {
+      "id": 78,
+      "name": "使用第三方库访问web资源"
+    },
+    {
+      "id": 79,
+      "name": "web资源解析技术"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        76,
+        77
+      ],
+      "knowledge_point_names": [
+        "Web资源访问过程解析",
+        "基于urllib模块资源访问设计"
+      ],
+      "description": "考察知识点：Web资源访问过程解析、基于urllib模块资源访问设计",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        78,
+        79
+      ],
+      "knowledge_point_names": [
+        "使用第三方库访问web资源",
+        "web资源解析技术"
+      ],
+      "description": "考察知识点：使用第三方库访问web资源、web资源解析技术",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        76,
+        77
+      ],
+      "knowledge_point_names": [
+        "Web资源访问过程解析",
+        "基于urllib模块资源访问设计"
+      ],
+      "description": "考察知识点：Web资源访问过程解析、基于urllib模块资源访问设计（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        78,
+        79
+      ],
+      "knowledge_point_names": [
+        "使用第三方库访问web资源",
+        "web资源解析技术"
+      ],
+      "description": "考察知识点：使用第三方库访问web资源、web资源解析技术（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

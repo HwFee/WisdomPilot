@@ -2,6 +2,20 @@
 
 import { useState } from 'react'
 import { FileText, Star, Lightbulb, Flame, Calendar, Check, Sparkles, ChevronDown, ChevronUp, Trophy, Clock, Gift } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { staggerContainer, staggerItem } from '@/lib/animations'
+
+// Crown图标组件 (lucide-react中没有直接的crown图标)
+const CrownIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 14h14v2H5v-2z"/>
+  </svg>
+)
 
 interface QuickToolsProps {
   wrongCount?: number
@@ -63,13 +77,13 @@ export function QuickTools({
 
   const multiplierBadge = getMultiplierBadge()
 
-  // Calculate next tier info
+  // Calculate next tier info - 使用图标组件替代emoji
   const getNextTierInfo = () => {
     if (streakDays >= 100) return null
-    if (streakDays >= 30) return { days: 100 - streakDays, tier: '100天成就', icon: '👑', targetDays: 100 }
-    if (streakDays >= 14) return { days: 30 - streakDays, tier: '30天成就', icon: '🏆', targetDays: 30 }
-    if (streakDays >= 7) return { days: 14 - streakDays, tier: '14天成就', icon: '🌟', targetDays: 14 }
-    return { days: 7 - streakDays, tier: '7天成就', icon: '🔥', targetDays: 7 }
+    if (streakDays >= 30) return { days: 100 - streakDays, tier: '100天成就', iconComponent: <CrownIcon className="w-3 h-3" />, targetDays: 100 }
+    if (streakDays >= 14) return { days: 30 - streakDays, tier: '30天成就', iconComponent: <Trophy className="w-3 h-3" />, targetDays: 30 }
+    if (streakDays >= 7) return { days: 14 - streakDays, tier: '14天成就', iconComponent: <Sparkles className="w-3 h-3" />, targetDays: 14 }
+    return { days: 7 - streakDays, tier: '7天成就', iconComponent: <Flame className="w-3 h-3" />, targetDays: 7 }
   }
 
   const nextTierInfo = getNextTierInfo()
@@ -102,13 +116,21 @@ export function QuickTools({
   ]
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <motion.div
+      variants={staggerContainer}
+      initial="initial"
+      animate="animate"
+      className="grid grid-cols-4 gap-3"
+    >
       {/* 错题本、收藏夹、笔记 */}
       {tools.map((tool) => {
         const Icon = tool.icon
         return (
-          <button
+          <motion.button
             key={tool.label}
+            variants={staggerItem}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={tool.onClick}
             className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 hover:shadow-md transition-all text-left group"
           >
@@ -119,12 +141,16 @@ export function QuickTools({
             {tool.count !== undefined && tool.count > 0 && (
               <p className={`text-xl font-bold ${tool.color}`}>{tool.count}</p>
             )}
-          </button>
+          </motion.button>
         )
       })}
 
       {/* 打卡模块 - 根据打卡状态显示不同内容 */}
-      <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border border-orange-500/20 overflow-hidden">
+      <motion.div
+        variants={staggerItem}
+        whileHover={{ scale: 1.01 }}
+        className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border border-orange-500/20 overflow-hidden"
+      >
         {/* 打卡前：只显示日期 */}
         {!isCheckedIn && (
           <div className="p-4">
@@ -151,7 +177,7 @@ export function QuickTools({
                 </div>
               )}
             </div>
-            <button
+            <button type="button"
               onClick={onCheckIn}
               className="w-full mt-3 px-3 py-1.5 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition-colors"
             >
@@ -261,7 +287,7 @@ export function QuickTools({
             )}
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

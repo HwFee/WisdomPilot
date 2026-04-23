@@ -1,0 +1,32 @@
+{
+  "chapter_id": 4,
+  "chapter_title": "模块化设计与应用",
+  "section_id": 32,
+  "section_title": "预处理指令",
+  "total_knowledge_points": 2,
+  "total_exercises": 4,
+  "knowledge_points": [
+    {
+      "id": 139,
+      "name": "宏定义与宏函数",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "id": 140,
+      "name": "条件编译",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

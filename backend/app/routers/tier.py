@@ -23,9 +23,10 @@ from app.core.tier_config import (
     get_sub_tier_name,
     tier_from_string,
 )
-from app.services.tier_service import TierService, tier_service, TierUpdateResult
+from app.services.tier_service import tier_service, TierUpdateResult
 from app.services.tier_transaction_service import TierTransactionService
 from app.utils.deps import get_current_active_user
+import logging
 
 router = APIRouter(prefix="/api/tier", tags=["tier"])
 
@@ -93,6 +94,65 @@ async def get_tier_configurations():
     return AllTiersResponse(tiers=tiers)
 
 
+@router.get("/profile", response_model=TierInfoResponse)
+async def get_global_tier_info(
+    db: db_dependency,
+    current_user: auth_dependency,
+):
+    """
+    获取用户全局段位信息（挑战之路用，不关联课程）
+
+    如果用户没有段位Profile，会自动创建一个初始段位
+    """
+    # 获取或创建用户段位Profile (全局)
+    result = await db.execute(
+        select(UserArenaProfile).where(
+            UserArenaProfile.user_id == current_user.id,
+        )
+    )
+    profile = result.scalar_one_or_none()
+
+    if not profile:
+        # 创建初始段位Profile
+        initial_config = get_tier_config(TierRank.BRONZE)
+        profile = UserArenaProfile(
+            user_id=current_user.id,
+            tier=TierRank.BRONZE.value,
+            sub_tier=initial_config.sub_tiers,
+            stars=0,
+            protection_remaining=initial_config.protection_count,
+        )
+        db.add(profile)
+        await db.commit()
+        await db.refresh(profile)
+
+    # 获取段位配置
+    tier = tier_from_string(profile.tier)
+    config = get_tier_config(tier)
+
+    # 构建响应
+    response = TierInfoResponse(
+        tier=profile.tier,
+        tier_name=config.name,
+        sub_tier=profile.sub_tier,
+        sub_tier_name=get_sub_tier_name(profile.sub_tier),
+        full_name=get_full_tier_name(tier, profile.sub_tier),
+        stars=profile.stars,
+        stars_needed=config.stars_per_tier if tier != TierRank.KING else 0,
+        protection_remaining=profile.protection_remaining,
+        color=config.color,
+        icon=config.icon,
+        highest_tier=profile.highest_tier,
+        highest_sub_tier=profile.highest_sub_tier,
+        highest_full_name=get_full_tier_name(
+            tier_from_string(profile.highest_tier),
+            profile.highest_sub_tier or 1
+        ) if profile.highest_tier else None,
+    )
+
+    return response
+
+
 @router.get("/profile/{course_id}", response_model=TierInfoResponse)
 async def get_tier_info(
     course_id: int,
@@ -115,11 +175,10 @@ async def get_tier_info(
             detail=f"Course {course_id} not found"
         )
 
-    # 获取或创建用户段位Profile
+    # 获取或创建用户段位Profile (全局，不关联课程)
     result = await db.execute(
         select(UserArenaProfile).where(
             UserArenaProfile.user_id == current_user.id,
-            UserArenaProfile.course_id == course_id,
         )
     )
     profile = result.scalar_one_or_none()
@@ -129,7 +188,6 @@ async def get_tier_info(
         initial_config = get_tier_config(TierRank.BRONZE)
         profile = UserArenaProfile(
             user_id=current_user.id,
-            course_id=course_id,
             tier=TierRank.BRONZE.value,
             sub_tier=initial_config.sub_tiers,  # IV (最低)
             stars=0,
@@ -178,11 +236,10 @@ async def update_stars(
 
     可以直接指定星星变化量，或者通过正确率和难度自动计算
     """
-    # 获取用户段位Profile
+    # 获取用户段位Profile (全局，不关联课程)
     result = await db.execute(
         select(UserArenaProfile).where(
             UserArenaProfile.user_id == current_user.id,
-            UserArenaProfile.course_id == course_id,
         )
     )
     profile = result.scalar_one_or_none()
@@ -347,3 +404,6 @@ def _generate_tier_message(result: TierUpdateResult, stars_change: int) -> str:
         return f"💫 失去{abs(stars_change)}颗星星"
     else:
         return "星星数无变化"
+
+
+logger = logging.getLogger(__name__)

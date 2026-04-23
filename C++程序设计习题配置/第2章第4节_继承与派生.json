@@ -1,0 +1,143 @@
+{
+  "chapter_id": 2,
+  "chapter_title": "面向对象程序设计基础",
+  "section_id": 4,
+  "section_title": "继承与派生",
+  "total_knowledge_points": 5,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "24": 2,
+    "25": 2,
+    "26": 2,
+    "27": 2,
+    "28": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 24,
+      "name": "继承与派生的概念"
+    },
+    {
+      "id": 25,
+      "name": "派生类的定义"
+    },
+    {
+      "id": 26,
+      "name": "派生类的构造函数"
+    },
+    {
+      "id": 27,
+      "name": "父类重载构造函数时子类的写法"
+    },
+    {
+      "id": 28,
+      "name": "类的组合"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        24,
+        25
+      ],
+      "knowledge_point_names": [
+        "继承与派生的概念",
+        "派生类的定义"
+      ],
+      "description": "考察知识点：继承与派生的概念、派生类的定义",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        26,
+        27
+      ],
+      "knowledge_point_names": [
+        "派生类的构造函数",
+        "父类重载构造函数时子类的写法"
+      ],
+      "description": "考察知识点：派生类的构造函数、父类重载构造函数时子类的写法",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        28
+      ],
+      "knowledge_point_names": [
+        "类的组合"
+      ],
+      "description": "考察知识点：类的组合",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        24,
+        25
+      ],
+      "knowledge_point_names": [
+        "继承与派生的概念",
+        "派生类的定义"
+      ],
+      "description": "考察知识点：继承与派生的概念、派生类的定义（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        26,
+        27
+      ],
+      "knowledge_point_names": [
+        "派生类的构造函数",
+        "父类重载构造函数时子类的写法"
+      ],
+      "description": "考察知识点：派生类的构造函数、父类重载构造函数时子类的写法（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        28
+      ],
+      "knowledge_point_names": [
+        "类的组合"
+      ],
+      "description": "考察知识点：类的组合（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

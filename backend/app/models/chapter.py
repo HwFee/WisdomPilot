@@ -11,7 +11,6 @@ from app.utils.time import utc_now
 if TYPE_CHECKING:
     from app.models.course import Course
     from app.models.exercise import Exercise
-    from app.models.section_base_question import SectionBaseQuestion
     from app.models.section import Section
 
 

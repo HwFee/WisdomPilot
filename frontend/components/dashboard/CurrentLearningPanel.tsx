@@ -5,7 +5,7 @@ import { Trophy, Swords, ChevronRight, CheckCircle, XCircle, Loader2, Star } fro
 import { motion, AnimatePresence } from 'framer-motion'
 import { CourseSwitcher } from './CourseSwitcher'
 import { useRouter } from 'next/navigation'
-import { startChallengeSession, getArenaProfile, getMasteryOverview, type MasteryOverviewResponse } from '@/lib/api/learning-path'
+import { getMasteryOverview, type MasteryOverviewResponse } from '@/lib/api/learning-path'
 import { getStoredToken } from '@/lib/api'
 import type { CourseProgress } from '@/lib/api/courses'
 import { getTierConfig } from '@/lib/icons/tier-icons'
@@ -137,32 +137,11 @@ export function CurrentLearningPanel({
     setShowDifficultyModal(true)
   }
 
-  // 选择难度后开始挑战
-  const handleDifficultySelect = async (difficulty: number) => {
+  // 选择难度后直接跳转到挑战页面，初始化逻辑由 arena 页面负责
+  const handleDifficultySelect = (difficulty: number) => {
     setSelectedDifficulty(difficulty)
     setIsNavigating('challenge')
-
-    const token = getStoredToken()
-    if (!token) {
-      setIsNavigating(null)
-      setSelectedDifficulty(null)
-      return
-    }
-
-    try {
-      // 开始挑战会话，跳转到挑战页面
-      const session = await startChallengeSession(
-        currentCourse.course_id,
-        { difficulty_level: difficulty, question_count: 10 },
-        token
-      )
-      // 跳转到挑战页面
-      router.push(`/arena/${currentCourse.course_id}?session=${session.session_id}&difficulty=${difficulty}`)
-    } catch (error) {
-      console.error('Failed to start challenge:', error)
-      setIsNavigating(null)
-      setSelectedDifficulty(null)
-    }
+    router.push(`/arena?difficulty=${difficulty}`)
   }
 
   return (
@@ -207,26 +186,28 @@ export function CurrentLearningPanel({
 
           {/* Content area - flex-1 to push button to bottom */}
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Current chapter */}
-            <div className="mb-2">
-              <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
-              <p className="text-sm font-medium text-foreground truncate">
-                {currentChapterTitle}
-              </p>
-            </div>
-
-            {/* Current section */}
-            {currentCourse.current_section && (
-              <div className="mb-3">
-                <p className="text-xs text-muted-foreground mb-0.5">{t('当前小节', 'Current Section')}</p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 truncate">
-                  {currentCourse.current_section}
+            {/* Current chapter & section - 横向并排显示 */}
+            <div className="flex items-start gap-3 mb-2">
+              {/* 当前章节 */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground mb-0.5">{t('当前章节', 'Current Chapter')}</p>
+                <p className="text-sm font-medium text-foreground truncate">
+                  {currentChapterTitle}
                 </p>
               </div>
-            )}
+              {/* 当前小节 */}
+              {currentCourse.current_section && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-0.5">{t('当前小节', 'Current Section')}</p>
+                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400 truncate">
+                    {currentCourse.current_section}
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Progress bar */}
-            <div className="mb-3">
+            <div className="mb-3 mt-auto">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>{t('掌握度', 'Mastery')}</span>
                 <span>{progress}%</span>
@@ -238,18 +219,10 @@ export function CurrentLearningPanel({
                 />
               </div>
             </div>
-
-            {/* Mastery score */}
-            <div className="flex items-center justify-between text-xs mt-auto pt-2">
-              <span className="text-muted-foreground">{t('掌握分数', 'Mastery Score')}</span>
-              <span className={`font-medium ${masteryLevel.color}`}>
-                {masteryScore.toFixed(0)} ({masteryLevel.name})
-              </span>
-            </div>
           </div>
 
           {/* Action button */}
-          <button
+          <button type="button"
             onClick={handleMasteryStart}
             disabled={isNavigating === 'mastery'}
             className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-amber-500 to-amber-400 text-white hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-70 flex-shrink-0"
@@ -365,7 +338,7 @@ export function CurrentLearningPanel({
           )}
 
           {/* Action button */}
-          <button
+          <button type="button"
             onClick={handleChallengeStart}
             disabled={isNavigating === 'challenge'}
             className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-blue-500 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-70 flex-shrink-0"
@@ -435,7 +408,7 @@ export function CurrentLearningPanel({
                 </motion.button>
               ))}
             </div>
-            <button
+            <button type="button"
               onClick={() => setShowDifficultyModal(false)}
               className="w-full mt-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >

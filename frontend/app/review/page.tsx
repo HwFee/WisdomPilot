@@ -9,7 +9,7 @@ import {
   deleteWrongQuestion,
   type WrongQuestionResponse as WrongQuestion,
 } from '@/lib/api/review'
-import { getActiveChallengeSession } from '@/lib/api/learning-path'
+
 
 export default function ReviewPage() {
   return (
@@ -95,20 +95,9 @@ function ReviewPageContent() {
       questionIdFromKey = keyParts[2]
     }
 
-    if (sourceType === 'arena' && wq.course_id && token) {
-      try {
-        const result = await getActiveChallengeSession(wq.course_id, token)
-        if (result.session) {
-          const questionIdNum = parseInt(questionIdFromKey)
-          const exerciseInfo = result.exercise_map[questionIdNum]
-          const targetIndex = exerciseInfo?.exercise_index ?? result.session.current_index
-          router.push(`/arena/${wq.course_id}?exerciseIndex=${targetIndex}`)
-        } else {
-          router.push('/dashboard')
-        }
-      } catch {
-        router.push('/dashboard')
-      }
+    if (sourceType === 'arena' && token) {
+      // 挑战之路: 直接跳转到挑战之路页面（独立于课程）
+      router.push('/arena')
     } else if (sourceType === 'mastery' && wq.course_id) {
       const chapterParam = wq.chapter_id || ''
       const questionParam = questionIdFromKey || ''
@@ -125,7 +114,7 @@ function ReviewPageContent() {
         <div className="text-center p-8">
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-muted-foreground mb-4">{error}</p>
-          <button
+          <button type="button"
             onClick={() => { setError(null); fetchData() }}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
           >
@@ -150,7 +139,7 @@ function ReviewPageContent() {
               <Brain className="w-5 h-5 text-primary" />
               <span className="font-semibold text-foreground">错题本</span>
             </div>
-            <button
+            <button type="button"
               onClick={fetchData}
               className="p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
               title="刷新"
@@ -219,14 +208,14 @@ function ReviewPageContent() {
 
                       {/* 操作按钮 */}
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <button
+                        <button type="button"
                           onClick={() => handleDeleteWrongQuestion(wq.id)}
                           className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                           title="删除"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <button
+                        <button type="button"
                           onClick={() => handleReview(wq)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-all"
                         >

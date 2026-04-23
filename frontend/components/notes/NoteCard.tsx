@@ -90,17 +90,27 @@ export function NoteCard({
     }).format(date)
   }
 
-  // 跳转到关联题目（精进之路）
+  // 跳转到关联题目
   const handleGoToExercise = useCallback(() => {
-    if (note.exercise_id && note.chapter_id && note.course_id) {
-      // 跳转到精进之路的对应题目
-      router.push(`/mastery/${note.course_id}?chapter=${note.chapter_id}&exercise=${note.exercise_id}`)
-    } else if (note.exercise_id && note.chapter_id) {
-      router.push(`/mastery/${note.course_id || 1}?chapter=${note.chapter_id}&exercise=${note.exercise_id}`)
-    } else if (note.chapter_id) {
-      router.push(`/mastery/${note.course_id || 1}?chapter=${note.chapter_id}`)
+    if (!note.exercise_id) return
+
+    // 挑战之路笔记（无 course_id/chapter_id）
+    if (!note.course_id && !note.chapter_id) {
+      router.push('/arena')
+      return
     }
-  }, [note.exercise_id, note.chapter_id, note.course_id, router])
+
+    if (note.chapter_id && note.course_id && note.section_id) {
+      // 完整参数：跳转到具体小节和题目
+      router.push(`/mastery/${note.course_id}?chapter=${note.chapter_id}&section=${note.section_id}&exercise=${note.exercise_id}&skip=1`)
+    } else if (note.chapter_id && note.course_id) {
+      // 缺少 section_id：跳转到章节和题目
+      router.push(`/mastery/${note.course_id}?chapter=${note.chapter_id}&exercise=${note.exercise_id}&skip=1`)
+    } else if (note.course_id) {
+      // 只有课程：跳转到精进之路
+      router.push(`/mastery/${note.course_id}`)
+    }
+  }, [note.exercise_id, note.chapter_id, note.course_id, note.section_id, router])
 
   const sourceLabel = {
     manual: t('手动', 'Manual'),
@@ -127,7 +137,7 @@ export function NoteCard({
               </span>
               {/* 关联题目链接 */}
               {note.exercise_id && (
-                <button
+                <button type="button"
                   onClick={handleGoToExercise}
                   className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs font-medium hover:bg-primary/20 transition-colors"
                   title={t('跳转到关联题目', 'Go to related exercise')}
@@ -139,7 +149,7 @@ export function NoteCard({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
+            <button type="button"
               onClick={() => setShowPreview(true)}
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={t('预览', 'Preview')}
@@ -147,7 +157,7 @@ export function NoteCard({
               <FileText className="w-4 h-4" />
               <span>{t('预览', 'Preview')}</span>
             </button>
-            <button
+            <button type="button"
               onClick={() => onEdit?.(note)}
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={t('编辑', 'Edit')}
@@ -155,7 +165,7 @@ export function NoteCard({
               <Edit className="w-4 h-4" />
               <span>{t('编辑', 'Edit')}</span>
             </button>
-            <button
+            <button type="button"
               onClick={handleExport}
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={t('导出', 'Export')}
@@ -163,7 +173,7 @@ export function NoteCard({
               <Download className="w-4 h-4" />
               <span>{t('导出', 'Export')}</span>
             </button>
-            <button
+            <button type="button"
               onClick={handleDelete}
               disabled={isDeleting || deleted}
               className="flex items-center gap-1.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
@@ -176,9 +186,13 @@ export function NoteCard({
         </div>
 
         {/* Content preview - show blur effect when processing */}
-        <div className={`text-base text-muted-foreground leading-relaxed mb-4 line-clamp-4 ${isProcessing ? 'blur-sm select-none' : ''}`}>
-          {note.content.slice(0, 300)}
-          {note.content.length > 300 && '...'}
+        <div className={`text-base text-muted-foreground leading-relaxed mb-4 line-clamp-4 prose prose-sm dark:prose-invert max-w-none ${isProcessing ? 'blur-sm select-none' : ''}`}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight]}
+          >
+            {note.content.slice(0, 500)}
+          </ReactMarkdown>
         </div>
 
         {/* Processing indicator */}
@@ -229,7 +243,7 @@ export function NoteCard({
               <div className="flex items-center gap-3">
                 <h2 className="font-semibold">{note.title || t('笔记预览', 'Note Preview')}</h2>
                 {note.exercise_id && (
-                  <button
+                  <button type="button"
                     onClick={handleGoToExercise}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
                   >
@@ -244,7 +258,7 @@ export function NoteCard({
                   </span>
                 )}
               </div>
-              <button
+              <button type="button"
                 onClick={() => setShowPreview(false)}
                 className="p-2 hover:bg-muted rounded-lg transition-colors"
               >

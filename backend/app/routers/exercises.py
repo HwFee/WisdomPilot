@@ -4,13 +4,11 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.user import User
 from app.models.exercise import Exercise
 from app.models.chapter import Chapter
-from app.models.user_weak_point import UserWeakPoint
 from app.schemas.exercise import (
     ExerciseListResponse,
     ExerciseGenerateRequest,
@@ -25,8 +23,8 @@ from app.schemas.exercise import (
     ExerciseRecommendItem,
 )
 from app.services.exercise import exercise_service
-from app.services.vector_match import VectorMatchService, get_vector_match_service
 from app.utils.deps import get_current_active_user, get_current_admin_user
+import logging
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
 
@@ -50,12 +48,13 @@ async def get_chapter_exercises(
     """
     query = select(Exercise).where(
         Exercise.chapter_id == chapter_id,
-        Exercise.is_verified == True,
+        Exercise.is_verified,
     )
 
     if subsection is not None:
-        # Filter by subsection using content metadata
-        pass  # subsection filtering would need content.subsection_index
+        # TODO: subsection filtering requires content.subsection_index in JSON.
+        # Currently not implemented because not all exercises populate this field.
+        pass
 
     if difficulty is not None:
         query = query.where(Exercise.difficulty == difficulty)
@@ -113,7 +112,7 @@ async def get_chapter_exercises_compat(
     """
     query = select(Exercise).where(
         Exercise.chapter_id == chapter_id,
-        Exercise.is_verified == True,
+        Exercise.is_verified,
     )
 
     if subsection is not None:
@@ -209,7 +208,6 @@ async def submit_exercise_answer(
 
     Requires authentication.
     """
-    from app.models.chapter import Chapter
 
     exercise = await db.execute(
         select(Exercise).where(Exercise.id == exercise_id)
@@ -292,3 +290,6 @@ async def recommend_exercises(
         total_candidates=result["total_candidates"],
         knowledge_state=result.get("knowledge_state"),
     )
+
+
+logger = logging.getLogger(__name__)

@@ -85,7 +85,7 @@ export interface ChapterBase {
 
 export interface ChapterSummary extends ChapterBase {
   id: number
-  course_id: number
+  course_id?: number
   is_active: boolean
 }
 

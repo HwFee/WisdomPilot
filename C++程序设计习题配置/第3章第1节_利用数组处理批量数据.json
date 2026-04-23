@@ -1,0 +1,152 @@
+{
+  "chapter_id": 3,
+  "chapter_title": "数据处理与容器",
+  "section_id": 1,
+  "section_title": "利用数组处理批量数据",
+  "total_knowledge_points": 6,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "34": 2,
+    "35": 2,
+    "36": 2,
+    "37": 2,
+    "38": 2,
+    "39": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 34,
+      "name": "C++数组的局限性"
+    },
+    {
+      "id": 35,
+      "name": "数组作为函数参数"
+    },
+    {
+      "id": 36,
+      "name": "Vector容器的定义"
+    },
+    {
+      "id": 37,
+      "name": "Vector容器的使用"
+    },
+    {
+      "id": 38,
+      "name": "容器作为函数参数"
+    },
+    {
+      "id": 39,
+      "name": "容器的相关操作"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        34,
+        35
+      ],
+      "knowledge_point_names": [
+        "C++数组的局限性",
+        "数组作为函数参数"
+      ],
+      "description": "考察知识点：C++数组的局限性、数组作为函数参数",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        36,
+        37
+      ],
+      "knowledge_point_names": [
+        "Vector容器的定义",
+        "Vector容器的使用"
+      ],
+      "description": "考察知识点：Vector容器的定义、Vector容器的使用",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        38,
+        39
+      ],
+      "knowledge_point_names": [
+        "容器作为函数参数",
+        "容器的相关操作"
+      ],
+      "description": "考察知识点：容器作为函数参数、容器的相关操作",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        34,
+        35
+      ],
+      "knowledge_point_names": [
+        "C++数组的局限性",
+        "数组作为函数参数"
+      ],
+      "description": "考察知识点：C++数组的局限性、数组作为函数参数（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        36,
+        37
+      ],
+      "knowledge_point_names": [
+        "Vector容器的定义",
+        "Vector容器的使用"
+      ],
+      "description": "考察知识点：Vector容器的定义、Vector容器的使用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        38,
+        39
+      ],
+      "knowledge_point_names": [
+        "容器作为函数参数",
+        "容器的相关操作"
+      ],
+      "description": "考察知识点：容器作为函数参数、容器的相关操作（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

@@ -1,0 +1,379 @@
+/**
+ * 动画工具库
+ *
+ * 提供统一的动画变体、hooks和工具函数
+ */
+
+import { useState, useEffect, useRef, useCallback } from 'react'
+import type { Variants, Transition } from 'framer-motion'
+
+// ── 标准动画变体 ──
+
+/** 淡入淡出 */
+export const fadeIn: Variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+}
+
+/** 从下方滑入 */
+export const slideUp: Variants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 },
+}
+
+/** 从上方滑入 */
+export const slideDown: Variants = {
+  initial: { opacity: 0, y: -20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 20 },
+}
+
+/** 从右侧滑入 */
+export const slideInFromRight: Variants = {
+  initial: { opacity: 0, x: 20 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -20 },
+}
+
+/** 从左侧滑入 */
+export const slideInFromLeft: Variants = {
+  initial: { opacity: 0, x: -20 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 20 },
+}
+
+/** 缩放淡入 */
+export const scaleIn: Variants = {
+  initial: { opacity: 0, scale: 0.95 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.95 },
+}
+
+/** 缩放弹出 */
+export const popIn: Variants = {
+  initial: { opacity: 0, scale: 0.8 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 20,
+    },
+  },
+  exit: { opacity: 0, scale: 0.8 },
+}
+
+/** 弹跳效果 */
+export const bounce: Variants = {
+  initial: { scale: 0.3, opacity: 0 },
+  animate: {
+    scale: 1,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 20,
+    },
+  },
+}
+
+/** 无动画（仅可见性） */
+export const visible: Variants = {
+  initial: { opacity: 1 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+}
+
+// ── 交错动画 ──
+
+/** 交错容器 */
+export const staggerContainer: Variants = {
+  animate: {
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+}
+
+/** 交错子项 */
+export const staggerItem: Variants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+}
+
+/** 快速交错 */
+export const staggerContainerFast: Variants = {
+  animate: {
+    transition: {
+      staggerChildren: 0.02,
+    },
+  },
+}
+
+/** 慢速交错 */
+export const staggerContainerSlow: Variants = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+// ── 默认过渡配置 ──
+
+export const defaultTransition: Transition = {
+  duration: 0.3,
+  ease: [0.4, 0, 0.2, 1],
+}
+
+export const springTransition: Transition = {
+  type: 'spring',
+  stiffness: 300,
+  damping: 20,
+}
+
+export const slowTransition: Transition = {
+  duration: 0.5,
+  ease: [0.4, 0, 0.2, 1],
+}
+
+// ── 动画 Hooks ──
+
+/**
+ * 数字计数动画
+ */
+export function useCountUp(
+  end: number,
+  duration: number = 1000,
+  start: number = 0,
+  decimals: number = 0
+) {
+  const [count, setCount] = useState(start)
+
+  useEffect(() => {
+    let startTime: number | null = null
+    let animationFrame: number
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const progress = Math.min((timestamp - startTime) / duration, 1)
+
+      // 缓动函数
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4)
+      const current = start + (end - start) * easeOutQuart
+
+      setCount(Number(current.toFixed(decimals)))
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate)
+      }
+    }
+
+    animationFrame = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(animationFrame)
+  }, [end, duration, start, decimals])
+
+  return count
+}
+
+/**
+ * 滚动触发动画
+ */
+export function useScrollAnimation(threshold: number = 0.1) {
+  const ref = useRef<HTMLElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.unobserve(element)
+        }
+      },
+      { threshold }
+    )
+
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [threshold])
+
+  return { ref, isVisible }
+}
+
+/**
+ * 悬停动画状态
+ */
+export function useHoverAnimation() {
+  const [isHovered, setIsHovered] = useState(false)
+
+  const hoverProps = {
+    onMouseEnter: () => setIsHovered(true),
+    onMouseLeave: () => setIsHovered(false),
+  }
+
+  const hoverVariants = {
+    rest: { scale: 1 },
+    hover: { scale: 1.02 },
+  }
+
+  return {
+    isHovered,
+    hoverProps,
+    hoverVariants,
+    animate: isHovered ? 'hover' : 'rest',
+  }
+}
+
+/**
+ * 点击动画状态
+ */
+export function useTapAnimation() {
+  const [isTapped, setIsTapped] = useState(false)
+
+  const tapProps = {
+    onMouseDown: () => setIsTapped(true),
+    onMouseUp: () => setIsTapped(false),
+    onMouseLeave: () => setIsTapped(false),
+  }
+
+  const tapVariants = {
+    untapped: { scale: 1 },
+    tapped: { scale: 0.98 },
+  }
+
+  return {
+    isTapped,
+    tapProps,
+    tapVariants,
+    animate: isTapped ? 'tapped' : 'untapped',
+  }
+}
+
+/**
+ * 打字机效果
+ */
+export function useTypewriter(text: string, speed: number = 50) {
+  const [displayText, setDisplayText] = useState('')
+  const [isComplete, setIsComplete] = useState(false)
+
+  useEffect(() => {
+    let index = 0
+    setDisplayText('')
+    setIsComplete(false)
+
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        setDisplayText(text.slice(0, index + 1))
+        index++
+      } else {
+        setIsComplete(true)
+        clearInterval(timer)
+      }
+    }, speed)
+
+    return () => clearInterval(timer)
+  }, [text, speed])
+
+  return { displayText, isComplete }
+}
+
+/**
+ * 延迟动画
+ */
+export function useDelayedAnimation(delay: number = 300) {
+  const [shouldAnimate, setShouldAnimate] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldAnimate(true)
+    }, delay)
+
+    return () => clearTimeout(timer)
+  }, [delay])
+
+  return shouldAnimate
+}
+
+/**
+ * 视差滚动
+ */
+export function useParallax(speed: number = 0.5) {
+  const [offset, setOffset] = useState(0)
+  const ref = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!ref.current) return
+      const rect = ref.current.getBoundingClientRect()
+      const scrolled = window.scrollY
+      const elementTop = rect.top + scrolled
+      const parallaxOffset = (scrolled - elementTop) * speed
+      setOffset(parallaxOffset)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [speed])
+
+  return { ref, offset }
+}
+
+// ── 工具函数 ──
+
+/**
+ * 创建延迟过渡
+ */
+export function createDelayedTransition(delay: number): Transition {
+  return {
+    ...defaultTransition,
+    delay,
+  }
+}
+
+/**
+ * 创建交错延迟
+ */
+export function createStaggerDelays(count: number, baseDelay: number = 0.05): number[] {
+  return Array.from({ length: count }, (_, i) => i * baseDelay)
+}
+
+/**
+ * 减少动画偏好检测
+ */
+export function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setPrefersReducedMotion(mediaQuery.matches)
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches)
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
+
+  return prefersReducedMotion
+}
+
+/**
+ * 获取动画变体（考虑减少动画偏好）
+ */
+export function getAnimationVariant(
+  variant: Variants,
+  prefersReducedMotion: boolean
+): Variants {
+  if (prefersReducedMotion) {
+    return visible
+  }
+  return variant
+}

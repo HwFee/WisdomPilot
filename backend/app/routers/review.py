@@ -1,11 +1,10 @@
 """Review API Router - 复习系统路由"""
 
-from typing import Annotated, List
+from typing import Annotated, Optional
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from datetime import datetime
 import logging
 
 from app.database import get_db
@@ -13,7 +12,6 @@ from app.models.user import User
 from app.models.exercise import Exercise
 from app.models.user_weak_point import UserWeakPoint
 from app.models.spaced_repetition import SpacedRepetition
-from app.models.wrong_question import WrongQuestion
 from app.services.wrong_question import wrong_question_service
 from app.schemas.review import (
     ReviewQueueResponse,
@@ -157,7 +155,6 @@ async def complete_review(
 
     Updates spaced repetition schedule and weak point tracking.
     """
-    from app.utils.time import utc_now
 
     # Get repetition record
     result = await db.execute(
@@ -475,9 +472,15 @@ async def collect_wrong_question(
         )
 
 
+class ResolveWrongQuestionRequest(BaseModel):
+    """标记错题已解决请求"""
+    exercise_key: Optional[str] = Field(None, description="练习题标识（用于精进之路/挑战之路等 exercise_id 为 None 的情况）")
+
+
 @router.post("/wrong-questions/{exercise_id}/resolve")
 async def resolve_wrong_question(
     exercise_id: int,
+    request: ResolveWrongQuestionRequest,
     db: db_dependency,
     user: auth_dependency,
 ):
@@ -485,15 +488,25 @@ async def resolve_wrong_question(
     Mark a wrong question as resolved (when user answers correctly).
 
     当用户答对曾经错过的题目时调用此端点。
+    支持通过 exercise_id 或 exercise_key 查找错题记录。
     """
-    logger.info(f"[API] 标记错题已解决: user_id={user.id}, exercise_id={exercise_id}")
+    logger.info(f"[API] 标记错题已解决: user_id={user.id}, exercise_id={exercise_id}, exercise_key={request.exercise_key}")
 
     try:
-        wrong_question = await wrong_question_service.mark_resolved(
-            db=db,
-            user_id=user.id,
-            exercise_id=exercise_id,
-        )
+        # 如果提供了 exercise_key（如 mastery-1-2-3），优先用它查找
+        # 因为精进之路/挑战之路的错题 exercise_id 为 None
+        if request.exercise_key:
+            wrong_question = await wrong_question_service.mark_resolved(
+                db=db,
+                user_id=user.id,
+                exercise_key=request.exercise_key,
+            )
+        else:
+            wrong_question = await wrong_question_service.mark_resolved(
+                db=db,
+                user_id=user.id,
+                exercise_id=exercise_id,
+            )
 
         if not wrong_question:
             # 没有找到对应的错题记录，但这不是错误（可能用户第一次答这道题）
@@ -693,7 +706,7 @@ async def enhanced_target_practice(
     kp_list = [wp.knowledge_point for wp in weak_points]
 
     # Build query for exercises
-    exercise_query = select(Exercise).where(Exercise.is_verified == True)
+    exercise_query = select(Exercise).where(Exercise.is_verified)
 
     if request.difficulty_range:
         min_diff, max_diff = request.difficulty_range

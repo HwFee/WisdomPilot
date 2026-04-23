@@ -1,0 +1,44 @@
+{
+  "id": 74,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "175",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "模板",
+    "数论"
+  ],
+  "content": {
+    "title": "模立方根",
+    "description": "## 题目描述\n这是一道模板题。\r\n\r\n求关于 $x$ 的方程 $x^{3}\\equiv a\\pmod{p}$ 的解。\n\n## 输入格式\n第一行一个正整数 $T$ ，表示有 $T$ 组数据。\r\n\r\n之后的 $T$ 行每行两个正整数 $a$、$p$。\n\n## 输出格式\n每一组数据输出一行为方程的**任意**一个可行解，若无解则输出 `0`。\n\n## 数据范围与提示\n$p$ 为奇素数， $T=10^{5},p<2^{30},a\\in \\mathbb{F}_{p}\\setminus\\{0\\}$。",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #175",
+    "loj_url": "https://loj.ac/p/175",
+    "samples": [
+      {
+        "input": "3\n16 19\n114 998244353\n514 131071",
+        "output": "0\n504784271\n0"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "3\n16 19\n114 998244353\n514 131071",
+      "output": "0\n504784271\n0"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:48.296599",
+  "updated_at": "2026-04-22 04:23:26.280248",
+  "z_id": "Z175"
+}

@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, List, Any
+from typing import TYPE_CHECKING, Optional, List
 from sqlalchemy import String, Integer, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

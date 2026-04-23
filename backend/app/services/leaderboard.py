@@ -7,13 +7,12 @@ Leaderboard Service - 排行榜服务
 """
 
 from typing import List, Optional
-from datetime import datetime, timedelta
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.models.chapter_mastery import ChapterMastery
-from app.utils.time import utc_now
+import logging
 
 
 class LeaderboardEntry:
@@ -176,3 +175,6 @@ class LeaderboardService:
 def get_leaderboard_service(db: AsyncSession) -> LeaderboardService:
     """获取排行榜服务实例"""
     return LeaderboardService(db)
+
+
+logger = logging.getLogger(__name__)

@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="text-sm text-gray-500">在线用户</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  <button
+                  <button type="button"
                     onClick={fetchOnlineUsers}
                     className="hover:text-green-600 underline"
                   >

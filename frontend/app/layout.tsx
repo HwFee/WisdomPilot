@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "GAI 编程教学平台",
+  title: "智码领航",
   description: "基于生成式AI的程序设计类课程实践教学系统",
 };
 
@@ -18,7 +18,6 @@ export default function RootLayout({
       suppressHydrationWarning
       className="h-full antialiased"
     >
-      <head></head>
       <body className="h-full bg-gray-50 font-sans">
         <Providers>{children}</Providers>
       </body>

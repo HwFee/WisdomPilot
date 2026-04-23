@@ -12,7 +12,7 @@ Design:
 
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, JSON, Text, Index, UniqueConstraint
+from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, Text, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, TYPE_CHECKING
 

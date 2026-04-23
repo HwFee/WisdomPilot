@@ -36,7 +36,7 @@ export function SampleIOCard({
   return (
     <div className="sample-io-card">
       {/* Header */}
-      <button
+      <button type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-2.5 bg-[#F5F7FA] hover:bg-[#EBEEF5] transition-colors rounded-t-lg border-b border-[#E4E7ED]"
       >
@@ -59,7 +59,7 @@ export function SampleIOCard({
                 {t('输入', 'Input')}
               </span>
               <div className="flex items-center gap-2">
-                <button
+                <button type="button"
                   onClick={() => handleCopy(input, 'input')}
                   className="flex items-center gap-1 px-2 py-1 text-xs text-[#606266] hover:text-[#3498DB] hover:bg-[#F5F7FA] rounded transition-colors"
                   title={t('复制', 'Copy')}
@@ -72,7 +72,7 @@ export function SampleIOCard({
                   {copied === 'input' ? t('已复制', 'Copied') : t('复制', 'Copy')}
                 </button>
                 {onRun && (
-                  <button
+                  <button type="button"
                     onClick={() => onRun(input)}
                     disabled={isRunning}
                     className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-[#52C41A] hover:bg-[#27AE60] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -94,7 +94,7 @@ export function SampleIOCard({
               <span className="text-xs font-medium text-[#52C41A] uppercase tracking-wide">
                 {t('输出', 'Output')}
               </span>
-              <button
+              <button type="button"
                 onClick={() => handleCopy(output, 'output')}
                 className="flex items-center gap-1 px-2 py-1 text-xs text-[#606266] hover:text-[#3498DB] hover:bg-[#F5F7FA] rounded transition-colors"
                 title={t('复制', 'Copy')}

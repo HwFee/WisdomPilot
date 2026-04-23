@@ -10,7 +10,7 @@ $PythonScript = Join-Path $ScriptDir "start_services.py"
 
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host " AIcodiingTeach 启动脚本 (PowerShell)" -ForegroundColor Cyan
+Write-Host " 智码领航 启动脚本 (PowerShell)" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "[提示] 启动前会自动停止旧窗口并清理端口" -ForegroundColor DarkGray

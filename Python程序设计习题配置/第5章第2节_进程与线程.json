@@ -1,0 +1,143 @@
+{
+  "chapter_id": 5,
+  "chapter_title": "网络程序设计",
+  "section_id": 2,
+  "section_title": "进程与线程",
+  "total_knowledge_points": 5,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "71": 2,
+    "72": 2,
+    "73": 2,
+    "74": 2,
+    "75": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 71,
+      "name": "进程的概念"
+    },
+    {
+      "id": 72,
+      "name": "基于进程的通讯程序设计技术"
+    },
+    {
+      "id": 73,
+      "name": "线程的概念"
+    },
+    {
+      "id": 74,
+      "name": "基于线程程序设计技术"
+    },
+    {
+      "id": 75,
+      "name": "基于socket的综合应用设计"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        71,
+        72
+      ],
+      "knowledge_point_names": [
+        "进程的概念",
+        "基于进程的通讯程序设计技术"
+      ],
+      "description": "考察知识点：进程的概念、基于进程的通讯程序设计技术",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        73,
+        74
+      ],
+      "knowledge_point_names": [
+        "线程的概念",
+        "基于线程程序设计技术"
+      ],
+      "description": "考察知识点：线程的概念、基于线程程序设计技术",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        75
+      ],
+      "knowledge_point_names": [
+        "基于socket的综合应用设计"
+      ],
+      "description": "考察知识点：基于socket的综合应用设计",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        71,
+        72
+      ],
+      "knowledge_point_names": [
+        "进程的概念",
+        "基于进程的通讯程序设计技术"
+      ],
+      "description": "考察知识点：进程的概念、基于进程的通讯程序设计技术（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        73,
+        74
+      ],
+      "knowledge_point_names": [
+        "线程的概念",
+        "基于线程程序设计技术"
+      ],
+      "description": "考察知识点：线程的概念、基于线程程序设计技术（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        75
+      ],
+      "knowledge_point_names": [
+        "基于socket的综合应用设计"
+      ],
+      "description": "考察知识点：基于socket的综合应用设计（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

@@ -221,9 +221,6 @@ export {
   getMasteryOverview,
   getChapterMastery,
   getMasteryExerciseRecommendations,
-  getArenaProfile,
-  startChallengeSession,
-  submitChallengeSession,
   getMasteryLeaderboard,
   getArenaLeaderboard,
   getChapterKnowledgeContent,
@@ -234,22 +231,16 @@ export {
   submitBaseAnswers,
   generateEnhancedQuiz,
   submitEnhancedQuiz,
-  // Arena Infinite Mode APIs (Legacy with session_id)
+  // Challenge Path APIs (independent of courses)
   startInfiniteSession,
-  getInfiniteProgress,
-  submitInfiniteExercise,
-  saveInfiniteCode,
-  switchInfiniteExercise,
-  appendInfiniteExercises,
-  exitInfiniteSession,
-  getActiveChallengeSession,
-  // New Challenge Path APIs (no session concept)
   getChallengeProgress,
   submitChallengeExercise,
   saveChallengeCode,
   switchChallengeExercise,
   appendChallengeExercises,
   getChallengeExercise,
+  // Recent Arena Exercises
+  getRecentArenaExercises,
   // BKT Mastery APIs
   getSectionMastery,
   getCourseMastery,
@@ -260,10 +251,8 @@ export {
   type CourseMasteryResponse,
   // Constants
   TIER_THRESHOLDS,
-  TIER_ICONS,
   TIER_NAMES,
   MASTERY_LEVEL_COLORS,
-  MASTERY_LEVEL_ICONS,
 } from "./learning-path";
 
 // Tier

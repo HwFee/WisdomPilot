@@ -3,7 +3,6 @@ Core (智核) Service - Business logic for core currency management
 """
 
 import logging
-import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -13,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.models.core_transaction import CoreTransaction
-from app.schemas.core import CoreEarnRequest
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -58,6 +56,9 @@ class CoreService:
     ) -> dict:
         """Spend cores for a user
 
+        Note: This method does NOT commit the transaction.
+        The caller (e.g. FastAPI dependency get_db) is responsible for commit/rollback.
+
         Args:
             user_id: User ID
             amount: Amount to spend (must be positive)
@@ -88,38 +89,33 @@ class CoreService:
         if user.cores < amount:
             raise ValueError(f"Insufficient cores. Have {user.cores}, need {amount}")
 
-        try:
-            # Create transaction
-            tx = CoreTransaction(
-                user_id=user_id,
-                type="spend",
-                category=category,
-                amount=amount,
-                balance_after=user.cores - amount,
-                reference_type=reference_type,
-                reference_id=reference_id,
-                description=description,
-            )
-            self.db.add(tx)
+        # Create transaction
+        tx = CoreTransaction(
+            user_id=user_id,
+            type="spend",
+            category=category,
+            amount=amount,
+            balance_after=user.cores - amount,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            description=description,
+        )
+        self.db.add(tx)
 
-            # Update user
-            user.cores -= amount
-            user.cores_total_spent += amount
+        # Update user
+        user.cores -= amount
+        user.cores_total_spent += amount
 
-            await self.db.commit()
-            await self.db.refresh(tx)
+        # Flush to sync changes without committing (caller handles transaction boundary)
+        await self.db.flush()
 
-            logger.info(f"[Core] User {user_id[:8]}... spent {amount} cores on {category}. Balance: {user.cores}")
+        logger.info(f"[Core] User {user_id[:8]}... spent {amount} cores on {category}. Balance: {user.cores}")
 
-            return {
-                "success": True,
-                "balance_after": user.cores,
-                "transaction_id": tx.id,
-            }
-        except Exception as e:
-            await self.db.rollback()
-            logger.error(f"[Core] Transaction failed for user {user_id[:8]}...: {e}")
-            raise
+        return {
+            "success": True,
+            "balance_after": user.cores,
+            "transaction_id": tx.id,
+        }
 
     async def earn_cores(
         self,
@@ -132,6 +128,9 @@ class CoreService:
     ) -> dict:
         """Earn cores for a user
 
+        Note: This method does NOT commit the transaction.
+        The caller (e.g. FastAPI dependency get_db) is responsible for commit/rollback.
+
         Args:
             user_id: User ID
             amount: Amount to earn (must be positive)
@@ -143,10 +142,10 @@ class CoreService:
         Returns:
             dict with success, balance_after, transaction_id
         """
-        import traceback
-        call_stack = ''.join(traceback.format_stack()[-5:-1])  # 获取调用栈
-        logger.info(f"[Core] earn_cores 被调用: user={user_id[:8]}..., amount={amount}, category={category}, ref_type={reference_type}, ref_id={reference_id}")
-        logger.info(f"[Core] 调用栈:\n{call_stack}")
+        logger.info(
+            "[Core] earn_cores called: user=%s..., amount=%d, category=%s",
+            user_id[:8], amount, category,
+        )
 
         # Validate category
         if category not in VALID_EARN_CATEGORIES:
@@ -160,38 +159,36 @@ class CoreService:
         if not user:
             raise ValueError("User not found")
 
-        try:
-            # Create transaction
-            tx = CoreTransaction(
-                user_id=user_id,
-                type="earn",
-                category=category,
-                amount=amount,
-                balance_after=user.cores + amount,
-                reference_type=reference_type,
-                reference_id=reference_id,
-                description=description,
-            )
-            self.db.add(tx)
+        # Create transaction
+        tx = CoreTransaction(
+            user_id=user_id,
+            type="earn",
+            category=category,
+            amount=amount,
+            balance_after=user.cores + amount,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            description=description,
+        )
+        self.db.add(tx)
 
-            # Update user
-            user.cores += amount
-            user.cores_total_earned += amount
+        # Update user
+        user.cores += amount
+        user.cores_total_earned += amount
 
-            await self.db.commit()
-            await self.db.refresh(tx)
+        # Flush to sync changes without committing (caller handles transaction boundary)
+        await self.db.flush()
 
-            logger.info(f"[Core] User {user_id[:8]}... earned {amount} cores from {category}. Balance: {user.cores}")
+        logger.info(
+            "[Core] User %s... earned %d cores from %s. Balance: %d",
+            user_id[:8], amount, category, user.cores,
+        )
 
-            return {
-                "success": True,
-                "balance_after": user.cores,
-                "transaction_id": tx.id,
-            }
-        except Exception as e:
-            await self.db.rollback()
-            logger.error(f"[Core] Transaction failed for user {user_id[:8]}...: {e}")
-            raise
+        return {
+            "success": True,
+            "balance_after": user.cores,
+            "transaction_id": tx.id,
+        }
 
     async def get_transactions(
         self,

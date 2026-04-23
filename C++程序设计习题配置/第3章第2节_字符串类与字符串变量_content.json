@@ -1,0 +1,163 @@
+{
+  "chapter_id": 3,
+  "chapter_title": "数据处理与容器",
+  "section_id": 2,
+  "section_title": "字符串类与字符串变量",
+  "total_knowledge_points": 7,
+  "knowledge_points": [
+    {
+      "id": 1,
+      "name": "字符串类的定义与使用",
+      "content": "字符串类的定义与使用是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "字符串类的定义与使用相关知识点总结",
+      "code_example": "# 字符串类的定义与使用示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 1,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "字符串的基本操作",
+      "content": "字符串的基本操作是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "字符串的基本操作相关知识点总结",
+      "code_example": "# 字符串的基本操作示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 1,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "字符串赋值与连接",
+      "content": "字符串赋值与连接是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "字符串赋值与连接相关知识点总结",
+      "code_example": "# 字符串赋值与连接示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 1,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "字符串长度与检索",
+      "content": "字符串长度与检索是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "字符串长度与检索相关知识点总结",
+      "code_example": "# 字符串长度与检索示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 1,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "取子串与删除子串",
+      "content": "取子串与删除子串是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "取子串与删除子串相关知识点总结",
+      "code_example": "# 取子串与删除子串示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "插入子串操作",
+      "content": "插入子串操作是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "插入子串操作相关知识点总结",
+      "code_example": "# 插入子串操作示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "字符串与数据库关系",
+      "content": "字符串与数据库关系是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "字符串与数据库关系相关知识点总结",
+      "code_example": "# 字符串与数据库关系示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 3,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    }
+  ]
+}

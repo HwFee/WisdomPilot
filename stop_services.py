@@ -1,5 +1,5 @@
 """
-AIcodiingTeach 手动停止脚本
+智码领航 手动停止脚本
 
 用途：
 - 读取 .run_logs/service_state.json 中的 PID
@@ -102,7 +102,7 @@ def cleanup_ports(ports: list[int]) -> None:
 
 def main() -> int:
     print("=" * 56)
-    print(" AIcodiingTeach 停止脚本")
+    print(" 智码领航 停止脚本")
     print("=" * 56)
 
     if STATE_FILE.exists():

@@ -1,0 +1,141 @@
+{
+  "chapter_id": 5,
+  "chapter_title": "交互与动画",
+  "section_id": 1,
+  "section_title": "简单动画程序设计",
+  "total_knowledge_points": 6,
+  "knowledge_points": [
+    {
+      "id": 1,
+      "name": "简单动画程序的实现",
+      "content": "简单动画程序的实现是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "简单动画程序的实现相关知识点总结",
+      "code_example": "# 简单动画程序的实现示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "键盘码接收方法",
+      "content": "键盘码接收方法是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "键盘码接收方法相关知识点总结",
+      "code_example": "# 键盘码接收方法示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "交互式键盘控制动画",
+      "content": "交互式键盘控制动画是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "交互式键盘控制动画相关知识点总结",
+      "code_example": "# 交互式键盘控制动画示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "计时器的工作原理",
+      "content": "计时器的工作原理是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "计时器的工作原理相关知识点总结",
+      "code_example": "# 计时器的工作原理示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "使用计时器编制多线程代码",
+      "content": "使用计时器编制多线程代码是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "使用计时器编制多线程代码相关知识点总结",
+      "code_example": "# 使用计时器编制多线程代码示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "组合键的接收",
+      "content": "组合键的接收是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "组合键的接收相关知识点总结",
+      "code_example": "# 组合键的接收示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    }
+  ]
+}

@@ -1,15 +1,13 @@
 """Statistics Service - Aggregates learning analytics"""
 
-from datetime import datetime, timedelta
-from typing import Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.models.stats import ChapterProgress, LearningSession, ActivityLog
 from app.models.course import Course
-from app.models.challenge import Challenge
 from app.models.user_challenge import UserChallenge
+import logging
 
 
 class StatsService:
@@ -43,7 +41,7 @@ class StatsService:
         activity_result = await db.execute(
             select(ActivityLog).where(ActivityLog.user_id == user_id)
         )
-        activities = list(activity_result.scalars().all())
+        list(activity_result.scalars().all())
 
         # Challenge stats
         challenge_result = await db.execute(
@@ -191,3 +189,6 @@ class StatsService:
 
 
 stats_service = StatsService()
+
+
+logger = logging.getLogger(__name__)

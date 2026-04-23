@@ -63,7 +63,7 @@ export function SearchInput({
         className="flex-1 min-w-0 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-400"
       />
       {value ? (
-        <button
+        <button type="button"
           onClick={handleClear}
           className="p-0.5 rounded-full hover:bg-gray-200 transition-colors shrink-0"
           aria-label="清除搜索"

@@ -1,5 +1,5 @@
 """
-AIcodiingTeach 服务启动器
+智码领航 服务启动器
 
 特性：
 - 前台统一托管前后端进程
@@ -251,7 +251,7 @@ def start_frontend(frontend_dir: Path, log_dir: Path, pnpm_cmd: str) -> subproce
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="AIcodiingTeach 服务启动器")
+    parser = argparse.ArgumentParser(description="智码领航 服务启动器")
     parser.add_argument(
         "--reload-backend",
         action="store_true",
@@ -271,7 +271,7 @@ def main() -> int:
     state_file = log_dir / STATE_FILE_NAME
 
     print("=" * 56)
-    print(" AIcodiingTeach 启动脚本")
+    print(" 智码领航 启动脚本")
     print("=" * 56)
     print(f"[目录] 项目根目录: {root_dir}")
     print(f"[日志] 日志目录: {log_dir}")

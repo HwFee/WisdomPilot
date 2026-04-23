@@ -3,7 +3,6 @@ Mastery XP Transaction Service - 精进之路经验变化记录服务
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import select, func
@@ -96,7 +95,6 @@ class MasteryXpTransactionService:
 
         # Record before state
         level_before = get_mastery_level(user.mastery_xp)
-        xp_before = user.mastery_xp
 
         # Update user
         user.mastery_xp += amount

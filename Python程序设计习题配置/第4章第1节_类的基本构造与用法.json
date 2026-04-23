@@ -1,0 +1,152 @@
+{
+  "chapter_id": 4,
+  "chapter_title": "面向对象程序设计",
+  "section_id": 1,
+  "section_title": "类的基本构造与用法",
+  "total_knowledge_points": 6,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "48": 2,
+    "49": 2,
+    "50": 2,
+    "51": 2,
+    "52": 2,
+    "53": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 48,
+      "name": "类属性的概念与使用"
+    },
+    {
+      "id": 49,
+      "name": "私有属性的概念与使用"
+    },
+    {
+      "id": 50,
+      "name": "构造函数的使用"
+    },
+    {
+      "id": 51,
+      "name": "析构函数的使用"
+    },
+    {
+      "id": 52,
+      "name": "类的依赖与组合设计"
+    },
+    {
+      "id": 53,
+      "name": "自定义异常类设计技术"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        48,
+        49
+      ],
+      "knowledge_point_names": [
+        "类属性的概念与使用",
+        "私有属性的概念与使用"
+      ],
+      "description": "考察知识点：类属性的概念与使用、私有属性的概念与使用",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        50,
+        51
+      ],
+      "knowledge_point_names": [
+        "构造函数的使用",
+        "析构函数的使用"
+      ],
+      "description": "考察知识点：构造函数的使用、析构函数的使用",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        52,
+        53
+      ],
+      "knowledge_point_names": [
+        "类的依赖与组合设计",
+        "自定义异常类设计技术"
+      ],
+      "description": "考察知识点：类的依赖与组合设计、自定义异常类设计技术",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        48,
+        49
+      ],
+      "knowledge_point_names": [
+        "类属性的概念与使用",
+        "私有属性的概念与使用"
+      ],
+      "description": "考察知识点：类属性的概念与使用、私有属性的概念与使用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        50,
+        51
+      ],
+      "knowledge_point_names": [
+        "构造函数的使用",
+        "析构函数的使用"
+      ],
+      "description": "考察知识点：构造函数的使用、析构函数的使用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        52,
+        53
+      ],
+      "knowledge_point_names": [
+        "类的依赖与组合设计",
+        "自定义异常类设计技术"
+      ],
+      "description": "考察知识点：类的依赖与组合设计、自定义异常类设计技术（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

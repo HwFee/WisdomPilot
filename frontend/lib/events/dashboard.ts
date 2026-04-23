@@ -20,7 +20,6 @@ export function triggerDashboardRefresh(data?: {
   if (typeof window !== 'undefined') {
     const event = new CustomEvent(DASHBOARD_EVENTS.REFRESH, { detail: data })
     window.dispatchEvent(event)
-    console.log('Dashboard refresh triggered:', data)
   }
 }
 

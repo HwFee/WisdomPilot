@@ -1,0 +1,143 @@
+{
+  "chapter_id": 3,
+  "chapter_title": "组合数据类型",
+  "section_id": 2,
+  "section_title": "列表与二维数据",
+  "total_knowledge_points": 5,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "32": 2,
+    "33": 2,
+    "34": 2,
+    "35": 2,
+    "36": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 32,
+      "name": "列表基本设计方法"
+    },
+    {
+      "id": 33,
+      "name": "列表序列类型基本操作"
+    },
+    {
+      "id": 34,
+      "name": "二维数据的存储设计"
+    },
+    {
+      "id": 35,
+      "name": "列表相关函数"
+    },
+    {
+      "id": 36,
+      "name": "经典命题的求解方法"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        32,
+        33
+      ],
+      "knowledge_point_names": [
+        "列表基本设计方法",
+        "列表序列类型基本操作"
+      ],
+      "description": "考察知识点：列表基本设计方法、列表序列类型基本操作",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        34,
+        35
+      ],
+      "knowledge_point_names": [
+        "二维数据的存储设计",
+        "列表相关函数"
+      ],
+      "description": "考察知识点：二维数据的存储设计、列表相关函数",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        36
+      ],
+      "knowledge_point_names": [
+        "经典命题的求解方法"
+      ],
+      "description": "考察知识点：经典命题的求解方法",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        32,
+        33
+      ],
+      "knowledge_point_names": [
+        "列表基本设计方法",
+        "列表序列类型基本操作"
+      ],
+      "description": "考察知识点：列表基本设计方法、列表序列类型基本操作（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        34,
+        35
+      ],
+      "knowledge_point_names": [
+        "二维数据的存储设计",
+        "列表相关函数"
+      ],
+      "description": "考察知识点：二维数据的存储设计、列表相关函数（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        36
+      ],
+      "knowledge_point_names": [
+        "经典命题的求解方法"
+      ],
+      "description": "考察知识点：经典命题的求解方法（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

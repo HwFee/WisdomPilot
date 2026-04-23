@@ -15,6 +15,7 @@ from app.schemas.solution import (
 from app.services import solution_service
 from app.utils.deps import get_current_user, get_current_admin_user
 from app.models.user import User
+import logging
 
 router = APIRouter(prefix="/api/solutions", tags=["题解广场"])
 
@@ -140,3 +141,6 @@ async def toggle_pin(
         raise HTTPException(status_code=404, detail="题解不存在")
     updated = await solution_service.toggle_pin(db, solution)
     return await solution_service.get_solution_with_username(db, updated)
+
+
+logger = logging.getLogger(__name__)

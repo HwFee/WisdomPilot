@@ -88,51 +88,6 @@ export async function getMasteryExerciseRecommendations(
 }
 
 // ========================================
-// Challenge Path APIs
-// ========================================
-
-/**
- * Get user's arena profile for a course
- */
-export async function getArenaProfile(
-  courseId: number,
-  token: string
-): Promise<ArenaProfileResponse> {
-  return get<ArenaProfileResponse>(`/api/learning-path/challenge/${courseId}/profile`, token)
-}
-
-/**
- * Start a new challenge session
- */
-export async function startChallengeSession(
-  courseId: number,
-  request: ChallengeStartRequest,
-  token: string
-): Promise<ChallengeSessionResponse> {
-  return post<ChallengeSessionResponse>(
-    `/api/learning-path/challenge/${courseId}/start`,
-    token,
-    request
-  )
-}
-
-/**
- * Submit challenge answers and get results
- */
-export async function submitChallengeSession(
-  courseId: number,
-  sessionId: string,
-  request: ChallengeSubmitRequest,
-  token: string
-): Promise<ChallengeResultResponse> {
-  return post<ChallengeResultResponse>(
-    `/api/learning-path/challenge/${courseId}/session/${sessionId}/submit`,
-    token,
-    request
-  )
-}
-
-// ========================================
 // Leaderboard APIs
 // ========================================
 
@@ -357,6 +312,7 @@ export interface SubmitExerciseResponse {
   is_correct: boolean
   test_results: Array<{ passed: boolean; input: string; expected: string; actual: string }>
   stars_earned: number
+  cores_earned: number
   next_unlocked: boolean
   added_to_wrong_book: boolean
   tier_changed: boolean
@@ -390,6 +346,7 @@ export interface SwitchExerciseResponse {
 
 export interface AppendExercisesRequest {
   count?: number
+  difficulty_level?: number
 }
 
 export interface AppendExercisesResponse {
@@ -421,98 +378,91 @@ export interface ChallengeExercise {
 }
 
 /**
- * Start infinite mode session
+ * Start infinite mode session (challenge path - independent of courses)
  */
 export async function startInfiniteSession(
-  courseId: number,
   request: InfiniteSessionStartRequest,
   token: string
 ): Promise<ChallengeSessionResponse> {
   return post<ChallengeSessionResponse>(
-    `/api/learning-path/challenge/${courseId}/infinite/start`,
+    `/api/learning-path/challenge/infinite/start`,
     token,
     request
   )
 }
 
 /**
- * Get challenge path progress (no session_id needed)
+ * Get challenge path progress (no session_id needed, independent of courses)
  */
 export async function getChallengeProgress(
-  courseId: number,
   token: string
 ): Promise<InfiniteProgressResponse> {
   return get<InfiniteProgressResponse>(
-    `/api/learning-path/challenge/${courseId}/progress`,
+    `/api/learning-path/challenge/progress`,
     token
   )
 }
 
 /**
- * Submit exercise answer in challenge path
+ * Submit exercise answer in challenge path (independent of courses)
  */
 export async function submitChallengeExercise(
-  courseId: number,
   request: SubmitExerciseRequest,
   token: string
 ): Promise<SubmitExerciseResponse> {
   return post<SubmitExerciseResponse>(
-    `/api/learning-path/challenge/${courseId}/submit`,
+    `/api/learning-path/challenge/submit`,
     token,
     request
   )
 }
 
 /**
- * Save code for an exercise
+ * Save code for an exercise (independent of courses)
  */
 export async function saveChallengeCode(
-  courseId: number,
   request: SaveCodeRequest,
   token: string
 ): Promise<{ success: boolean }> {
   return post<{ success: boolean }>(
-    `/api/learning-path/challenge/${courseId}/save-code`,
+    `/api/learning-path/challenge/save-code`,
     token,
     request
   )
 }
 
 /**
- * Switch to a different exercise by index
+ * Switch to a different exercise by index (independent of courses)
  */
 export async function switchChallengeExercise(
-  courseId: number,
   request: SwitchExerciseRequest,
   token: string
 ): Promise<SwitchExerciseResponse> {
   return post<SwitchExerciseResponse>(
-    `/api/learning-path/challenge/${courseId}/switch`,
+    `/api/learning-path/challenge/switch`,
     token,
     request
   )
 }
 
 /**
- * Append more exercises to challenge path
+ * Append more exercises to challenge path (independent of courses)
  */
 export async function appendChallengeExercises(
-  courseId: number,
   request: AppendExercisesRequest,
   token: string
 ): Promise<AppendExercisesResponse> {
   return post<AppendExercisesResponse>(
-    `/api/learning-path/challenge/${courseId}/append`,
+    `/api/learning-path/challenge/append`,
     token,
     request
   )
 }
 
 /**
- * Get specific exercise info (for wrong question book / favorites)
+ * Get specific exercise info (for wrong question book / favorites, independent of courses)
  */
 export async function getChallengeExercise(
-  courseId: number,
   exerciseId: number,
   token: string
 ): Promise<{
@@ -526,150 +476,7 @@ export async function getChallengeExercise(
   total_exercises: number
 }> {
   return get(
-    `/api/learning-path/challenge/${courseId}/exercise/${exerciseId}`,
-    token
-  )
-}
-
-// ========================================
-// Legacy APIs (for backward compatibility)
-// ========================================
-
-/**
- * Get infinite mode progress (legacy - use getChallengeProgress)
- */
-export async function getInfiniteProgress(
-  courseId: number,
-  sessionId: string,
-  token: string
-): Promise<InfiniteProgressResponse> {
-  return get<InfiniteProgressResponse>(
-    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/progress`,
-    token
-  )
-}
-
-/**
- * Submit exercise answer in infinite mode (legacy - use submitChallengeExercise)
- */
-export async function submitInfiniteExercise(
-  courseId: number,
-  sessionId: string,
-  request: SubmitExerciseRequest,
-  token: string
-): Promise<SubmitExerciseResponse> {
-  return post<SubmitExerciseResponse>(
-    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/submit`,
-    token,
-    request
-  )
-}
-
-/**
- * Save code for an exercise (legacy - use saveChallengeCode)
- */
-export async function saveInfiniteCode(
-  courseId: number,
-  sessionId: string,
-  request: SaveCodeRequest,
-  token: string
-): Promise<{ success: boolean }> {
-  return post<{ success: boolean }>(
-    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/save-code`,
-    token,
-    request
-  )
-}
-
-/**
- * Switch to a different exercise (legacy - use switchChallengeExercise)
- */
-export async function switchInfiniteExercise(
-  courseId: number,
-  sessionId: string,
-  request: SwitchExerciseRequest,
-  token: string
-): Promise<SwitchExerciseResponse> {
-  return post<SwitchExerciseResponse>(
-    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/switch`,
-    token,
-    request
-  )
-}
-
-/**
- * Append more exercises to session (legacy - use appendChallengeExercises)
- */
-export async function appendInfiniteExercises(
-  courseId: number,
-  sessionId: string,
-  request: AppendExercisesRequest,
-  token: string
-): Promise<AppendExercisesResponse> {
-  return post<AppendExercisesResponse>(
-    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/append`,
-    token,
-    request
-  )
-}
-
-/**
- * Save progress and exit infinite mode
- */
-export async function exitInfiniteSession(
-  courseId: number,
-  sessionId: string,
-  request: ExitSaveRequest,
-  token: string
-): Promise<{ success: boolean; message: string }> {
-  return post<{ success: boolean; message: string }>(
-    `/api/learning-path/challenge/${courseId}/infinite/${sessionId}/exit`,
-    token,
-    request
-  )
-}
-
-/**
- * 获取用户某门课的活跃挑战会话（用于错题本跳转）
- */
-export async function getActiveChallengeSession(
-  courseId: number,
-  token: string
-): Promise<{
-  session: {
-    id: string
-    course_id: number
-    status: string
-    current_index: number
-    total_exercises: number
-    exercise_ids: number[]
-  } | null
-  exercise_map: Record<number, {
-    exercise_index: number
-    is_completed: boolean
-    is_correct: boolean
-    is_unlocked: boolean
-  }>
-  message?: string
-}> {
-  return get<{
-    session: {
-      id: string
-      course_id: number
-      status: string
-      current_index: number
-      total_exercises: number
-      exercise_ids: number[]
-    } | null
-    exercise_map: Record<number, {
-      exercise_index: number
-      is_completed: boolean
-      is_correct: boolean
-      is_unlocked: boolean
-    }>
-    message?: string
-  }>(
-    `/api/learning-path/challenge/${courseId}/active-session`,
+    `/api/learning-path/challenge/exercise/${exerciseId}`,
     token
   )
 }
@@ -753,15 +560,6 @@ export async function saveMasteryExerciseProgress(
   request: SaveMasteryExerciseProgressRequest,
   token: string
 ): Promise<SaveMasteryExerciseProgressResponse> {
-  console.log("[BKT] ╔══════════════════════════════════════════════════════════════════")
-  console.log("[BKT] ║                    前端发送答题数据                                ║")
-  console.log("[BKT] ╠══════════════════════════════════════════════════════════════════")
-  console.log(`[BKT] ║ 课程ID: ${request.course_id}`)
-  console.log(`[BKT] ║ 章节ID: ${request.chapter_id}`)
-  console.log(`[BKT] ║ 小节ID: ${request.section_id ?? '未指定'}`)
-  console.log(`[BKT] ║ 题目ID: ${request.question_id}`)
-  console.log(`[BKT] ║ 答题结果: ${request.is_correct ? '✓ 正确' : '✗ 错误'}`)
-  console.log("[BKT] ╚══════════════════════════════════════════════════════════════════")
 
   const response = await post<SaveMasteryExerciseProgressResponse>(
     '/api/learning-path/mastery/progress/exercise',
@@ -772,30 +570,15 @@ export async function saveMasteryExerciseProgress(
   // 在浏览器控制台显示后端返回的 BKT 调试信息
   if (response.bkt_debug) {
     const debug = response.bkt_debug
-    console.log("[BKT] ╔══════════════════════════════════════════════════════════════════")
-    console.log("[BKT] ║                    后端 BKT 计算结果                               ║")
-    console.log("[BKT] ╠══════════════════════════════════════════════════════════════════")
-    console.log(`[BKT] ║ 小节ID: ${debug.section_id ?? '未指定'}`)
-    console.log(`[BKT] ║ 知识点: ${debug.knowledge_points.join(', ') || '无'}`)
-    console.log(`[BKT] ║ 计入掌握度: ${debug.counted_for_mastery ? '✓ 是' : '✗ 否'}`)
     if (!debug.counted_for_mastery && debug.not_counted_reason) {
-      console.log(`[BKT] ║ 不计入原因: ${debug.not_counted_reason}`)
     }
-    console.log("[BKT] ╠────────────────────────────────────────────────────────────────")
-    console.log("[BKT] ║ 知识点掌握度变化:")
     for (const change of debug.mastery_changes) {
       const before = (change.p_l_before * 100).toFixed(1)
       const after = (change.p_l_after * 100).toFixed(1)
       const diff = ((change.p_l_after - change.p_l_before) * 100).toFixed(1)
       const arrow = change.p_l_after > change.p_l_before ? '↑' : (change.p_l_after < change.p_l_before ? '↓' : '→')
-      console.log(`[BKT] ║   ${change.knowledge_point}: ${before}% → ${after}% (${arrow}${diff}%)`)
     }
-    console.log("[BKT] ╠────────────────────────────────────────────────────────────────")
-    console.log(`[BKT] ║ 小节掌握度: ${debug.section_mastery.toFixed(1)}%`)
-    console.log(`[BKT] ║ 章节掌握度: ${debug.chapter_mastery.toFixed(1)}%`)
-    console.log("[BKT] ╚══════════════════════════════════════════════════════════════════")
   } else {
-    console.log("[BKT] ⚠ 后端未返回 BKT 调试信息")
   }
 
   return response
@@ -895,15 +678,14 @@ export interface RecentArenaExercise {
 }
 
 /**
- * 获取挑战之路最近练习的题目（含正确情况）
+ * 获取挑战之路最近练习的题目（含正确情况）- 全局，不关联课程
  */
 export async function getRecentArenaExercises(
-  courseId: number,
   token: string,
   limit: number = 3
 ): Promise<RecentArenaExercise[]> {
   return get<RecentArenaExercise[]>(
-    `/api/learning-path/challenge/${courseId}/recent?limit=${limit}`,
+    `/api/learning-path/challenge/recent?limit=${limit}`,
     token
   )
 }

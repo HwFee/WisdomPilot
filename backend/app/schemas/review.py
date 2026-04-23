@@ -60,7 +60,6 @@ class SpacedRepetitionResponse(SpacedRepetitionBase):
     def days_overdue(self) -> int:
         """Get days overdue"""
         from app.utils.time import utc_now
-        from datetime import timedelta
         delta = utc_now() - self.next_review_at
         return max(0, delta.days)
 
@@ -134,7 +133,7 @@ class WrongQuestionBase(BaseModel):
     """Base wrong question schema"""
     exercise_id: Optional[int] = None
     exercise_key: Optional[str] = None
-    course_id: int
+    course_id: Optional[int] = None
     chapter_id: Optional[int] = None
     section_id: Optional[int] = None
     knowledge_points: List[str]
@@ -289,9 +288,10 @@ class CollectWrongQuestionRequest(BaseModel):
     """Request to collect a wrong question (for frontend hardcoded exercises)"""
     exercise_key: str = Field(..., description="练习题标识，格式：chapterId-subsectionIndex-exerciseId")
     user_answer: Any = Field(..., description="用户答案")
-    course_id: int = Field(..., description="课程ID")
+    course_id: Optional[int] = Field(None, description="课程ID（可选，挑战之路没有课程关联）")
     chapter_id: Optional[int] = Field(None, description="章节ID")
     section_id: Optional[int] = Field(None, description="小节ID（强化测试来源）")
+    exercise_id: Optional[int] = Field(None, description="练习题ID（可选）")
     exercise_content: Optional[dict] = Field(None, description="题目内容快照")
     exercise_type: str = Field(default="choice", description="题目类型")
     knowledge_points: Optional[List[str]] = Field(None, description="知识点列表")

@@ -1,6 +1,6 @@
 """Router for learning statistics endpoints"""
 
-from datetime import date, datetime
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -81,7 +81,7 @@ async def start_session(
     import logging
     logger = logging.getLogger(__name__)
 
-    logger.info(f"[学习时长-API] ========== POST /sessions/start ==========")
+    logger.info("[学习时长-API] ========== POST /sessions/start ==========")
     logger.info(f"[学习时长-API] user_id: {current_user.id}")
     logger.info(f"[学习时长-API] chapter_id: {data.chapter_id}")
     logger.info(f"[学习时长-API] subsection_index: {data.subsection_index}")
@@ -104,7 +104,7 @@ async def end_session(
     import logging
     logger = logging.getLogger(__name__)
 
-    logger.info(f"[学习时长-API] ========== POST /sessions/end ==========")
+    logger.info("[学习时长-API] ========== POST /sessions/end ==========")
     logger.info(f"[学习时长-API] user_id: {current_user.id}")
     logger.info(f"[学习时长-API] duration_seconds: {data.duration_seconds}")
     logger.info(f"[学习时长-API] chapter_id: {data.chapter_id}")
@@ -321,7 +321,7 @@ async def get_today_stats(
     - accuracy: Challenge-path accuracy rate today (percentage)
     - time_minutes: Total learning time today in minutes across all paths
     """
-    from datetime import datetime, timezone, timedelta
+    from datetime import timezone, timedelta
     import logging
 
     from app.models.stats import ActivityLog, LearningSession
@@ -337,7 +337,7 @@ async def get_today_stats(
     # 转换为 UTC 时间用于数据库查询
     today_start_utc = beijing_today_start.astimezone(timezone.utc)
 
-    logger.info(f"[学习时长-Today] ========== 查询今日统计 ==========")
+    logger.info("[学习时长-Today] ========== 查询今日统计 ==========")
     logger.info(f"[学习时长-Today] user_id: {current_user.id}")
     logger.info(f"[学习时长-Today] 当前北京时间: {beijing_now}")
     logger.info(f"[学习时长-Today] 北京今天零点: {beijing_today_start}")
@@ -419,7 +419,7 @@ async def get_today_stats(
     time_seconds = sum(s.duration_seconds or 0 for s in today_sessions)
     time_minutes = round(time_seconds / 60, 1)
 
-    logger.info(f"[学习时长-Today] ========== 结果 ==========")
+    logger.info("[学习时长-Today] ========== 结果 ==========")
     logger.info(f"[学习时长-Today] exercises: {exercises}")
     logger.info(f"[学习时长-Today] correct: {correct}")
     logger.info(f"[学习时长-Today] accuracy: {accuracy}%")

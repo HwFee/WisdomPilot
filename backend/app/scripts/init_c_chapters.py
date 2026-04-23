@@ -9,7 +9,7 @@ import sys
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from app.database import AsyncSessionLocal
 from app.models.course import Course
 from app.models.chapter import Chapter

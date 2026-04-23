@@ -18,9 +18,8 @@ BKT 是教育数据挖掘中经典的知识追踪模型，广泛应用于：
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Optional, List, Tuple, Dict
-import math
+from dataclasses import dataclass
+from typing import List, Tuple, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -129,12 +128,12 @@ class BKTModel:
         """
         p = self.params
 
-        logger.info(f"[BKT] ┌─────────────────────────────────────────────────────")
+        logger.info("[BKT] ┌─────────────────────────────────────────────────────")
         logger.info(f"[BKT] │ 知识点: {knowledge_point}")
         logger.info(f"[BKT] │ 答题结果: {'✓ 正确' if is_correct else '✗ 错误'}")
         logger.info(f"[BKT] │ 答题前 P(L) = {p_l:.4f}")
-        logger.info(f"[BKT] ├─────────────────────────────────────────────────────")
-        logger.info(f"[BKT] │ BKT参数:")
+        logger.info("[BKT] ├─────────────────────────────────────────────────────")
+        logger.info("[BKT] │ BKT参数:")
         logger.info(f"[BKT] │   P(L0) 初始掌握概率 = {p.p_l0:.2f}")
         logger.info(f"[BKT] │   P(T) 学习率 = {p.p_t:.2f}")
         logger.info(f"[BKT] │   P(G) 猜测率 = {p.p_g:.2f}")
@@ -155,13 +154,13 @@ class BKTModel:
 
         is_mastered = p_l_new >= p.mastery_threshold
 
-        logger.info(f"[BKT] ├─────────────────────────────────────────────────────")
-        logger.info(f"[BKT] │ 计算结果:")
+        logger.info("[BKT] ├─────────────────────────────────────────────────────")
+        logger.info("[BKT] │ 计算结果:")
         logger.info(f"[BKT] │   后验概率 P(L|answer) = {p_l_given_answer:.4f}")
         logger.info(f"[BKT] │   学习更新 P(L_new) = {p_l_given_answer:.4f} + (1 - {p_l_given_answer:.4f}) × {p.p_t:.2f}")
         logger.info(f"[BKT] │                   = {p_l_new:.4f}")
         logger.info(f"[BKT] │   掌握状态: {'✓ 已掌握 (>=0.95)' if is_mastered else '学习中 (<0.95)'}")
-        logger.info(f"[BKT] └─────────────────────────────────────────────────────")
+        logger.info("[BKT] └─────────────────────────────────────────────────────")
 
         return p_l_new, is_mastered
 
@@ -186,7 +185,7 @@ class BKTModel:
 
         result = numerator / denominator
 
-        logger.info(f"[BKT] │ 答对，计算 P(L|correct):")
+        logger.info("[BKT] │ 答对，计算 P(L|correct):")
         logger.info(f"[BKT] │   分子 = P(L) × (1 - P(S)) = {p_l:.4f} × {1-p.p_s:.2f} = {numerator:.4f}")
         logger.info(f"[BKT] │   分母 = {p_l:.4f} × {1-p.p_s:.2f} + {1-p_l:.4f} × {p.p_g:.2f} = {denominator:.4f}")
         logger.info(f"[BKT] │   P(L|correct) = {numerator:.4f} / {denominator:.4f} = {result:.4f}")
@@ -214,7 +213,7 @@ class BKTModel:
 
         result = numerator / denominator
 
-        logger.info(f"[BKT] │ 答错，计算 P(L|wrong):")
+        logger.info("[BKT] │ 答错，计算 P(L|wrong):")
         logger.info(f"[BKT] │   分子 = P(L) × P(S) = {p_l:.4f} × {p.p_s:.2f} = {numerator:.4f}")
         logger.info(f"[BKT] │   分母 = {p_l:.4f} × {p.p_s:.2f} + {1-p_l:.4f} × {1-p.p_g:.2f} = {denominator:.4f}")
         logger.info(f"[BKT] │   P(L|wrong) = {numerator:.4f} / {denominator:.4f} = {result:.4f}")

@@ -1,0 +1,44 @@
+{
+  "id": 66,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "165",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "模板",
+    "多项式 / 形式幂级数"
+  ],
+  "content": {
+    "title": "拉格朗日插值",
+    "description": "## 题目描述\n这是一道模板题。\r\n\r\n维护一个点集 $S$，初始时点集为空集。下面依次进行 $n$ 个操作，操作有两种：\r\n\r\n* `1 x y`：向点集中添加点 $(x, y)$。保证点集中 $x$ 互不相同。\r\n* `2 k`：输出 $f(k) \\bmod 998244353$ 的值，其中 $f(x)$ 是一个次数不超过 $|S| - 1$ 次的函数，且经过 $S$ 中所有的点。\n\n## 输入格式\n第一行，一个整数 $n$，表示操作个数。\r\n\r\n接下来 $n$ 行，每行 $2$ 或 $3$ 个整数，描述操作。\r\n\r\n数据保证第一个操作必定为 `1` 类型操作。\n\n## 输出格式\n多行，第 $i$ 行，一个整数，表示对第 $i$ 个 `2` 类型操作要求计算的 $f(k) \\bmod 998244353$ 的值。\n\n## 数据范围与提示\n对于 $100\\%$ 的数据，$1 \\leq n \\leq 3000, 1 \\leq x, y, k < 998244353$，所有 $x$ 互不相同。\r\n\r\n数据有一定梯度。",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #165",
+    "loj_url": "https://loj.ac/p/165",
+    "samples": [
+      {
+        "input": "6\n1 2 3\n2 5\n1 4 7\n2 5\n1 1 4\n2 5",
+        "output": "3\n9\n12"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "6\n1 2 3\n2 5\n1 4 7\n2 5\n1 1 4\n2 5",
+      "output": "3\n9\n12"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:48.296599",
+  "updated_at": "2026-04-22 04:23:26.280248",
+  "z_id": "Z165"
+}

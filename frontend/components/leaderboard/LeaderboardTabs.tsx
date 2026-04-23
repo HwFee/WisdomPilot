@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Trophy, Swords, Crown, Medal, Flame, ChevronRight } from 'lucide-react'
-import { getMasteryLeaderboard, getArenaLeaderboard, TIER_ICONS, TIER_NAMES, MASTERY_LEVEL_COLORS } from '@/lib/api'
-import type { LeaderboardEntry, Tier, MasteryLevel } from '@/types/api'
+import { Trophy, Swords, Crown, Medal, Flame, ChevronRight, Star } from 'lucide-react'
+import { getMasteryLeaderboard, getArenaLeaderboard, TIER_NAMES } from '@/lib/api'
+import { getTierConfig } from '@/lib/icons/tier-icons'
+import type { LeaderboardEntry, Tier } from '@/types/api'
 
 interface LeaderboardTabsProps {
   courseId: number
@@ -93,7 +94,7 @@ export function LeaderboardTabs({
     <div className="bg-card rounded-2xl border border-border overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-border">
-        <button
+        <button type="button"
           onClick={() => setActiveTab('mastery')}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'mastery'
@@ -104,7 +105,7 @@ export function LeaderboardTabs({
           <Trophy className="w-4 h-4" />
           精进榜
         </button>
-        <button
+        <button type="button"
           onClick={() => setActiveTab('arena')}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'arena'
@@ -167,7 +168,9 @@ export function LeaderboardTabs({
                       </p>
                     ) : (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{TIER_ICONS[entry.tier as Tier]}</span>
+                        <span className="w-4 h-4 flex items-center justify-center">
+                          {getTierConfig(entry.tier as Tier)?.icon}
+                        </span>
                         <span>{TIER_NAMES[entry.tier as Tier]}</span>
                         <span className="flex items-center gap-0.5">
                           <Flame className="w-3 h-3 text-orange-500" />
@@ -189,10 +192,11 @@ export function LeaderboardTabs({
                     </>
                   ) : (
                     <>
-                      <p className="font-bold text-blue-500">
+                      <p className="font-bold text-blue-500 flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                         {entry.stars ?? 0}
                       </p>
-                      <p className="text-xs text-muted-foreground">⭐ 星星</p>
+                      <p className="text-xs text-muted-foreground">星星</p>
                     </>
                   )}
                 </div>
@@ -212,7 +216,7 @@ export function LeaderboardTabs({
 
         {/* View all */}
         {showViewAll && (
-          <button
+          <button type="button"
             onClick={() => onViewAll?.(activeTab)}
             className="w-full mt-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center justify-center gap-1"
           >

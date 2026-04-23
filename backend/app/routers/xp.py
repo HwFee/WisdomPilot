@@ -9,10 +9,10 @@ from app.database import get_db
 from app.models.user import User
 from app.services.mastery_xp_transaction_service import (
     MasteryXpTransactionService,
-    get_mastery_xp_transaction_service,
 )
 from pydantic import BaseModel, Field
 from typing import Optional
+import logging
 
 router = APIRouter(prefix="/api/xp", tags=["xp"])
 
@@ -110,3 +110,6 @@ async def get_xp_transactions(
         offset=offset,
     )
     return XpTransactionListResponse(**result)
+
+
+logger = logging.getLogger(__name__)

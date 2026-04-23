@@ -21,7 +21,6 @@ from app.utils.time import utc_now
 
 if TYPE_CHECKING:
     from app.models.user import User
-    from app.models.course import Course
     from app.models.exercise import Exercise
 
 
@@ -43,9 +42,6 @@ class ArenaExerciseProgress(Base):
     )
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id"), nullable=False, index=True
-    )
-    course_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("courses.id"), nullable=False, index=True
     )
 
     # Exercise info - exercise_id is stable and used for cross-references
@@ -114,15 +110,14 @@ class ArenaExerciseProgress(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User")
-    course: Mapped["Course"] = relationship("Course")
     exercise: Mapped["Exercise"] = relationship("Exercise")
 
     __table_args__ = (
-        # One exercise record per user per course per exercise
-        UniqueConstraint("user_id", "course_id", "exercise_id", name="uq_arena_user_course_exercise"),
-        Index("idx_arena_progress_user_course", "user_id", "course_id"),
-        Index("idx_arena_progress_user_course_index", "user_id", "course_id", "exercise_index"),
+        # One exercise record per user per exercise
+        UniqueConstraint("user_id", "exercise_id", name="uq_arena_user_exercise"),
+        Index("idx_arena_progress_user", "user_id"),
+        Index("idx_arena_progress_user_index", "user_id", "exercise_index"),
     )
 
     def __repr__(self) -> str:
-        return f"<ArenaExerciseProgress user={self.user_id} course={self.course_id} exercise={self.exercise_id} index={self.exercise_index}>"
+        return f"<ArenaExerciseProgress user={self.user_id} exercise={self.exercise_id} index={self.exercise_index}>"

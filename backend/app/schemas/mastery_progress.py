@@ -1,6 +1,5 @@
 """Mastery Progress Schemas - 精进之路进度数据模型"""
 
-from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
 

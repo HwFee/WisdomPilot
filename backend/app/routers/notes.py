@@ -1,12 +1,13 @@
 """Router for notes endpoints"""
 
-from typing import Annotated, Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Annotated, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
+import logging
 
-from app.database import get_db
+from app.database import get_db, AsyncSessionLocal
 from app.utils.deps import get_current_active_user
 from app.models.user import User
 from app.models.note import Note
@@ -234,10 +235,17 @@ async def delete_note(
 @router.post("/from-question", response_model=NoteResponse)
 async def create_note_from_question(
     request: NoteFromQuestion,
+    background_tasks: BackgroundTasks,
     db: db_dependency,
     current_user: auth_dependency,
 ):
     """Create a note from a question or AI answer content with AI processing"""
+    logging.info("[笔记-创建] ========== 收到创建笔记请求 ==========")
+    logging.info(f"[笔记-创建] request.source: {request.source}")
+    logging.info(f"[笔记-创建] request.ai_answer_content 长度: {len(request.ai_answer_content) if request.ai_answer_content else 0}")
+    logging.info(f"[笔记-创建] request.ai_answer_content 是否有值: {bool(request.ai_answer_content)}")
+    logging.info(f"[笔记-创建] source == 'ai_answer': {request.source == 'ai_answer'}")
+
     content = request.content
     title = request.title
     processing_status = "completed"  # 默认已完成
@@ -246,6 +254,9 @@ async def create_note_from_question(
     if request.ai_answer_content and request.source == "ai_answer":
         processing_status = "pending"
         title = title or "AI回答笔记"
+        logging.info("[笔记-创建] 条件满足，设置 processing_status = pending")
+    else:
+        logging.info("[笔记-创建] 条件不满足，processing_status = completed")
 
     note = Note(
         user_id=current_user.id,
@@ -265,43 +276,66 @@ async def create_note_from_question(
     await db.commit()
     await db.refresh(note)
 
-    # If pending, trigger background AI processing
+    logging.info(f"[笔记-创建] 笔记已创建: id={note.id}, processing_status={note.processing_status}")
+
+    # If pending, trigger background AI processing using FastAPI BackgroundTasks
     if processing_status == "pending":
-        import asyncio
-        asyncio.create_task(_process_note_ai(note.id, request.ai_answer_content, current_user.id))
+        background_tasks.add_task(_process_note_ai, note.id, request.ai_answer_content)
+        logging.info("[笔记-创建] 已添加后台处理任务到 BackgroundTasks")
+    else:
+        logging.info("[笔记-创建] processing_status 不是 pending，不添加后台任务")
 
     return note
 
 
-async def _process_note_ai(note_id: str, ai_answer_content: str, user_id: str):
+async def _process_note_ai(note_id: str, ai_answer_content: str):
     """Background task to process note with AI"""
-    import logging
-    from app.database import async_session_maker
     from app.services.ai import ai_service
 
+    logging.info(f"[笔记] ========== 开始处理笔记 {note_id} ==========")
+    logging.info(f"[笔记] ai_answer_content 长度: {len(ai_answer_content) if ai_answer_content else 0}")
+
     try:
+        # Check if AI is configured
+        if not ai_service.is_configured():
+            logging.error("[笔记] AI 服务未配置")
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(select(Note).where(Note.id == note_id))
+                note = result.scalar_one_or_none()
+                if note:
+                    note.processing_status = "completed"
+                    await db.commit()
+            return
+
         # Update status to processing
-        async with async_session_maker() as db:
+        async with AsyncSessionLocal() as db:
             result = await db.execute(select(Note).where(Note.id == note_id))
             note = result.scalar_one_or_none()
             if note:
                 note.processing_status = "processing"
                 await db.commit()
+                logging.info(f"[笔记] 笔记 {note_id} 状态更新为 processing")
 
         # Use AI to extract title and refine content into note format
-        refine_prompt = f"""你是一个笔记整理助手。请将以下AI回答整理成一条学习笔记：
+        refine_prompt = f"""你是一个专业的笔记整理助手。请将以下AI回答整理成结构清晰的学习笔记：
 
 AI回答内容：
 {ai_answer_content}
 
 请完成以下任务：
-1. 提取一个简洁的标题（不超过20个字），概括核心知识点
-2. 将AI回答精炼为笔记格式，保留关键知识点和代码示例，去除冗余内容
+1. 提取一个简洁精准的标题（10-20字），概括核心知识点
+2. 将内容整理为结构化笔记，格式要求：
+   - 开头用一句话概括核心概念
+   - 使用 ## 二级标题划分主要部分（如：核心概念、关键要点、代码示例、注意事项）
+   - 要点使用 **加粗** 突出关键词
+   - 代码块保留并添加语言标识
+   - 去除冗余的客套话和过渡语
 
-请按以下JSON格式返回（不要有其他内容）：
-{{"title": "标题", "content": "精炼后的笔记内容（使用Markdown格式）"}}"""
+请严格按以下JSON格式返回（不要有其他内容）：
+{{"title": "标题", "content": "结构化笔记内容（Markdown格式）"}}"""
 
-        ai_response = await ai_service.generate_explanation(refine_prompt)
+        ai_response = await ai_service.generate(refine_prompt)
+        logging.info(f"[笔记] 笔记 {note_id} AI处理完成，响应长度: {len(ai_response)}")
 
         # Parse AI response
         import json
@@ -315,10 +349,10 @@ AI回答内容：
                 new_title = parsed.get("title")
                 new_content = parsed.get("content")
             except json.JSONDecodeError:
-                pass
+                logging.warning(f"[笔记] 笔记 {note_id} JSON解析失败")
 
         # Update note with processed content
-        async with async_session_maker() as db:
+        async with AsyncSessionLocal() as db:
             result = await db.execute(select(Note).where(Note.id == note_id))
             note = result.scalar_one_or_none()
             if note:
@@ -328,17 +362,18 @@ AI回答内容：
                     note.content = new_content
                 note.processing_status = "completed"
                 await db.commit()
-                logging.info(f"[笔记] AI处理完成: note_id={note_id}")
+                logging.info(f"[笔记] 笔记 {note_id} 处理完成，标题: {new_title}")
 
     except Exception as e:
-        logging.error(f"[笔记] AI处理失败: note_id={note_id}, error={e}")
+        logging.error(f"[笔记] 笔记 {note_id} AI处理失败: {e}")
         # Mark as completed even if failed, so user can see the original content
-        async with async_session_maker() as db:
+        async with AsyncSessionLocal() as db:
             result = await db.execute(select(Note).where(Note.id == note_id))
             note = result.scalar_one_or_none()
             if note:
                 note.processing_status = "completed"
                 await db.commit()
+                logging.info(f"[笔记] 笔记 {note_id} 处理失败，已标记为 completed")
 
 
 @router.get("/export/{note_id}")
@@ -437,3 +472,6 @@ async def export_notes(
                 "Content-Disposition": "attachment; filename=notes_export.json"
             }
         )
+
+
+logger = logging.getLogger(__name__)

@@ -17,6 +17,8 @@ interface NoteEditorProps {
   note?: NoteResponse | null
   exerciseId?: number
   chapterId?: number
+  sectionId?: number
+  courseId?: number
   subsectionIndex?: number
   knowledgePoints?: string[]
   prefillContent?: string
@@ -33,6 +35,8 @@ export function NoteEditor({
   note,
   exerciseId,
   chapterId,
+  sectionId,
+  courseId,
   subsectionIndex = 0,
   knowledgePoints = [],
   prefillContent,
@@ -89,8 +93,10 @@ export function NoteEditor({
         const noteData: NoteCreate = {
           title: title || `${t('笔记', 'Note')} ${new Date().toLocaleDateString()}`,
           content,
+          course_id: courseId,
           exercise_id: exerciseId,
           chapter_id: chapterId,
+          section_id: sectionId,
           subsection_index: subsectionIndex,
           knowledge_points: knowledgePoints,
           source,
@@ -106,7 +112,7 @@ export function NoteEditor({
     } finally {
       setIsSaving(false)
     }
-  }, [note, title, content, selectedTags, exerciseId, chapterId, subsectionIndex, knowledgePoints, source, t, onSave, onClose])
+  }, [note, title, content, selectedTags, exerciseId, chapterId, sectionId, courseId, subsectionIndex, knowledgePoints, source, t, onSave, onClose])
 
   const handleCreateTag = useCallback(async () => {
     if (!newTagName.trim()) return
@@ -145,7 +151,7 @@ export function NoteEditor({
             {note ? t('编辑笔记', 'Edit Note') : t('新建笔记', 'New Note')}
           </h2>
           <div className="flex items-center gap-3">
-            <button
+            <button type="button"
               onClick={() => setShowTagSelector(!showTagSelector)}
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors text-sm"
               title={t('管理标签', 'Manage Tags')}
@@ -154,7 +160,7 @@ export function NoteEditor({
               <span>{t('标签', 'Tags')}</span>
             </button>
             {onClose && (
-              <button
+              <button type="button"
                 onClick={onClose}
                 className="p-2 hover:bg-muted rounded-lg transition-colors"
                 title={t('关闭', 'Close')}
@@ -175,7 +181,7 @@ export function NoteEditor({
                   className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-2"
                 >
                   {tag}
-                  <button
+                  <button type="button"
                     onClick={() => toggleTag(tag)}
                     className="hover:text-primary/70"
                   >
@@ -193,7 +199,7 @@ export function NoteEditor({
                 placeholder={t('输入新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
               />
-              <button
+              <button type="button"
                 onClick={handleCreateTag}
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
               >
@@ -204,7 +210,7 @@ export function NoteEditor({
               {availableTags
                 .filter((tag) => !selectedTags.includes(tag.name))
                 .map((tag) => (
-                  <button
+                  <button type="button"
                     key={tag.id}
                     onClick={() => toggleTag(tag.name)}
                     className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
@@ -290,7 +296,7 @@ export function NoteEditor({
             </div>
             {/* Save button in preview footer */}
             <div className="px-6 py-3 border-t border-border bg-muted/30">
-              <button
+              <button type="button"
                 onClick={handleSave}
                 disabled={isSaving || !content.trim()}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
@@ -315,7 +321,7 @@ export function NoteEditor({
             {note ? t('编辑笔记', 'Edit Note') : t('新建笔记', 'New Note')}
           </h2>
           <div className="flex items-center gap-3">
-            <button
+            <button type="button"
               onClick={() => setShowTagSelector(!showTagSelector)}
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors"
               title={t('管理标签', 'Manage Tags')}
@@ -323,7 +329,7 @@ export function NoteEditor({
               <Tags className="w-5 h-5" />
               <span className="text-sm">{t('标签', 'Tags')}</span>
             </button>
-            <button
+            <button type="button"
               onClick={onClose}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
@@ -342,7 +348,7 @@ export function NoteEditor({
                   className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-2"
                 >
                   {tag}
-                  <button
+                  <button type="button"
                     onClick={() => toggleTag(tag)}
                     className="hover:text-primary/70"
                   >
@@ -360,7 +366,7 @@ export function NoteEditor({
                 placeholder={t('输入新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
               />
-              <button
+              <button type="button"
                 onClick={handleCreateTag}
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
               >
@@ -371,7 +377,7 @@ export function NoteEditor({
               {availableTags
                 .filter((tag) => !selectedTags.includes(tag.name))
                 .map((tag) => (
-                  <button
+                  <button type="button"
                     key={tag.id}
                     onClick={() => toggleTag(tag.name)}
                     className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
@@ -440,13 +446,13 @@ export function NoteEditor({
             {t('支持 Markdown，数学公式 $...$ 和代码高亮', 'Markdown, math $...$ and code highlighting')}
           </div>
           <div className="flex gap-3">
-            <button
+            <button type="button"
               onClick={onClose}
               className="px-5 py-2.5 text-sm border-2 rounded-xl hover:bg-muted transition-colors"
             >
               {t('取消', 'Cancel')}
             </button>
-            <button
+            <button type="button"
               onClick={handleSave}
               disabled={isSaving || !content.trim()}
               className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"

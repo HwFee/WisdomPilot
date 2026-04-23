@@ -60,7 +60,7 @@ export default function AccuracyDetailPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button
+          <button type="button"
             onClick={() => router.back()}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
           >

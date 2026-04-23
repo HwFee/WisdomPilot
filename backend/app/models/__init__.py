@@ -19,9 +19,9 @@ from app.models.challenge_session import ChallengeSession
 from app.models.user_arena import UserArenaProfile
 from app.models.wrong_question import WrongQuestion
 from app.models.section_base_question import SectionBaseQuestion, ChapterBaseQuestion
+from app.models.section_knowledge_point import SectionKnowledgePoint
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.mastery_exercise_progress import MasteryExerciseProgress
-from app.models.section import Section
 from app.models.section_progress import SectionProgress
 from app.models.core_transaction import CoreTransaction
 from app.models.ai_hint_cache import AIHintCache
@@ -73,6 +73,8 @@ __all__ = [
     # Section Base Questions
     "SectionBaseQuestion",
     "ChapterBaseQuestion",
+    # Section Knowledge Points
+    "SectionKnowledgePoint",
     # Arena Progress
     "ArenaExerciseProgress",
     # Mastery Exercise Progress

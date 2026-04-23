@@ -16,6 +16,7 @@ from app.schemas.challenge import (
     UserChallengeDetail,
 )
 from app.utils.deps import get_current_active_user
+import logging
 
 router = APIRouter(prefix="/api/challenges", tags=["challenges"])
 
@@ -146,3 +147,6 @@ async def update_challenge_progress(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+
+logger = logging.getLogger(__name__)

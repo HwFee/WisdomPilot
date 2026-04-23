@@ -1,0 +1,52 @@
+{
+  "id": 48,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "141",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "模板",
+    "字符串"
+  ],
+  "content": {
+    "title": "回文子串",
+    "description": "## 题目描述\n这是一道模板题。\r\n\r\n给定一个字符串 $ s $ 以及 $ Q $ 个操作。您需要编写一个程序以支持下列几种操作：\r\n\r\n1. 在字符串 $ s $ 的末尾添加一个字符串；\r\n2. 在字符串 $ s $ 的前端添加一个字符串的 **反序**；\r\n3. 查询字符串 $ s $ 的所有非空回文子串的数量。\r\n\r\n$ s $ 的两个子串视为不同，当且仅当这两个子串的长度不同或者这两个子串在 $ s $ 中的起始位置不同。\r\n$ s $ 的反序字符串定义为将 $ s $ 中前后对称位置的字符两两对调位置后形成的字符串。\n\n## 输入格式\n输入文件第一行包含一个字符串 $ s $。\r\n\r\n输入文件第二行包含一个整数 $ Q $，表示操作的数量。\r\n\r\n接下来 $ Q $ 行，每行首先包含一个整数 $ op $，其含义如下所示：\r\n\r\n+ 1：在字符串 $ s $ 的末尾添加一个字符串；\r\n+ 2：在字符串 $ s $ 的前端添加一个字符串的 **反序**；\r\n+ 3：查询字符串 $ s $ 的所有非空回文子串的数量。\r\n\r\n若 $ op $ 为 1 或 2，则接下来会给出一个字符串 $ t $，表示要在末尾或前端添加的字符串。\n\n## 输出格式\n对于每个 $ op $ 为 3 的操作，分别在单独的一行上输出此时 $ s $ 中非空回文子串的数量。\n\n## 数据范围与提示\n对于 $ 100\\% $ 的测试数据，保证有：\r\n\r\n初始时 $ 0 < |s| \\leq 10^5 $，$ 0 < Q \\leq 10^5 $，$ 0 < |t| < 1000 $ 且操作序列结束时有 $ 0 < |s| \\leq 4 \\times 10^5 $。",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #141",
+    "loj_url": "https://loj.ac/p/141",
+    "samples": [
+      {
+        "input": "aaa\n1\n3",
+        "output": "6"
+      },
+      {
+        "input": "a\n5\n3\n1 bba\n3\n2 ab\n3",
+        "output": "1\n6\n10"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "aaa\n1\n3",
+      "output": "6"
+    },
+    {
+      "input": "a\n5\n3\n1 bba\n3\n2 ab\n3",
+      "output": "1\n6\n10"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:48.296599",
+  "updated_at": "2026-04-22 04:23:09.657223",
+  "z_id": "Z141"
+}

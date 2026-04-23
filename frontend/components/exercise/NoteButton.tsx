@@ -120,7 +120,7 @@ export function NoteButton({
   }
 
   return (
-    <button
+    <button type="button"
       onClick={(e) => {
         e.stopPropagation()
         handleClick()

@@ -140,7 +140,7 @@ export function ProblemPanel({
 
         {/* Hint Button */}
         {hints.length > 0 && onHintClick && (
-          <button
+          <button type="button"
             onClick={onHintClick}
             className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 text-yellow-600 rounded-lg text-sm hover:bg-yellow-500/20 transition-colors"
           >

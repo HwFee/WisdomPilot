@@ -155,7 +155,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
         }`}>
           <span>{solution.username}</span>
           <div className="flex items-center gap-3">
-            <button
+            <button type="button"
               onClick={(e) => handleLike(solution.id, e)}
               className="flex items-center gap-1 hover:text-red-500 transition-colors"
               title={t('点赞', 'Like')}
@@ -182,7 +182,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
           <MessageSquare className="w-5 h-5 text-primary" />
           {t('题解广场', 'Solutions')}
         </h3>
-        <button
+        <button type="button"
           onClick={handleEnterSolutions}
           className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
         >
@@ -194,7 +194,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
       {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-shrink-0">
         {(Object.keys(tabMap) as TabType[]).map(tab => (
-          <button
+          <button type="button"
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
@@ -218,7 +218,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
           <div className="flex flex-col items-center justify-center h-full text-destructive">
             <AlertCircle className="w-10 h-10 mb-2" />
             <p className="text-sm mb-3">{error}</p>
-            <button
+            <button type="button"
               onClick={fetchSolutions}
               className="px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition-colors"
             >

@@ -178,39 +178,32 @@ export default function MasteryPathPage() {
     const sectionParam = searchParams.get("section");
     const exerciseParam = searchParams.get("exercise");
 
-    console.log("[精进之路-DEBUG] useEffect 触发, URL参数:", { chapterParam, sectionParam, exerciseParam, overviewLoaded: !!overview?.chapters });
 
     // 如果没有必要的参数，不处理
     if (!chapterParam) {
-      console.log("[精进之路-DEBUG] 没有 chapter 参数，跳过");
       return;
     }
 
     if (!overview?.chapters) {
-      console.log("[精进之路-DEBUG] overview 未加载，跳过");
       return;
     }
 
     const chapterId = parseInt(chapterParam);
     const chapter = overview.chapters.find((c) => c.chapter_id === chapterId);
 
-    console.log("[精进之路-DEBUG] 找到章节:", { chapterId, found: !!chapter, chapterTitle: chapter?.title });
 
     if (!chapter) {
-      console.log("[精进之路-DEBUG] 未找到章节，跳过");
       return;
     }
 
     // 保存 section_id（如果有）
     const sectionId = sectionParam ? parseInt(sectionParam) : null;
-    console.log("[精进之路-DEBUG] 解析 sectionId:", sectionId);
 
     // 跳转到具体题目
     // exerciseParam 是 question_id，需要在获取题目列表后找到对应索引
     const targetQuestionId = exerciseParam ? parseInt(exerciseParam) : 0;
 
     // Directly start quiz at the target question
-    console.log("[精进之路-DEBUG] 调用 startQuizAtQuestion:", { chapterId, targetQuestionId, sectionId });
     startQuizAtQuestion(chapterId, targetQuestionId, sectionId || undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, overview]);
@@ -219,9 +212,6 @@ export default function MasteryPathPage() {
     const token = getStoredToken();
     if (!token) return;
 
-    console.log("[精进之路-学习时长] startTrackedSession 调用, chapterId =", chapterId);
-    console.log("[精进之路-学习时长] activeSessionChapterIdRef =", activeSessionChapterIdRef.current);
-    console.log("[精进之路-学习时长] sessionStartedAtRef =", sessionStartedAtRef.current);
 
     // 检查是否有从其他页面转移过来的会话
     const continueSession = searchParams.get("continueSession") === "1";
@@ -230,14 +220,12 @@ export default function MasteryPathPage() {
         const savedSession = localStorage.getItem('masterySession');
         if (savedSession) {
           const sessionData = JSON.parse(savedSession);
-          console.log("[精进之路-学习时长] 检测到继续会话，从 localStorage 恢复:", sessionData);
           activeSessionChapterIdRef.current = sessionData.chapterId;
           sessionStartedAtRef.current = sessionData.startedAt;
           sessionInitializedRef.current = true;
           sessionEndedRef.current = false;
           // 清除 localStorage 中的会话数据
           localStorage.removeItem('masterySession');
-          console.log("[精进之路-学习时长] 会话已恢复，开始时间:", new Date(sessionData.startedAt).toLocaleString());
           return;
         }
       } catch (e) {
@@ -249,7 +237,6 @@ export default function MasteryPathPage() {
       activeSessionChapterIdRef.current === chapterId &&
       sessionStartedAtRef.current
     ) {
-      console.log("[精进之路-学习时长] 同一章节已有会话，跳过");
       return;
     }
 
@@ -257,7 +244,6 @@ export default function MasteryPathPage() {
       activeSessionChapterIdRef.current !== null &&
       sessionStartedAtRef.current
     ) {
-      console.log("[精进之路-学习时长] 切换章节，先结束上一段会话");
       const prevChapterId = activeSessionChapterIdRef.current ?? undefined;
       const durationSeconds = Math.max(
         1,
@@ -275,42 +261,32 @@ export default function MasteryPathPage() {
     }
 
     try {
-      console.log("[精进之路-学习时长] ========== 开始新会话 ==========");
-      console.log("[精进之路-学习时长] 调用 startLearningSession, chapterId =", chapterId);
       await startLearningSession(token, chapterId, 0);
       const now = Date.now();
       activeSessionChapterIdRef.current = chapterId;
       sessionStartedAtRef.current = now;
       sessionInitializedRef.current = true;
       sessionEndedRef.current = false; // 重置结束标记
-      console.log("[精进之路-学习时长] 会话已启动，开始时间:", new Date(now).toLocaleString());
     } catch (error) {
       console.error("[精进之路] 开始学习会话失败:", error);
     }
   }, [searchParams]);
 
   const endTrackedSession = useCallback(async () => {
-    console.log("[精进之路-学习时长] endTrackedSession 被调用");
-    console.log("[精进之路-学习时长] sessionEndedRef.current =", sessionEndedRef.current);
 
     if (sessionEndedRef.current) {
-      console.log("[精进之路-学习时长] 会话已结束，跳过");
       return;
     }
 
     const token = getStoredToken();
     const startedAt = sessionStartedAtRef.current;
 
-    console.log("[精进之路-学习时长] token 存在:", !!token);
-    console.log("[精进之路-学习时长] startedAt =", startedAt);
-    console.log("[精进之路-学习时长] sessionInitializedRef =", sessionInitializedRef.current);
 
     if (
       !token ||
       !startedAt ||
       !sessionInitializedRef.current
     ) {
-      console.log("[精进之路-学习时长] 条件不满足，跳过");
       return;
     }
 
@@ -321,11 +297,6 @@ export default function MasteryPathPage() {
     const durationMinutes = (durationSeconds / 60).toFixed(1);
     const chapterId = activeSessionChapterIdRef.current; // 先保存 chapterId
 
-    console.log("[精进之路-学习时长] ========== 会话结束 ==========");
-    console.log("[精进之路-学习时长] 开始时间:", new Date(startedAt).toLocaleString());
-    console.log("[精进之路-学习时长] 结束时间:", new Date().toLocaleString());
-    console.log("[精进之路-学习时长] 学习时长:", durationSeconds, "秒 (约", durationMinutes, "分钟)");
-    console.log("[精进之路-学习时长] chapterId:", chapterId);
 
     sessionEndedRef.current = true;
     sessionInitializedRef.current = false;
@@ -333,7 +304,6 @@ export default function MasteryPathPage() {
     sessionStartedAtRef.current = null;
 
     // Use keepalive so the request survives page navigation / component unmount
-    console.log("[精进之路-学习时长] 调用 endLearningSessionKeepalive...");
     endLearningSessionKeepalive(token, durationSeconds, chapterId ?? undefined);
   }, []);
 
@@ -369,11 +339,8 @@ export default function MasteryPathPage() {
 
     try {
       // 获取小节题目
-      console.log(`[精进之路-DEBUG] 请求 sectionId=${sectionId} 的题目`);
       const data = await getSectionBaseQuestions(sectionId, token);
-      console.log(`[精进之路-DEBUG] 收到题目数据: section_id=${data.section_id}, section_title=${data.section_title}, 题目数量=${data.questions.length}`);
       if (data.questions.length > 0) {
-        console.log(`[精进之路-DEBUG] 第一题: id=${data.questions[0].id}, text=${data.questions[0].text?.substring(0, 50)}...`);
       }
       setBaseQuestions(data.questions);
 
@@ -745,7 +712,6 @@ export default function MasteryPathPage() {
           },
           token,
         );
-        console.log("[精进之路] 进度保存成功, sectionId:", sectionIdToSave);
       } catch (error) {
         console.error("[精进之路] 进度保存失败:", error);
       }
@@ -753,7 +719,7 @@ export default function MasteryPathPage() {
 
     // Collect wrong question if incorrect
     if (!correct) {
-      if (token && selectedChapterId && selectedSectionId) {
+      if (token && selectedChapterId) {
         try {
           // Use question ID as exercise_key
           const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${currentQuestion.id}`;
@@ -771,7 +737,6 @@ export default function MasteryPathPage() {
             exercise_type: questionType,
             knowledge_points: currentQuestion.knowledge_points || [],
           });
-          console.log("[精进之路] 错题收集成功");
         } catch (error) {
           console.error("[精进之路] 错题收集失败:", error);
         }
@@ -845,7 +810,6 @@ export default function MasteryPathPage() {
             },
             token,
           );
-          console.log("[精进之路] 章节进度更新成功");
         } catch (error) {
           console.error("[精进之路] 章节进度更新失败:", error);
         }
@@ -954,7 +918,6 @@ export default function MasteryPathPage() {
 
       try {
         // 保存进度到 MasteryExerciseProgress 表
-        console.log("[精进之路-强化题] 保存进度, sectionId:", sectionIdToSave);
         await saveMasteryExerciseProgress(
           {
             course_id: courseId,
@@ -971,7 +934,6 @@ export default function MasteryPathPage() {
           },
           token,
         );
-        console.log("[精进之路-强化题] 进度保存成功, question_id:", questionId);
       } catch (error) {
         console.error("[精进之路-强化题] 进度保存失败:", error);
       }
@@ -994,7 +956,6 @@ export default function MasteryPathPage() {
             exercise_type: "choice",
             knowledge_points: currentQuestion.knowledge_points || [],
           });
-          console.log("[精进之路-强化题] 错题收集成功, exercise_key:", exerciseKey);
         } catch (error) {
           console.error("[精进之路-强化题] 错题收集失败:", error);
         }
@@ -1053,21 +1014,16 @@ export default function MasteryPathPage() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    console.log("[精进之路-学习时长] useEffect mount, isMountedRef =", isMountedRef.current);
 
     return () => {
-      console.log("[精进之路-学习时长] useEffect cleanup");
       // 如果很快重新 mount，则 isMountedRef 会变回 true
       isMountedRef.current = false;
 
       // 延迟执行 endTrackedSession，给 StrictMode 重新 mount 的机会
       requestAnimationFrame(() => {
-        console.log("[精进之路-学习时长] requestAnimationFrame callback, isMountedRef =", isMountedRef.current);
         if (!isMountedRef.current) {
-          console.log("[精进之路-学习时长] 组件已真正卸载，结束会话");
           void endTrackedSession();
         } else {
-          console.log("[精进之路-学习时长] 组件重新 mount，跳过结束会话");
         }
       });
     };
@@ -1272,7 +1228,7 @@ export default function MasteryPathPage() {
       <div className="min-h-screen bg-background">
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <button
+            <button type="button"
               onClick={handleViewQuestions}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -1283,7 +1239,7 @@ export default function MasteryPathPage() {
               <Target className="w-5 h-5 text-amber-500" />
               <span className="font-semibold">学习分析</span>
             </div>
-            <button
+            <button type="button"
               onClick={handleBackToChapters}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -1364,7 +1320,7 @@ export default function MasteryPathPage() {
             )}
 
             {/* Actions */}
-            <button
+            <button type="button"
               onClick={handleStartEnhancedQuiz}
               disabled={enhancedLoading}
               className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
@@ -1382,7 +1338,7 @@ export default function MasteryPathPage() {
               )}
             </button>
 
-            <button
+            <button type="button"
               onClick={handleBackToChapters}
               className="w-full mt-3 py-3 bg-card border border-border rounded-xl font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -1404,7 +1360,7 @@ export default function MasteryPathPage() {
       <div className="min-h-screen bg-background">
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <button
+            <button type="button"
               onClick={handleBackToChapters}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -1476,7 +1432,7 @@ export default function MasteryPathPage() {
                   const isCorrectOption = currentQuestion.correct_answer?.toUpperCase() === optLabel;
 
                   return (
-                    <button
+                    <button type="button"
                       key={optLabel}
                       onClick={() =>
                         !submitted &&
@@ -1534,7 +1490,7 @@ export default function MasteryPathPage() {
         {/* Bottom action bar */}
         <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
           <div className="max-w-2xl mx-auto px-4 py-4">
-            <button
+            <button type="button"
               onClick={
                 submitted
                   ? handleNextEnhancedQuestion
@@ -1575,7 +1531,7 @@ export default function MasteryPathPage() {
       <div className="min-h-screen bg-background">
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <button
+            <button type="button"
               onClick={handleBackToChapters}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -1614,7 +1570,7 @@ export default function MasteryPathPage() {
                   const isCurrent = globalIndex === currentQuestionIndex;
 
                   return (
-                    <button
+                    <button type="button"
                       key={q.id}
                       onClick={() => {
                         // 只能跳转到已完成的题目
@@ -1690,7 +1646,6 @@ export default function MasteryPathPage() {
                   size="sm"
                   refreshKey={noteRefreshKey}
                   onClick={(existingNote) => {
-                    console.log('[精进之路] NoteButton onClick:', existingNote);
                     setEditingNote(existingNote);
                     setShowNoteEditor(true);
                   }}
@@ -1753,7 +1708,7 @@ export default function MasteryPathPage() {
                       optLabel;
 
                     return (
-                      <button
+                      <button type="button"
                         key={optLabel}
                         onClick={() =>
                           !submitted &&
@@ -1956,7 +1911,7 @@ export default function MasteryPathPage() {
                     </>
                   )}
                 </div>
-                <button
+                <button type="button"
                   onClick={handleNextQuestion}
                   disabled={baseQuestionLoading}
                   className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
@@ -1972,7 +1927,7 @@ export default function MasteryPathPage() {
                 </button>
               </div>
             ) : (
-              <button
+              <button type="button"
                 onClick={handleSubmitBaseAnswer}
                 disabled={!baseAnswers.get(currentQuestion.id)}
                 className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
@@ -1998,13 +1953,14 @@ export default function MasteryPathPage() {
           <NoteEditor
             note={editingNote}
             exerciseId={currentQuestion.id}
+            courseId={courseId}
             chapterId={selectedChapterId || undefined}
+            sectionId={selectedSectionId || undefined}
             knowledgePoints={currentQuestion.knowledge_points}
             prefillContent={currentQuestion.text}
             prefillTitle={currentQuestion.text ? `题目笔记: ${currentQuestion.text.slice(0, 30)}...` : undefined}
             source="question"
             onSave={(savedNote) => {
-              console.log('[精进之路] 笔记已保存:', savedNote);
               setNoteRefreshKey((prev) => prev + 1); // 触发 NoteButton 重新检查
             }}
             onClose={() => {
@@ -2053,7 +2009,7 @@ export default function MasteryPathPage() {
                 const isUnlocked = true;
 
                 return (
-                  <button
+                  <button type="button"
                     key={chapter.chapter_id}
                     onClick={() =>
                       handleSelectChapter(chapter.chapter_id, chapter.title)
@@ -2114,13 +2070,14 @@ export default function MasteryPathPage() {
         <NoteEditor
           note={editingNote}
           exerciseId={baseQuestions[currentQuestionIndex]?.id}
+          courseId={courseId}
           chapterId={selectedChapterId || undefined}
+          sectionId={selectedSectionId || undefined}
           knowledgePoints={baseQuestions[currentQuestionIndex]?.knowledge_points}
           prefillContent={baseQuestions[currentQuestionIndex]?.text}
           prefillTitle={baseQuestions[currentQuestionIndex]?.text ? `题目笔记: ${baseQuestions[currentQuestionIndex].text.slice(0, 30)}...` : undefined}
           source="question"
           onSave={(savedNote) => {
-            console.log('[精进之路] 笔记已保存:', savedNote);
           }}
           onClose={() => {
             setShowNoteEditor(false);

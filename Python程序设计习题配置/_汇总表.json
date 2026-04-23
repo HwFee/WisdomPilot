@@ -1,0 +1,161 @@
+{
+  "course_name": "Python程序设计",
+  "course_code": "Python",
+  "generated_time": "2026-04-22",
+  "total_chapters": 6,
+  "total_sections": 16,
+  "total_knowledge_points": 87,
+  "total_base_questions": 182,
+  "average_per_section": 11.4,
+  "chapter_summary": [
+    {
+      "chapter_index": 1,
+      "chapter_title": "Python基础与环境",
+      "section_count": 2,
+      "total_base_questions": 26,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "程序设计基础知识",
+          "kp_count": 7,
+          "base_questions": 14
+        },
+        {
+          "section_index": 2,
+          "section_title": "基本数据类型及操作",
+          "kp_count": 6,
+          "base_questions": 12
+        }
+      ]
+    },
+    {
+      "chapter_index": 2,
+      "chapter_title": "控制结构与异常处理",
+      "section_count": 2,
+      "total_base_questions": 26,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "顺序与条件分支结构",
+          "kp_count": 6,
+          "base_questions": 12
+        },
+        {
+          "section_index": 2,
+          "section_title": "函数与递归",
+          "kp_count": 7,
+          "base_questions": 14
+        }
+      ]
+    },
+    {
+      "chapter_index": 3,
+      "chapter_title": "组合数据类型",
+      "section_count": 4,
+      "total_base_questions": 42,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "集合与序列",
+          "kp_count": 5,
+          "base_questions": 10
+        },
+        {
+          "section_index": 2,
+          "section_title": "列表与二维数据",
+          "kp_count": 5,
+          "base_questions": 10
+        },
+        {
+          "section_index": 3,
+          "section_title": "高阶函数与装饰器",
+          "kp_count": 5,
+          "base_questions": 10
+        },
+        {
+          "section_index": 4,
+          "section_title": "字典与迭代器",
+          "kp_count": 6,
+          "base_questions": 12
+        }
+      ]
+    },
+    {
+      "chapter_index": 4,
+      "chapter_title": "面向对象程序设计",
+      "section_count": 3,
+      "total_base_questions": 46,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "类的基本构造与用法",
+          "kp_count": 6,
+          "base_questions": 12
+        },
+        {
+          "section_index": 2,
+          "section_title": "类的重载与魔法函数",
+          "kp_count": 6,
+          "base_questions": 14
+        },
+        {
+          "section_index": 3,
+          "section_title": "设计模式与抽象",
+          "kp_count": 8,
+          "base_questions": 20
+        }
+      ]
+    },
+    {
+      "chapter_index": 5,
+      "chapter_title": "网络程序设计",
+      "section_count": 3,
+      "total_base_questions": 26,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "网络通讯基础",
+          "kp_count": 3,
+          "base_questions": 7
+        },
+        {
+          "section_index": 2,
+          "section_title": "进程与线程",
+          "kp_count": 5,
+          "base_questions": 11
+        },
+        {
+          "section_index": 3,
+          "section_title": "Web资源访问",
+          "kp_count": 4,
+          "base_questions": 8
+        }
+      ]
+    },
+    {
+      "chapter_index": 6,
+      "chapter_title": "面向数据应用程序设计",
+      "section_count": 2,
+      "total_base_questions": 16,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "文件与数据序列化",
+          "kp_count": 4,
+          "base_questions": 8
+        },
+        {
+          "section_index": 2,
+          "section_title": "PIL库与numpy库",
+          "kp_count": 4,
+          "base_questions": 8
+        }
+      ]
+    }
+  ],
+  "bkt_model_info": {
+    "model": "Bayesian Knowledge Tracing (BKT)",
+    "target_mastery": 0.9,
+    "通关规则": "每小节所有基础题全部答对，即判定通关"
+  }
+}

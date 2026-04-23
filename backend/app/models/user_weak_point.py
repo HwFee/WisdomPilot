@@ -11,7 +11,6 @@ from app.utils.time import utc_now
 
 if TYPE_CHECKING:
     from app.models.user import User
-    from app.models.wrong_question import WrongQuestion
 
 
 class UserWeakPoint(Base):
@@ -38,10 +37,10 @@ class UserWeakPoint(Base):
         index=True,
         comment="用户ID"
     )
-    course_id: Mapped[int] = mapped_column(
+    course_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         ForeignKey("courses.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
         comment="课程ID"
     )

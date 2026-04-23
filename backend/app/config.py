@@ -1,5 +1,4 @@
-import os
-from pydantic import field_validator, Field
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
@@ -8,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings"""
 
     # App
-    APP_NAME: str = "AIcodiingTeach"
+    APP_NAME: str = "智码领航"
     DEBUG: bool = False
 
     # Database
@@ -17,8 +16,8 @@ class Settings(BaseSettings):
     # JWT
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days (default)
-    ACCESS_TOKEN_EXPIRE_MINUTES_REMEMBER: int = 43200  # 30 days (remember me)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day (default)
+    ACCESS_TOKEN_EXPIRE_MINUTES_REMEMBER: int = 10080  # 7 days (remember me)
 
     # AI Configuration (independent module)
     AI_PROVIDER: str = "openai"
@@ -46,6 +45,9 @@ class Settings(BaseSettings):
     # Rate limiting
     AUTH_RATE_PER_MINUTE: int = 10
     CODE_EXEC_RATE_PER_MINUTE: int = 30  # Reasonable limit for code execution
+
+    # Test sandbox (disable in production)
+    ENABLE_TEST_SANDBOX: bool = False
 
     @field_validator("SECRET_KEY")
     @classmethod

@@ -100,7 +100,7 @@ export function NoteTagFilter({
                 style={{ borderColor: tag?.color }}
               >
                 {tagName}
-                <button
+                <button type="button"
                   onClick={() => toggleTag(tagName)}
                   className="hover:text-primary/70"
                 >
@@ -109,7 +109,7 @@ export function NoteTagFilter({
               </span>
             )
           })}
-          <button
+          <button type="button"
             onClick={() => onTagsChange([])}
             className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
           >
@@ -123,15 +123,26 @@ export function NoteTagFilter({
         {tags
           .filter((tag) => !selectedTags.includes(tag.name))
           .map((tag) => (
-            <button
+            <span
               key={tag.id}
-              onClick={() => toggleTag(tag.name)}
-              className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
+              className="group px-3 py-1.5 text-sm border-2 rounded-full flex items-center gap-1 hover:bg-muted transition-colors"
               style={{ borderColor: tag.color }}
             >
-              <Plus className="w-4 h-4 inline mr-1" />
-              {tag.name}
-            </button>
+              <button type="button"
+                onClick={() => toggleTag(tag.name)}
+                className="flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                {tag.name}
+              </button>
+              <button type="button"
+                onClick={() => handleDeleteTag(tag.id, tag.name)}
+                className="ml-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                title={t('删除标签', 'Delete tag')}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
           ))}
       </div>
 
@@ -145,7 +156,7 @@ export function NoteTagFilter({
           placeholder={t('新建标签...', 'New tag...')}
           className="flex-1 px-4 py-2 text-sm border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
         />
-        <button
+        <button type="button"
           onClick={handleCreateTag}
           disabled={isCreating || !newTagName.trim()}
           className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"

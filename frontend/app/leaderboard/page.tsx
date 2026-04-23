@@ -6,8 +6,9 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getStoredToken, logout } from '@/lib/api'
 import { ArrowLeft, Trophy, Swords, Crown, Medal, Flame, Star } from 'lucide-react'
-import { getMasteryLeaderboard, getArenaLeaderboard, TIER_ICONS, TIER_NAMES, MASTERY_LEVEL_ICONS } from '@/lib/api'
+import { getMasteryLeaderboard, getArenaLeaderboard, TIER_NAMES } from '@/lib/api'
 import { getUserCourseProgress } from '@/lib/api/courses'
+import { getTierConfig } from '@/lib/icons/tier-icons'
 import type { LeaderboardEntry, Tier } from '@/types/api'
 import type { CourseProgress } from '@/lib/api/courses'
 
@@ -39,7 +40,6 @@ function LeaderboardContent() {
         ? await getMasteryLeaderboard(courseId, token, limit, off)
         : await getArenaLeaderboard(courseId, token, limit, off)
 
-      console.log('[Leaderboard] API response:', JSON.stringify(data, null, 2))
 
       if (off === 0) {
         setLeaderboard(data.entries)
@@ -186,7 +186,7 @@ function LeaderboardContent() {
           {/* Tabs */}
           <div className="mb-6">
             <div className="inline-flex items-center bg-muted rounded-xl p-1">
-              <button
+              <button type="button"
                 onClick={() => handleTabChange('mastery')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'mastery'
@@ -197,7 +197,7 @@ function LeaderboardContent() {
                 <Trophy className="w-4 h-4" />
                 <span>精进榜</span>
               </button>
-              <button
+              <button type="button"
                 onClick={() => handleTabChange('arena')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'arena'
@@ -241,7 +241,9 @@ function LeaderboardContent() {
                       <div className="flex items-center gap-3">
                         {currentUserData?.tier ? (
                           <>
-                            <span className="text-lg">{TIER_ICONS[currentUserData.tier as Tier]}</span>
+                            <span className="w-5 h-5 flex items-center justify-center">
+                              {getTierConfig(currentUserData.tier)?.icon}
+                            </span>
                             <span className="font-medium text-foreground">{TIER_NAMES[currentUserData.tier as Tier]}</span>
                             {currentUserData.sub_tier && (
                               <span className="text-muted-foreground">{['I','II','III','IV','V'][currentUserData.sub_tier - 1]}</span>
@@ -331,7 +333,7 @@ function LeaderboardContent() {
                   <div className="text-right">
                     {activeTab === 'mastery' ? (
                       <div className="flex items-center gap-2 justify-end">
-                        <span>{MASTERY_LEVEL_ICONS[entry.mastery_level || '入门'] || '🌱'}</span>
+                        <Trophy className="w-4 h-4 text-amber-500" />
                         <span className="font-bold text-foreground text-lg">{entry.mastery_xp ?? 0}</span>
                         <span className="text-xs text-muted-foreground">经验值</span>
                       </div>
@@ -339,7 +341,9 @@ function LeaderboardContent() {
                       <div className="flex items-center gap-2 justify-end">
                         {entry.tier ? (
                           <>
-                            <span>{TIER_ICONS[entry.tier as Tier]}</span>
+                            <span className="w-4 h-4 flex items-center justify-center">
+                              {getTierConfig(entry.tier)?.icon}
+                            </span>
                             <span className="font-medium text-foreground">{TIER_NAMES[entry.tier as Tier]}</span>
                             {entry.sub_tier && (
                               <span className="text-muted-foreground">{['I','II','III','IV','V'][entry.sub_tier - 1]}</span>
@@ -363,7 +367,7 @@ function LeaderboardContent() {
           {/* Load More */}
           {!loading && leaderboard.length >= limit && (
             <div className="text-center mt-6">
-              <button
+              <button type="button"
                 onClick={handleLoadMore}
                 className="px-6 py-2 bg-muted text-foreground rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors"
               >

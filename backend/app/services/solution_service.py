@@ -146,7 +146,7 @@ async def get_solutions(
     if sort == "new":
         query = query.order_by(desc(Solution.created_at))
     elif sort == "pinned":
-        query = query.where(Solution.is_pinned == True).order_by(
+        query = query.where(Solution.is_pinned).order_by(
             desc(Solution.created_at)
         )
     else:  # hot

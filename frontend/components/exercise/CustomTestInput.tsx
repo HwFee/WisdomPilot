@@ -62,7 +62,7 @@ export function CustomTestInput({
           {t('自定义测试', 'Custom Test')}
         </span>
         <div className="flex items-center gap-2">
-          <button
+          <button type="button"
             onClick={handleCopy}
             disabled={!input}
             className="p-1.5 text-[#909399] hover:text-[#3498DB] hover:bg-[#EBEEF5] rounded transition-colors disabled:opacity-30"
@@ -74,7 +74,7 @@ export function CustomTestInput({
               <Copy className="w-4 h-4" />
             )}
           </button>
-          <button
+          <button type="button"
             onClick={handleClear}
             disabled={!input}
             className="p-1.5 text-[#909399] hover:text-[#E74C3C] hover:bg-[#EBEEF5] rounded transition-colors disabled:opacity-30"
@@ -99,7 +99,7 @@ export function CustomTestInput({
           <span className="text-xs text-[#909399]">
             {t('Ctrl+Enter 运行', 'Ctrl+Enter to run')}
           </span>
-          <button
+          <button type="button"
             onClick={handleRun}
             disabled={isRunning || !input.trim()}
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-[#52C41A] hover:bg-[#27AE60] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

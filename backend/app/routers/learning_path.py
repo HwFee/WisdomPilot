@@ -6,33 +6,29 @@ API endpoints for the dual learning path system:
 - Challenge Path (挑战之路): Difficulty-based challenges
 """
 
-from datetime import datetime
+import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
+
 from app.database import get_db
 from app.utils.deps import get_current_user
 from app.models.user import User
-from app.models.challenge_session import ChallengeSession
-from app.models.user_arena import UserArenaProfile
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.section import Section
 from app.models.exercise import Exercise
-from app.services.challenge_service import ChallengeService, get_challenge_service
 from app.services.leaderboard_service import (
-    ArenaLeaderboardService,
-    MasteryLeaderboardService,
     get_arena_leaderboard_service,
     get_mastery_leaderboard_service,
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
-from app.services.wrong_question import wrong_question_service
-from app.services.arena_infinite import ArenaInfiniteService, get_arena_infinite_service
+from app.services.arena_infinite import get_arena_infinite_service
 from app.schemas.exercise import ExerciseRecommendRequest
 
 
@@ -68,18 +64,6 @@ class ChapterMasteryResponse(BaseModel):
     objectives_status: Optional[dict]
 
 
-class ChallengeStartRequest(BaseModel):
-    """Request to start a challenge"""
-    difficulty_level: int = Field(..., ge=1, le=5, description="Difficulty level 1-5")
-    question_count: int = Field(default=10, ge=5, le=20, description="Number of questions")
-
-
-class ChallengeSubmitRequest(BaseModel):
-    """Request to submit challenge answers"""
-    answers: list[dict]  # [{exercise_id: str, answer: str, is_correct: bool, time_spent: int}]
-    total_time: int  # Total time in seconds
-
-
 class ChallengeSessionResponse(BaseModel):
     """Response for challenge session"""
     session_id: str
@@ -88,34 +72,6 @@ class ChallengeSessionResponse(BaseModel):
     time_limit: int
     score_multiplier: float
     status: str
-
-
-class ChallengeResultResponse(BaseModel):
-    """Response for completed challenge"""
-    session_id: str
-    correct_answers: int
-    total_questions: int
-    base_score: float
-    time_bonus: float
-    streak_bonus: float
-    final_score: float
-    tier: str
-    new_tier: Optional[str]
-
-
-class ArenaProfileResponse(BaseModel):
-    """Response for arena profile"""
-    user_id: str
-    course_id: int
-    total_score: float
-    tier: str
-    rank: Optional[int]
-    total_challenges: int
-    wins: int
-    losses: int
-    highest_difficulty: int
-    best_streak: int
-    current_streak: int
 
 
 class LeaderboardResponse(BaseModel):
@@ -179,7 +135,7 @@ async def get_mastery_overview(
             func.count(SectionKnowledgePoint.id).label("kp_count")
         ).where(
             SectionKnowledgePoint.section_id.in_(section_ids),
-            SectionKnowledgePoint.is_active == True
+            SectionKnowledgePoint.is_active
         ).group_by(SectionKnowledgePoint.section_id)
     )
     section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
@@ -421,279 +377,6 @@ async def recommend_mastery_exercises(
     }
 
 
-# ========== Challenge Path Endpoints ==========
-
-@router.get("/challenge/{course_id}/profile", response_model=ArenaProfileResponse)
-async def get_arena_profile(
-    course_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get user's arena profile for a course"""
-    profile_result = await db.execute(
-        select(UserArenaProfile).where(
-            UserArenaProfile.user_id == current_user.id,
-            UserArenaProfile.course_id == course_id
-        )
-    )
-    profile = profile_result.scalar_one_or_none()
-
-    if not profile:
-        # Create default profile
-        profile = UserArenaProfile(
-            user_id=current_user.id,
-            course_id=course_id,
-        )
-        db.add(profile)
-        await db.commit()
-        await db.refresh(profile)
-
-    return ArenaProfileResponse(
-        user_id=profile.user_id,
-        course_id=profile.course_id,
-        total_score=profile.total_score,
-        tier=profile.tier,
-        rank=profile.rank,
-        total_challenges=profile.total_challenges,
-        wins=profile.wins,
-        losses=profile.losses,
-        highest_difficulty=profile.highest_difficulty,
-        best_streak=profile.best_streak,
-        current_streak=profile.current_streak,
-    )
-
-
-@router.post("/challenge/{course_id}/start", response_model=ChallengeSessionResponse)
-async def start_challenge(
-    course_id: int,
-    request: ChallengeStartRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Start a new challenge session"""
-    # Get chapters for this course
-    chapters_result = await db.execute(
-        select(Chapter.id).where(Chapter.course_id == course_id)
-    )
-    chapter_ids = [c[0] for c in chapters_result.fetchall()]
-
-    if not chapter_ids:
-        raise HTTPException(
-            status_code=400,
-            detail="No chapters available for this course"
-        )
-
-    # Get exercises for the difficulty level from these chapters
-    exercises_result = await db.execute(
-        select(Exercise).where(
-            Exercise.chapter_id.in_(chapter_ids),
-            Exercise.difficulty == request.difficulty_level
-        ).limit(request.question_count * 2)  # Get extra for randomization
-    )
-    all_exercises = exercises_result.scalars().all()
-
-    if len(all_exercises) < request.question_count:
-        # If not enough exercises at exact difficulty, get from all difficulties
-        exercises_result = await db.execute(
-            select(Exercise).where(
-                Exercise.chapter_id.in_(chapter_ids)
-            ).limit(request.question_count * 2)
-        )
-        all_exercises = exercises_result.scalars().all()
-
-    if len(all_exercises) < request.question_count:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Not enough exercises available for this course"
-        )
-
-    # DEBUG: First exercise is always matrix multiplication (ID: 32)
-    MATRIX_EXERCISE_ID = 32
-    matrix_exercise_result = await db.execute(
-        select(Exercise).where(Exercise.id == MATRIX_EXERCISE_ID)
-    )
-    matrix_exercise = matrix_exercise_result.scalar_one_or_none()
-
-    # Randomly select remaining exercises
-    import random
-    remaining_count = request.question_count - 1
-    other_exercises = [ex for ex in all_exercises if ex.id != MATRIX_EXERCISE_ID]
-
-    if len(other_exercises) < remaining_count:
-        remaining_count = len(other_exercises)
-
-    selected_others = random.sample(other_exercises, remaining_count) if remaining_count > 0 else []
-
-    # First exercise is matrix, then the rest
-    if matrix_exercise:
-        selected = [matrix_exercise] + selected_others
-    else:
-        selected = selected_others[:request.question_count] if selected_others else random.sample(list(all_exercises), min(request.question_count, len(all_exercises)))
-
-    exercise_ids = [ex.id for ex in selected]
-
-    # Create session
-    service = get_challenge_service(db)
-    session = await service.create_session(
-        user_id=current_user.id,
-        course_id=course_id,
-        difficulty=request.difficulty_level,
-        exercise_ids=exercise_ids,
-    )
-
-    # Update status to in_progress
-    session.status = "in_progress"
-    session.started_at = datetime.utcnow()
-    await db.commit()
-
-    # Return exercise info with full content (without answers)
-    exercise_list = [{
-        "id": ex.id,
-        "title": ex.content.get("title", "") or (ex.content.get("text", "")[:50] if ex.content.get("text") else f"题目 {ex.id}"),
-        "type": ex.type,
-        "difficulty": ex.difficulty,
-        "knowledge_points": ex.knowledge_points or [],
-        "content": {
-            "text": ex.content.get("text", ""),
-            "title": ex.content.get("title", ""),
-            "options": ex.content.get("options", []),
-            "code_template": ex.content.get("code_template"),
-            "description": ex.content.get("description"),
-            "samples": ex.content.get("samples", []),
-        },
-        "test_cases": ex.test_cases if ex.type == "programming" else None,
-    } for ex in selected]
-
-    return ChallengeSessionResponse(
-        session_id=session.id,
-        difficulty_level=session.difficulty_level,
-        exercises=exercise_list,
-        time_limit=session.time_limit,
-        score_multiplier=session.score_multiplier,
-        status=session.status,
-    )
-
-
-@router.post("/challenge/{course_id}/session/{session_id}/submit", response_model=ChallengeResultResponse)
-async def submit_challenge(
-    course_id: int,
-    session_id: str,
-    request: ChallengeSubmitRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Submit challenge answers and get results"""
-    # Get session
-    session_result = await db.execute(
-        select(ChallengeSession).where(
-            ChallengeSession.id == session_id,
-            ChallengeSession.user_id == current_user.id,
-            ChallengeSession.course_id == course_id
-        )
-    )
-    session = session_result.scalar_one_or_none()
-
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    if session.status != "in_progress":
-        raise HTTPException(status_code=400, detail="Session already completed")
-
-    # Calculate results
-    correct_count = sum(1 for a in request.answers if a.get("is_correct", False))
-    max_streak = 0
-    current_streak = 0
-    for a in request.answers:
-        if a.get("is_correct", False):
-            current_streak += 1
-            max_streak = max(max_streak, current_streak)
-        else:
-            current_streak = 0
-
-    # Complete session
-    service = get_challenge_service(db)
-    session = await service.complete_session(
-        session_id=session_id,
-        correct_answers=correct_count,
-        time_spent=request.total_time,
-        max_streak=max_streak,
-    )
-
-    # Update arena profile
-    profile_result = await db.execute(
-        select(UserArenaProfile).where(
-            UserArenaProfile.user_id == current_user.id,
-            UserArenaProfile.course_id == course_id
-        )
-    )
-    profile = profile_result.scalar_one_or_none()
-
-    if not profile:
-        profile = UserArenaProfile(
-            user_id=current_user.id,
-            course_id=course_id,
-        )
-        db.add(profile)
-
-    # Update stats
-    profile.total_score += session.final_score
-    profile.total_challenges += 1
-    profile.total_time_spent += request.total_time
-    profile.last_challenge_at = datetime.utcnow()
-
-    if correct_count / session.total_questions >= 0.8:
-        profile.wins += 1
-        profile.current_streak += 1
-        profile.best_streak = max(profile.best_streak, profile.current_streak)
-    elif correct_count / session.total_questions < 0.5:
-        profile.losses += 1
-        profile.current_streak = 0
-
-    if session.difficulty_level > profile.highest_difficulty:
-        profile.highest_difficulty = session.difficulty_level
-
-    # Update tier
-    old_tier = profile.tier
-    arena_service = get_arena_leaderboard_service(db)
-    new_tier = await arena_service.update_user_tier(current_user.id, course_id)
-
-    # Collect wrong questions
-    for answer_data in request.answers:
-        if not answer_data.get("is_correct", False):
-            exercise_id = answer_data.get("exercise_id")
-            user_answer = answer_data.get("answer")
-            if exercise_id:
-                # Get exercise details for knowledge points
-                ex_result = await db.execute(
-                    select(Exercise).where(Exercise.id == int(exercise_id))
-                )
-                exercise = ex_result.scalar_one_or_none()
-                if exercise:
-                    await wrong_question_service.collect_wrong_question(
-                        db=db,
-                        user_id=current_user.id,
-                        exercise=exercise,
-                        user_answer=user_answer,
-                        course_id=course_id,
-                        chapter_id=exercise.chapter_id,
-                        challenge_session_id=session_id,
-                    )
-
-    await db.commit()
-
-    return ChallengeResultResponse(
-        session_id=session.id,
-        correct_answers=session.correct_answers,
-        total_questions=session.total_questions,
-        base_score=session.base_score,
-        time_bonus=session.time_bonus,
-        streak_bonus=session.streak_bonus,
-        final_score=session.final_score,
-        tier=old_tier,
-        new_tier=new_tier if new_tier != old_tier else None,
-    )
-
-
 # ========== Leaderboard Endpoints ==========
 
 @router.get("/leaderboard/{course_id}/mastery", response_model=LeaderboardResponse)
@@ -749,10 +432,7 @@ async def get_arena_leaderboard(
 from app.services.mastery_quiz import mastery_quiz_service
 from app.schemas.mastery_quiz import (
     MasteryQuizGenerateRequest,
-    MasteryQuizGenerateResponse,
     MasteryQuizSubmitRequest,
-    MasteryQuizSubmitResponse,
-    KnowledgeContentResponse,
 )
 
 
@@ -862,7 +542,7 @@ async def get_section_knowledge_points(
         select(SectionKnowledgePoint)
         .where(
             SectionKnowledgePoint.section_id == section_id,
-            SectionKnowledgePoint.is_active == True
+            SectionKnowledgePoint.is_active
         )
         .order_by(SectionKnowledgePoint.order_index)
     )
@@ -939,8 +619,6 @@ async def generate_enhanced_quiz(
 
     根据基础测试识别的薄弱点，AI 生成个性化强化题目。
     """
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"[API] generate_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., chapter={request.chapter_id}, weak_points={request.weak_points}")
 
     request.course_id = course_id
@@ -991,15 +669,15 @@ async def save_mastery_exercise_progress(
 
     当用户完成一道题（交卷）时调用。
     """
-    print(f"[ROUTE-DEBUG] ========== 收到 /mastery/progress/exercise 请求 ==========")
-    print(f"[ROUTE-DEBUG] course_id={request.course_id}, chapter_id={request.chapter_id}")
-    print(f"[ROUTE-DEBUG] section_id={request.section_id}, question_id={request.question_id}")
+    logger.debug("[ROUTE-DEBUG] ========== 收到 /mastery/progress/exercise 请求 ==========")
+    logger.debug(f"[ROUTE-DEBUG] course_id={request.course_id}, chapter_id={request.chapter_id}")
+    logger.debug(f"[ROUTE-DEBUG] section_id={request.section_id}, question_id={request.question_id}")
     result = await mastery_progress_service.save_exercise_progress(
         db=db,
         user_id=current_user.id,
         request=request,
     )
-    print(f"[ROUTE-DEBUG] 返回结果: success={result.success}, bkt_debug={result.bkt_debug}")
+    logger.debug(f"[ROUTE-DEBUG] 返回结果: success={result.success}, bkt_debug={result.bkt_debug}")
     return result
 
 
@@ -1155,6 +833,7 @@ class SwitchExerciseRequest(BaseModel):
 class AppendExercisesRequest(BaseModel):
     """Request to append more exercises"""
     count: int = Field(default=5, ge=1, le=20)
+    difficulty_level: Optional[int] = Field(default=None, ge=1, le=8, description="难度等级，不传则从用户现有题目推断")
 
 
 class ExitSaveRequest(BaseModel):
@@ -1168,29 +847,19 @@ class ExitSaveRequest(BaseModel):
 # Challenge Path APIs (No Session Concept)
 # ========================================
 
-class ChallengePathResponse(BaseModel):
-    """Response for challenge path"""
-    exercises: list[dict]
-    total_exercises: int
-    completed_count: int
-    correct_count: int
-    current_index: int
-
-
-@router.post("/challenge/{course_id}/infinite/start", response_model=ChallengeSessionResponse)
+@router.post("/challenge/infinite/start", response_model=ChallengeSessionResponse)
 async def start_infinite_session(
-    course_id: int,
     request: InfiniteSessionStartRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Start or get challenge path for a course (no session concept)"""
+    """Start or get challenge path (independent of courses)"""
     service = get_arena_infinite_service(db)
 
     try:
         exercises, is_new = await service.get_or_create_challenge_path(
             user_id=current_user.id,
-            course_id=course_id,
+            
             difficulty_level=request.difficulty_level,
             initial_count=request.initial_count,
         )
@@ -1214,8 +883,8 @@ async def start_infinite_session(
         "test_cases": ex.test_cases if ex.type == "programming" else None,
     } for i, ex in enumerate(exercises)]
 
-    # Use course_id as pseudo session_id for backward compatibility
-    pseudo_session_id = f"challenge-{course_id}"
+    # Use a fixed session_id for global challenge path
+    pseudo_session_id = "challenge-global"
 
     return ChallengeSessionResponse(
         session_id=pseudo_session_id,
@@ -1227,26 +896,24 @@ async def start_infinite_session(
     )
 
 
-@router.get("/challenge/{course_id}/progress")
+@router.get("/challenge/progress")
 async def get_challenge_path_progress(
-    course_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get challenge path progress (no session_id needed)"""
+    """Get challenge path progress (independent of courses)"""
     service = get_arena_infinite_service(db)
 
     progress = await service.get_progress(
         user_id=current_user.id,
-        course_id=course_id,
+        
     )
 
     return progress
 
 
-@router.post("/challenge/{course_id}/submit")
+@router.post("/challenge/submit")
 async def submit_challenge_exercise(
-    course_id: int,
     request: SubmitExerciseRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1257,7 +924,7 @@ async def submit_challenge_exercise(
     try:
         result = await service.submit_exercise(
             user_id=current_user.id,
-            course_id=course_id,
+            
             exercise_id=request.exercise_id,
             code=request.code,
             language=request.language,
@@ -1269,9 +936,8 @@ async def submit_challenge_exercise(
     return result
 
 
-@router.post("/challenge/{course_id}/save-code")
+@router.post("/challenge/save-code")
 async def save_challenge_code(
-    course_id: int,
     request: SaveCodeRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1281,7 +947,7 @@ async def save_challenge_code(
 
     success = await service.save_code(
         user_id=current_user.id,
-        course_id=course_id,
+        
         exercise_id=request.exercise_id,
         code=request.code,
         language=request.language,
@@ -1290,9 +956,8 @@ async def save_challenge_code(
     return {"success": success}
 
 
-@router.post("/challenge/{course_id}/switch")
+@router.post("/challenge/switch")
 async def switch_challenge_exercise(
-    course_id: int,
     request: SwitchExerciseRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1303,7 +968,7 @@ async def switch_challenge_exercise(
     try:
         result = await service.switch_exercise(
             user_id=current_user.id,
-            course_id=course_id,
+            
             target_index=request.target_index,
         )
     except ValueError as e:
@@ -1331,9 +996,8 @@ async def switch_challenge_exercise(
     return result
 
 
-@router.post("/challenge/{course_id}/append")
+@router.post("/challenge/append")
 async def append_challenge_exercises(
-    course_id: int,
     request: AppendExercisesRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1344,7 +1008,8 @@ async def append_challenge_exercises(
     try:
         new_ids = await service.append_exercises(
             user_id=current_user.id,
-            course_id=course_id,
+
+            difficulty_level=request.difficulty_level,
             count=request.count,
         )
     except ValueError as e:
@@ -1353,9 +1018,8 @@ async def append_challenge_exercises(
     return {"new_exercise_ids": new_ids, "count": len(new_ids)}
 
 
-@router.post("/challenge/{course_id}/exit")
+@router.post("/challenge/exit")
 async def exit_challenge_path(
-    course_id: int,
     request: ExitSaveRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1365,7 +1029,7 @@ async def exit_challenge_path(
 
     success = await service.save_code(
         user_id=current_user.id,
-        course_id=course_id,
+        
         exercise_id=request.current_exercise_id,
         code=request.current_code,
         language=request.current_language,
@@ -1374,9 +1038,8 @@ async def exit_challenge_path(
     return {"success": success, "message": "Progress saved"}
 
 
-@router.get("/challenge/{course_id}/exercise/{exercise_id}")
+@router.get("/challenge/exercise/{exercise_id:int}")
 async def get_challenge_exercise(
-    course_id: int,
     exercise_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1386,7 +1049,7 @@ async def get_challenge_exercise(
 
     result = await service.get_exercise_by_id(
         user_id=current_user.id,
-        course_id=course_id,
+        
         exercise_id=exercise_id,
     )
 
@@ -1394,7 +1057,7 @@ async def get_challenge_exercise(
         raise HTTPException(status_code=404, detail="Exercise not found in challenge path")
 
     # Get all progress to find index
-    progress = await service.get_progress(current_user.id, course_id)
+    progress = await service.get_progress(current_user.id, None)
 
     return {
         "exercise": result.get("exercise"),
@@ -1408,86 +1071,6 @@ async def get_challenge_exercise(
     }
 
 
-# ========================================
-# Legacy APIs (for backward compatibility)
-# ========================================
-
-@router.get("/challenge/{course_id}/infinite/{session_id}/progress", response_model=InfiniteProgressResponse)
-async def get_infinite_progress_legacy(
-    course_id: int,
-    session_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Legacy API - redirects to new progress endpoint"""
-    service = get_arena_infinite_service(db)
-    progress = await service.get_progress(
-        user_id=current_user.id,
-        course_id=course_id,
-    )
-    progress["session_id"] = session_id
-    return InfiniteProgressResponse(**progress)
-
-
-@router.post("/challenge/{course_id}/infinite/{session_id}/submit", response_model=SubmitExerciseResponse)
-async def submit_infinite_exercise_legacy(
-    course_id: int,
-    session_id: str,
-    request: SubmitExerciseRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Legacy API - redirects to new submit endpoint"""
-    return await submit_challenge_exercise(course_id, request, current_user, db)
-
-
-@router.post("/challenge/{course_id}/infinite/{session_id}/save-code")
-async def save_infinite_code_legacy(
-    course_id: int,
-    session_id: str,
-    request: SaveCodeRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Legacy API - redirects to new save-code endpoint"""
-    return await save_challenge_code(course_id, request, current_user, db)
-
-
-@router.post("/challenge/{course_id}/infinite/{session_id}/switch")
-async def switch_infinite_exercise_legacy(
-    course_id: int,
-    session_id: str,
-    request: SwitchExerciseRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Legacy API - redirects to new switch endpoint"""
-    return await switch_challenge_exercise(course_id, request, current_user, db)
-
-
-@router.post("/challenge/{course_id}/infinite/{session_id}/append")
-async def append_infinite_exercises_legacy(
-    course_id: int,
-    session_id: str,
-    request: AppendExercisesRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Legacy API - redirects to new append endpoint"""
-    return await append_challenge_exercises(course_id, request, current_user, db)
-
-
-@router.post("/challenge/{course_id}/infinite/{session_id}/exit")
-async def exit_infinite_session_legacy(
-    course_id: int,
-    session_id: str,
-    request: ExitSaveRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Legacy API - redirects to new exit endpoint"""
-    return await exit_challenge_path(course_id, request, current_user, db)
-
 
 class RecentArenaExercise(BaseModel):
     """最近挑战之路练习"""
@@ -1497,22 +1080,20 @@ class RecentArenaExercise(BaseModel):
     difficulty: int
 
 
-@router.get("/challenge/{course_id}/recent", response_model=list[RecentArenaExercise])
+@router.get("/challenge/recent", response_model=list[RecentArenaExercise])
 async def get_recent_arena_exercises(
-    course_id: int,
     limit: int = Query(default=3, ge=1, le=10),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """获取挑战之路最近练习的题目（含正确情况）"""
+    """获取挑战之路最近练习的题目（含正确情况）- 全局，不关联课程"""
     # 查询最近的 arena_exercise_progress，按最后尝试时间倒序
     result = await db.execute(
         select(ArenaExerciseProgress, Exercise)
         .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
         .where(
             ArenaExerciseProgress.user_id == current_user.id,
-            ArenaExerciseProgress.course_id == course_id,
-            ArenaExerciseProgress.is_completed == True,  # 只取已提交的
+            ArenaExerciseProgress.is_completed,  # 只取已提交的
         )
         .order_by(ArenaExerciseProgress.last_attempt_at.desc())
         .limit(limit)
@@ -1536,54 +1117,6 @@ async def get_recent_arena_exercises(
         ))
 
     return exercises
-
-
-@router.get("/challenge/{course_id}/active-session")
-async def get_active_challenge_session(
-    course_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """获取用户某门课的挑战之路信息（用于错题本跳转）
-
-    由于移除了会话概念，现在直接返回课程维度的题目信息
-    """
-    service = get_arena_infinite_service(db)
-
-    # Get all progress for this course
-    progress = await service.get_progress(
-        user_id=current_user.id,
-        course_id=course_id,
-    )
-
-    if not progress["exercises"]:
-        return {"session": None, "exercise_map": {}, "message": "No challenge path found"}
-
-    # Build exercise map
-    exercise_map = {
-        ex["exercise_id"]: {
-            "exercise_index": ex["exercise_index"],
-            "is_completed": ex["is_completed"],
-            "is_correct": ex["is_correct"],
-            "is_unlocked": ex["is_unlocked"],
-        }
-        for ex in progress["exercises"]
-    }
-
-    # Return pseudo session for backward compatibility
-    pseudo_session_id = f"challenge-{course_id}"
-
-    return {
-        "session": {
-            "id": pseudo_session_id,
-            "course_id": course_id,
-            "status": "in_progress",
-            "current_index": progress["current_index"],
-            "total_exercises": progress["total_exercises"],
-            "exercise_ids": [ex["exercise_id"] for ex in progress["exercises"]],
-        },
-        "exercise_map": exercise_map,
-    }
 
 
 # ========== BKT Mastery Endpoints (小节/章节/课程 三层聚合) ==========
@@ -1623,7 +1156,6 @@ async def get_section_mastery(
     from app.models.section import Section
     from app.models.section_mastery import SectionMastery
     from app.models.knowledge_point_mastery import KnowledgePointMastery
-    from app.services.bkt_mastery import BKTMasteryService
 
     # 获取小节信息
     section_result = await db.execute(
@@ -1694,7 +1226,6 @@ async def get_course_mastery(
 ):
     """获取课程掌握度（BKT 四层聚合顶层）"""
     from app.services.bkt_mastery import BKTMasteryService
-    from app.models.course import Course
 
     import logging
     logger = logging.getLogger(__name__)

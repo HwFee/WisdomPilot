@@ -1,0 +1,53 @@
+{
+  "id": 119,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "528",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "莫比乌斯反演",
+    "容斥原理",
+    "LibreOJ β Round"
+  ],
+  "content": {
+    "title": "「LibreOJ β Round #4」求和",
+    "description": "## 题目描述\n给定两个正整数 $N,M$，你需要计算 $(\\sum\\limits_{i=1}^N\\sum\\limits_{j=1}^M \\mu^2(\\gcd(i,j))) \\bmod 998244353$ 的结果。\n\n## 输入格式\n输入一行两个空格隔开的正整数，分别为 $N,M$。\r\n\n\n## 输出格式\n输出一行一个正整数表示求和取模后的结果。\n\n## 数据范围与提示\n$1 \\leq N,M \\leq 10^{13}$",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #528",
+    "loj_url": "https://loj.ac/p/528",
+    "samples": [
+      {
+        "input": "2 3",
+        "output": "6"
+      },
+      {
+        "input": "57 71",
+        "output": "3763"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "2 3",
+      "output": "6"
+    },
+    {
+      "input": "57 71",
+      "output": "3763"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:58.934704",
+  "updated_at": "2026-04-22 04:23:42.727725",
+  "z_id": "Z528"
+}

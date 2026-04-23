@@ -71,7 +71,7 @@ export function AIHintButton({
 
   return (
     <div className="relative">
-      <button
+      <button type="button"
         onClick={handleClick}
         disabled={disabled || !canAfford || isLoading}
         className={`

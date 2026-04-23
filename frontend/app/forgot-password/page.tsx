@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
               <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
                 <Sparkles className="size-4" />
               </div>
-              <span>{t('DSA 教学平台', 'DSA Platform')}</span>
+              <span>{t('智码领航', 'ZhiMa LingHang')}</span>
             </div>
           </div>
 
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
               <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Sparkles className="size-4 text-primary" />
               </div>
-              <span>{t('DSA 教学平台', 'DSA Platform')}</span>
+              <span>{t('智码领航', 'ZhiMa LingHang')}</span>
             </div>
 
             <div className="text-center">
@@ -139,7 +139,7 @@ export default function ForgotPasswordPage() {
             <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
               <Sparkles className="size-4" />
             </div>
-            <span>{t('DSA 教学平台', 'DSA Platform')}</span>
+            <span>{t('智码领航', 'ZhiMa LingHang')}</span>
           </div>
         </div>
 
@@ -169,7 +169,7 @@ export default function ForgotPasswordPage() {
         {/* Language Switcher */}
         <div className="absolute top-6 right-6">
           <div className="inline-flex items-center bg-secondary rounded-full p-1">
-            <button
+            <button type="button"
               onClick={() => setLang('zh')}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
                 lang === 'zh'
@@ -179,7 +179,7 @@ export default function ForgotPasswordPage() {
             >
               中文
             </button>
-            <button
+            <button type="button"
               onClick={() => setLang('en')}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
                 lang === 'en'
@@ -198,7 +198,7 @@ export default function ForgotPasswordPage() {
             <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Sparkles className="size-4 text-primary" />
             </div>
-            <span>{t('DSA 教学平台', 'DSA Platform')}</span>
+            <span>{t('智码领航', 'ZhiMa LingHang')}</span>
           </div>
 
           {/* Header */}
@@ -251,7 +251,7 @@ export default function ForgotPasswordPage() {
               )}
             </div>
 
-            <button
+            <button type="button"
               type="submit"
               disabled={isLoading}
               className="w-full h-12 text-base font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

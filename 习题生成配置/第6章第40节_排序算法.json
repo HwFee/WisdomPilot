@@ -1,0 +1,77 @@
+{
+  "chapter_id": 6,
+  "chapter_title": "深入模块化设计与应用",
+  "section_id": 40,
+  "section_title": "排序算法",
+  "total_knowledge_points": 3,
+  "total_exercises": 3,
+  "knowledge_point_coverage": {
+    "156": 1,
+    "157": 1,
+    "158": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 156,
+      "name": "冒泡排序"
+    },
+    {
+      "id": 157,
+      "name": "选择排序"
+    },
+    {
+      "id": 158,
+      "name": "排序算法综合分析"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        156
+      ],
+      "knowledge_point_names": [
+        "冒泡排序"
+      ],
+      "description": "考察知识点：冒泡排序",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        157
+      ],
+      "knowledge_point_names": [
+        "选择排序"
+      ],
+      "description": "考察知识点：选择排序",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        158
+      ],
+      "knowledge_point_names": [
+        "排序算法综合分析"
+      ],
+      "description": "考察知识点：排序算法综合分析",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

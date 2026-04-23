@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,6 +17,10 @@ from app.models import TierTransaction  # noqa: F401 - registers tier transactio
 from app.models import MasteryXpTransaction  # noqa: F401 - registers mastery xp transaction model
 from app.models import Solution  # noqa: F401 - registers solution model
 from app.middleware import RateLimitMiddleware
+from app.config import get_settings
+
+settings = get_settings()
+
 from app.routers import (
     auth_router,
     users_router,
@@ -60,9 +63,7 @@ async def lifespan(app: FastAPI):
     # Initialize AI service with config from settings
     from app.services.ai import ai_service
     from app.schemas.ai import AIProviderConfig
-    from app.config import get_settings
-
-    settings = get_settings()
+    # Settings already loaded at module level
     ai_config = AIProviderConfig(
         provider=settings.AI_PROVIDER,
         api_key=settings.AI_API_KEY,
@@ -85,7 +86,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AIcodiingTeach API",
+    title="智码领航 API",
     description="AI-powered Programming Teaching Platform API",
     version="1.0.0",
     lifespan=lifespan,
@@ -102,8 +103,8 @@ app.add_middleware(
         "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
 
 # Include routers
@@ -133,14 +134,16 @@ app.include_router(learning_path_router)
 app.include_router(tier_router)
 app.include_router(core_router)
 app.include_router(xp_router)
-app.include_router(test_sandbox_router)
+# Test sandbox router - only register if enabled (should be False in production)
+if settings.ENABLE_TEST_SANDBOX:
+    app.include_router(test_sandbox_router)
 app.include_router(solutions_router)
 
 
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"status": "ok", "message": "AIcodiingTeach API is running"}
+    return {"status": "ok", "message": "智码领航 API is running"}
 
 
 @app.get("/health")
@@ -213,12 +216,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """捕获所有未处理的异常，记录日志并返回友好错误"""
-    # 打印完整堆栈到控制台
-    print(f"[ERROR] Unhandled exception on {request.method} {request.url}:")
-    traceback.print_exc()
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error(
+        "Unhandled exception on %s %s",
+        request.method,
+        request.url,
+        exc_info=True,
+    )
 
-    # 返回 JSON 响应（包含 CORS 头）
+    # 返回固定错误消息，不暴露内部异常详情
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"}
+        content={"detail": "Internal server error"}
     )

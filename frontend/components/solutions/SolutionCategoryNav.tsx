@@ -31,7 +31,7 @@ export function SolutionCategoryNav({ activeCategory, onCategoryChange, lang = '
           const isActive = activeCategory === cat.key
 
           return (
-            <button
+            <button type="button"
               key={cat.key}
               onClick={() => onCategoryChange(cat.key)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${

@@ -1,7 +1,8 @@
 """
 User Arena Profile Model
 
-Tracks user's competitive profile for the Challenge Path (竞技之路).
+Tracks user's competitive profile for the Challenge Path (挑战之路).
+Global profile - independent of courses.
 """
 
 import uuid
@@ -15,7 +16,6 @@ from app.utils.time import utc_now
 
 if TYPE_CHECKING:
     from app.models.user import User
-    from app.models.course import Course
 
 
 # Tier thresholds
@@ -30,23 +30,21 @@ TIER_THRESHOLDS = {
 
 class UserArenaProfile(Base):
     """
-    User Arena Profile model - tracks user's competitive stats
-
-    Each user has one profile per course for the Challenge Path.
+    User Arena Profile model - tracks user's competitive stats for Challenge Path.
+    One profile per user (global, not per-course).
     """
 
     __tablename__ = "user_arena_profiles"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
-    course_id: Mapped[int] = mapped_column(Integer, ForeignKey("courses.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, unique=True)
 
     # Competitive score
     total_score: Mapped[float] = mapped_column(Float, default=0.0, comment="Total accumulated score")
     tier: Mapped[str] = mapped_column(String(20), default="bronze", comment="Current tier")
     rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, comment="Current rank in leaderboard")
 
-    # Tier system (王者荣耀风格段位)
+    # Tier system
     sub_tier: Mapped[int] = mapped_column(Integer, default=4, comment="Sub-tier (1=I, 2=II, 3=III, 4=IV, 5=V)")
     stars: Mapped[int] = mapped_column(Integer, default=0, comment="Current stars")
     protection_remaining: Mapped[int] = mapped_column(Integer, default=3, comment="Remaining tier protection uses")
@@ -85,13 +83,11 @@ class UserArenaProfile(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User")
-    course: Mapped["Course"] = relationship("Course")
 
     __table_args__ = (
-        UniqueConstraint("user_id", "course_id", name="uq_user_arena_course"),
+        UniqueConstraint("user_id", name="uq_user_arena"),
         Index("idx_arena_user", "user_id"),
-        Index("idx_arena_course", "course_id"),
-        Index("idx_arena_score", "course_id", "total_score"),
+        Index("idx_arena_score", "total_score"),
     )
 
     def __repr__(self) -> str:

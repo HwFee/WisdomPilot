@@ -1,0 +1,56 @@
+{
+  "chapter_id": 8,
+  "chapter_title": "综合设计与应用",
+  "section_id": 50,
+  "section_title": "指针函数与动态内存",
+  "total_knowledge_points": 2,
+  "total_exercises": 2,
+  "knowledge_point_coverage": {
+    "176": 1,
+    "177": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 176,
+      "name": "指针函数与函数指针"
+    },
+    {
+      "id": 177,
+      "name": "动态内存分配"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        176
+      ],
+      "knowledge_point_names": [
+        "指针函数与函数指针"
+      ],
+      "description": "考察知识点：指针函数与函数指针",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        177
+      ],
+      "knowledge_point_names": [
+        "动态内存分配"
+      ],
+      "description": "考察知识点：动态内存分配",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

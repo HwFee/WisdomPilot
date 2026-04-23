@@ -442,7 +442,8 @@ class AIService:
     def configure(self, config: AIProviderConfig):
         """配置 AI 提供商"""
         self._config = config
-        if config.provider == "openai":
+        if config.provider in ("openai", "siliconflow"):
+            # siliconflow uses OpenAI-compatible API
             self._provider = OpenAIProvider(config)
         elif config.provider == "minimax":
             self._provider = MiniMaxProvider(config)

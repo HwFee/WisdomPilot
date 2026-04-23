@@ -4,7 +4,7 @@ import uuid
 import enum
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, Enum, JSON, Text
+from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.utils.time import utc_now

@@ -45,7 +45,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
             <TrendingUp className="w-10 h-10 mb-2 opacity-50" />
             <p className="text-sm">{t('开始学习后查看知识掌握度', 'Start learning to see mastery')}</p>
             {onLearnClick && (
-              <button
+              <button type="button"
                 onClick={() => onLearnClick()}
                 className="mt-3 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
               >
@@ -62,7 +62,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">{kp.mastery}%</span>
                     {onLearnClick && kp.mastery < 80 && (
-                      <button
+                      <button type="button"
                         onClick={() => onLearnClick(kp.courseId)}
                         className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline flex items-center gap-0.5"
                       >
@@ -86,7 +86,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
 
       {/* 底部去学习按钮 */}
       {sortedPoints.length > 0 && onLearnClick && !compact && (
-        <button
+        <button type="button"
           onClick={() => onLearnClick()}
           className="mt-4 w-full py-2.5 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors"
         >

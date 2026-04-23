@@ -68,7 +68,7 @@ async def add_favorite(
         )
         existing = result.scalar_one_or_none()
     else:
-        logger.warning(f"[API] 没有 exercise_key 和 exercise_id，无法去重")
+        logger.warning("[API] 没有 exercise_key 和 exercise_id，无法去重")
 
     if existing:
         logger.info(f"[API] 收藏已存在: id={existing.id}")
@@ -87,7 +87,7 @@ async def add_favorite(
         return existing
 
     # 创建新收藏（完全依照 WrongQuestion 的字段）
-    logger.info(f"[API] 创建新收藏")
+    logger.info("[API] 创建新收藏")
     favorite = Favorite(
         user_id=current_user.id,
         # 与错题本一致的字段
@@ -227,7 +227,7 @@ async def check_favorite(
 
     # 第一步：用 exercise_key 查询
     if exercise_key:
-        logger.info(f"[API] check_favorite: 使用 exercise_key 查询")
+        logger.info("[API] check_favorite: 使用 exercise_key 查询")
         result = await db.execute(
             select(Favorite).where(
                 Favorite.user_id == current_user.id,
@@ -239,7 +239,7 @@ async def check_favorite(
 
     # 第二步：如果没找到，用 exercise_id 查询
     if favorite is None and exercise_id:
-        logger.info(f"[API] check_favorite: 使用 exercise_id 查询")
+        logger.info("[API] check_favorite: 使用 exercise_id 查询")
         result = await db.execute(
             select(Favorite).where(
                 Favorite.user_id == current_user.id,

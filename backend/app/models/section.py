@@ -19,6 +19,7 @@ from app.utils.time import utc_now
 if TYPE_CHECKING:
     from app.models.chapter import Chapter
     from app.models.section_base_question import SectionBaseQuestion
+    from app.models.section_knowledge_point import SectionKnowledgePoint
 
 
 class Section(Base):
@@ -62,6 +63,12 @@ class Section(Base):
         "SectionBaseQuestion",
         back_populates="section",
         cascade="all, delete-orphan"
+    )
+    knowledge_points: Mapped[List["SectionKnowledgePoint"]] = relationship(
+        "SectionKnowledgePoint",
+        back_populates="section",
+        cascade="all, delete-orphan",
+        order_by="SectionKnowledgePoint.order_index"
     )
 
     def __repr__(self) -> str:

@@ -1,0 +1,53 @@
+{
+  "id": 77,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "178",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "模板",
+    "多项式 / 形式幂级数",
+    "数论"
+  ],
+  "content": {
+    "title": "多项式求根",
+    "description": "## 题目描述\n这是一道模板题。\r\n\r\n给定一个多项式方程 $\\sum_{i=0}^n a_i x^i = 0$，求出它在模素数 $p$ 意义下的所有根。\r\n\r\n\r\n\n\n## 输入格式\n第一行两个正整数 $n$，$p$，表示多项式的次数和模数。\r\n\r\n第二行 $n+1$ 个整数 $a_0,a_1,\\cdots,a_n$，表示这个多项式。\r\n\n\n## 输出格式\n第一行一个整数 $k$，表示方程根的个数。\r\n\r\n第二行 $k$ 个从小到大的整数，表示所有根。注意，这里我们认为重根**只算一个**。\n\n## 数据范围与提示\n$3\\le p\\le 10^9,1\\le n\\le 100,0\\le a_i< p,a_n\\neq 0$。\r\n",
+    "time_limit": 1.0,
+    "memory_limit": 512,
+    "source": "LibreOJ #178",
+    "loj_url": "https://loj.ac/p/178",
+    "samples": [
+      {
+        "input": "2 5\n1 0 1",
+        "output": "2\n2 3"
+      },
+      {
+        "input": "2 7\n1 0 1",
+        "output": "0"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "2 5\n1 0 1",
+      "output": "2\n2 3"
+    },
+    {
+      "input": "2 7\n1 0 1",
+      "output": "0"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:48.296599",
+  "updated_at": "2026-04-22 04:23:26.280248",
+  "z_id": "Z178"
+}

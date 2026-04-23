@@ -186,7 +186,7 @@ export default function NotesPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
-          <button
+          <button type="button"
             onClick={() => router.back()}
             className="p-2.5 hover:bg-muted rounded-lg transition-colors"
           >
@@ -194,7 +194,7 @@ export default function NotesPage() {
           </button>
           <h1 className="text-xl font-semibold">我的笔记</h1>
           <span className="ml-auto text-base text-muted-foreground">{notes.length} 条</span>
-          <button
+          <button type="button"
             onClick={handleExportAll}
             disabled={notes.length === 0}
             className="flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
@@ -248,7 +248,7 @@ export default function NotesPage() {
                   </p>
                 )}
                 {!searchQuery && selectedTags.length === 0 && (
-                  <button
+                  <button type="button"
                     onClick={handleCreate}
                     className="px-6 py-3 text-base bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
                   >

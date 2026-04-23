@@ -26,12 +26,13 @@ import {
   TodayStatsResponse,
 } from '@/lib/api'
 import {
-  Sparkles, Zap, Trophy, Clock, Target,
+  Sparkles, Zap, Trophy, Clock, Target, Star,
   BookOpen, Code2, Swords, Gem,
 } from 'lucide-react'
 import type { ReviewStatsResponse } from '@/types/review'
 import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse, Tier } from '@/types/api'
-import { getRecentArenaExercises, RecentArenaExercise, TIER_ICONS, TIER_NAMES } from '@/lib/api/learning-path'
+import { getRecentArenaExercises, RecentArenaExercise, TIER_NAMES } from '@/lib/api/learning-path'
+import { getTierConfig } from '@/lib/icons/tier-icons'
 
 // Dashboard components
 import { WelcomeSection } from './WelcomeSection'
@@ -200,8 +201,16 @@ export default function DashboardPage() {
         setTodayStats(todayData)
       } catch { /* ignore */ }
 
-    } catch { /* ignore */ }
-    finally { if (!isMounted.current) return; setIsLoading(false) }
+    } catch (err) {
+      // 记录错误并展示给用户，避免无限 loading
+      if (isMounted.current) {
+        setIsLoading(false)
+      }
+      console.error("[Dashboard] fetchData failed:", err)
+    } finally {
+      if (!isMounted.current) return
+      setIsLoading(false)
+    }
   }, [])
 
   // Fetch leaderboards when current course changes
@@ -223,9 +232,9 @@ export default function DashboardPage() {
   }, [])
 
   // Fetch recent arena exercises for challenge path
-  const fetchRecentArenaExercises = useCallback(async (courseId: number, token: string) => {
+  const fetchRecentArenaExercises = useCallback(async (token: string) => {
     try {
-      const recentExercises = await getRecentArenaExercises(courseId, token, 3)
+      const recentExercises = await getRecentArenaExercises(token, 3)
       // 转换为组件需要的格式
       const formatted: RecentExercise[] = recentExercises.map(ex => ({
         stageName: ex.title,
@@ -263,7 +272,7 @@ export default function DashboardPage() {
     if (currentCourseId && token) {
       fetchLeaderboards(currentCourseId, token)
       fetchKnowledgePoints(currentCourseId, token)
-      fetchRecentArenaExercises(currentCourseId, token)
+      fetchRecentArenaExercises(token)
     }
   }, [currentCourseId, fetchLeaderboards, fetchKnowledgePoints, fetchRecentArenaExercises])
 
@@ -291,7 +300,7 @@ export default function DashboardPage() {
         if (currentCourseId) {
           fetchLeaderboards(currentCourseId, token)
           fetchKnowledgePoints(currentCourseId, token)
-          fetchRecentArenaExercises(currentCourseId, token)
+          fetchRecentArenaExercises(token)
         }
       }
     }
@@ -311,7 +320,7 @@ export default function DashboardPage() {
           if (currentCourseId) {
             fetchLeaderboards(currentCourseId, token)
             fetchKnowledgePoints(currentCourseId, token)
-            fetchRecentArenaExercises(currentCourseId, token)
+            fetchRecentArenaExercises(token)
           }
         }
       }
@@ -396,7 +405,7 @@ export default function DashboardPage() {
                 <Sparkles className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-base font-bold text-foreground">GAI 编程教学平台</h1>
+                <h1 className="text-base font-bold text-foreground">智码领航</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">{t('基于生成式AI的实践教学系统', 'AI-Powered Learning')}</p>
               </div>
             </div>
@@ -410,11 +419,11 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center bg-muted rounded-full p-0.5">
-                <button onClick={() => { if (lang !== 'zh') toggleLanguage() }}
+                <button type="button" onClick={() => { if (lang !== 'zh') toggleLanguage() }}
                   className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all ${lang === 'zh' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                   中
                 </button>
-                <button onClick={() => { if (lang !== 'en') toggleLanguage() }}
+                <button type="button" onClick={() => { if (lang !== 'en') toggleLanguage() }}
                   className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all ${lang === 'en' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                   EN
                 </button>
@@ -422,21 +431,21 @@ export default function DashboardPage() {
 
               {/* Flow Icons - 智核流水、段位流水、经验流水 */}
               <div className="flex items-center gap-1 pl-2 border-l border-border">
-                <button
+                <button type="button"
                   onClick={() => router.push('/cores')}
                   className="p-2 text-purple-500 hover:text-purple-600 hover:bg-purple-500/10 rounded-lg transition-all"
                   title={t('智核流水', 'Core Transactions')}
                 >
                   <Gem className="w-4 h-4" />
                 </button>
-                <button
+                <button type="button"
                   onClick={() => router.push('/tier')}
                   className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-lg transition-all"
                   title={t('段位流水', 'Tier Transactions')}
                 >
                   <Trophy className="w-4 h-4" />
                 </button>
-                <button
+                <button type="button"
                   onClick={() => router.push('/xp')}
                   className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
                   title={t('经验流水', 'XP Transactions')}
@@ -444,7 +453,7 @@ export default function DashboardPage() {
                   <Zap className="w-4 h-4" />
                 </button>
                 <span className="text-xs text-muted-foreground hidden lg:block ml-2">{user?.username}</span>
-                <button onClick={handleLogout}
+                <button type="button" onClick={handleLogout}
                   className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                   title={t('退出登录', 'Logout')}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
@@ -457,21 +466,16 @@ export default function DashboardPage() {
 
       {/* Main Content - max-width 1280px, centered, responsive padding */}
       <main className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-24 pb-8">
-        {/* 第1行：问候语 + 继续学习大按钮 */}
-        <section className="mb-6">
+        {/* 第1行：问候语（简化版） */}
+        <section className="mb-4">
           <WelcomeSection
             user={{ id: user?.id || '', username: user?.username || '' }}
-            lastProgress={currentCourse ? {
-              courseName: currentCourse.course_name,
-              chapterName: currentCourse.current_chapter || '',
-            } : null}
-            onContinueLearning={handleContinueLearning}
             lang={lang}
           />
         </section>
 
         {/* 第2行：高频功能区（4模块横向并排） */}
-        <section className="mb-6">
+        <section className="mb-4">
           <QuickTools
             wrongCount={reviewStats?.wrong_count ?? 0}
             favoritesCount={favoritesCount}
@@ -493,7 +497,7 @@ export default function DashboardPage() {
         </section>
 
         {/* 第3行：数据概览卡（4卡片等宽等高） */}
-        <section className="mb-6">
+        <section className="mb-4">
           <TodayStats
             stats={{
               exercisesToday: todayStats.exercises,
@@ -510,10 +514,10 @@ export default function DashboardPage() {
         </section>
 
         {/* 第4行：核心内容双栏区（左右高度对齐） */}
-        <section className="mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <section className="mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* 左栏 60%：正在学习 + 双排行榜 */}
-            <div className="lg:col-span-3 flex flex-col gap-6" style={{ minHeight: '500px' }}>
+            <div className="lg:col-span-3 flex flex-col gap-6 lg:h-[500px]">
               {/* 正在学习 - 新的双路径卡片 */}
               <div className="flex-[6] min-h-0">
                 <CurrentLearningPanel
@@ -539,7 +543,7 @@ export default function DashboardPage() {
             </div>
 
             {/* 右栏 40%：题解广场 + 最近动态 */}
-            <div className="lg:col-span-2 flex flex-col gap-6" style={{ minHeight: '500px' }}>
+            <div className="lg:col-span-2 flex flex-col gap-6 lg:h-[500px]">
               {/* 题解广场 */}
               <div className="flex-1 min-h-0">
                 <SolutionBoard
@@ -599,7 +603,7 @@ function DualLeaderboardPreview({
     <div className="bg-card rounded-2xl border border-border p-4 h-full flex flex-col">
       {/* Tabs */}
       <div className="flex gap-2 mb-3 flex-shrink-0">
-        <button
+        <button type="button"
           onClick={() => setActiveTab('mastery')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             activeTab === 'mastery'
@@ -610,7 +614,7 @@ function DualLeaderboardPreview({
           <Trophy className="w-3.5 h-3.5" />
           {t('精进榜', 'Mastery')}
         </button>
-        <button
+        <button type="button"
           onClick={() => setActiveTab('arena')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             activeTab === 'arena'
@@ -658,12 +662,17 @@ function DualLeaderboardPreview({
                   </span>
                 ) : (
                   <div className="flex items-center gap-1 text-sm flex-shrink-0">
-                    <span className="text-base">{TIER_ICONS[entry.tier as Tier] || '🏅'}</span>
+                    <span className="w-4 h-4 flex items-center justify-center">
+                      {getTierConfig(entry.tier as string)?.icon}
+                    </span>
                     <span className="font-medium">{TIER_NAMES[entry.tier as Tier] || entry.tier}</span>
                     {entry.sub_tier && (
                       <span>{['I','II','III','IV','V'][entry.sub_tier - 1]}</span>
                     )}
-                    <span className="ml-1">⭐{entry.stars ?? 0}</span>
+                    <span className="ml-1 flex items-center gap-0.5">
+                      <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      {entry.stars ?? 0}
+                    </span>
                   </div>
                 )}
               </div>
@@ -684,7 +693,7 @@ function DualLeaderboardPreview({
           </span>
         )}
         {onViewAll && (
-          <button
+          <button type="button"
             onClick={onViewAll}
             className="text-xs text-primary hover:text-primary/80 transition-colors"
           >

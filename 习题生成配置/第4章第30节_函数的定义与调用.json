@@ -1,0 +1,56 @@
+{
+  "chapter_id": 4,
+  "chapter_title": "模块化设计与应用",
+  "section_id": 30,
+  "section_title": "函数的定义与调用",
+  "total_knowledge_points": 2,
+  "total_exercises": 2,
+  "knowledge_point_coverage": {
+    "135": 1,
+    "136": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 135,
+      "name": "函数定义详解"
+    },
+    {
+      "id": 136,
+      "name": "函数声明与调用详解"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        135
+      ],
+      "knowledge_point_names": [
+        "函数定义详解"
+      ],
+      "description": "考察知识点：函数定义详解",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        136
+      ],
+      "knowledge_point_names": [
+        "函数声明与调用详解"
+      ],
+      "description": "考察知识点：函数声明与调用详解",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

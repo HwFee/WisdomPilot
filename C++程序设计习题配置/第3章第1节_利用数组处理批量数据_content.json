@@ -1,0 +1,141 @@
+{
+  "chapter_id": 3,
+  "chapter_title": "数据处理与容器",
+  "section_id": 1,
+  "section_title": "利用数组处理批量数据",
+  "total_knowledge_points": 6,
+  "knowledge_points": [
+    {
+      "id": 1,
+      "name": "C++数组的局限性",
+      "content": "C++数组的局限性是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "C++数组的局限性相关知识点总结",
+      "code_example": "# C++数组的局限性示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "数组作为函数参数",
+      "content": "数组作为函数参数是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "数组作为函数参数相关知识点总结",
+      "code_example": "# 数组作为函数参数示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Vector容器的定义",
+      "content": "Vector容器的定义是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "Vector容器的定义相关知识点总结",
+      "code_example": "# Vector容器的定义示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Vector容器的使用",
+      "content": "Vector容器的使用是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "Vector容器的使用相关知识点总结",
+      "code_example": "# Vector容器的使用示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "容器作为函数参数",
+      "content": "容器作为函数参数是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "容器作为函数参数相关知识点总结",
+      "code_example": "# 容器作为函数参数示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "容器的相关操作",
+      "content": "容器的相关操作是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "容器的相关操作相关知识点总结",
+      "code_example": "# 容器的相关操作示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    }
+  ]
+}

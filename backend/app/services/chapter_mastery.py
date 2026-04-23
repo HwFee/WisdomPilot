@@ -13,14 +13,11 @@ Based on research:
 - Deep Knowledge Tracing concepts
 """
 
-import math
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.models.chapter_mastery import ChapterMastery
-from app.models.exercise import Exercise
+import logging
 
 
 # Mastery level thresholds
@@ -257,3 +254,6 @@ class ChapterMasteryService:
 def get_chapter_mastery_service(db: AsyncSession) -> ChapterMasteryService:
     """Factory function for the service."""
     return ChapterMasteryService(db)
+
+
+logger = logging.getLogger(__name__)

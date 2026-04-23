@@ -1,4 +1,4 @@
-# AIcodiingTeach - 基于GAI的程序设计类课程实践教学系统
+# 智码领航 - 基于GAI的程序设计类课程实践教学系统
 
 ## 项目概述
 
@@ -9,8 +9,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/HwFee/AIcodiingTeach-demo.git
-cd AIcodiingTeach-demo
+git clone https://github.com/HwFee/zhima-linghang-demo.git
+cd zhima-linghang-demo
 ```
 
 ### 2. 后端启动
@@ -99,7 +99,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ## 项目结构
 
 ```
-AIcodiingTeach/
+智码领航/
 ├── backend/                # FastAPI 后端
 │   ├── app/
 │   │   ├── models/        # 数据模型

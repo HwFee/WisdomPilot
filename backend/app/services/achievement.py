@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.user import User
 from app.models.achievement import Achievement, UserAchievement, AchievementType
+import logging
 
 
 class AchievementService:
@@ -18,7 +19,7 @@ class AchievementService:
         """Get all active achievements"""
         result = await db.execute(
             select(Achievement)
-            .where(Achievement.is_active == True)
+            .where(Achievement.is_active)
             .order_by(Achievement.display_order, Achievement.difficulty)
         )
         return list(result.scalars().all())
@@ -278,3 +279,6 @@ class AchievementService:
 
 
 achievement_service = AchievementService()
+
+
+logger = logging.getLogger(__name__)

@@ -1,0 +1,53 @@
+{
+  "id": 144,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "553",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "DP",
+    "博弈论",
+    "LibreOJ Round"
+  ],
+  "content": {
+    "title": "「LibreOJ Round #8」MINIM",
+    "description": "## 题目描述\n取石子游戏的规则是这样的：有若干堆石子，两个玩家轮流操作，每个玩家每次要选一堆取走任意多个石子，但不能不取，无石子可取者输。\n\n现在共有 $n$ 堆石子，其中第 $i$ 堆的数量为 $l_i$，现在 LCR 需要在每一堆中扔掉一部分（可以不扔也可以全扔），如果第 $i$ 堆的石子在 LCR 操作后**还有剩余**，LCR 就需要付出 $v_i$ 的代价。LCR 操作完成后神犇会搬来新的一堆个数在 $[0,m]$ 之间的石子，两人玩取石子游戏，LCR 先手。神犇搬运新的一堆石子时会保证自己（后手）必胜，如果他无法做到这一点，就会立即结束游戏。\n\n现在 LCR 有 $q$ 次询问，每次给出一个 $c\\in [0,m]$，请你回答如果要让神犇搬来的石子数为 $c$（不能让神犇结束游戏，即使这里要求 $c=0$），LCR 付出代价的总和至少是多少。如果 LCR 不可能通过调整石子使得神犇搬来的石子数为 $c$，输出 `-1`。\n\n\n## 输入格式\n第一行两个正整数 $n,m$。\n\n接下来 $n$ 行每行两个正整数 $v_i,l_i$ 表示该堆石子的代价和数量。 \n\n接下来一行一个正整数 $q$。\n\n接下来 $q$ 行每行一个正整数 $c$ 表示询问。\n\n\n## 输出格式\n输出共 $q$ 行，依次表示每次询问的答案，无解输出 `-1`。\n\n## 数据范围与提示\n对于所有数据，$1\\le n,q \\le 10^5,1\\le v_i \\le 10^9,0\\le l_i\\le m\\le 10^9,c\\in [0,m]$。\n\n详细的数据限制及约定如下（留空表示和上述所有数据的约定相同）：\n\n|Subtask #|分值（百分比）|$n,q$|$l_i,m$|特殊性质|\n|:-:|:-:|:-:|:-:|:-:|\n|$1$|$15$|$\\le 10$|$\\le 10$|-|\n|$2$|$20$|$\\le 100$|$\\le 100$|-|\n|$3$|$20$|-|-|对于每个 $i$ 存在非负整数 $k$ 满足 $l_i=2^k-1$|\n|$4$|$20$|$\\le 20000$|$\\le 20000$|$l_i,v_i$ 在范围内均匀随机（使用 `std::mt19937` 并对最大值取模）|\n|$5$|$25$|-|-|$l_i,v_i$ 在范围内均匀随机（使用 `std::mt19937` 并对最大值取模）|",
+    "time_limit": 1.5,
+    "memory_limit": 512,
+    "source": "LibreOJ #553",
+    "loj_url": "https://loj.ac/p/553",
+    "samples": [
+      {
+        "input": "4 6\n2 3\n4 4\n3 5\n5 2\n7\n0\n1\n2\n3\n4\n5\n6",
+        "output": "0\n2\n2\n2\n3\n3\n5"
+      },
+      {
+        "input": "4 6\n2 3\n4 4\n3 5\n5 2\n7\n0\n1\n2\n3\n4\n5\n6",
+        "output": "0\n2\n2\n2\n3\n3\n5"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "4 6\n2 3\n4 4\n3 5\n5 2\n7\n0\n1\n2\n3\n4\n5\n6",
+      "output": "0\n2\n2\n2\n3\n3\n5"
+    },
+    {
+      "input": "4 6\n2 3\n4 4\n3 5\n5 2\n7\n0\n1\n2\n3\n4\n5\n6",
+      "output": "0\n2\n2\n2\n3\n3\n5"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:09.781146",
+  "updated_at": "2026-04-22 04:23:42.727725",
+  "z_id": "Z553"
+}

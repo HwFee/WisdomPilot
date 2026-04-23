@@ -1,0 +1,124 @@
+{
+  "chapter": {
+    "title": "简单C程序设计",
+    "sections": 3
+  },
+  "sections": [
+    {
+      "title": "1.1 C程序入门",
+      "description": "通过实例学习，掌握C程序的基本结构",
+      "estimated_minutes": 20,
+      "knowledge_points": [
+        {
+          "name": "C程序的基本结构",
+          "summary": "C程序由预处理指令、main函数和语句三部分组成",
+          "difficulty": 1,
+          "importance": 5,
+          "tips": ["一个C程序必须有且只能有一个main函数", "main函数是程序执行的起点"],
+          "common_mistakes": ["把main函数名拼写错误", "忘记写return语句"]
+        },
+        {
+          "name": "main函数",
+          "summary": "main函数是C程序的入口点，程序从这里开始执行",
+          "difficulty": 1,
+          "importance": 5,
+          "tips": ["main函数是程序执行的唯一入口", "返回0表示程序执行成功"],
+          "common_mistakes": ["写成void main()（不标准）", "忘记写return语句"]
+        },
+        {
+          "name": "语句与注释",
+          "summary": "语句以分号结尾，注释用于说明代码不参与执行",
+          "difficulty": 1,
+          "importance": 4,
+          "tips": ["注释要清晰说明代码功能", "不要过度注释"],
+          "common_mistakes": ["忘记在语句末尾加分号", "注释嵌套使用错误"]
+        }
+      ],
+      "questions": 5
+    },
+    {
+      "title": "1.2 基本数据类型与变量",
+      "description": "C语言的基本数据类型、标识符、变量和常量、格式化输出函数",
+      "estimated_minutes": 25,
+      "knowledge_points": [
+        {
+          "name": "基本数据类型",
+          "summary": "C语言基本数据类型包括整型、字符型、浮点型",
+          "difficulty": 1,
+          "importance": 5,
+          "tips": ["选择合适的数据类型", "浮点常量默认是double类型"],
+          "common_mistakes": ["混淆int和float的区别", "忘记给浮点数字加小数点"]
+        },
+        {
+          "name": "标识符",
+          "summary": "标识符由字母、数字、下划线组成，必须以字母或下划线开头",
+          "difficulty": 1,
+          "importance": 4,
+          "tips": ["用有意义的名字命名", "保持命名风格一致"],
+          "common_mistakes": ["使用中文命名", "以数字开头", "包含特殊字符"]
+        },
+        {
+          "name": "变量与常量",
+          "summary": "变量是可变化的量，常量是不可变化的量",
+          "difficulty": 1,
+          "importance": 5,
+          "tips": ["习惯给常量加const保护", "宏常量没有类型检查"],
+          "common_mistakes": ["修改常量的值", "混淆常量和变量的用法"]
+        },
+        {
+          "name": "printf格式化输出",
+          "summary": "printf用于格式化输出，支持多种格式说明符和转义字符",
+          "difficulty": 1,
+          "importance": 5,
+          "tips": ["格式字符串要用双引号", "参数个数要和格式说明符匹配"],
+          "common_mistakes": ["忘记在格式说明符前加%", "整数用%f输出", "忘记换行"]
+        }
+      ],
+      "questions": 5
+    },
+    {
+      "title": "1.3 程序设计基础",
+      "description": "基本功能设计、程序设计描述的方法、程序实现及常见错误分析及编程风格",
+      "estimated_minutes": 25,
+      "knowledge_points": [
+        {
+          "name": "算法与流程图",
+          "summary": "算法是解决问题的步骤，流程图是描述算法的图形工具",
+          "difficulty": 1,
+          "importance": 4,
+          "tips": ["先画流程图再写代码", "算法要清晰明了"],
+          "common_mistakes": ["算法步骤不完整", "忽略边界条件"]
+        },
+        {
+          "name": "程序设计描述方法",
+          "summary": "程序设计描述方法包括自然语言、流程图和伪代码",
+          "difficulty": 1,
+          "importance": 4,
+          "tips": ["选择合适的描述方式", "描述要清晰无歧义"],
+          "common_mistakes": ["描述过于简略", "步骤顺序错误"]
+        },
+        {
+          "name": "常见错误分析",
+          "summary": "常见错误分为语法错误和逻辑错误，需要仔细排查",
+          "difficulty": 2,
+          "importance": 5,
+          "tips": ["学会阅读编译错误信息", "养成调试习惯"],
+          "common_mistakes": ["忘记分号", "整数除法丢失精度", "变量名拼写错误"]
+        },
+        {
+          "name": "编程风格",
+          "summary": "良好的编程风格包括合理缩进、有意义命名、适当注释",
+          "difficulty": 1,
+          "importance": 4,
+          "tips": ["保持代码风格一致", "代码要整洁清晰"],
+          "common_mistakes": ["不缩进或缩进混乱", "变量名无意义", "不写注释"]
+        }
+      ],
+      "questions": 5
+    }
+  ],
+  "totals": {
+    "knowledge_points": 11,
+    "questions": 15
+  }
+}

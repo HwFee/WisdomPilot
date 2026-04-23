@@ -8,6 +8,7 @@ from app.models.user import User
 from app.utils.time import utc_now
 from app.services.achievement import achievement_service
 from app.services.core_service import CoreService
+import logging
 
 
 class ProfileService:
@@ -355,3 +356,6 @@ class ProfileService:
 
 
 profile_service = ProfileService()
+
+
+logger = logging.getLogger(__name__)

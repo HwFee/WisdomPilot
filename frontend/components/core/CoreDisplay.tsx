@@ -97,7 +97,7 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
   return (
     <div className="relative">
       {/* Core Balance Button */}
-      <button
+      <button type="button"
         onClick={() => {
           setIsOpen(!isOpen)
           if (!isOpen && showDetails) fetchTransactions()
@@ -118,7 +118,7 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between">
               <h3 className="font-medium text-foreground">{t('智核', 'Cores')}</h3>
-              <button
+              <button type="button"
                 onClick={() => setIsOpen(false)}
                 className="p-1 hover:bg-muted rounded-lg transition-colors"
               >

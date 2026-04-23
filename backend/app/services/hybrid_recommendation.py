@@ -16,11 +16,9 @@ import json
 import logging
 import math
 from typing import Optional
-from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 
 from app.models.exercise import Exercise
 from app.models.user_arena import UserArenaProfile
@@ -28,12 +26,7 @@ from app.models.arena_exercise_progress import ArenaExerciseProgress
 
 
 logger = logging.getLogger(__name__)
-from sqlalchemy import select, func, and_, or_
-from sqlalchemy.orm import selectinload
 
-from app.models.exercise import Exercise
-from app.models.user_arena import UserArenaProfile
-from app.models.arena_exercise_progress import ArenaExerciseProgress
 
 
 # Fusion weights (must sum to 1.0)
@@ -244,29 +237,51 @@ class HybridRecommendationService:
             FUSION_WEIGHTS["difficulty"] * difficulty_score
         )
 
-    async def get_user_stats(self, user_id: str, course_id: int) -> dict:
+    async def get_user_stats(self, user_id: str, course_id: Optional[int]) -> dict:
         """
         Get user statistics for behavior scoring.
+
+        Args:
+            user_id: User ID
+            course_id: Course ID. If None, aggregates stats across all courses (for challenge path).
 
         Returns:
             Dict with accuracy, avg_attempts, total_submissions, behavior_embedding
         """
         # Get user arena profile
-        result = await self.db.execute(
-            select(UserArenaProfile).where(
-                UserArenaProfile.user_id == user_id,
-                UserArenaProfile.course_id == course_id,
+        if course_id is not None:
+            result = await self.db.execute(
+                select(UserArenaProfile).where(
+                    UserArenaProfile.user_id == user_id,
+                    
+                )
             )
-        )
-        profile = result.scalar_one_or_none()
+            profile = result.scalar_one_or_none()
 
-        # Get exercise progress stats
-        progress_result = await self.db.execute(
-            select(ArenaExerciseProgress).where(
-                ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+            # Get exercise progress stats for specific course
+            progress_result = await self.db.execute(
+                select(ArenaExerciseProgress).where(
+                    ArenaExerciseProgress.user_id == user_id,
+                    
+                )
             )
-        )
+        else:
+            # Challenge path: aggregate across all courses
+            result = await self.db.execute(
+                select(UserArenaProfile).where(
+                    UserArenaProfile.user_id == user_id,
+                )
+            )
+            profiles = list(result.scalars().all())
+            profile = profiles[0] if profiles else None
+
+            # Get exercise progress stats across all courses
+            progress_result = await self.db.execute(
+                select(ArenaExerciseProgress).where(
+                    ArenaExerciseProgress.user_id == user_id,
+                )
+            )
+
         progresses = list(progress_result.scalars().all())
 
         total = len(progresses)
@@ -299,19 +314,32 @@ class HybridRecommendationService:
 
     async def get_candidate_exercises(
         self,
-        course_id: int,
+        course_id: Optional[int],
         exclude_ids: Optional[list[int]] = None,
         limit: int = 100,
+        min_difficulty: int = 1,
+        max_difficulty: int = 8,
     ) -> list[Exercise]:
-        """Get candidate exercises for recommendation."""
-        from app.models.chapter import Chapter
+        """Get candidate exercises for recommendation.
 
-        query = select(Exercise).distinct().where(Exercise.is_verified == True)
+        Args:
+            course_id: Course ID to filter by. If None, selects from all verified exercises
+                       (used for challenge path which is independent of courses).
+            exclude_ids: Exercise IDs to exclude from results.
+            limit: Maximum number of exercises to return.
+        """
+        query = select(Exercise).distinct().where(
+            Exercise.is_verified,
+            Exercise.difficulty >= min_difficulty,
+            Exercise.difficulty <= max_difficulty,
+        )
 
-        # Add course filter if we can determine chapters for this course
-        # Note: exercises are linked via chapter_id, so we need to join
-        query = query.join(Chapter, Exercise.chapter_id == Chapter.id)
-        query = query.where(Chapter.course_id == course_id)
+        # Challenge path (course_id=None) is independent of courses
+        # Only filter by course if course_id is provided
+        if course_id is not None:
+            from app.models.chapter import Chapter
+            query = query.join(Chapter, Exercise.chapter_id == Chapter.id)
+            query = query.where(Chapter.course_id == course_id)
 
         if exclude_ids:
             query = query.where(~Exercise.id.in_(exclude_ids))
@@ -377,7 +405,7 @@ class HybridRecommendationService:
     async def get_recommendations(
         self,
         user_id: str,
-        course_id: int,
+        course_id: Optional[int],
         limit: int = 10,
         exclude_ids: Optional[list[int]] = None,
         min_difficulty: int = 1,
@@ -388,7 +416,8 @@ class HybridRecommendationService:
 
         Args:
             user_id: User ID
-            course_id: Course ID
+            course_id: Course ID. If None, selects from all verified exercises
+                       (used for challenge path which is independent of courses).
             limit: Maximum recommendations to return
             exclude_ids: Exercise IDs to exclude
             min_difficulty: Minimum difficulty filter
@@ -400,8 +429,14 @@ class HybridRecommendationService:
         # 1. Get user stats
         user_stats = await self.get_user_stats(user_id, course_id)
 
-        # 2. Get candidate exercises
-        exercises = await self.get_candidate_exercises(course_id, exclude_ids)
+        # 2. Get candidate exercises (with difficulty filter at DB level)
+        exercises = await self.get_candidate_exercises(
+            course_id,
+            exclude_ids,
+            limit=200,
+            min_difficulty=min_difficulty,
+            max_difficulty=max_difficulty,
+        )
 
         # 3. Score each exercise
         scored_exercises = []
@@ -437,7 +472,7 @@ class HybridRecommendationService:
             if isinstance(kp_list, str):
                 try:
                     kp_list = json.loads(kp_list)
-                except:
+                except Exception:
                     kp_list = []
 
             # Generate reasons

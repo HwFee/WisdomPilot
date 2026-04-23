@@ -1,0 +1,54 @@
+{
+  "chapter_id": 9,
+  "chapter_title": "数据永久性存储",
+  "section_id": 23,
+  "section_title": "文件读写操作",
+  "total_knowledge_points": 4,
+  "total_exercises": 8,
+  "knowledge_points": [
+    {
+      "id": 180,
+      "name": "文本文件的特点与操作",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "id": 90,
+      "name": "文本文件读写",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "id": 181,
+      "name": "二进制文件的特点与操作",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "id": 91,
+      "name": "二进制文件操作",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

@@ -12,12 +12,12 @@ import numpy as np
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime
 
 from app.models.exercise import Exercise
 from app.models.user import User
 from app.models.user_weak_point import UserWeakPoint
 from app.config import get_settings
+import logging
 
 
 def _get_embedding_config():
@@ -83,7 +83,7 @@ async def generate_user_vector(
     if weak_points:
         weak_point_texts = []
         for wp in weak_points:
-            weight = wp.error_count / max(wp.mastery_level, 1)  # Higher weight for more errors
+            wp.error_count / max(wp.mastery_level, 1)  # Higher weight for more errors
             weak_point_texts.append(f"{wp.knowledge_point} (掌握度:{wp.mastery_level}/5, 错误:{wp.error_count}次)")
         text_parts.append(f"薄弱知识点: {', '.join(weak_point_texts)}")
 
@@ -133,7 +133,7 @@ async def _get_embedding_from_api(text: str) -> list[float]:
     config = _get_embedding_config()
 
     if not config["api_key"]:
-        print("Embedding API key not configured")
+        logger.info("Embedding API key not configured")
         return [0.0] * config["dimensions"]
 
     try:
@@ -152,10 +152,10 @@ async def _get_embedding_from_api(text: str) -> list[float]:
             if response.status_code == 200:
                 return response.json()['data'][0]['embedding']
             else:
-                print(f"Embedding API error: {response.status_code}")
+                logger.error(f"Embedding API error: {response.status_code}")
                 return [0.0] * config["dimensions"]
     except Exception as e:
-        print(f"Embedding generation error: {e}")
+        logger.error(f"Embedding generation error: {e}")
         return [0.0] * config["dimensions"]
 
 
@@ -190,8 +190,8 @@ async def recommend_exercises(
     # Build query for exercises
     query = select(Exercise).where(
         Exercise.source == source,
-        Exercise.is_verified == True,
-        Exercise.embedding != None,
+        Exercise.is_verified,
+        Exercise.embedding is not None,
         Exercise.embedding != '',
         Exercise.difficulty >= min_difficulty,
         Exercise.difficulty <= max_difficulty,
@@ -320,7 +320,7 @@ class VectorMatchService:
                 select(func.count()).select_from(Exercise).where(
                     Exercise.source == "loj",
                     Exercise.difficulty < 4,
-                    Exercise.embedding != None,
+                    Exercise.embedding is not None,
                     Exercise.embedding != '',
                 )
             )
@@ -373,3 +373,6 @@ class VectorMatchService:
 # Singleton instance for convenience
 def get_vector_match_service(db: AsyncSession) -> VectorMatchService:
     return VectorMatchService(db)
+
+
+logger = logging.getLogger(__name__)

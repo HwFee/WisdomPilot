@@ -1,0 +1,45 @@
+{
+  "id": 116,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "525",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "构造",
+    "欧拉定理",
+    "LibreOJ β Round"
+  ],
+  "content": {
+    "title": "「LibreOJ β Round #4」多项式",
+    "description": "## 题目描述\n给定一个正整数 $k$，你需要寻找一个系数均为 $0$ 到 $k-1$ 之间的非零多项式 $f(x)$，满足对于任意整数 $x$ 均有 $f(x)  \\bmod  k=0$。你给出的多项式次数不能超过 $60000$，且最高次系数必须非 $0$。\n\n## 输入格式\n输入一行，包含一个正整数 $k$。\n\n## 输出格式\n若无解，则只输出一个整数 $-1$。否则首先输出一个整数 $n$ 表示你寻找的多项式的次数，随后 $n+1$ 个整数按照从低位到高位的顺序输出多项式的系数。\r\n\r\n在此之后的输出将被忽略。\n\n## 数据范围与提示\n$1 \\leq k \\leq 30000$",
+    "time_limit": 0.1,
+    "memory_limit": 256,
+    "source": "LibreOJ #525",
+    "loj_url": "https://loj.ac/p/525",
+    "samples": [
+      {
+        "input": "3",
+        "output": "4\n0 1 2 2 1"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "3",
+      "output": "4\n0 1 2 2 1"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:58.934704",
+  "updated_at": "2026-04-22 04:23:42.727725",
+  "z_id": "Z525"
+}

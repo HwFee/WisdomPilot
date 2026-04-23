@@ -9,6 +9,11 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import rehypeHighlight from 'rehype-highlight'
 import type { KnowledgeContentResponse, KnowledgePoint } from '@/types/api'
 
 interface KnowledgePanelProps {
@@ -34,15 +39,17 @@ export function KnowledgePanel({
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-2xl w-full mx-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
+        <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm p-8 mx-4">
+          {/* 顶部光效 */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/2" />
-            <div className="h-4 bg-gray-200 rounded w-3/4" />
-            <div className="h-4 bg-gray-200 rounded w-2/3" />
-            <div className="h-32 bg-gray-200 rounded" />
+            <div className="h-8 bg-muted rounded w-1/2" />
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-2/3" />
+            <div className="h-32 bg-muted rounded" />
           </div>
-          <p className="text-center text-gray-500 mt-4">加载中...</p>
+          <p className="text-center text-muted-foreground mt-4">加载中...</p>
         </div>
       </div>
     )
@@ -50,12 +57,14 @@ export function KnowledgePanel({
 
   if (!content) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-2xl w-full mx-4">
-          <p className="text-center text-gray-500">无法加载知识点内容</p>
-          <button
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
+        <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm p-8 mx-4">
+          {/* 顶部光效 */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          <p className="text-center text-muted-foreground">无法加载知识点内容</p>
+          <button type="button"
             onClick={onClose}
-            className="mt-4 w-full py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+            className="mt-4 w-full py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors text-foreground font-medium"
           >
             关闭
           </button>
@@ -65,33 +74,37 @@ export function KnowledgePanel({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm"
       >
+        {/* 顶部光效 */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
         {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex-shrink-0">
+        <div className="p-6 border-b border-border/50 flex-shrink-0 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{content.chapter_title}</h2>
-              <p className="text-sm text-gray-500 mt-1">知识点讲解</p>
+              <h2 className="text-2xl font-bold text-foreground">{content.chapter_title}</h2>
+              <p className="text-sm text-muted-foreground mt-1">知识点讲解</p>
             </div>
-            <button
+            <button type="button"
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
               aria-label="关闭"
             >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
+          <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -123,10 +136,10 @@ export function KnowledgePanel({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-100 flex-shrink-0">
-          <button
+        <div className="p-6 border-t border-border/50 flex-shrink-0 bg-muted/30">
+          <button type="button"
             onClick={onStartQuiz}
-            className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-primary to-primary-600 text-primary-foreground rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -156,7 +169,7 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
   return (
     <motion.div
       layout
-      className="border border-gray-100 rounded-xl overflow-hidden hover:border-blue-200 transition-colors"
+      className="border border-border/50 rounded-xl overflow-hidden hover:border-primary/30 transition-colors bg-card/50"
       data-knowledge-point
       data-knowledge-point-id={point.id}
       data-knowledge-point-title={point.title}
@@ -167,18 +180,18 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
       data-knowledge-point-adjacent={JSON.stringify(adjacentPoints)}
     >
       {/* Header */}
-      <button
+      <button type="button"
         onClick={onToggle}
-        className="w-full p-4 text-left flex items-start gap-3 hover:bg-gray-50 transition-colors"
+        className="w-full p-4 text-left flex items-start gap-3 hover:bg-muted/50 transition-colors"
       >
-        <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+        <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-medium">
           {index + 1}
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900">{point.title}</h3>
+            <h3 className="font-medium text-foreground">{point.title}</h3>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -203,21 +216,76 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 space-y-3">
-              {/* Content */}
-              <p className="text-gray-600 leading-relaxed">{point.content}</p>
+              {/* Content - Markdown rendered */}
+              <div className="text-muted-foreground leading-relaxed">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex, rehypeHighlight]}
+                  components={{
+                    // 代码块样式
+                    code({ className, children, ...props }) {
+                      const isInline = !className
+                      if (isInline) {
+                        return (
+                          <code className="bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                        )
+                      }
+                      return (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      )
+                    },
+                    pre({ children }) {
+                      return (
+                        <pre className="bg-muted rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose border border-border/50">
+                          {children}
+                        </pre>
+                      )
+                    },
+                    // 标题样式
+                    h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-base font-medium text-foreground mb-1 mt-2">{children}</h3>,
+                    // 列表样式
+                    ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                    li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+                    // 段落
+                    p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
+                    // 引用
+                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2">{children}</blockquote>,
+                    // 表格样式
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-3">
+                        <table className="min-w-full border-collapse border border-border">{children}</table>
+                      </div>
+                    ),
+                    thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+                    tbody: ({ children }) => <tbody>{children}</tbody>,
+                    tr: ({ children }) => <tr className="border-b border-border/50">{children}</tr>,
+                    th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-foreground">{children}</th>,
+                    td: ({ children }) => <td className="px-3 py-2 text-sm text-muted-foreground">{children}</td>,
+                  }}
+                >
+                  {point.content}
+                </ReactMarkdown>
+              </div>
 
               {/* Code Examples */}
               {point.examples && point.examples.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">示例代码</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">示例代码</p>
                   <div className="space-y-1">
                     {point.examples.map((example, i) => (
-                      <div
+                      <pre
                         key={i}
-                        className="bg-gray-900 text-gray-100 rounded-lg p-3 font-mono text-sm overflow-x-auto"
+                        className="bg-muted rounded-lg p-3 font-mono text-sm overflow-x-auto border border-border/50"
                       >
-                        {example}
-                      </div>
+                        <code>{example}</code>
+                      </pre>
                     ))}
                   </div>
                 </div>
@@ -225,7 +293,7 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
 
               {/* Related Points */}
               {point.related_points && point.related_points.length > 0 && (
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   <span className="font-medium">相关知识点：</span>
                   {point.related_points.join('、')}
                 </div>

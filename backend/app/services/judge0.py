@@ -2,8 +2,8 @@
 
 import httpx
 import asyncio
-from typing import Optional
 import base64
+import logging
 
 # Judge0 API configuration
 JUDGE0_BASE_URL = "https://ce.judge0.com"
@@ -121,17 +121,17 @@ class Judge0Service:
         # 使用批量创建端点
         url = f"{self.base_url}/submissions/batch?base64_encoded=true"
 
-        print(f"[Judge0] Creating batch submissions: {len(submissions)} test cases")
-        print(f"[Judge0] URL: {url}")
+        logger.info(f"[Judge0] Creating batch submissions: {len(submissions)} test cases")
+        logger.info(f"[Judge0] URL: {url}")
 
         try:
             response = await self.client.post(url, json={"submissions": submissions})
-            print(f"[Judge0] Batch create response status: {response.status_code}")
+            logger.info(f"[Judge0] Batch create response status: {response.status_code}")
             response.raise_for_status()
             tokens_data = response.json()
-            print(f"[Judge0] Batch create response: {str(tokens_data)[:200]}")
+            logger.info(f"[Judge0] Batch create response: {str(tokens_data)[:200]}")
         except Exception as e:
-            print(f"[Judge0] Batch create FAILED: {e}")
+            logger.error(f"[Judge0] Batch create FAILED: {e}")
             raise
 
         # Judge0 CE 直接返回列表，不是 {"submissions": [...]}
@@ -256,7 +256,7 @@ class Judge0Service:
             # 如果批量提交失败，返回错误
             import traceback
             error_detail = traceback.format_exc()
-            print(f"Judge0 batch execution error: {error_detail}")
+            logger.error(f"Judge0 batch execution error: {error_detail}")
             return {
                 "token": "",
                 "status_id": 13,
@@ -301,7 +301,7 @@ class Judge0Service:
                 "input": tc.get("input", ""),
                 "expected": expected,
                 "actual": actual,
-                "message": "通过" if passed else f"输出错误",
+                "message": "通过" if passed else "输出错误",
             })
 
         # 计算总体状态
@@ -324,20 +324,15 @@ class Judge0Service:
 
     def _get_status_message(self, status_id: int, detail: str = "") -> str:
         """Get human-readable status message."""
-        if status_id == 5:
-            return f"编译错误: {detail[:200]}" if detail else "编译错误"
-        elif status_id == 8:
-            return "运行超时，您的程序可能在无限循环"
-        elif status_id == 9:
-            return "内存超限，请优化算法"
-        elif status_id in (6, 7, 10, 11):
-            return f"运行时错误: {detail[:100]}" if detail else "运行时错误"
-        elif status_id == 12:
-            return "Judge0 系统错误"
-        elif status_id == 13:
-            return "执行格式错误"
-        else:
-            return f"执行错误 (status={status_id})"
+        if status_id in STATUS_MESSAGES:
+            msg = STATUS_MESSAGES[status_id][1]  # Chinese message
+            # Append detail for compilation/runtime errors
+            if status_id == 5 and detail:
+                return f"{msg}: {detail[:200]}"
+            if status_id in (6, 7, 10, 11) and detail:
+                return f"{msg}: {detail[:100]}"
+            return msg
+        return f"执行错误 (status={status_id})"
 
     def parse_status(self, status_id: int) -> tuple[str, str]:
         """Parse status ID to (english, chinese) message."""
@@ -394,3 +389,6 @@ class Judge0Service:
         if self._client:
             await self.client.aclose()
             self._client = None
+
+
+logger = logging.getLogger(__name__)

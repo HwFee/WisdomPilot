@@ -13,6 +13,7 @@ import {
   Loader2,
   Shield,
   Star,
+  PartyPopper,
 } from "lucide-react";
 import { getStoredToken } from "@/lib/api";
 
@@ -214,14 +215,14 @@ export default function TierPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button
+          <button type="button"
             onClick={handleGoBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">段位明细</span>
           </button>
-          <button
+          <button type="button"
             onClick={() => fetchData(0)}
             disabled={loading}
             className="p-2 text-muted-foreground hover:text-foreground"
@@ -286,18 +287,21 @@ export default function TierPage() {
                       {/* 状态标签 */}
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {tx.promoted && (
-                          <span className="px-2 py-0.5 rounded text-xs font-medium text-green-600 bg-green-100">
-                            🎉 晋级
+                          <span className="px-2 py-0.5 rounded text-xs font-medium text-green-600 bg-green-100 flex items-center gap-1">
+                            <PartyPopper className="w-3 h-3" />
+                            晋级
                           </span>
                         )}
                         {tx.demoted && (
-                          <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100">
-                            📉 降级
+                          <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100 flex items-center gap-1">
+                            <TrendingDown className="w-3 h-3" />
+                            降级
                           </span>
                         )}
                         {tx.used_protection && (
-                          <span className="px-2 py-0.5 rounded text-xs font-medium text-blue-600 bg-blue-100">
-                            🛡️ 段位保护
+                          <span className="px-2 py-0.5 rounded text-xs font-medium text-blue-600 bg-blue-100 flex items-center gap-1">
+                            <Shield className="w-3 h-3" />
+                            段位保护
                           </span>
                         )}
                         {!tx.promoted && !tx.demoted && !tx.used_protection && (
@@ -309,12 +313,12 @@ export default function TierPage() {
 
                       {/* 段位变化 */}
                       <div className="flex items-center gap-2 text-sm">
-                        <span className={`${TIER_COLORS[tx.tier_before] || "text-gray-600"}`}>
-                          {getTierDisplay(tx.tier_before, tx.sub_tier_before)} {tx.stars_before}⭐
+                        <span className={`${TIER_COLORS[tx.tier_before] || "text-gray-600"} flex items-center gap-0.5`}>
+                          {getTierDisplay(tx.tier_before, tx.sub_tier_before)} <Star className="w-3.5 h-3.5 fill-current" />{tx.stars_before}
                         </span>
                         <span className="text-muted-foreground">→</span>
-                        <span className={`${TIER_COLORS[tx.tier_after] || "text-gray-600"}`}>
-                          {getTierDisplay(tx.tier_after, tx.sub_tier_after)} {tx.stars_after}⭐
+                        <span className={`${TIER_COLORS[tx.tier_after] || "text-gray-600"} flex items-center gap-0.5`}>
+                          {getTierDisplay(tx.tier_after, tx.sub_tier_after)} <Star className="w-3.5 h-3.5 fill-current" />{tx.stars_after}
                         </span>
                       </div>
 
@@ -358,7 +362,7 @@ export default function TierPage() {
               {/* Load More Button */}
               {transactions.length < total && (
                 <div className="p-4 text-center">
-                  <button
+                  <button type="button"
                     onClick={loadMore}
                     disabled={loadingMore}
                     className="px-6 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"

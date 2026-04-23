@@ -1,0 +1,119 @@
+{
+  "chapter_id": 2,
+  "chapter_title": "面向对象程序设计基础",
+  "section_id": 1,
+  "section_title": "基于过程的程序设计",
+  "total_knowledge_points": 5,
+  "knowledge_points": [
+    {
+      "id": 1,
+      "name": "面向过程编程思想",
+      "content": "面向过程编程思想是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "面向过程编程思想相关知识点总结",
+      "code_example": "# 面向过程编程思想示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 1,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "面向对象编程思想",
+      "content": "面向对象编程思想是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "面向对象编程思想相关知识点总结",
+      "code_example": "# 面向对象编程思想示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "类的概念与作用",
+      "content": "类的概念与作用是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "类的概念与作用相关知识点总结",
+      "code_example": "# 类的概念与作用示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "类的定义与使用",
+      "content": "类的定义与使用是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "类的定义与使用相关知识点总结",
+      "code_example": "# 类的定义与使用示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "类成员的属性",
+      "content": "类成员的属性是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "类成员的属性相关知识点总结",
+      "code_example": "# 类成员的属性示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    }
+  ]
+}

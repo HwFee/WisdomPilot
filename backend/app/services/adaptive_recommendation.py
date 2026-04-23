@@ -16,16 +16,16 @@ Based on research:
 """
 
 import json
-import math
 from typing import Optional
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select
 
 from app.models.exercise import Exercise
 from app.models.user import User
 from app.models.user_weak_point import UserWeakPoint
 from app.models.stats import ActivityLog
+import logging
 
 
 # Difficulty labels for display - 8级洛谷体系
@@ -116,9 +116,19 @@ class AdaptiveRecommendationService:
                 actual_min = min_difficulty
                 actual_max = max_difficulty
         else:
-            # 挑战之路：允许所有难度
-            actual_min = min_difficulty
-            actual_max = max_difficulty
+            # 挑战之路：根据用户经验限制难度范围
+            if knowledge_state["total_attempts"] < 5:
+                # 新用户：严格限制在入门难度
+                actual_min = max(min_difficulty, 1)
+                actual_max = min(max_difficulty, 1)
+            elif knowledge_state["total_attempts"] < 15:
+                # 初学者：难度 1-2
+                actual_min = max(min_difficulty, 1)
+                actual_max = min(max_difficulty, 2)
+            else:
+                # 有经验：使用传入的难度范围
+                actual_min = min_difficulty
+                actual_max = max_difficulty
 
         # 4. Get recently practiced exercises
         recently_practiced = await self._get_recently_practiced(user.id, days=7)
@@ -317,11 +327,20 @@ class AdaptiveRecommendationService:
                 target = estimated_level + zpd_offset
                 target = min(4, max(1, round(target)))
         else:
-            # 挑战之路：激进策略，难度可以到 8
-            # 鼓励用户挑战更高难度
-            zpd_offset = 0.5 + accuracy * 0.8  # 更激进的提升
-            target = estimated_level + zpd_offset + 0.5  # 额外加一点挑战
-            target = min(8, max(1, round(target)))
+            # 挑战之路：根据用户经验调整策略
+            if knowledge_state["total_attempts"] < 5:
+                # 新用户：从最简单的题开始，建立信心
+                target = 1
+            elif knowledge_state["total_attempts"] < 15:
+                # 初学者：难度 1-2
+                zpd_offset = 0.3 + accuracy * 0.3
+                target = estimated_level + zpd_offset
+                target = min(2, max(1, round(target)))
+            else:
+                # 有经验后：激进策略，难度可以到 8
+                zpd_offset = 0.5 + accuracy * 0.8
+                target = estimated_level + zpd_offset + 0.5
+                target = min(8, max(1, round(target)))
 
         return target
 
@@ -354,7 +373,7 @@ class AdaptiveRecommendationService:
 
         # Build base query
         query = select(Exercise).where(
-            Exercise.is_verified == True,
+            Exercise.is_verified,
             Exercise.difficulty >= min_difficulty,
             Exercise.difficulty <= max_difficulty,
         )
@@ -377,7 +396,7 @@ class AdaptiveRecommendationService:
             if isinstance(kp_list, str):
                 try:
                     kp_list = json.loads(kp_list)
-                except:
+                except Exception:
                     kp_list = []
 
             # Check if matches weak points
@@ -555,7 +574,7 @@ class AdaptiveRecommendationService:
         """
         Add human-readable reasons for each recommendation.
         """
-        target_label = DIFFICULTY_LABELS.get(target_difficulty, "中等")
+        DIFFICULTY_LABELS.get(target_difficulty, "中等")
 
         for rec in recommendations:
             reasons = []
@@ -591,3 +610,6 @@ class AdaptiveRecommendationService:
 def get_adaptive_recommendation_service(db: AsyncSession) -> AdaptiveRecommendationService:
     """Factory function to create service instance."""
     return AdaptiveRecommendationService(db)
+
+
+logger = logging.getLogger(__name__)

@@ -1,0 +1,56 @@
+{
+  "chapter_id": 4,
+  "chapter_title": "模块化设计与应用",
+  "section_id": 33,
+  "section_title": "变量作用域与存储类别",
+  "total_knowledge_points": 2,
+  "total_exercises": 2,
+  "knowledge_point_coverage": {
+    "141": 1,
+    "142": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 141,
+      "name": "变量作用域规则"
+    },
+    {
+      "id": 142,
+      "name": "存储类别与生命周期"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        141
+      ],
+      "knowledge_point_names": [
+        "变量作用域规则"
+      ],
+      "description": "考察知识点：变量作用域规则",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        142
+      ],
+      "knowledge_point_names": [
+        "存储类别与生命周期"
+      ],
+      "description": "考察知识点：存储类别与生命周期",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

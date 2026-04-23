@@ -1,4 +1,4 @@
-# AIcodiingTeach 系统完善规格文档
+# 智码领航 系统完善规格文档
 
 > 本文档记录系统待完善功能的详细规格，供开发参考。
 
@@ -6,7 +6,7 @@
 
 ## 一、错题本系统 ✅ 已完成
 
-> **实现 PR**: [#1 feat: 错题本系统](https://github.com/HwFee/AIcodiingTeach-demo/pull/1)
+> **实现 PR**: [#1 feat: 错题本系统](https://github.com/HwFee/zhima-linghang-demo/pull/1)
 > **完成时间**: 2026-04-15
 > **实现文件**:
 > - `backend/app/models/wrong_question.py` - 数据模型

@@ -1,0 +1,46 @@
+{
+  "id": 177,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "2008",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "SCOI",
+    "2015",
+    "计算几何",
+    "半平面交"
+  ],
+  "content": {
+    "title": "「SCOI2015」小凸想跑步",
+    "description": "## 题目描述\n小凸晚上喜欢到操场跑步，今天他跑完两圈之后，他玩起了这样一个游戏。\r\n\r\n操场是个凸 $ n $ 边形，$ n $ 个顶点按照逆时针从 $ 0 \\sim n - 1 $ 编号。现在小凸随机站在操场中的某个位置，标记为 $ P $ 点。将 $ P $ 点与 $ n $ 个顶点各连一条边，形成 $ n $ 个三角形。如果这时 $ P $ 点，$ 0 $ 号点，$ 1 $ 号点形成的三角形的面积是 $ n $ 个三角形中最小的一个，小凸则认为这是一次正确站位。\r\n\r\n现在小凸想知道他一次站位正确的概率是多少。\n\n## 输入格式\n第一行包含 $ 1 $ 个整数 $ n $，表示操场的顶点数和游戏的次数。  \r\n接下来有 $ n $ 行，每行包含两个整数 $ X_i $、$ Y_i $ 表示顶点的坐标。  \r\n输入保证按逆时针顺序输入点，所有点保证构成一个 $ n $ 多边形。所有点保证不存在三点共线。\n\n## 输出格式\n输出一个数，正确站位的概率，保留 $ 4 $ 位小数。\n\n## 数据范围与提示\n$ 3 \\leq N \\leq 10 ^ 5, -10 ^ 9 \\leq X, Y \\leq 10 ^ 9 $",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #2008",
+    "loj_url": "https://loj.ac/p/2008",
+    "samples": [
+      {
+        "input": "5\n1 8\n0 7\n0 0\n8 0\n8 8",
+        "output": "0.6316"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "5\n1 8\n0 7\n0 0\n8 0\n8 8",
+      "output": "0.6316"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:17.223623",
+  "updated_at": "2026-04-22 04:23:56.870222",
+  "z_id": "Z2008"
+}

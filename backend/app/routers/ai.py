@@ -1,7 +1,10 @@
 """AI 模块路由 - 独立模块，不影响原有代码"""
 
 import json
+import logging
 from typing import Annotated, AsyncGenerator
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -32,6 +35,14 @@ from app.schemas.ai import (
 from app.services.ai import ai_service
 from app.config import get_settings
 
+
+def _make_preview(key: str) -> str:
+    """生成密钥预览：显示前4位和后4位，中间用****掩码。"""
+    if not key or len(key) <= 8:
+        return "****"
+    return f"{key[:4]}****{key[-4:]}"
+
+
 # 选择题 AI 解答路由
 choice_router = APIRouter(prefix="/api/ai", tags=["ai-choice"])
 
@@ -56,8 +67,9 @@ async def get_choice_explanation(
             correct_index=request.correct_index,
         )
         return ChoiceExplanationResponse(explanation=explanation)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI 解答失败: {str(e)}")
+    except Exception:
+        logger.exception("AI choice explanation failed")
+        raise HTTPException(status_code=500, detail="AI 服务暂不可用，请稍后重试")
 
 
 @review_router.post("/code-review", response_model=CodeReviewResponse)
@@ -74,8 +86,9 @@ async def get_code_review(
             subsection_index=request.subsection_index,
         )
         return CodeReviewResponse(review=review)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"代码审查失败: {str(e)}")
+    except Exception:
+        logger.exception("AI code review failed")
+        raise HTTPException(status_code=500, detail="AI 服务暂不可用，请稍后重试")
 
 
 @config_router.get("/config", response_model=AIConfigResponse)
@@ -85,19 +98,13 @@ async def get_ai_config(
     """获取当前 AI 配置 - 管理员专用"""
     settings = get_settings()
 
-    # 生成密钥预览：显示前4位和后4位，中间用****掩码
-    def make_preview(key: str) -> str:
-        if not key or len(key) <= 8:
-            return "****"
-        return f"{key[:4]}****{key[-4:]}"
-
     return AIConfigResponse(
         provider=settings.AI_PROVIDER,
         model=settings.AI_MODEL,
         temperature=settings.AI_TEMPERATURE,
         is_configured=bool(settings.AI_API_KEY),
         has_api_key=bool(settings.AI_API_KEY),
-        api_key_preview=make_preview(settings.AI_API_KEY) if settings.AI_API_KEY else None,
+        api_key_preview=_make_preview(settings.AI_API_KEY) if settings.AI_API_KEY else None,
         api_key_length=len(settings.AI_API_KEY) if settings.AI_API_KEY else None,
         connection_status=None,
         connection_address=settings.AI_BASE_URL,
@@ -121,7 +128,7 @@ async def update_ai_config(
     if request.api_key is not None:
         api_key_to_save = request.api_key  # 空字符串 = 删除key
 
-    new_config = AIProviderConfig(
+    AIProviderConfig(
         provider=request.provider or settings.AI_PROVIDER,
         api_key=api_key_to_save,
         model=request.model or settings.AI_MODEL,
@@ -359,8 +366,9 @@ async def ai_chat(
     try:
         reply = await ai_service.generate_chat(message=request.message)
         return AIChatResponse(reply=reply)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI 问答失败: {str(e)}")
+    except Exception:
+        logger.exception("AI chat failed")
+        raise HTTPException(status_code=500, detail="AI 服务暂不可用，请稍后重试")
 
 
 async def sse_chat_generator(
@@ -407,8 +415,9 @@ async def analyze_choice(
             correct_answer=request.correct_answer,
         )
         return ChoiceAnalysisResponse(**result)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI 分析失败: {str(e)}")
+    except Exception:
+        logger.exception("AI analysis failed")
+        raise HTTPException(status_code=500, detail="AI 服务暂不可用，请稍后重试")
 
 
 @analysis_router.post("/code-feedback", response_model=CodeFeedbackResponse)
@@ -428,8 +437,9 @@ async def get_code_feedback(
             error_message=request.error_message,
         )
         return CodeFeedbackResponse(**result)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI 反馈失败: {str(e)}")
+    except Exception:
+        logger.exception("AI feedback failed")
+        raise HTTPException(status_code=500, detail="AI 服务暂不可用，请稍后重试")
 
 
 # ========================================
@@ -492,7 +502,7 @@ async def sse_exercise_hint_generator(
         category = f"ai_hint_{request.hint_level}"  # ai_hint_light, ai_hint_medium, ai_hint_deep
 
         try:
-            result = await core_service.spend_cores(
+            await core_service.spend_cores(
                 user_id=user.id,
                 amount=cost,
                 category=category,
@@ -555,8 +565,6 @@ async def stream_exercise_hint(
     生成后会缓存，下次访问免费。
     """
     from app.models.ai_hint_cache import AIHintCache
-    import logging
-    logger = logging.getLogger(__name__)
 
     # 使用前端传递的 exercise_id，如果没有则基于标题生成
     if request.exercise_id:
@@ -580,7 +588,7 @@ async def stream_exercise_hint(
     cached = result.scalar_one_or_none()
 
     if cached:
-        logger.info(f"[AI Hint] CACHE HIT! Returning cached content")
+        logger.info("[AI Hint] CACHE HIT! Returning cached content")
         # 直接返回缓存内容（不扣费）
         async def cached_generator(content: str) -> AsyncGenerator[bytes, None]:
             # 模拟流式输出效果
@@ -596,23 +604,7 @@ async def stream_exercise_hint(
             media_type="text/event-stream",
         )
 
-    logger.info(f"[AI Hint] CACHE MISS, generating new hint...")
-
-    if cached:
-        # 直接返回缓存内容（不扣费）
-        async def cached_generator(content: str) -> AsyncGenerator[bytes, None]:
-            # 模拟流式输出效果
-            chunk_size = 20
-            for i in range(0, len(content), chunk_size):
-                chunk = content[i:i + chunk_size]
-                payload = json.dumps({"content": chunk, "cached": True}) + "\n"
-                yield f"data: {payload}\n\n".encode()
-            yield b"data: [DONE]\n\n"
-
-        return StreamingResponse(
-            cached_generator(cached.hint_content),
-            media_type="text/event-stream",
-        )
+    logger.info("[AI Hint] CACHE MISS, generating new hint...")
 
     # 获取消耗
     cost = HINT_COSTS.get(request.hint_level, 1)

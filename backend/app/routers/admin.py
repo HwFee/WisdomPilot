@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from app.database import get_db
 from app.models import User
 from app.schemas import UserResponse
 from app.utils.deps import get_current_active_user
 from app.services.admin import AdminService
+import logging
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -23,8 +23,8 @@ def require_admin(current_user: User = Depends(get_current_active_user)) -> User
 
 @router.get("/users", response_model=list[UserResponse])
 async def list_users(
-    skip: int = 0,
-    limit: int = 20,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
@@ -126,3 +126,6 @@ async def reset_user_quota(
 
     await quota_service.reset_quota(user, db, amount)
     return {"message": "Quota reset", "quota": amount}
+
+
+logger = logging.getLogger(__name__)

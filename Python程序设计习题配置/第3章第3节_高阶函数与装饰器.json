@@ -1,0 +1,143 @@
+{
+  "chapter_id": 3,
+  "chapter_title": "组合数据类型",
+  "section_id": 3,
+  "section_title": "高阶函数与装饰器",
+  "total_knowledge_points": 5,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "37": 2,
+    "38": 2,
+    "39": 2,
+    "40": 2,
+    "41": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 37,
+      "name": "匿名函数的设计"
+    },
+    {
+      "id": 38,
+      "name": "匿名函数的实践"
+    },
+    {
+      "id": 39,
+      "name": "函数装饰器的设计"
+    },
+    {
+      "id": 40,
+      "name": "函数装饰器的应用"
+    },
+    {
+      "id": 41,
+      "name": "高阶函数的初步编程技术"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        37,
+        38
+      ],
+      "knowledge_point_names": [
+        "匿名函数的设计",
+        "匿名函数的实践"
+      ],
+      "description": "考察知识点：匿名函数的设计、匿名函数的实践",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        39,
+        40
+      ],
+      "knowledge_point_names": [
+        "函数装饰器的设计",
+        "函数装饰器的应用"
+      ],
+      "description": "考察知识点：函数装饰器的设计、函数装饰器的应用",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        41
+      ],
+      "knowledge_point_names": [
+        "高阶函数的初步编程技术"
+      ],
+      "description": "考察知识点：高阶函数的初步编程技术",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        37,
+        38
+      ],
+      "knowledge_point_names": [
+        "匿名函数的设计",
+        "匿名函数的实践"
+      ],
+      "description": "考察知识点：匿名函数的设计、匿名函数的实践（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        39,
+        40
+      ],
+      "knowledge_point_names": [
+        "函数装饰器的设计",
+        "函数装饰器的应用"
+      ],
+      "description": "考察知识点：函数装饰器的设计、函数装饰器的应用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        41
+      ],
+      "knowledge_point_names": [
+        "高阶函数的初步编程技术"
+      ],
+      "description": "考察知识点：高阶函数的初步编程技术（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

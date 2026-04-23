@@ -1,0 +1,54 @@
+{
+  "id": 98,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "507",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "DP",
+    "区间 DP",
+    "前缀和",
+    "LibreOJ NOI Round"
+  ],
+  "content": {
+    "title": "「LibreOJ NOI Round #1」接竹竿",
+    "description": "## 题目描述\n一天，神犇和 LCR 在玩扑克牌。他们玩的是一种叫做“接竹竿”的游戏。\n\n游戏规则是：一共有 $n$ 张牌，每张牌上有一个花色 $c$ 和一个点数 $v$，花色不超过 $k$ 种。将这些牌依次放入一个队列末端，队列初始为空。若放入之前队列中已有与新放入牌花色相同的牌，你可以选择将新放入牌和队列中**任意**一张花色相同的牌之间的所有牌全部取出队列（包括这两张牌本身），并得到与取出的所有牌点数和相同的分数。现在已知 LCR 把这 $n$ 张牌放入队列的顺序，求她最多能得多少分。\n\n输入顺序即为 LCR 放入队列的顺序。即，$c_i$ 表示第 $i$ 张放入的牌的花色，$v_i$ 表示第 $i$ 张放入的牌的点数。\n\n**请注意，如果你知道类似的纸牌游戏，请尤其仔细地阅读规则，以免因为理解题意错误而出现不必要的问题。**\n\n## 输入格式\n第一行两个整数 $n,k$。  \r\n第二行，$n$ 个整数 $c_1,c_2,...,c_n$ 表示花色，满足 $1\\leq c_i\\leq k$。  \r\n第三行，$n$ 个整数 $v_1,v_2,...,v_n$ 表示点数。  \n\n## 输出格式\n输出一行一个整数，表示最多能得到的分数。\n\n## 数据范围与提示\n对于 $100\\%$ 的数据，$1\\leq n\\leq 10^6,1\\leq k\\leq 10^6,1\\leq v_i\\leq 10^9$。\r\n\r\n|Subtask #|分值| $n,k$ 的限制 |特殊限制|\r\n|:-:|:-:|:-:|:-:|\r\n|1| $15$ |$1\\leq n,k\\leq 15$|$c_i=v_i$|\r\n|2| $15$ |$1\\leq n,k\\leq 300$|$c_i=v_i$|\r\n|3| $30$ |$1\\leq n,k\\leq 3000$||\r\n|4| $15$ |$1\\leq n,k\\leq 2\\times 10^5$||\r\n|5| $10$ |$1\\leq n,k\\leq 10^6$|$c_i=v_i$|\r\n|6| $15$ |$1\\leq n,k\\leq 10^6$||",
+    "time_limit": 0.6,
+    "memory_limit": 512,
+    "source": "LibreOJ #507",
+    "loj_url": "https://loj.ac/p/507",
+    "samples": [
+      {
+        "input": "7 3\n1 2 1 2 3 2 3\n1 2 1 2 3 2 3",
+        "output": "13"
+      },
+      {
+        "input": "18 5\n5 2 3 5 1 3 5 2 1 4 2 4 5 4 1 1 1 5\n8 2 7 6 10 8 10 9 10 2 4 7 7 7 7 9 7 3",
+        "output": "123"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "7 3\n1 2 1 2 3 2 3\n1 2 1 2 3 2 3",
+      "output": "13"
+    },
+    {
+      "input": "18 5\n5 2 3 5 1 3 5 2 1 4 2 4 5 4 1 1 1 5\n8 2 7 6 10 8 10 9 10 2 4 7 7 7 7 9 7 3",
+      "output": "123"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:58.934704",
+  "updated_at": "2026-04-22 04:23:26.280248",
+  "z_id": "Z507"
+}

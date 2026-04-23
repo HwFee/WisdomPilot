@@ -1,0 +1,46 @@
+{
+  "id": 64,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "163",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "模板",
+    "数学",
+    "高斯消元",
+    "Berlekamp-Massey 算法"
+  ],
+  "content": {
+    "title": "高斯消元 2",
+    "description": "## 题目描述\n这~~可能~~也是一道模板题。\r\n\r\n给定稀疏矩阵 $ A $，以及列向量 $b$， 其中 $ A $ 的非零元素个数不超过 $20000$，求列向量 $x$ 满足 $ Ax = b$，对 $ 998244353 $ 取模。\n\n## 输入格式\n第一行一个正整数 $ n $，表示矩阵大小。    \r\n接下来 $ n $ 行，每行 $ n + 1 $ 个整数，其中第 $ i $ 行前 $ n $个整数第 $ j $ 个整数表示矩阵 $A_{i, j}$ 的值，最后一个整数表示 $b_i$ 的值。\r\n\n\n## 输出格式\n一行输出 $ n $ 个整数并对 $ 998244353 $ 取模。\n\n## 数据范围与提示\n$ n \\leq 2500$, $ 0 \\leq A_{i, j}, b_i< 998244353$，其中 $ A $ 中非零元素个数 $ \\leq 20000 $，且 $ \\operatorname {rank} A = n $ 。",
+    "time_limit": 1.5,
+    "memory_limit": 256,
+    "source": "LibreOJ #163",
+    "loj_url": "https://loj.ac/p/163",
+    "samples": [
+      {
+        "input": "3\n1 2 0 5\n0 1 4 14\n2 0 1 5",
+        "output": "1 2 3"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "3\n1 2 0 5\n0 1 4 14\n2 0 1 5",
+      "output": "1 2 3"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:48.296599",
+  "updated_at": "2026-04-22 04:23:26.280248",
+  "z_id": "Z163"
+}

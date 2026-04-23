@@ -1,0 +1,35 @@
+{
+  "chapter_id": 6,
+  "chapter_title": "深入模块化设计与应用",
+  "section_id": 39,
+  "section_title": "算法的基本概念",
+  "total_knowledge_points": 1,
+  "total_exercises": 1,
+  "knowledge_point_coverage": {
+    "155": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 155,
+      "name": "算法的基本概念"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        155
+      ],
+      "knowledge_point_names": [
+        "算法的基本概念"
+      ],
+      "description": "考察知识点：算法的基本概念",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

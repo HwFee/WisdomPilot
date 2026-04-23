@@ -93,13 +93,14 @@ class EmbeddingService:
             return None
 
         try:
-            if self.config.provider in ("openai", "minimax"):
+            # siliconflow uses OpenAI-compatible API
+            if self.config.provider in ("openai", "minimax", "siliconflow"):
                 return await self._openai_embedding(text)
             else:
-                # Fallback for other providers
+                # Fallback for other providers (also use OpenAI-compatible)
                 return await self._openai_embedding(text)
         except Exception as e:
-            print(f"[EmbeddingService] Error generating embedding: {e}")
+            logger.error(f"[EmbeddingService] Error generating embedding: {e}")
             return None
 
     async def _openai_embedding(self, text: str) -> Optional[list[float]]:
@@ -107,23 +108,36 @@ class EmbeddingService:
         base_url = self.config.base_url or "https://api.openai.com/v1"
 
         try:
+            # Build request body
+            # Note: Some embedding models (like BAAI/bge-large-zh-v1.5) don't support dimensions parameter
+            request_body = {
+                "model": self.config.model,
+                "input": text,
+            }
+
+            # Only add dimensions for OpenAI models that support it
+            # siliconflow's BGE model doesn't support custom dimensions
+            if self.config.provider == "openai" and self.config.dimensions:
+                request_body["dimensions"] = self.config.dimensions
+
             response = await self._client.post(
                 f"{base_url}/embeddings",
                 headers={
                     "Authorization": f"Bearer {self.config.api_key}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": self.config.model,
-                    "input": text,
-                    "dimensions": self.config.dimensions,
-                },
+                json=request_body,
             )
             response.raise_for_status()
             data = response.json()
             return data["data"][0]["embedding"]
         except httpx.HTTPStatusError as e:
             logger.error(f"[EmbeddingService] API error: {e.response.status_code}")
+            try:
+                error_detail = e.response.json()
+                logger.error(f"[EmbeddingService] Error detail: {error_detail}")
+            except Exception:
+                logger.error(f"[EmbeddingService] Response text: {e.response.text}")
             return None
         except Exception as e:
             logger.error(f"[EmbeddingService] Error: {e}")
@@ -271,7 +285,7 @@ class ExerciseEmbeddingService:
             if isinstance(kp_list, str):
                 try:
                     kp_list = json.loads(kp_list)
-                except:
+                except Exception:
                     kp_list = []
             if kp_list:
                 parts.append(f"知识点：{', '.join(kp_list)}")

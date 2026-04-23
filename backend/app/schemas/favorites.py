@@ -1,7 +1,7 @@
 """Schemas for favorites - 完全依照 WrongQuestion 格式"""
 
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 

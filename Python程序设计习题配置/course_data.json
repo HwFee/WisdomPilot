@@ -1,0 +1,241 @@
+{
+  "course_name": "Python程序设计",
+  "course_code": "Python",
+  "chapters": [
+    {
+      "title": "Python基础与环境",
+      "order_index": 1,
+      "sections": [
+        {
+          "title": "程序设计基础知识",
+          "order_index": 1,
+          "estimated_minutes": 20,
+          "knowledge_points": [
+            {"name": "Python简介与特点", "difficulty": 1, "importance": 4},
+            {"name": "Python编程环境设置", "difficulty": 1, "importance": 5},
+            {"name": "原生环境使用", "difficulty": 1, "importance": 4},
+            {"name": "第三方IDE开发环境", "difficulty": 1, "importance": 4},
+            {"name": "Python基本语法", "difficulty": 1, "importance": 5},
+            {"name": "类与对象的基本概念", "difficulty": 2, "importance": 4},
+            {"name": "系统定义类的简单使用", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "基本数据类型及操作",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "变量与常量", "difficulty": 1, "importance": 5},
+            {"name": "数字类型及操作", "difficulty": 1, "importance": 5},
+            {"name": "字符串及其类库", "difficulty": 2, "importance": 5},
+            {"name": "数据类型使用技巧", "difficulty": 2, "importance": 4},
+            {"name": "类库的基本概念", "difficulty": 2, "importance": 4},
+            {"name": "类库的使用方法", "difficulty": 2, "importance": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "控制结构与异常处理",
+      "order_index": 2,
+      "sections": [
+        {
+          "title": "顺序与条件分支结构",
+          "order_index": 1,
+          "estimated_minutes": 20,
+          "knowledge_points": [
+            {"name": "顺序结构", "difficulty": 1, "importance": 5},
+            {"name": "条件分支控制结构", "difficulty": 1, "importance": 5},
+            {"name": "for循环程序设计基本语法", "difficulty": 1, "importance": 5},
+            {"name": "for循环设计技巧", "difficulty": 2, "importance": 4},
+            {"name": "while循环控制结构", "difficulty": 1, "importance": 5},
+            {"name": "while循环设计技巧", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "函数与递归",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "函数的基本格式", "difficulty": 1, "importance": 5},
+            {"name": "函数设计技巧", "difficulty": 2, "importance": 4},
+            {"name": "递归原理分析", "difficulty": 3, "importance": 5},
+            {"name": "递归的设计方法", "difficulty": 3, "importance": 5},
+            {"name": "递归的使用场景", "difficulty": 2, "importance": 4},
+            {"name": "异常处理概念", "difficulty": 2, "importance": 5},
+            {"name": "异常处理在程序设计中的应用", "difficulty": 2, "importance": 5}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "组合数据类型",
+      "order_index": 3,
+      "sections": [
+        {
+          "title": "集合与序列",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "组合数据类型概述", "difficulty": 1, "importance": 4},
+            {"name": "使用集合数据类型解决经典问题", "difficulty": 2, "importance": 4},
+            {"name": "字符串基本操作", "difficulty": 1, "importance": 5},
+            {"name": "元组及序列类型基本操作", "difficulty": 2, "importance": 5},
+            {"name": "集合数据类型的设计技术", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "列表与二维数据",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "列表基本设计方法", "difficulty": 2, "importance": 5},
+            {"name": "列表序列类型基本操作", "difficulty": 2, "importance": 5},
+            {"name": "二维数据的存储设计", "difficulty": 2, "importance": 4},
+            {"name": "列表相关函数", "difficulty": 2, "importance": 5},
+            {"name": "经典命题的求解方法", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "高阶函数与装饰器",
+          "order_index": 3,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "匿名函数的设计", "difficulty": 2, "importance": 5},
+            {"name": "匿名函数的实践", "difficulty": 2, "importance": 4},
+            {"name": "函数装饰器的设计", "difficulty": 3, "importance": 5},
+            {"name": "函数装饰器的应用", "difficulty": 3, "importance": 4},
+            {"name": "高阶函数的初步编程技术", "difficulty": 2, "importance": 4}
+          ]
+        },
+        {
+          "title": "字典与迭代器",
+          "order_index": 4,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "字典基本概念", "difficulty": 2, "importance": 5},
+            {"name": "字典的设计方法", "difficulty": 2, "importance": 5},
+            {"name": "字典的使用方法", "difficulty": 2, "importance": 5},
+            {"name": "字典及高阶函数在自然语言处理中的应用", "difficulty": 3, "importance": 4},
+            {"name": "迭代器的设计", "difficulty": 3, "importance": 4},
+            {"name": "生成器的设计与应用", "difficulty": 3, "importance": 5}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "面向对象程序设计",
+      "order_index": 4,
+      "sections": [
+        {
+          "title": "类的基本构造与用法",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "类属性的概念与使用", "difficulty": 2, "importance": 5},
+            {"name": "私有属性的概念与使用", "difficulty": 2, "importance": 5},
+            {"name": "构造函数的使用", "difficulty": 2, "importance": 5},
+            {"name": "析构函数的使用", "difficulty": 2, "importance": 4},
+            {"name": "类的依赖与组合设计", "difficulty": 3, "importance": 5},
+            {"name": "自定义异常类设计技术", "difficulty": 3, "importance": 5}
+          ]
+        },
+        {
+          "title": "类的重载与魔法函数",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "类的重载概念", "difficulty": 2, "importance": 4},
+            {"name": "魔法函数的设计原则", "difficulty": 3, "importance": 5},
+            {"name": "魔法函数的设计方法", "difficulty": 3, "importance": 5},
+            {"name": "应用实例-矢量类", "difficulty": 3, "importance": 4},
+            {"name": "矩阵运算实现", "difficulty": 3, "importance": 4},
+            {"name": "类的增强设计", "difficulty": 3, "importance": 4}
+          ]
+        },
+        {
+          "title": "设计模式与抽象",
+          "order_index": 3,
+          "estimated_minutes": 30,
+          "knowledge_points": [
+            {"name": "系统自带类的方法装饰", "difficulty": 3, "importance": 4},
+            {"name": "单例模式的设计", "difficulty": 3, "importance": 5},
+            {"name": "单例模式的应用", "difficulty": 3, "importance": 4},
+            {"name": "工厂模式的设计", "difficulty": 3, "importance": 5},
+            {"name": "工厂模式的应用", "difficulty": 3, "importance": 4},
+            {"name": "类的抽象方法设计", "difficulty": 3, "importance": 5},
+            {"name": "类的抽象方法应用", "difficulty": 3, "importance": 4},
+            {"name": "综合应用设计与实现", "difficulty": 4, "importance": 5}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "网络程序设计",
+      "order_index": 5,
+      "sections": [
+        {
+          "title": "网络通讯基础",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "网络通讯模型及相关概念", "difficulty": 2, "importance": 5},
+            {"name": "基于UDP的程序设计", "difficulty": 3, "importance": 5},
+            {"name": "基于TCP的程序设计", "difficulty": 3, "importance": 5}
+          ]
+        },
+        {
+          "title": "进程与线程",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "进程的概念", "difficulty": 2, "importance": 5},
+            {"name": "基于进程的通讯程序设计技术", "difficulty": 3, "importance": 5},
+            {"name": "线程的概念", "difficulty": 2, "importance": 5},
+            {"name": "基于线程程序设计技术", "difficulty": 3, "importance": 5},
+            {"name": "基于socket的综合应用设计", "difficulty": 3, "importance": 5}
+          ]
+        },
+        {
+          "title": "Web资源访问",
+          "order_index": 3,
+          "estimated_minutes": 20,
+          "knowledge_points": [
+            {"name": "Web资源访问过程解析", "difficulty": 2, "importance": 4},
+            {"name": "基于urllib模块资源访问设计", "difficulty": 2, "importance": 5},
+            {"name": "使用第三方库访问web资源", "difficulty": 2, "importance": 4},
+            {"name": "web资源解析技术", "difficulty": 2, "importance": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "面向数据应用程序设计",
+      "order_index": 6,
+      "sections": [
+        {
+          "title": "文件与数据序列化",
+          "order_index": 1,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "文件的基本操作", "difficulty": 2, "importance": 5},
+            {"name": "文件相关程序设计", "difficulty": 2, "importance": 5},
+            {"name": "数据的封装技术", "difficulty": 2, "importance": 4},
+            {"name": "序列化程序设计", "difficulty": 3, "importance": 5}
+          ]
+        },
+        {
+          "title": "PIL库与numpy库",
+          "order_index": 2,
+          "estimated_minutes": 25,
+          "knowledge_points": [
+            {"name": "PIL库在应用程序中的应用", "difficulty": 2, "importance": 4},
+            {"name": "numpy库在应用程序中的应用", "difficulty": 3, "importance": 4},
+            {"name": "数据库基本概念", "difficulty": 2, "importance": 5},
+            {"name": "数据库应用设计", "difficulty": 3, "importance": 5}
+          ]
+        }
+      ]
+    }
+  ]
+}

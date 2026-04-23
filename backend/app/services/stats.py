@@ -6,13 +6,11 @@ from typing import Optional
 
 from sqlalchemy import desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.chapter import Chapter
 from app.models.exercise import Exercise
 from app.models.stats import (
     ActivityLog,
-    ActivityType,
     ChapterProgress,
     LearningSession,
     ProgressStatus,
@@ -246,7 +244,7 @@ class StatsService:
                 parts = exercise_key.split("-")
                 if len(parts) >= 3:
                     ex_chapter_id = int(parts[0])
-                    subsection_index = int(parts[1])
+                    int(parts[1])
                     exercise_id = int(parts[2])
 
                     logger.info(
@@ -272,12 +270,12 @@ class StatsService:
                             course_id=course_id,
                             chapter_id=ex_chapter_id,
                         )
-                        logger.info(f"[错题收集] 已收集到错题本 (真实 Exercise)")
+                        logger.info("[错题收集] 已收集到错题本 (真实 Exercise)")
                     else:
                         # No real Exercise - use exercise_key based collection
                         # This handles frontend hardcoded exercises
                         logger.info(
-                            f"[错题收集] 未找到真实 Exercise，使用 exercise_key 方式收集"
+                            "[错题收集] 未找到真实 Exercise，使用 exercise_key 方式收集"
                         )
                         await wrong_question_service.collect_wrong_question_by_key(
                             db=self.db,
@@ -289,7 +287,7 @@ class StatsService:
                             exercise_type="choice",  # Default to choice
                             knowledge_points=[],
                         )
-                        logger.info(f"[错题收集] 已收集到错题本 (exercise_key)")
+                        logger.info("[错题收集] 已收集到错题本 (exercise_key)")
             except (ValueError, IndexError) as e:
                 # Skip invalid exercise keys
                 logger.warning(
@@ -315,7 +313,7 @@ class StatsService:
         self, user_id: str, data: StartSessionRequest
     ) -> LearningSession:
         """Start a new learning session, ending any existing active one"""
-        logger.info(f"[学习时长] ========== 开始新会话 ==========")
+        logger.info("[学习时长] ========== 开始新会话 ==========")
         logger.info(f"[学习时长] user_id: {user_id}")
         logger.info(f"[学习时长] chapter_id: {data.chapter_id}")
         logger.info(f"[学习时长] subsection_index: {data.subsection_index}")
@@ -341,7 +339,7 @@ class StatsService:
         self, user_id: str, session_id: str, data: EndSessionRequest
     ) -> Optional[LearningSession]:
         """End a learning session"""
-        logger.info(f"[学习时长] ========== 结束会话 ==========")
+        logger.info("[学习时长] ========== 结束会话 ==========")
         logger.info(f"[学习时长] user_id: {user_id}")
         logger.info(f"[学习时长] session_id: {session_id}")
         logger.info(f"[学习时长] duration_seconds: {data.duration_seconds} 秒 ({data.duration_seconds / 60:.1f} 分钟)")
@@ -362,7 +360,7 @@ class StatsService:
             session.duration_seconds = data.duration_seconds
             await self.db.commit()
             await self.db.refresh(session)
-            logger.info(f"[学习时长] 会话已更新:")
+            logger.info("[学习时长] 会话已更新:")
             logger.info(f"[学习时长]   - started_at: {session.started_at}")
             logger.info(f"[学习时长]   - ended_at: {session.ended_at}")
             logger.info(f"[学习时长]   - duration_seconds: {session.duration_seconds}")
@@ -396,7 +394,7 @@ class StatsService:
         """Create and immediately complete a session to record time.
         Used as fallback when end_session is called but no active session exists.
         """
-        logger.info(f"[学习时长] ========== 创建已完成会话（fallback）==========")
+        logger.info("[学习时长] ========== 创建已完成会话（fallback）==========")
         logger.info(f"[学习时长] user_id: {user_id}")
         logger.info(f"[学习时长] chapter_id: {chapter_id}")
         logger.info(f"[学习时长] duration_seconds: {duration_seconds} 秒 ({duration_seconds / 60:.1f} 分钟)")
@@ -746,7 +744,7 @@ class StatsService:
                     try:
                         import json
                         extra_data = json.loads(extra_data)
-                    except:
+                    except Exception:
                         extra_data = {}
                 learning_path = extra_data.get("learning_path", "")
                 # 排除精进之路，统计挑战之路和旧版数据
@@ -805,7 +803,7 @@ class StatsService:
                     try:
                         import json
                         extra_data = json.loads(extra_data)
-                    except:
+                    except Exception:
                         extra_data = {}
                 learning_path = extra_data.get("learning_path", "")
                 # 排除精进之路，统计挑战之路和旧版数据

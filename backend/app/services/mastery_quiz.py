@@ -17,15 +17,10 @@ from app.models.chapter_mastery import ChapterMastery
 from app.services.ai import ai_service
 from app.schemas.mastery_quiz import (
     MasteryQuizGenerateRequest,
-    MasteryQuizGenerateResponse,
     MasteryQuizSubmitRequest,
-    MasteryQuizSubmitResponse,
-    MasteryQuizQuestion,
-    QuestionResult,
-    UserProfileForQuiz,
-    KnowledgePoint,
 )
 from app.utils.time import utc_now
+import logging
 
 
 class MasteryQuizSession(BaseModel):
@@ -994,3 +989,6 @@ class MasteryQuizService:
 
 # 全局单例
 mastery_quiz_service = MasteryQuizService()
+
+
+logger = logging.getLogger(__name__)

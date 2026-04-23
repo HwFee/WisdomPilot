@@ -1,5 +1,5 @@
 """
-Test configuration for AIcodiingTeach backend.
+Test configuration for 智码领航 backend.
 
 This conftest.py sets up test fixtures with a shared test database.
 """
@@ -223,8 +223,10 @@ async def admin_token(admin_user) -> str:
 def _reset_rate_limiters_between_tests():
     """Reset global rate limiter counters between tests."""
     import app.middleware as mw
-    mw._auth_limiter._entries.clear()
-    mw._code_limiter._entries.clear()
+    auth = mw._get_auth_limiter()
+    code = mw._get_code_limiter()
+    auth._entries.clear()
+    code._entries.clear()
     yield
 
 

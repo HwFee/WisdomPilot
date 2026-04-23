@@ -10,13 +10,12 @@ Test Sandbox Router - 沙箱测试专用接口
 - 但会真实消耗/获得智核
 """
 
-from fastapi import APIRouter, Depends, Header
-from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.utils.deps import get_current_user, get_db
 from app.models.user import User
-from app.schemas.core import CoreEarnResponse, CoreSpendResponse
+import logging
 
 router = APIRouter(prefix="/api/test", tags=["test-sandbox"])
 
@@ -76,7 +75,7 @@ async def submit_test_mastery_answers(
     - 正确率
     - 章节进度
     """
-    from app.services.core_service import CoreService, get_core_service
+    from app.services.core_service import CoreService
 
     correct_count = 0
     total = len(answers)
@@ -173,7 +172,7 @@ async def submit_test_arena_exercise(
             category="arena",
             reference_type="test_sandbox",
             reference_id="test_arena",
-            description=f"[沙箱测试] 挑战之路答题正确"
+            description="[沙箱测试] 挑战之路答题正确"
         )
         await db.refresh(current_user)
 
@@ -407,7 +406,7 @@ async def test_daily_accuracy_reward(
 
 @router.post("/bonus")
 async def test_bonus_reward(
-    amount: int = 10,  # 奖励金额
+    amount: int = Query(10, le=1000, description="奖励金额，最大1000"),  # 限制上限
     reason: str = "系统测试奖励",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -510,3 +509,6 @@ async def test_summary(
             }
         ]
     }
+
+
+logger = logging.getLogger(__name__)

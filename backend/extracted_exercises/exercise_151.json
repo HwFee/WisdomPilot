@@ -1,0 +1,46 @@
+{
+  "id": 151,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "560",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "贪心",
+    "二进制",
+    "构造",
+    "LibreOJ Round"
+  ],
+  "content": {
+    "title": "「LibreOJ Round #9」Menci 的序列",
+    "description": "## 题目描述\n你有一个长为 $n$ 的序列，每个位置是 `*` 或者 `+`，`*` 表示让变量加上自身，`+` 表示让变量 $+1$。\r\n\r\n现在你要选出它的一个子序列（子序列即原序列中取出一些位置，顺序不变地拼成的序列），使得一个初始为 $0$ 的变量在对子序列中的字符依次执行对应操作后**对 $2^k$ 取模**所得结果尽可能大。求出最大可能的结果。\n\n## 输入格式\n第一行两个正整数 $n,k$，表示序列长度以及模数为 $2^k$。\r\n\r\n第二行一个长为 $n$ 的字符串表示序列。\n\n## 输出格式\n一行一个正整数，为答案的二进制表示，**不含前导零，但答案为 $0$ 时要输出 $0$（而不是空串）**。\n\n## 数据范围与提示\n对于所有数据，$1\\le n,k\\le 10^6$。\r\n\r\n|子任务编号|分值|$n \\leq$|$k\\leq$|特殊限制|\r\n|:------------:|:----:|:------------:|:--------:|:--------:|\r\n|1|$15$|$500$|$10$|-|\r\n|2|$15$|$500$|$500$|-|\r\n|3|$20$|$10^5$|$5\\times 10^3$|-|\r\n|4|$20$|$10^6$|$10^6$|不存在两个相邻的 `+`|\r\n|5|$30$|$10^6$|$10^6$|-|\r\n\r\n",
+    "time_limit": 1.0,
+    "memory_limit": 512,
+    "source": "LibreOJ #560",
+    "loj_url": "https://loj.ac/p/560",
+    "samples": [
+      {
+        "input": "9 5\n++*++***+",
+        "output": "11001"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "9 5\n++*++***+",
+      "output": "11001"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:09.781146",
+  "updated_at": "2026-04-22 04:23:56.870222",
+  "z_id": "Z560"
+}

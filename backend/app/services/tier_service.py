@@ -87,7 +87,7 @@ class TierService:
         stars_needed: int,
     ) -> TierUpdateResult:
         """处理晋级逻辑"""
-        config = get_tier_config(tier)
+        get_tier_config(tier)
 
         # 检查是否是小段位晋级还是大段位晋级
         if sub_tier > 1:

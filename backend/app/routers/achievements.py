@@ -17,6 +17,7 @@ from app.schemas.achievement import (
     UserRankResponse,
 )
 from app.utils.deps import get_current_active_user
+import logging
 
 router = APIRouter(prefix="/api/achievements", tags=["achievements"])
 
@@ -166,13 +167,6 @@ async def get_leaderboard(
 
     leaderboard = await stats_service.get_leaderboard(db, limit=limit, offset=0)
 
-    # Mark current user's position if authenticated
-    user_position = None
-    if current_user:
-        user_rank = await achievement_service.get_user_rank(db, current_user.id)
-        if user_rank:
-            user_position = user_rank.get("rank")
-
     return leaderboard  # Return array directly for frontend compatibility
 
 
@@ -251,3 +245,6 @@ async def get_achievement(
             progress=progress,
         )
     }
+
+
+logger = logging.getLogger(__name__)

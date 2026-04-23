@@ -4,13 +4,13 @@ Challenge Service
 Implements challenge session management and scoring for the Challenge Path (竞技之路).
 """
 
-import math
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.challenge_session import ChallengeSession
+import logging
 
 
 # Score multipliers by difficulty
@@ -232,3 +232,6 @@ class ChallengeService:
 def get_challenge_service(db: AsyncSession) -> ChallengeService:
     """Factory function for the service."""
     return ChallengeService(db)
+
+
+logger = logging.getLogger(__name__)

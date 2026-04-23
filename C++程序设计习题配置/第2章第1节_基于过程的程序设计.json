@@ -1,0 +1,143 @@
+{
+  "chapter_id": 2,
+  "chapter_title": "面向对象程序设计基础",
+  "section_id": 1,
+  "section_title": "基于过程的程序设计",
+  "total_knowledge_points": 5,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "8": 2,
+    "9": 2,
+    "10": 2,
+    "11": 2,
+    "12": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 8,
+      "name": "面向过程编程思想"
+    },
+    {
+      "id": 9,
+      "name": "面向对象编程思想"
+    },
+    {
+      "id": 10,
+      "name": "类的概念与作用"
+    },
+    {
+      "id": 11,
+      "name": "类的定义与使用"
+    },
+    {
+      "id": 12,
+      "name": "类成员的属性"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        8,
+        9
+      ],
+      "knowledge_point_names": [
+        "面向过程编程思想",
+        "面向对象编程思想"
+      ],
+      "description": "考察知识点：面向过程编程思想、面向对象编程思想",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        10,
+        11
+      ],
+      "knowledge_point_names": [
+        "类的概念与作用",
+        "类的定义与使用"
+      ],
+      "description": "考察知识点：类的概念与作用、类的定义与使用",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        12
+      ],
+      "knowledge_point_names": [
+        "类成员的属性"
+      ],
+      "description": "考察知识点：类成员的属性",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        8,
+        9
+      ],
+      "knowledge_point_names": [
+        "面向过程编程思想",
+        "面向对象编程思想"
+      ],
+      "description": "考察知识点：面向过程编程思想、面向对象编程思想（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        10,
+        11
+      ],
+      "knowledge_point_names": [
+        "类的概念与作用",
+        "类的定义与使用"
+      ],
+      "description": "考察知识点：类的概念与作用、类的定义与使用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        12
+      ],
+      "knowledge_point_names": [
+        "类成员的属性"
+      ],
+      "description": "考察知识点：类成员的属性（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

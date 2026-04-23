@@ -40,6 +40,13 @@ class Exercise(Base):
         nullable=True,
         comment="Original question ID from external bank or AI"
     )
+    z_id: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+        unique=True,
+        index=True,
+        comment="题库广场搜索编号: Z + source_id, 如 Z1, Z100"
+    )
     type: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

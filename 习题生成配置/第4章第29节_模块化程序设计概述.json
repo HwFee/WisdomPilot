@@ -1,0 +1,56 @@
+{
+  "chapter_id": 4,
+  "chapter_title": "模块化设计与应用",
+  "section_id": 29,
+  "section_title": "模块化程序设计概述",
+  "total_knowledge_points": 2,
+  "total_exercises": 2,
+  "knowledge_point_coverage": {
+    "133": 1,
+    "134": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 133,
+      "name": "模块化程序设计概念"
+    },
+    {
+      "id": 134,
+      "name": "函数的基本概念"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        133
+      ],
+      "knowledge_point_names": [
+        "模块化程序设计概念"
+      ],
+      "description": "考察知识点：模块化程序设计概念",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        134
+      ],
+      "knowledge_point_names": [
+        "函数的基本概念"
+      ],
+      "description": "考察知识点：函数的基本概念",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

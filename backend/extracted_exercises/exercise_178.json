@@ -1,0 +1,46 @@
+{
+  "id": 178,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "2009",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "DP",
+    "SCOI",
+    "2015",
+    "树形 DP"
+  ],
+  "content": {
+    "title": "「SCOI2015」小凸玩密室",
+    "description": "## 题目描述\n小凸和小方相约玩密室逃脱，这个密室是一棵有 $ n $ 个节点的完全二叉树，每个节点有一个灯泡。点亮所有灯泡即可逃出密室。每个灯泡有个权值 $ A_i $，每条边也有个权值 $ b_i $。\r\n\r\n点亮第 $ 1 $ 个灯泡不需要花费，之后每点亮一个新的灯泡 $ V $ 的花费，等于上一个被点亮的灯泡 $ U $ 到这个点 $ V $ 的距离 $ D(u, v) $，乘以这个点的权值 $ A_v $。\r\n\r\n在点灯的过程中，要保证任意时刻所有被点亮的灯泡必须连通，在点亮一个灯泡后必须先点亮其子树所有灯泡才能点亮其他灯泡。请告诉他们，逃出密室的最少花费是多少。\n\n## 输入格式\n第一行包含一个数 $ n $，代表节点的个数。  \r\n第二行包含 $ n $ 个数，代表每个节点的权值 $ a_i $。  \r\n第三行包含 $ n - 1 $ 个数，代表每条边的权值 $ b_i $，第 $ i $ 号边是由第 $ \\frac{i + 1}{2} $ 号点连向第 $ i + 1 $ 号点的边。\n\n## 输出格式\n输出包含一个数，代表最少的花费。\n\n## 数据范围与提示\n$ 1 \\leq N \\leq 2 \\times 10 ^ 5, 1 < A_i, B_i  \\leq 10 ^ 5 $",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #2009",
+    "loj_url": "https://loj.ac/p/2009",
+    "samples": [
+      {
+        "input": "3\n5 1 2\n2 1",
+        "output": "5"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "3\n5 1 2\n2 1",
+      "output": "5"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:17.223623",
+  "updated_at": "2026-04-22 04:23:56.870222",
+  "z_id": "Z2009"
+}

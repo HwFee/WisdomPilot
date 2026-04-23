@@ -15,18 +15,13 @@
 import asyncio
 import sys
 import io
-import json
-import math
-from typing import Optional
 from collections import defaultdict
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.database import AsyncSessionLocal
-from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.exercise import Exercise
 
@@ -38,7 +33,7 @@ CHAPTER_FEATURES = {
         "keywords": {
             "入门": 1.0, "基础": 0.9, "输入": 0.8, "输出": 0.8, "变量": 0.8,
             "数据类型": 0.8, "printf": 0.9, "scanf": 0.9, "整数": 0.6, "字符": 0.6,
-            "a+b": 1.0, "hello": 0.9, "world": 0.8, "输出": 0.7,
+            "a+b": 1.0, "hello": 0.9, "world": 0.8,
         },
         "description": "C语言基础语法、变量、数据类型、输入输出"
     },

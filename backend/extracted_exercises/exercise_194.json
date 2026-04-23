@@ -1,0 +1,64 @@
+{
+  "id": 194,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "2025",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "数学",
+    "2016",
+    "SHOI",
+    "三分",
+    "容斥原理",
+    "组合计数"
+  ],
+  "content": {
+    "title": "「JLOI / SHOI2016」方",
+    "description": "## 题目描述\n上帝说，不要圆，要方，于是便有了这道题。\r\n\r\n由于我们应该方，而且最好能够尽量方，所以上帝派我们来找正方形。上帝把我们派到了一个有 $N$ 行 $M$ 列的方格图上，图上一共有 $(N + 1) \\times (M + 1)$ 个格点，我们需要做的就是找出这些格点形成了多少个正方形（换句话说，正方形的四个顶点都是格点）。\r\n\r\n但是这个问题对于我们来说太难了，因为点数太多了，所以上帝删掉了这 $(N + 1) \\times (M + 1)$ 中的 $K$ 个点。既然点变少了，问题也就变简单了，那么这个时候这些格点组成了多少个正方形呢？\n\n## 输入格式\n第一行包含三个整数 $N$，$M$，$K$，代表棋盘的行数、列数和不能选取的顶点个数。 保证 $N, M \\geq 1$，$K \\leq (N + 1) \\times (M + 1)$。  \r\n接下来 $K$ 行，每行包含两个正整数 $X$，$Y$，代表第 $X$ 行第 $Y$ 列的格点被删掉了。保证 $0 \\leq X \\leq N, 0 \\leq Y \\leq M$，且不会出现重复的格点。约定每行的格点从上到下依次用整数 $0$ 到 $N$ 编号，每列的格点依次用 $0$ 到 $M$ 编号。\n\n## 输出格式\n输出一个正整数，代表正方形个数对 $100\\,000\\,007$（$10^8 + 7$）取模之后的数值。\n\n## 数据范围与提示\n| Case # | $N, M$ | $K$ |\r\n|:------:|:------:|:---:|\r\n| 1, 2   | $\\leq 5$    | $\\leq 25$ |\r\n| 3, 4   | $\\leq 50$   | $\\leq 50$ |\r\n| 5, 6   | $\\leq 10^6$ | $= 0$ |\r\n| 7, 8   | $\\leq 10^6$ | $\\leq 50$ |\r\n| 9, 10  | $\\leq 10^6$ | $\\leq 200$ |\r\n| 11, 12 | $\\leq 10^3$ | $\\leq 2 \\times 10^3$ |\r\n| 13 ~ 20 | $\\leq 10^6$ | $\\leq 2 \\times 10^3$ |",
+    "time_limit": 2.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #2025",
+    "loj_url": "https://loj.ac/p/2025",
+    "samples": [
+      {
+        "input": "2 2 4\n1 0\n1 2\n0 1\n2 1",
+        "output": "1"
+      },
+      {
+        "input": "7 10 5\n2 3\n1 5\n6 2\n3 5\n2 6",
+        "output": "429"
+      },
+      {
+        "input": "2 2 4\n0 0\n2 2\n0 2\n2 0",
+        "output": "1"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "2 2 4\n1 0\n1 2\n0 1\n2 1",
+      "output": "1"
+    },
+    {
+      "input": "7 10 5\n2 3\n1 5\n6 2\n3 5\n2 6",
+      "output": "429"
+    },
+    {
+      "input": "2 2 4\n0 0\n2 2\n0 2\n2 0",
+      "output": "1"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:17.223623",
+  "updated_at": "2026-04-22 04:23:56.870222",
+  "z_id": "Z2025"
+}

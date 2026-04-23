@@ -1,14 +1,16 @@
 """Router for note tags endpoints"""
 
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from app.database import get_db
 from app.utils.deps import get_current_active_user
 from app.models.user import User
 from app.models.note import NoteTag
+import logging
+
 from app.schemas.note import (
     NoteTagCreate,
     NoteTagUpdate,
@@ -129,3 +131,6 @@ async def delete_tag(
     await db.delete(tag)
     await db.commit()
     return {"success": True}
+
+
+logger = logging.getLogger(__name__)

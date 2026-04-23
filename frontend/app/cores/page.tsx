@@ -246,14 +246,14 @@ export default function CoresPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button
+          <button type="button"
             onClick={handleGoBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">智核明细</span>
           </button>
-          <button
+          <button type="button"
             onClick={() => fetchData(0)}
             disabled={loading}
             className="p-2 text-muted-foreground hover:text-foreground"
@@ -360,7 +360,7 @@ export default function CoresPage() {
               {/* Load More Button */}
               {transactions.length < total && (
                 <div className="p-4 text-center">
-                  <button
+                  <button type="button"
                     onClick={loadMore}
                     disabled={loadingMore}
                     className="px-6 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"

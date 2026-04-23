@@ -146,7 +146,7 @@ function RegisterPage() {
             <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
               <Sparkles className="size-4" />
             </div>
-            <span>{t('DSA Platform', 'DSA 教学平台')}</span>
+            <span>{t('ZhiMa LingHang', '智码领航')}</span>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ function RegisterPage() {
         {/* Language Switcher - Top Right Corner */}
         <div className="absolute top-6 right-6">
           <div className="inline-flex items-center bg-secondary rounded-full p-1">
-            <button
+            <button type="button"
               onClick={() => setLang('zh')}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
                 lang === 'zh'
@@ -186,7 +186,7 @@ function RegisterPage() {
             >
               中文
             </button>
-            <button
+            <button type="button"
               onClick={() => setLang('en')}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
                 lang === 'en'
@@ -205,7 +205,7 @@ function RegisterPage() {
             <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Sparkles className="size-4 text-primary" />
             </div>
-            <span>{t('DSA Platform', 'DSA 教学平台')}</span>
+            <span>{t('ZhiMa LingHang', '智码领航')}</span>
           </div>
 
           {/* Header */}
@@ -300,7 +300,7 @@ function RegisterPage() {
                     passwordTouched && passwordResult?.valid && "border-green-500 focus:border-green-500"
                   )}
                 />
-                <button
+                <button type="button"
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -337,7 +337,7 @@ function RegisterPage() {
                     confirmPasswordTouched && !confirmPasswordError && confirmPassword && "border-green-500 focus:border-green-500"
                   )}
                 />
-                <button
+                <button type="button"
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"

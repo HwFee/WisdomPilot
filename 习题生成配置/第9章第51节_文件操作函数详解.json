@@ -1,0 +1,77 @@
+{
+  "chapter_id": 9,
+  "chapter_title": "数据永久性存储",
+  "section_id": 51,
+  "section_title": "文件操作函数详解",
+  "total_knowledge_points": 3,
+  "total_exercises": 3,
+  "knowledge_point_coverage": {
+    "182": 1,
+    "183": 1,
+    "184": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 182,
+      "name": "文件打开模式详解"
+    },
+    {
+      "id": 183,
+      "name": "字符和字符串读写函数"
+    },
+    {
+      "id": 184,
+      "name": "格式化读写与块读写函数"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        182
+      ],
+      "knowledge_point_names": [
+        "文件打开模式详解"
+      ],
+      "description": "考察知识点：文件打开模式详解",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        183
+      ],
+      "knowledge_point_names": [
+        "字符和字符串读写函数"
+      ],
+      "description": "考察知识点：字符和字符串读写函数",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        184
+      ],
+      "knowledge_point_names": [
+        "格式化读写与块读写函数"
+      ],
+      "description": "考察知识点：格式化读写与块读写函数",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

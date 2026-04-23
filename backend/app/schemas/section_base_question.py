@@ -5,8 +5,7 @@
 - 题目现在按小节组织，section_id 为必填字段
 """
 
-from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 

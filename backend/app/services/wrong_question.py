@@ -1,10 +1,8 @@
 """WrongQuestion Service - 错题收集与管理服务"""
 
 from typing import Optional, List, Any
-from datetime import datetime
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 import logging
 
 from app.models.wrong_question import WrongQuestion
@@ -46,10 +44,11 @@ class WrongQuestionService:
         prefix = parts[0]
         if prefix == 'arena':
             # arena-${courseId}-${exerciseId} -> 保持不变
+            # 新旧格式均为 3 个 parts；旧格式的 sessionId 与 courseId 语义不同，
+            # 统一提取最后一个 part 作为 exercise_id 以兼容历史数据。
             if len(parts) == 3:
                 return exercise_key
             else:
-                # 旧格式兼容: arena-${sessionId}-${exerciseId} -> arena-${exerciseId}
                 exercise_id = parts[-1]
                 return f"arena-{exercise_id}"
         elif prefix == 'enhanced':
@@ -66,36 +65,34 @@ class WrongQuestionService:
         user_id: str,
         exercise_key: str,
         user_answer: Any,
-        course_id: int,
+        course_id: Optional[int] = None,
         chapter_id: Optional[int] = None,
         section_id: Optional[int] = None,
         exercise_content: Optional[dict] = None,
         exercise_type: str = "choice",
         knowledge_points: Optional[List[str]] = None,
+        exercise_id: Optional[int] = None,
     ) -> WrongQuestion:
         """通过 exercise_key 收集错题（用于前端硬编码习题）
 
         当前端使用硬编码习题（非数据库 Exercise）时，使用此方法。
-        exercise_key 格式：chapterId-subsectionIndex-exerciseId
+        exercise_key 格式：chapterId-subsectionIndex-exerciseId 或 arena-global-{exerciseId}
 
         Args:
             db: 数据库会话
             user_id: 用户ID
-            exercise_key: 练习题标识（格式：chapterId-subsectionIndex-exerciseId）
+            exercise_key: 练习题标识（格式：chapterId-subsectionIndex-exerciseId 或 arena-global-{exerciseId}）
             user_answer: 用户答案
-            course_id: 课程ID
-            chapter_id: 章节ID
-            section_id: 小节ID（强化测试来源）
-            exercise_content: 题目内容快照
-            exercise_type: 题目类型
+            course_id: 课程ID（可选，用于精进之路）
+            chapter_id: 章节ID（可选）
+            section_id: 小节ID（强化测试来源，可选）
             knowledge_points: 知识点列表
+            exercise_id: 练习题真实ID（可选，用于挑战之路等数据库Exercise）
 
         Returns:
             WrongQuestion: 错题记录
         """
         logger.info(f"[collect_wrong_question_by_key] 开始收集: user_id={user_id}, exercise_key={exercise_key}, course_id={course_id}")
-
-        # 提取基础标识用于去重（去掉 sessionId）
         base_key = self._extract_base_exercise_key(exercise_key)
         logger.info(f"[collect_wrong_question_by_key] 原始key={exercise_key}, 去重key={base_key}")
 
@@ -123,7 +120,7 @@ class WrongQuestionService:
             # 不存在：创建新记录（使用去重后的 base_key）
             wrong_question = WrongQuestion(
                 user_id=user_id,
-                exercise_id=None,  # 前端硬编码习题没有真实 ID
+                exercise_id=exercise_id,  # 传入的真实 Exercise ID（如有）
                 exercise_key=base_key,  # 存储去重后的 key
                 course_id=course_id,
                 chapter_id=chapter_id,
@@ -137,7 +134,7 @@ class WrongQuestionService:
                 is_resolved=False,
             )
             db.add(wrong_question)
-            logger.info(f"[collect_wrong_question_by_key] 创建新错题记录")
+            logger.info("[collect_wrong_question_by_key] 创建新错题记录")
 
         await db.flush()
 
@@ -165,7 +162,7 @@ class WrongQuestionService:
         user_id: str,
         exercise: Exercise,
         user_answer: Any,
-        course_id: int,
+        course_id: Optional[int] = None,
         chapter_id: Optional[int] = None,
         stage_id: Optional[int] = None,
         challenge_session_id: Optional[str] = None,
@@ -177,7 +174,7 @@ class WrongQuestionService:
             user_id: 用户ID
             exercise: 练习题对象
             user_answer: 用户答案
-            course_id: 课程ID
+            course_id: 课程ID（可选，挑战之路没有课程关联）
             chapter_id: 章节ID
             stage_id: 关卡ID（精进之路来源）
             challenge_session_id: 挑战会话ID（挑战之路来源）
@@ -246,27 +243,36 @@ class WrongQuestionService:
         self,
         db: AsyncSession,
         user_id: str,
-        exercise_id: int,
+        exercise_id: Optional[int] = None,
+        exercise_key: Optional[str] = None,
     ) -> Optional[WrongQuestion]:
         """标记错题为已解决
 
         当用户答对某道曾经错误的题目时调用。
+        支持通过 exercise_id 或 exercise_key 查找错题记录（精进/挑战之路的错题 exercise_id 为 None）。
 
         Args:
             db: 数据库会话
             user_id: 用户ID
-            exercise_id: 练习题ID
+            exercise_id: 练习题ID（可选）
+            exercise_key: 练习题标识（可选，用于精进之路/挑战之路等 exercise_id 为 None 的情况）
 
         Returns:
             Optional[WrongQuestion]: 被更新的错题记录，如果没有找到则返回None
         """
+        conditions = [
+            WrongQuestion.user_id == user_id,
+        ]
+
+        if exercise_id is not None:
+            conditions.append(WrongQuestion.exercise_id == exercise_id)
+        elif exercise_key is not None:
+            conditions.append(WrongQuestion.exercise_key == exercise_key)
+        else:
+            return None
+
         result = await db.execute(
-            select(WrongQuestion).where(
-                and_(
-                    WrongQuestion.user_id == user_id,
-                    WrongQuestion.exercise_id == exercise_id,
-                )
-            )
+            select(WrongQuestion).where(and_(*conditions))
         )
         wrong_question = result.scalar_one_or_none()
 
@@ -290,7 +296,7 @@ class WrongQuestionService:
         db: AsyncSession,
         user_id: str,
         knowledge_points: List[str],
-        course_id: int,
+        course_id: Optional[int] = None,
     ) -> None:
         """更新薄弱点记录（记录错误）
 
@@ -298,18 +304,19 @@ class WrongQuestionService:
             db: 数据库会话
             user_id: 用户ID
             knowledge_points: 知识点列表
-            course_id: 课程ID
+            course_id: 课程ID（可选）
         """
         for kp in knowledge_points:
-            result = await db.execute(
-                select(UserWeakPoint).where(
-                    and_(
-                        UserWeakPoint.user_id == user_id,
-                        UserWeakPoint.course_id == course_id,
-                        UserWeakPoint.knowledge_point == kp,
-                    )
+            query = select(UserWeakPoint).where(
+                and_(
+                    UserWeakPoint.user_id == user_id,
+                    UserWeakPoint.knowledge_point == kp,
                 )
             )
+            if course_id is not None:
+                query = query.where(UserWeakPoint.course_id == course_id)
+
+            result = await db.execute(query)
             weak_point = result.scalar_one_or_none()
 
             if weak_point:
@@ -562,7 +569,7 @@ class WrongQuestionService:
         query = select(func.count()).select_from(WrongQuestion).where(
             and_(
                 WrongQuestion.user_id == user_id,
-                WrongQuestion.is_resolved == False,
+                not WrongQuestion.is_resolved,
             )
         )
 
@@ -571,7 +578,6 @@ class WrongQuestionService:
 
         result = await db.execute(query)
         return result.scalar() or 0
-
 
     async def delete_wrong_question(
         self,

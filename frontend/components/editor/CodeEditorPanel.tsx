@@ -268,7 +268,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
           {/* Language selector */}
           <div className="relative">
-            <button
+            <button type="button"
               onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded hover:bg-gray-700"
             >
@@ -278,7 +278,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
             {isLanguageMenuOpen && (
               <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10">
                 {LANGUAGES.map((lang) => (
-                  <button
+                  <button type="button"
                     key={lang.id}
                     onClick={() => {
                       setLanguage(lang.id)
@@ -298,7 +298,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
 
           {/* Action buttons */}
           <div className="flex gap-2">
-            <button
+            <button type="button"
               onClick={handleRun}
               disabled={isRunning || !code.trim()}
               className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -310,7 +310,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
               )}
               运行
             </button>
-            <button
+            <button type="button"
               onClick={handleSave}
               className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
             >
@@ -318,7 +318,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
               保存
             </button>
             {onClose && (
-              <button
+              <button type="button"
                 onClick={onClose}
                 className="flex items-center gap-2 px-3 py-1.5 bg-gray-600 text-white text-sm rounded hover:bg-gray-500"
               >

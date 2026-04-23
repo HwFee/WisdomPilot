@@ -1,0 +1,172 @@
+{
+  "chapter_id": 4,
+  "chapter_title": "面向对象程序设计",
+  "section_id": 3,
+  "section_title": "设计模式与抽象",
+  "total_knowledge_points": 8,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "60": 2,
+    "61": 2,
+    "62": 3,
+    "63": 2,
+    "64": 2,
+    "65": 2,
+    "66": 2,
+    "67": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 60,
+      "name": "系统自带类的方法装饰"
+    },
+    {
+      "id": 61,
+      "name": "单例模式的设计"
+    },
+    {
+      "id": 62,
+      "name": "单例模式的应用"
+    },
+    {
+      "id": 63,
+      "name": "工厂模式的设计"
+    },
+    {
+      "id": 64,
+      "name": "工厂模式的应用"
+    },
+    {
+      "id": 65,
+      "name": "类的抽象方法设计"
+    },
+    {
+      "id": 66,
+      "name": "类的抽象方法应用"
+    },
+    {
+      "id": 67,
+      "name": "综合应用设计与实现"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        60,
+        61,
+        62
+      ],
+      "knowledge_point_names": [
+        "系统自带类的方法装饰",
+        "单例模式的设计",
+        "单例模式的应用"
+      ],
+      "description": "考察知识点：系统自带类的方法装饰、单例模式的设计、单例模式的应用",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        63,
+        64,
+        65
+      ],
+      "knowledge_point_names": [
+        "工厂模式的设计",
+        "工厂模式的应用",
+        "类的抽象方法设计"
+      ],
+      "description": "考察知识点：工厂模式的设计、工厂模式的应用、类的抽象方法设计",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        66,
+        67
+      ],
+      "knowledge_point_names": [
+        "类的抽象方法应用",
+        "综合应用设计与实现"
+      ],
+      "description": "考察知识点：类的抽象方法应用、综合应用设计与实现",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        62,
+        63,
+        64
+      ],
+      "knowledge_point_names": [
+        "单例模式的应用",
+        "工厂模式的设计",
+        "工厂模式的应用"
+      ],
+      "description": "考察知识点：单例模式的应用、工厂模式的设计、工厂模式的应用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        65,
+        66,
+        67
+      ],
+      "knowledge_point_names": [
+        "类的抽象方法设计",
+        "类的抽象方法应用",
+        "综合应用设计与实现"
+      ],
+      "description": "考察知识点：类的抽象方法设计、类的抽象方法应用、综合应用设计与实现（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        60,
+        61,
+        62
+      ],
+      "knowledge_point_names": [
+        "系统自带类的方法装饰",
+        "单例模式的设计",
+        "单例模式的应用"
+      ],
+      "description": "考察知识点：系统自带类的方法装饰、单例模式的设计、单例模式的应用（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "id": 138,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "547",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "数学",
+    "矩阵",
+    "DFT（含 NTT）及FFT",
+    "组合计数",
+    "分块及按大小分类",
+    "Lucas 定理",
+    "递推",
+    "LibreOJ β Round"
+  ],
+  "content": {
+    "title": "「LibreOJ β Round #7」匹配字符串",
+    "description": "## 题目描述\n对于一个 01 串（即由字符 0 和 1 组成的字符串）$s$，我们称 $s$ 合法，当且仅当串 $s$ 的任意一个长度为 $m$ 的子串 $s'$，不为全 1 串。\r\n\r\n请求出所有长度为 $n$ 的 01 串中，有多少合法的串，答案对 $65537$ 取模。\n\n## 输入格式\n输入共一行，包含两个正整数 $n,m$。\n\n## 输出格式\n输出共一行，表示所求的和对 $65537$ 取模的结果。\n\n## 数据范围与提示\n对于所有的数据，满足 $1\\le n,m\\le 68721573904$。\r\n\r\n详细的数据限制及约定如下（留空表示和上述所有数据的约定相同）：\r\n\r\n|Subtask #|分值|$n$|$m$|\r\n|:-:|:-:|:-:|:-:|\r\n|1|$6$|$\\le 18$|$\\le 18$|\r\n|2|$7$|$\\le 10^9$|$\\le 2$|\r\n|3|$15$|$\\le 10^6$|$\\le 10^6$|\r\n|4|$10$|$\\le 10^9$|$\\le 50$|\r\n|5|$14$|$\\le 10^9$|$\\le 500$|\r\n|6|$15$|$\\le 4295098369$|-|\r\n|7|$18$|$\\le 17180393476$|-|\r\n|8|$15$|-|-|",
+    "time_limit": 1.5,
+    "memory_limit": 512,
+    "source": "LibreOJ #547",
+    "loj_url": "https://loj.ac/p/547",
+    "samples": [
+      {
+        "input": "5 2",
+        "output": "13"
+      },
+      {
+        "input": "2018 7",
+        "output": "27940"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "5 2",
+      "output": "13"
+    },
+    {
+      "input": "2018 7",
+      "output": "27940"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:09.781146",
+  "updated_at": "2026-04-22 04:23:42.727725",
+  "z_id": "Z547"
+}

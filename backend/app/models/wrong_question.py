@@ -12,7 +12,6 @@ from app.utils.time import utc_now
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.exercise import Exercise
-    from app.models.chapter import Chapter
 
 
 class WrongQuestion(Base):
@@ -52,10 +51,10 @@ class WrongQuestion(Base):
         index=True,
         comment="练习题标识（格式：chapterId-subsectionIndex-exerciseId，用于前端硬编码习题）"
     )
-    course_id: Mapped[int] = mapped_column(
+    course_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         ForeignKey("courses.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
         comment="课程ID"
     )

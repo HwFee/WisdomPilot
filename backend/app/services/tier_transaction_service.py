@@ -3,13 +3,11 @@ Tier Transaction Service - 段位变化记录服务
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
 from app.models.tier_transaction import TierTransaction
 
 logger = logging.getLogger(__name__)
@@ -24,7 +22,7 @@ class TierTransactionService:
     async def record_transaction(
         self,
         user_id: str,
-        course_id: int,
+        course_id: Optional[int],
         tier_before: str,
         sub_tier_before: int,
         stars_before: int,

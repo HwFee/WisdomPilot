@@ -1,11 +1,9 @@
 """Admin service for user management"""
 import logging
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models import User, LoginSession
-from typing import Optional
 from app.utils.time import utc_now
 
 logger = logging.getLogger(__name__)

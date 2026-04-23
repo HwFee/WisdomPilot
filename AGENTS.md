@@ -2,7 +2,7 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
-# AIcodiingTeach - 基于GAI的程序设计类课程实践教学系统
+# 智码领航 - 基于GAI的程序设计类课程实践教学系统
 
 ## 项目概述
 

@@ -1,0 +1,1171 @@
+{
+  "course_name": "C语言程序设计",
+  "course_code": "C",
+  "description": "基于BKT模型的习题数量计算结果",
+  "bkt_model": {
+    "description": "Bayesian Knowledge Tracing 模型参数说明",
+    "parameters": {
+      "P(L0)": "初始掌握概率，根据知识点难度估算",
+      "P(T)": "学习转移概率，从不会到会的概率",
+      "P(G)": "猜测概率，不会但答对的概率（默认0.20）",
+      "P(S)": "滑落概率，会但答错的概率（默认0.05）"
+    },
+    "mastery_threshold": 0.95,
+    "通关条件": "所有基础题全部答对后，知识点掌握概率达到95%"
+  },
+  "chapters": [
+    {
+      "title": "简单C程序设计",
+      "order_index": 1,
+      "sections": [
+        {
+          "title": "C程序入门",
+          "order_index": 1,
+          "knowledge_point_count": 3,
+          "base_questions_count": 8,
+          "knowledge_points": [
+            {
+              "name": "C程序的基本结构",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "main函数",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "语句与注释",
+              "difficulty": 1,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 9,
+            "adjusted": 8,
+            "min_required": 6
+          }
+        },
+        {
+          "title": "基本数据类型与变量",
+          "order_index": 2,
+          "knowledge_point_count": 4,
+          "base_questions_count": 10,
+          "knowledge_points": [
+            {
+              "name": "基本数据类型",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "标识符",
+              "difficulty": 1,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "变量与常量",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "printf格式化输出",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 12,
+            "adjusted": 10,
+            "min_required": 8
+          }
+        },
+        {
+          "title": "程序设计基础",
+          "order_index": 3,
+          "knowledge_point_count": 4,
+          "base_questions_count": 10,
+          "knowledge_points": [
+            {
+              "name": "算法与流程图",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "程序设计描述方法",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "常见错误分析",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "编程风格",
+              "difficulty": 1,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 12,
+            "adjusted": 10,
+            "min_required": 8
+          }
+        }
+      ],
+      "chapter_total": 28
+    },
+    {
+      "title": "选择控制结构与应用",
+      "order_index": 2,
+      "sections": [
+        {
+          "title": "关系运算与逻辑运算",
+          "order_index": 1,
+          "knowledge_point_count": 3,
+          "base_questions_count": 8,
+          "knowledge_points": [
+            {
+              "name": "关系运算符",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "逻辑运算符",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "if语句基本形式",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 9,
+            "adjusted": 8,
+            "min_required": 6
+          }
+        },
+        {
+          "title": "if语句嵌套与应用",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "if语句嵌套",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "条件运算符",
+              "difficulty": 1,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "switch语句",
+          "order_index": 3,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "switch语句基础",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "switch语句深入",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 18
+    },
+    {
+      "title": "循环结构及应用",
+      "order_index": 3,
+      "sections": [
+        {
+          "title": "for循环",
+          "order_index": 1,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "for循环基本结构",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "for循环变体",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "while循环",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "while循环",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "do-while循环",
+              "difficulty": 1,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "循环嵌套与控制",
+          "order_index": 3,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "循环嵌套",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "break与continue",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 15
+    },
+    {
+      "title": "模块化设计与应用",
+      "order_index": 4,
+      "sections": [
+        {
+          "title": "函数基础",
+          "order_index": 1,
+          "knowledge_point_count": 3,
+          "base_questions_count": 8,
+          "knowledge_points": [
+            {
+              "name": "函数定义",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "函数声明",
+              "difficulty": 1,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "函数调用",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 9,
+            "adjusted": 8,
+            "min_required": 6
+          }
+        },
+        {
+          "title": "预处理指令",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "宏定义",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "条件编译",
+              "difficulty": 1,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 13
+    },
+    {
+      "title": "相同数据类型集合",
+      "order_index": 5,
+      "sections": [
+        {
+          "title": "一维数组",
+          "order_index": 1,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "一维数组基础",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "数组遍历与操作",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "二维数组",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "二维数组基础",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "二维数组应用",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "字符串与字符数组",
+          "order_index": 3,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "字符串基础",
+              "difficulty": 1,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.3,
+                "p_t": 0.15,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.3,
+              "final_mastery": 0.988
+            },
+            {
+              "name": "字符串函数",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 15
+    },
+    {
+      "title": "指针基础",
+      "order_index": 6,
+      "sections": [
+        {
+          "title": "指针概念",
+          "order_index": 1,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "指针变量",
+              "difficulty": 3,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            },
+            {
+              "name": "指针运算",
+              "difficulty": 3,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "指针与数组",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "指针与一维数组",
+              "difficulty": 3,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            },
+            {
+              "name": "指针与字符串",
+              "difficulty": 3,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "指针与函数",
+          "order_index": 3,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "指针作为参数",
+              "difficulty": 3,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            },
+            {
+              "name": "指针作为返回值",
+              "difficulty": 3,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 15
+    },
+    {
+      "title": "结构体与联合体",
+      "order_index": 7,
+      "sections": [
+        {
+          "title": "结构体基础",
+          "order_index": 1,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "结构体定义",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "结构体变量",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "结构体应用",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "结构体数组",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "结构体指针",
+              "difficulty": 3,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "联合体与枚举",
+          "order_index": 3,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "联合体",
+              "difficulty": 2,
+              "importance": 3,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "枚举类型",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 15
+    },
+    {
+      "title": "文件操作",
+      "order_index": 8,
+      "sections": [
+        {
+          "title": "文件基础",
+          "order_index": 1,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "文件打开与关闭",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "文件读写",
+              "difficulty": 2,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "文件应用",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "文件定位",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "文件错误处理",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 10
+    },
+    {
+      "title": "综合应用",
+      "order_index": 9,
+      "sections": [
+        {
+          "title": "程序设计方法",
+          "order_index": 1,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "程序设计流程",
+              "difficulty": 2,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.255,
+                "p_t": 0.131,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.255,
+              "final_mastery": 0.984
+            },
+            {
+              "name": "模块化设计",
+              "difficulty": 3,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        },
+        {
+          "title": "综合案例",
+          "order_index": 2,
+          "knowledge_point_count": 2,
+          "base_questions_count": 5,
+          "knowledge_points": [
+            {
+              "name": "学生管理系统",
+              "difficulty": 4,
+              "importance": 5,
+              "bkt_params": {
+                "p_l0": 0.165,
+                "p_t": 0.094,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.165,
+              "final_mastery": 0.97
+            },
+            {
+              "name": "文件处理案例",
+              "difficulty": 3,
+              "importance": 4,
+              "bkt_params": {
+                "p_l0": 0.21,
+                "p_t": 0.112,
+                "p_g": 0.2,
+                "p_s": 0.05
+              },
+              "exercises_needed": 3,
+              "initial_mastery": 0.21,
+              "final_mastery": 0.978
+            }
+          ],
+          "calculation_detail": {
+            "raw_total": 6,
+            "adjusted": 5,
+            "min_required": 4
+          }
+        }
+      ],
+      "chapter_total": 10
+    }
+  ],
+  "summary": {
+    "total_chapters": 9,
+    "total_sections": 24,
+    "total_knowledge_points": 55,
+    "total_base_questions": 139,
+    "average_questions_per_section": 5.8,
+    "通关说明": "学生需要将每小节的所有基础题全部答对，即可通过该小节。系统会根据BKT模型追踪学生对每个知识点的掌握程度。"
+  }
+}

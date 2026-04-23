@@ -5,9 +5,7 @@ from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
 from app.utils.deps import get_current_active_user
 from app.models.user import User
 from app.schemas.code import (
@@ -188,11 +186,11 @@ async def execute_code_batch(
             status_code=503,
             detail="Code execution service is unavailable."
         )
-    except Exception as e:
-        logger.error("Batch execution error: %s", e)
+    except Exception:
+        logger.exception("Batch execution error")
         raise HTTPException(
             status_code=500,
-            detail=f"执行出错: {str(e)}"
+            detail="代码执行服务内部错误，请稍后重试。"
         )
 
 

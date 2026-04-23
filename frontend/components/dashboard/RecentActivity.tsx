@@ -1,6 +1,7 @@
 "use client";
 
-import { Clock, Rocket, ArrowRight, CheckCircle, XCircle } from "lucide-react";
+import { Clock, Rocket, ArrowRight, CheckCircle, XCircle, Trophy, Flame, BookOpen, BookMarked, Pin, FileText, Book } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface Activity {
   id: string;
@@ -72,32 +73,32 @@ export function RecentActivity({
     return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
   };
 
-  const getActivityIcon = (activity: Activity) => {
+  const getActivityIcon = (activity: Activity): LucideIcon => {
     const type = activity.type || activity.activity_type;
-    if (!type) return "📌";
+    if (!type) return Pin;
 
     if (type === "exercise_complete") {
       const details = activity.details;
       if (details?.is_correct === true) {
-        return "✅";
+        return CheckCircle;
       } else if (details?.is_correct === false) {
-        return "❌";
+        return XCircle;
       }
-      return "📝";
+      return FileText;
     }
 
     switch (type) {
       case "chapter_complete":
       case "chapter_completed":
-        return "📚";
+        return BookOpen;
       case "achievement_earned":
-        return "🏆";
+        return Trophy;
       case "streak":
-        return "🔥";
+        return Flame;
       case "chapter_started":
-        return "📖";
+        return Book;
       default:
-        return "📌";
+        return Pin;
     }
   };
 
@@ -203,7 +204,7 @@ export function RecentActivity({
               {t("开始你的学习之旅吧！", "Start your learning journey!")}
             </p>
             {onStartLearning && (
-              <button
+              <button type="button"
                 onClick={onStartLearning}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
               >
@@ -233,7 +234,12 @@ export function RecentActivity({
                       )}
                     </div>
                     <p className="text-sm text-foreground line-clamp-2">
-                      <span className="mr-1">{getActivityIcon(activity)}</span>
+                      <span className="mr-1 inline-flex">
+                        {(() => {
+                          const Icon = getActivityIcon(activity);
+                          return <Icon className="w-4 h-4" />;
+                        })()}
+                      </span>
                       {getActivityText(activity)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">

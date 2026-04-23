@@ -6,13 +6,13 @@ Implements leaderboard calculations for both:
 2. Arena Leaderboard (竞技榜) - Based on challenge scores
 """
 
-from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from app.models.user_arena import UserArenaProfile, TIER_THRESHOLDS
 from app.models.chapter_mastery import ChapterMastery
+import logging
 
 
 class ArenaLeaderboardService:
@@ -91,6 +91,8 @@ class ArenaLeaderboardService:
 
         # Define tier order (higher tier = higher rank)
         tier_order = case(
+            (UserArenaProfile.tier == "king", 7),
+            (UserArenaProfile.tier == "master", 6),
             (UserArenaProfile.tier == "diamond", 5),
             (UserArenaProfile.tier == "platinum", 4),
             (UserArenaProfile.tier == "gold", 3),
@@ -103,7 +105,7 @@ class ArenaLeaderboardService:
         query = (
             select(UserArenaProfile, User)
             .join(User, UserArenaProfile.user_id == User.id)
-            .where(UserArenaProfile.course_id == course_id)
+            
             .order_by(
                 tier_order.desc(),        # Higher tier first
                 UserArenaProfile.sub_tier.asc(),  # Lower sub-tier first (I > II > III > IV > V)
@@ -154,7 +156,6 @@ class ArenaLeaderboardService:
         result = await self.db.execute(
             select(UserArenaProfile).where(
                 UserArenaProfile.user_id == user_id,
-                UserArenaProfile.course_id == course_id
             )
         )
         profile = result.scalar_one_or_none()
@@ -203,7 +204,6 @@ class MasteryLeaderboardService:
 
         from app.models.user import User
         from app.models.chapter import Chapter
-        from app.models.chapter_mastery import ChapterMastery
 
         # Get total chapters for the course
         chapter_count_query = select(func.count()).select_from(Chapter).where(
@@ -241,7 +241,7 @@ class MasteryLeaderboardService:
                 ).label("mastered_chapters")
             )
             .where(
-                ChapterMastery.course_id == course_id,
+                
                 ChapterMastery.user_id.in_(user_ids)
             )
             .group_by(ChapterMastery.user_id)
@@ -312,3 +312,6 @@ def get_arena_leaderboard_service(db: AsyncSession) -> ArenaLeaderboardService:
 def get_mastery_leaderboard_service(db: AsyncSession) -> MasteryLeaderboardService:
     """Factory function for the mastery leaderboard service."""
     return MasteryLeaderboardService(db)
+
+
+logger = logging.getLogger(__name__)

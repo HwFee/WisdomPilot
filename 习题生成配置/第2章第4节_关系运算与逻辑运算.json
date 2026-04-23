@@ -1,0 +1,77 @@
+{
+  "chapter_id": 2,
+  "chapter_title": "选择控制结构与应用",
+  "section_id": 4,
+  "section_title": "关系运算与逻辑运算",
+  "total_knowledge_points": 3,
+  "total_exercises": 3,
+  "knowledge_point_coverage": {
+    "113": 1,
+    "114": 1,
+    "115": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 113,
+      "name": "关系运算符"
+    },
+    {
+      "id": 114,
+      "name": "逻辑运算符"
+    },
+    {
+      "id": 115,
+      "name": "条件表达式（三目运算符）"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        113
+      ],
+      "knowledge_point_names": [
+        "关系运算符"
+      ],
+      "description": "考察知识点：关系运算符",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        114
+      ],
+      "knowledge_point_names": [
+        "逻辑运算符"
+      ],
+      "description": "考察知识点：逻辑运算符",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        115
+      ],
+      "knowledge_point_names": [
+        "条件表达式（三目运算符）"
+      ],
+      "description": "考察知识点：条件表达式（三目运算符）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

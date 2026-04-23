@@ -1,0 +1,56 @@
+{
+  "chapter_id": 5,
+  "chapter_title": "相同数据类型集合",
+  "section_id": 38,
+  "section_title": "指针与字符串",
+  "total_knowledge_points": 2,
+  "total_exercises": 2,
+  "knowledge_point_coverage": {
+    "153": 1,
+    "154": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 153,
+      "name": "指针与字符串的关系"
+    },
+    {
+      "id": 154,
+      "name": "指针数组与字符串数组"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        153
+      ],
+      "knowledge_point_names": [
+        "指针与字符串的关系"
+      ],
+      "description": "考察知识点：指针与字符串的关系",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        154
+      ],
+      "knowledge_point_names": [
+        "指针数组与字符串数组"
+      ],
+      "description": "考察知识点：指针数组与字符串数组",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

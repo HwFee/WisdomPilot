@@ -13,8 +13,6 @@ from app.utils.security import decode_token
 
 logger = logging.getLogger(__name__)
 
-settings = get_settings()
-
 # Exempted paths that do not need rate limiting
 EXEMPT_PATHS = {
     "/",
@@ -53,15 +51,29 @@ class RateLimiter:
         return True
 
 
-# Global limiters
-_auth_limiter = RateLimiter(
-    max_requests=settings.AUTH_RATE_PER_MINUTE,
-    window_seconds=60,
-)
-_code_limiter = RateLimiter(
-    max_requests=settings.CODE_EXEC_RATE_PER_MINUTE,
-    window_seconds=60,
-)
+# Lazily-initialized global limiters to avoid calling get_settings() at import time.
+_auth_limiter: Optional[RateLimiter] = None
+_code_limiter: Optional[RateLimiter] = None
+
+
+def _get_auth_limiter() -> RateLimiter:
+    global _auth_limiter
+    if _auth_limiter is None:
+        _auth_limiter = RateLimiter(
+            max_requests=get_settings().AUTH_RATE_PER_MINUTE,
+            window_seconds=60,
+        )
+    return _auth_limiter
+
+
+def _get_code_limiter() -> RateLimiter:
+    global _code_limiter
+    if _code_limiter is None:
+        _code_limiter = RateLimiter(
+            max_requests=get_settings().CODE_EXEC_RATE_PER_MINUTE,
+            window_seconds=60,
+        )
+    return _code_limiter
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -83,22 +95,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         rate_key: Optional[str] = None
 
         if path.startswith("/api/auth/"):
-            limiter = _auth_limiter
+            limiter = _get_auth_limiter()
             rate_key = f"ip:{self._get_client_ip(request)}"
         elif path.startswith("/api/code/"):
-            limiter = _code_limiter
+            limiter = _get_code_limiter()
             rate_key = self._get_code_key(request)
 
         if limiter and rate_key and not limiter.is_allowed(rate_key):
             logger.warning("Rate limit exceeded for key=%s path=%s", rate_key, path)
-            # In DEBUG mode, just log warning but don't block
-            if settings.DEBUG:
-                logger.info("DEBUG mode: allowing rate-limited request")
-            else:
-                return JSONResponse(
-                    status_code=429,
-                    content={"detail": "Rate limit exceeded. Try again later."},
-                )
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit exceeded. Try again later."},
+            )
 
         return await call_next(request)
 

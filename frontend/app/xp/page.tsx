@@ -11,6 +11,7 @@ import {
   Clock,
   Loader2,
   Award,
+  PartyPopper,
 } from "lucide-react";
 import { getStoredToken } from "@/lib/api";
 
@@ -231,14 +232,14 @@ export default function XpPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button
+          <button type="button"
             onClick={handleGoBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">经验明细</span>
           </button>
-          <button
+          <button type="button"
             onClick={() => fetchData(0)}
             disabled={loading}
             className="p-2 text-muted-foreground hover:text-foreground"
@@ -303,8 +304,9 @@ export default function XpPage() {
                       {/* 状态标签 */}
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {tx.level_up && (
-                          <span className="px-2 py-0.5 rounded text-xs font-medium text-amber-600 bg-amber-100">
-                            🎉 升级
+                          <span className="px-2 py-0.5 rounded text-xs font-medium text-amber-600 bg-amber-100 flex items-center gap-1">
+                            <PartyPopper className="w-3 h-3" />
+                            升级
                           </span>
                         )}
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${getCategoryColor(tx.category)}`}>
@@ -356,7 +358,7 @@ export default function XpPage() {
               {/* Load More Button */}
               {transactions.length < total && (
                 <div className="p-4 text-center">
-                  <button
+                  <button type="button"
                     onClick={loadMore}
                     disabled={loadingMore}
                     className="px-6 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"

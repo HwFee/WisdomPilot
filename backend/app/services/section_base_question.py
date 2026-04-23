@@ -12,19 +12,16 @@ Section Base Question Service - 小节基础测试题服务
 """
 
 import uuid
-from datetime import datetime
-from typing import Optional, List
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, func, or_
 from collections import defaultdict
 
 from app.models.section_base_question import SectionBaseQuestion
 from app.models.section import Section
 from app.models.chapter import Chapter
-from app.models.chapter_mastery import ChapterMastery
 from app.services.ai import ai_service
 from app.schemas.section_base_question import (
-    BaseQuestionResponse,
     BaseAnswersSubmitRequest,
     BaseAnswersSubmitResponse,
     BaseQuestionResult,
@@ -102,15 +99,17 @@ class SectionBaseQuestionService:
         # 构建查询 - 用户隔离
         query = select(SectionBaseQuestion).where(
             SectionBaseQuestion.section_id == section_id,
-            SectionBaseQuestion.is_active == True
+            SectionBaseQuestion.is_active.is_(True)
         )
         if user_id:
             query = query.where(
-                (SectionBaseQuestion.user_id == None) |  # noqa: null
-                (SectionBaseQuestion.user_id == user_id)
+                or_(
+                    SectionBaseQuestion.user_id.is_(None),
+                    SectionBaseQuestion.user_id == user_id
+                )
             )
         else:
-            query = query.where(SectionBaseQuestion.user_id == None)  # noqa: null
+            query = query.where(SectionBaseQuestion.user_id.is_(None))
         query = query.order_by(SectionBaseQuestion.order_index)
 
         questions_result = await db.execute(query)
@@ -144,19 +143,17 @@ class SectionBaseQuestionService:
             包含结果分析和薄弱点识别的响应
         """
         from app.models.user import User
-        from app.services.profile import profile_service
 
         # 获取小节信息
         section_result = await db.execute(
             select(Section).where(Section.id == section_id)
         )
-        section = section_result.scalar_one_or_none()
-        chapter_id = section.chapter_id if section else None
+        section_result.scalar_one_or_none()
 
         # 获取题目
         questions_result = await db.execute(
             select(SectionBaseQuestion)
-            .where(SectionBaseQuestion.section_id == section_id, SectionBaseQuestion.is_active == True)
+            .where(SectionBaseQuestion.section_id == section_id, SectionBaseQuestion.is_active)
             .order_by(SectionBaseQuestion.order_index)
         )
         questions = questions_result.scalars().all()
@@ -340,7 +337,7 @@ class SectionBaseQuestionService:
             max_order_result = await db.execute(
                 select(func.max(SectionBaseQuestion.order_index)).where(
                     SectionBaseQuestion.section_id == request.section_id,
-                    SectionBaseQuestion.is_active == True,
+                    SectionBaseQuestion.is_active,
                 )
             )
             max_order = max_order_result.scalar() or 0

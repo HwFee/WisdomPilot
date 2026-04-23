@@ -1,0 +1,77 @@
+{
+  "chapter_id": 9,
+  "chapter_title": "数据永久性存储",
+  "section_id": 22,
+  "section_title": "文件基础",
+  "total_knowledge_points": 3,
+  "total_exercises": 3,
+  "knowledge_point_coverage": {
+    "178": 1,
+    "89": 1,
+    "179": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 178,
+      "name": "文件的基本概念与分类"
+    },
+    {
+      "id": 89,
+      "name": "文件类型"
+    },
+    {
+      "id": 179,
+      "name": "文件操作的基本流程"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        178
+      ],
+      "knowledge_point_names": [
+        "文件的基本概念与分类"
+      ],
+      "description": "考察知识点：文件的基本概念与分类",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        89
+      ],
+      "knowledge_point_names": [
+        "文件类型"
+      ],
+      "description": "考察知识点：文件类型",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        179
+      ],
+      "knowledge_point_names": [
+        "文件操作的基本流程"
+      ],
+      "description": "考察知识点：文件操作的基本流程",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

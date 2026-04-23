@@ -1,0 +1,207 @@
+{
+  "chapter_id": 7,
+  "chapter_title": "对话框程序设计",
+  "section_id": 1,
+  "section_title": "对话框程序的建立",
+  "total_knowledge_points": 9,
+  "knowledge_points": [
+    {
+      "id": 1,
+      "name": "对话框程序的用途",
+      "content": "对话框程序的用途是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "对话框程序的用途相关知识点总结",
+      "code_example": "# 对话框程序的用途示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "对话框程序的建立方法",
+      "content": "对话框程序的建立方法是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "对话框程序的建立方法相关知识点总结",
+      "code_example": "# 对话框程序的建立方法示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "文本框控件",
+      "content": "文本框控件是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "文本框控件相关知识点总结",
+      "code_example": "# 文本框控件示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "复选按钮控件",
+      "content": "复选按钮控件是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "复选按钮控件相关知识点总结",
+      "code_example": "# 复选按钮控件示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "单选按钮控件",
+      "content": "单选按钮控件是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "单选按钮控件相关知识点总结",
+      "code_example": "# 单选按钮控件示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "列表框控件",
+      "content": "列表框控件是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "列表框控件相关知识点总结",
+      "code_example": "# 列表框控件示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "组合框控件",
+      "content": "组合框控件是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "组合框控件相关知识点总结",
+      "code_example": "# 组合框控件示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "对话框数据的传递方法",
+      "content": "对话框数据的传递方法是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "对话框数据的传递方法相关知识点总结",
+      "code_example": "# 对话框数据的传递方法示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "多个对话框之间数据交换",
+      "content": "多个对话框之间数据交换是本章节的重要知识点，需要深入理解其概念和用法。",
+      "summary": "多个对话框之间数据交换相关知识点总结",
+      "code_example": "# 多个对话框之间数据交换示例\n# 代码示例待补充",
+      "code_language": "python",
+      "code_explanation": "该知识点需要通过实际代码练习来加深理解。",
+      "difficulty": 3,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "理解基本概念",
+        "多动手实践",
+        "查阅相关文档"
+      ],
+      "common_mistakes": [
+        "概念理解不清晰",
+        "缺乏实际应用经验",
+        "忽视细节"
+      ]
+    }
+  ]
+}

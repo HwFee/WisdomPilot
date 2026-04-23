@@ -2,11 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight } from 'lucide-react'
-import { getSection, saveSectionProgress, type SectionDetail } from '@/lib/api/sections'
+import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight, Lightbulb, AlertTriangle, Code, ChevronDown, ChevronUp } from 'lucide-react'
+import { getSection, saveSectionProgress, type SectionDetail, type KnowledgePointDetail } from '@/lib/api/sections'
 import { getStoredToken } from '@/lib/api'
 import { startLearningSession, endLearningSessionKeepalive } from '@/lib/api/stats'
 import { KnowledgeOrb } from '@/components/ui/knowledge-orb'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import rehypeHighlight from 'rehype-highlight'
 
 export default function SectionLearningPage() {
   const params = useParams()
@@ -19,6 +24,7 @@ export default function SectionLearningPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [expandedKp, setExpandedKp] = useState<number | null>(null) // 展开的知识点ID
   const contentRef = useRef<HTMLDivElement>(null)
 
   // 学习时长统计
@@ -109,6 +115,11 @@ export default function SectionLearningPage() {
       const response = await getSection(sectionId, token)
       setSection(response.section)
 
+      // 默认展开第一个知识点
+      if (response.section.knowledge_points && response.section.knowledge_points.length > 0) {
+        setExpandedKp(response.section.knowledge_points[0].id)
+      }
+
       // 自动保存进度为 content（正在学习中）
       if (response.section.last_position === 'content' && !response.section.is_completed) {
         await saveSectionProgress(sectionId, 'content', false, token)
@@ -160,41 +171,207 @@ export default function SectionLearningPage() {
     router.push(`/mastery/${courseId}/chapter/${chapterId}`)
   }
 
-  // 简单的Markdown渲染（实际项目应该用markdown库）
-  const renderMarkdown = (content: string) => {
-    // 简单处理：代码块、标题、段落
-    return content
-      .split('\n')
-      .map((line, index) => {
-        // 代码块
-        if (line.startsWith('```')) {
-          return null // 简化处理
-        }
-        // 标题
-        if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-lg font-semibold mt-6 mb-3">{line.slice(4)}</h3>
-        }
-        if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-xl font-semibold mt-8 mb-4">{line.slice(3)}</h2>
-        }
-        if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-2xl font-bold mt-8 mb-4">{line.slice(2)}</h1>
-        }
-        // 列表
-        if (line.startsWith('- ') || line.startsWith('* ')) {
-          return <li key={index} className="ml-4 mb-1">{line.slice(2)}</li>
-        }
-        if (line.match(/^\d+\.\s/)) {
-          const match = line.match(/^\d+\.\s(.*)/)
-          return <li key={index} className="ml-4 mb-1 list-decimal">{match?.[1] || ''}</li>
-        }
-        // 空行
-        if (line.trim() === '') {
-          return <br key={index} />
-        }
-        // 普通段落
-        return <p key={index} className="mb-3 leading-relaxed">{line}</p>
-      })
+  const toggleKp = (kpId: number) => {
+    setExpandedKp(expandedKp === kpId ? null : kpId)
+  }
+
+  // 渲染知识点卡片
+  const renderKnowledgePoint = (kp: KnowledgePointDetail, index: number) => {
+    const isExpanded = expandedKp === kp.id
+    const difficultyColors = ['bg-green-100 text-green-800', 'bg-blue-100 text-blue-800', 'bg-yellow-100 text-yellow-800', 'bg-orange-100 text-orange-800', 'bg-red-100 text-red-800']
+    const difficultyLabels = ['入门', '基础', '中等', '进阶', '困难']
+
+    // 构建相邻知识点列表
+    const adjacentPoints = section?.knowledge_points
+      ?.filter((_, i) => i === index - 1 || i === index + 1)
+      .map(p => ({ id: String(p.id), title: p.name })) || []
+
+    // 构建示例代码列表
+    const examples: string[] = []
+    if (kp.code_example) examples.push(kp.code_example)
+
+    return (
+      <div
+        key={kp.id}
+        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 hover:shadow-md knowledge-point-zone"
+        data-knowledge-point
+        data-knowledge-point-id={String(kp.id)}
+        data-knowledge-point-title={kp.name}
+        data-knowledge-point-content={kp.content || kp.summary || ''}
+        data-knowledge-point-examples={JSON.stringify(examples)}
+        data-knowledge-point-difficulty={kp.difficulty}
+        data-knowledge-point-index={index}
+        data-knowledge-point-adjacent={JSON.stringify(adjacentPoints)}
+      >
+        {/* 知识点标题栏 - 始终可见 */}
+        <button type="button"
+          onClick={() => toggleKp(kp.id)}
+          className="w-full px-4 py-4 flex items-center gap-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        >
+          {/* 序号 */}
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
+            {index + 1}
+          </div>
+
+          {/* 标题和标签 */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-foreground text-lg truncate">{kp.name}</h3>
+            {kp.summary && !isExpanded && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{kp.summary}</p>
+            )}
+          </div>
+
+          {/* 难度标签 */}
+          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${difficultyColors[kp.difficulty - 1] || difficultyColors[0]}`}>
+            {difficultyLabels[kp.difficulty - 1] || '入门'}
+          </span>
+
+          {/* 展开/收起图标 */}
+          <div className="flex-shrink-0 text-muted-foreground">
+            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </div>
+        </button>
+
+        {/* 展开内容 */}
+        {isExpanded && (
+          <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
+            {/* 详细讲解 */}
+            {kp.content && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-foreground">讲解</span>
+                </div>
+                <div className="text-muted-foreground leading-relaxed pl-6 markdown-content">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex, rehypeHighlight]}
+                    components={{
+                      code({ className, children, ...props }) {
+                        const isInline = !className
+                        if (isInline) {
+                          return (
+                            <code className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                              {children}
+                            </code>
+                          )
+                        }
+                        // 代码块内的 code - 继承 pre 的样式，不要额外背景
+                        return (
+                          <code className={`${className || ''} bg-transparent p-0`} {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      pre({ children }) {
+                        return (
+                          <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose">
+                            {children}
+                          </pre>
+                        )
+                      },
+                      h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-base font-medium text-foreground mb-1 mt-2">{children}</h3>,
+                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                      li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+                      p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
+                      blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/50 pl-4 italic my-2">{children}</blockquote>,
+                      // 表格样式
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-3">
+                          <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">{children}</table>
+                        </div>
+                      ),
+                      thead: ({ children }) => <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>,
+                      tbody: ({ children }) => <tbody>{children}</tbody>,
+                      tr: ({ children }) => <tr className="border-b border-gray-200 dark:border-gray-700">{children}</tr>,
+                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">{children}</th>,
+                      td: ({ children }) => <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{children}</td>,
+                    }}
+                  >
+                    {kp.content}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
+
+            {/* 代码示例 */}
+            {kp.code_example && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Code className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-foreground">代码示例</span>
+                </div>
+                <div className="pl-6">
+                  <ReactMarkdown
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      pre({ children }) {
+                        return (
+                          <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto my-0">
+                            {children}
+                          </pre>
+                        )
+                      },
+                      code({ className, children, ...props }) {
+                        return (
+                          <code className={`${className || ''} bg-transparent p-0`} {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                    }}
+                  >
+                    {`\`\`\`${kp.code_language || ''}\n${kp.code_example}\n\`\`\``}
+                  </ReactMarkdown>
+                </div>
+                {kp.code_explanation && (
+                  <p className="text-sm text-muted-foreground mt-2 pl-6">{kp.code_explanation}</p>
+                )}
+              </div>
+            )}
+
+            {/* 学习提示 */}
+            {kp.tips && kp.tips.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-4 h-4 text-amber-500" />
+                  <span className="font-medium text-foreground">学习提示</span>
+                </div>
+                <ul className="space-y-1 pl-6">
+                  {kp.tips.map((tip, i) => (
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-amber-500 mt-1">•</span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 常见错误 */}
+            {kp.common_mistakes && kp.common_mistakes.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <span className="font-medium text-foreground">常见错误</span>
+                </div>
+                <ul className="space-y-1 pl-6">
+                  {kp.common_mistakes.map((mistake, i) => (
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-red-500 mt-1">•</span>
+                      <span>{mistake}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (loading) {
@@ -210,7 +387,7 @@ export default function SectionLearningPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error || '未找到小节'}</p>
-          <button onClick={handleBack} className="text-primary hover:underline">
+          <button type="button" onClick={handleBack} className="text-primary hover:underline">
             返回
           </button>
         </div>
@@ -224,7 +401,7 @@ export default function SectionLearningPage() {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <button
+            <button type="button"
               onClick={handleBack}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
@@ -278,36 +455,55 @@ export default function SectionLearningPage() {
           </p>
         )}
 
-        {/* Main Content */}
-        <div
-          ref={contentRef}
-          className="prose prose-slate dark:prose-invert max-w-none"
-          data-knowledge-point
-          data-knowledge-point-id={`section-${sectionId}`}
-          data-knowledge-point-title={section.title}
-          data-knowledge-point-content={section.content || ''}
-          data-knowledge-point-examples="[]"
-          data-knowledge-point-difficulty={1}
-          data-knowledge-point-index={0}
-          data-knowledge-point-adjacent="[]"
-        >
-          {section.content ? (
-            <div className="text-foreground leading-relaxed">
-              {renderMarkdown(section.content)}
+        {/* Knowledge Points Section */}
+        {section.knowledge_points && section.knowledge_points.length > 0 ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-foreground flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-primary" />
+                知识点 ({section.knowledge_points.length})
+              </h2>
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m11.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/></svg>
+                拖拽 AI 助手到知识点上可针对性提问
+              </span>
             </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>内容正在编写中...</p>
+            <div className="space-y-3">
+              {section.knowledge_points.map((kp, index) => renderKnowledgePoint(kp, index))}
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          /* Fallback: 原有的内容展示 */
+          <div
+            ref={contentRef}
+            className="prose prose-slate dark:prose-invert max-w-none"
+            data-knowledge-point
+            data-knowledge-point-id={`section-${sectionId}`}
+            data-knowledge-point-title={section.title}
+            data-knowledge-point-content={section.content || ''}
+            data-knowledge-point-examples="[]"
+            data-knowledge-point-difficulty={1}
+            data-knowledge-point-index={0}
+            data-knowledge-point-adjacent="[]"
+          >
+            {section.content ? (
+              <div className="text-foreground leading-relaxed">
+                {section.content}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>内容正在编写中...</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <button
+          <button type="button"
             onClick={handleStartQuiz}
             disabled={saving}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/80 text-white hover:shadow-lg transition-all disabled:opacity-70"

@@ -5,6 +5,22 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
+class KnowledgePointDetail(BaseModel):
+    """知识点详情"""
+    id: int
+    order_index: int = Field(description="显示顺序")
+    name: str = Field(description="知识点名称")
+    content: Optional[str] = Field(default=None, description="知识点讲解内容（Markdown格式）")
+    summary: Optional[str] = Field(default=None, description="知识点简要总结")
+    code_example: Optional[str] = Field(default=None, description="代码示例")
+    code_language: str = Field(default="c", description="代码语言")
+    code_explanation: Optional[str] = Field(default=None, description="代码示例解释")
+    difficulty: int = Field(default=1, description="难度等级 1-5")
+    importance: int = Field(default=1, description="重要程度 1-5")
+    tips: Optional[List[str]] = Field(default=None, description="学习提示列表")
+    common_mistakes: Optional[List[str]] = Field(default=None, description="常见错误列表")
+
+
 class SectionSummary(BaseModel):
     """小节摘要 - 用于列表显示"""
     id: int
@@ -18,7 +34,7 @@ class SectionSummary(BaseModel):
 
 
 class SectionDetail(BaseModel):
-    """小节详情 - 包含内容"""
+    """小节详情 - 包含内容和知识点列表"""
     id: int
     chapter_id: int
     title: str
@@ -29,6 +45,8 @@ class SectionDetail(BaseModel):
     learning_objectives: Optional[List[str]] = None
     is_completed: bool = Field(default=False)
     last_position: str = Field(default="content", description="最后学习位置")
+    # 新增：知识点列表
+    knowledge_points: List[KnowledgePointDetail] = Field(default_factory=list, description="知识点列表")
 
 
 class SectionListResponse(BaseModel):

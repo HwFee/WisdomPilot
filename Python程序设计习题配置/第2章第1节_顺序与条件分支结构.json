@@ -1,0 +1,152 @@
+{
+  "chapter_id": 2,
+  "chapter_title": "控制结构与异常处理",
+  "section_id": 1,
+  "section_title": "顺序与条件分支结构",
+  "total_knowledge_points": 6,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "14": 2,
+    "15": 2,
+    "16": 2,
+    "17": 2,
+    "18": 2,
+    "19": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 14,
+      "name": "顺序结构"
+    },
+    {
+      "id": 15,
+      "name": "条件分支控制结构"
+    },
+    {
+      "id": 16,
+      "name": "for循环程序设计基本语法"
+    },
+    {
+      "id": 17,
+      "name": "for循环设计技巧"
+    },
+    {
+      "id": 18,
+      "name": "while循环控制结构"
+    },
+    {
+      "id": 19,
+      "name": "while循环设计技巧"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        14,
+        15
+      ],
+      "knowledge_point_names": [
+        "顺序结构",
+        "条件分支控制结构"
+      ],
+      "description": "考察知识点：顺序结构、条件分支控制结构",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        16,
+        17
+      ],
+      "knowledge_point_names": [
+        "for循环程序设计基本语法",
+        "for循环设计技巧"
+      ],
+      "description": "考察知识点：for循环程序设计基本语法、for循环设计技巧",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        18,
+        19
+      ],
+      "knowledge_point_names": [
+        "while循环控制结构",
+        "while循环设计技巧"
+      ],
+      "description": "考察知识点：while循环控制结构、while循环设计技巧",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        14,
+        15
+      ],
+      "knowledge_point_names": [
+        "顺序结构",
+        "条件分支控制结构"
+      ],
+      "description": "考察知识点：顺序结构、条件分支控制结构（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        16,
+        17
+      ],
+      "knowledge_point_names": [
+        "for循环程序设计基本语法",
+        "for循环设计技巧"
+      ],
+      "description": "考察知识点：for循环程序设计基本语法、for循环设计技巧（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        18,
+        19
+      ],
+      "knowledge_point_names": [
+        "while循环控制结构",
+        "while循环设计技巧"
+      ],
+      "description": "考察知识点：while循环控制结构、while循环设计技巧（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

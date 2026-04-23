@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { Suspense, useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MessageSquare, Plus, ArrowLeft, Home, Search } from 'lucide-react'
 import { getSolutionSummary, createSolution, deleteSolution, likeSolution, SolutionSummary, SolutionCreate, SolutionUpdate } from '@/lib/api/solutions'
@@ -12,7 +12,7 @@ import { SolutionEditor } from '@/components/solutions/SolutionEditor'
 type CategoryType = 'hot' | 'new' | 'pinned' | 'announcement'
 type PageMode = 'list' | 'create'
 
-export default function SolutionsPage() {
+function SolutionsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -126,7 +126,7 @@ export default function SolutionsPage() {
           <div className="flex items-center justify-between h-16">
             {pageMode === 'create' ? (
               <>
-                <button
+                <button type="button"
                   onClick={() => setPageMode('list')}
                   className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -139,7 +139,7 @@ export default function SolutionsPage() {
             ) : (
               <>
                 <div className="flex items-center gap-4">
-                  <button
+                  <button type="button"
                     onClick={() => router.push('/dashboard')}
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                     title={t('返回首页', 'Go to Dashboard')}
@@ -149,7 +149,7 @@ export default function SolutionsPage() {
                   <MessageSquare className="w-6 h-6 text-primary" />
                   <h1 className="text-lg font-semibold">{t('题解广场', 'Solutions')}</h1>
                 </div>
-                <button
+                <button type="button"
                   onClick={() => setPageMode('create')}
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
                 >
@@ -196,7 +196,7 @@ export default function SolutionsPage() {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
                 />
                 {searchQuery && (
-                  <button
+                  <button type="button"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
@@ -226,5 +226,17 @@ export default function SolutionsPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function SolutionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+      </div>
+    }>
+      <SolutionsContent />
+    </Suspense>
   )
 }

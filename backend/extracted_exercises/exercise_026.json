@@ -1,0 +1,45 @@
+{
+  "id": 26,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "117",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "模板",
+    "网络流",
+    "上下界网络流"
+  ],
+  "content": {
+    "title": "有源汇有上下界最小流",
+    "description": "## 题目描述\n$ n $ 个点，$ m $ 条边，每条边 $ e $ 有一个流量下界 $ \\text{lower}(e) $ 和流量上界 $ \\text{upper}(e) $，给定源点 $ s $ 与汇点 $ t $，求源点到汇点的最小流。\n\n## 输入格式\n第一行两个正整数 $ n $、$ m $、$ s $、$ t $。\n\n之后的 $ m $ 行，每行四个整数 $ u $、$ v $、$ \\text{lower} $、$ \\text{upper} $。\n\n## 输出格式\n如果无解，输出一行 `please go home to sleep`。\r\n\r\n否则输出最小流。\n\n## 数据范围与提示\n$ 2 \\leq n \\leq 50003 , 1\\leq m \\leq 125003, 1\\le s,t,u,v\\le n, s\\neq t, u\\neq v, 0\\le \\text{lower}\\le \\text{upper}\\le 2^{31}-1 $，保证无重边",
+    "time_limit": 1.0,
+    "memory_limit": 256,
+    "source": "LibreOJ #117",
+    "loj_url": "https://loj.ac/p/117",
+    "samples": [
+      {
+        "input": "7 12 6 7\n6 1 0 2147483647\n1 7 0 2147483647\n6 2 0 2147483647\n2 7 0 2147483647\n6 3 0 2147483647\n3 7 0 2147483647\n6 4 0 2147483647\n4 7 0 2147483647\n6 5 0 2147483647\n5 7 0 2147483647\n5 1 1 2147483647\n3 4 1 2147483647",
+        "output": "2"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "7 12 6 7\n6 1 0 2147483647\n1 7 0 2147483647\n6 2 0 2147483647\n2 7 0 2147483647\n6 3 0 2147483647\n3 7 0 2147483647\n6 4 0 2147483647\n4 7 0 2147483647\n6 5 0 2147483647\n5 7 0 2147483647\n5 1 1 2147483647\n3 4 1 2147483647",
+      "output": "2"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:23:37.816830",
+  "updated_at": "2026-04-22 04:23:09.657223",
+  "z_id": "Z117"
+}

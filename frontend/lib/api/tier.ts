@@ -58,6 +58,30 @@ export async function getTierInfo(courseId: number): Promise<TierInfo> {
 }
 
 /**
+ * 获取用户全局段位信息（挑战之路用，不关联课程）
+ */
+export async function getGlobalTierInfo(): Promise<TierInfo> {
+  const token = getStoredToken()
+  if (!token) {
+    throw new Error('未登录')
+  }
+
+  const response = await fetch(`${API_URL}/api/tier/profile`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || '获取段位信息失败')
+  }
+
+  return response.json()
+}
+
+/**
  * 更新用户星星数
  */
 export async function updateStars(

@@ -101,7 +101,7 @@ export default function SolutionDetailPage() {
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-16">
-              <button
+              <button type="button"
                 onClick={() => setEditMode('view')}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -137,14 +137,14 @@ export default function SolutionDetailPage() {
         <div className="max-w-[1000px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <button
+              <button type="button"
                 onClick={() => router.push('/dashboard')}
                 className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                 title={t('返回首页', 'Go to Dashboard')}
               >
                 <Home className="w-5 h-5" />
               </button>
-              <button
+              <button type="button"
                 onClick={() => router.push('/solutions')}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -155,14 +155,14 @@ export default function SolutionDetailPage() {
 
             {isOwner && (
               <div className="flex items-center gap-2">
-                <button
+                <button type="button"
                   onClick={() => setEditMode('edit')}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors"
                 >
                   <Edit3 className="w-4 h-4" />
                   {t('编辑', 'Edit')}
                 </button>
-                <button
+                <button type="button"
                   onClick={handleDelete}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 bg-red-500/10 rounded-lg hover:bg-red-500/20 transition-colors"
                 >

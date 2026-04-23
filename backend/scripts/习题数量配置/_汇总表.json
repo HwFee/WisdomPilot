@@ -1,0 +1,233 @@
+{
+  "course_name": "C语言程序设计",
+  "course_code": "C",
+  "generated_time": "2026-04-21",
+  "total_chapters": 9,
+  "total_sections": 24,
+  "total_knowledge_points": 55,
+  "total_base_questions": 110,
+  "average_per_section": 4.6,
+  "chapter_summary": [
+    {
+      "chapter_index": 1,
+      "chapter_title": "简单C程序设计",
+      "section_count": 3,
+      "total_base_questions": 22,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "C程序入门",
+          "kp_count": 3,
+          "base_questions": 6
+        },
+        {
+          "section_index": 2,
+          "section_title": "基本数据类型与变量",
+          "kp_count": 4,
+          "base_questions": 8
+        },
+        {
+          "section_index": 3,
+          "section_title": "程序设计基础",
+          "kp_count": 4,
+          "base_questions": 8
+        }
+      ]
+    },
+    {
+      "chapter_index": 2,
+      "chapter_title": "选择控制结构与应用",
+      "section_count": 3,
+      "total_base_questions": 14,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "关系运算与逻辑运算",
+          "kp_count": 3,
+          "base_questions": 6
+        },
+        {
+          "section_index": 2,
+          "section_title": "if语句嵌套与应用",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 3,
+          "section_title": "switch语句",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    },
+    {
+      "chapter_index": 3,
+      "chapter_title": "循环结构及应用",
+      "section_count": 3,
+      "total_base_questions": 12,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "for循环",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 2,
+          "section_title": "while循环",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 3,
+          "section_title": "循环嵌套与控制",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    },
+    {
+      "chapter_index": 4,
+      "chapter_title": "模块化设计与应用",
+      "section_count": 2,
+      "total_base_questions": 10,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "函数基础",
+          "kp_count": 3,
+          "base_questions": 6
+        },
+        {
+          "section_index": 2,
+          "section_title": "预处理指令",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    },
+    {
+      "chapter_index": 5,
+      "chapter_title": "相同数据类型集合",
+      "section_count": 3,
+      "total_base_questions": 12,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "一维数组",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 2,
+          "section_title": "二维数组",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 3,
+          "section_title": "字符串与字符数组",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    },
+    {
+      "chapter_index": 6,
+      "chapter_title": "指针基础",
+      "section_count": 3,
+      "total_base_questions": 12,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "指针概念",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 2,
+          "section_title": "指针与数组",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 3,
+          "section_title": "指针与函数",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    },
+    {
+      "chapter_index": 7,
+      "chapter_title": "结构体与联合体",
+      "section_count": 3,
+      "total_base_questions": 12,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "结构体基础",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 2,
+          "section_title": "结构体应用",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 3,
+          "section_title": "联合体与枚举",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    },
+    {
+      "chapter_index": 8,
+      "chapter_title": "文件操作",
+      "section_count": 2,
+      "total_base_questions": 8,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "文件基础",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 2,
+          "section_title": "文件应用",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    },
+    {
+      "chapter_index": 9,
+      "chapter_title": "综合应用",
+      "section_count": 2,
+      "total_base_questions": 8,
+      "sections": [
+        {
+          "section_index": 1,
+          "section_title": "程序设计方法",
+          "kp_count": 2,
+          "base_questions": 4
+        },
+        {
+          "section_index": 2,
+          "section_title": "综合案例",
+          "kp_count": 2,
+          "base_questions": 4
+        }
+      ]
+    }
+  ],
+  "bkt_model_info": {
+    "model": "Bayesian Knowledge Tracing (BKT)",
+    "target_mastery": 0.8,
+    "通关规则": "每小节所有基础题全部答对，即判定通关"
+  }
+}

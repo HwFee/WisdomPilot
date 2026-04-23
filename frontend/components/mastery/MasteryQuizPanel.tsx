@@ -73,37 +73,41 @@ export function MasteryQuizPanel({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm"
       >
+        {/* 顶部光效 */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
         {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex-shrink-0">
+        <div className="p-6 border-b border-border/50 flex-shrink-0 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">精进之路测试</h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <h2 className="text-xl font-bold text-foreground">精进之路测试</h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 第 {currentIndex + 1} / {questions.length} 题
               </p>
             </div>
-            <button
+            <button type="button"
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
               aria-label="关闭"
             >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           {/* Progress bar */}
-          <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-blue-500"
+              className="h-full bg-gradient-to-r from-primary to-primary-600"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}
@@ -124,13 +128,13 @@ export function MasteryQuizPanel({
               {/* Difficulty Badge */}
               <div className="flex items-center gap-2 mb-4">
                 <DifficultyBadge difficulty={currentQuestion.difficulty} />
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {currentQuestion.knowledge_points.join('、')}
                 </span>
               </div>
 
               {/* Question Text */}
-              <p className="text-lg text-gray-900 mb-6">
+              <p className="text-lg text-foreground mb-6">
                 {currentQuestion.content.text}
               </p>
 
@@ -142,16 +146,16 @@ export function MasteryQuizPanel({
                     const isSelected = selectedOption === optionLabel
 
                     return (
-                      <button
+                      <button type="button"
                         key={index}
                         onClick={() => handleSelectOption(optionLabel)}
                         className={`w-full p-4 text-left rounded-xl border-2 transition-all ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500'
-                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                            : 'border-border/50 hover:border-border hover:bg-muted/50'
                         }`}
                       >
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-foreground">
                           {optionLabel}. {option}
                         </span>
                       </button>
@@ -163,21 +167,21 @@ export function MasteryQuizPanel({
               {/* Programming Question */}
               {currentQuestion.type === 'programming' && (
                 <div className="space-y-4">
-                  <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
-                    <pre className="text-gray-100 text-sm font-mono whitespace-pre-wrap">
+                  <div className="bg-muted rounded-xl p-4 overflow-x-auto border border-border/50">
+                    <pre className="text-foreground text-sm font-mono whitespace-pre-wrap">
                       {currentQuestion.content.code_template || '// 请在此编写代码'}
                     </pre>
                   </div>
 
                   {currentQuestion.content.test_cases && currentQuestion.content.test_cases.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">测试用例</p>
-                      <div className="bg-gray-50 rounded-lg p-3 text-sm font-mono space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">测试用例</p>
+                      <div className="bg-muted/50 rounded-lg p-3 text-sm font-mono space-y-1 border border-border/50">
                         {currentQuestion.content.test_cases.map((tc, idx) => (
                           <div key={idx} className="flex gap-2">
-                            <span className="text-gray-500">输入:</span>
-                            <span>{tc.input}</span>
-                            <span className="text-gray-500 ml-2">期望:</span>
+                            <span className="text-muted-foreground">输入:</span>
+                            <span className="text-foreground">{tc.input}</span>
+                            <span className="text-muted-foreground ml-2">期望:</span>
                             <span className="text-green-600">{tc.expected}</span>
                           </div>
                         ))}
@@ -186,7 +190,7 @@ export function MasteryQuizPanel({
                   )}
 
                   <div className="flex justify-center">
-                    <button
+                    <button type="button"
                       onClick={() => {
                         if (onOpenEditor) {
                           onOpenEditor(
@@ -195,7 +199,7 @@ export function MasteryQuizPanel({
                           )
                         }
                       }}
-                      className="px-6 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
+                      className="px-6 py-3 bg-gradient-to-r from-primary to-primary-600 text-primary-foreground rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
@@ -210,27 +214,27 @@ export function MasteryQuizPanel({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-100 flex-shrink-0">
+        <div className="p-6 border-t border-border/50 flex-shrink-0 bg-muted/30">
           <div className="flex items-center justify-between gap-4">
-            <button
+            <button type="button"
               onClick={handlePrevious}
               disabled={currentIndex === 0}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 currentIndex === 0
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'text-muted-foreground/30 cursor-not-allowed'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               上一题
             </button>
 
-            <button
+            <button type="button"
               onClick={handleNext}
               disabled={!selectedOption}
-              className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+              className={`flex-1 py-3 rounded-xl font-medium transition-all ${
                 !selectedOption
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-muted text-muted-foreground/50 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-primary to-primary-600 text-primary-foreground hover:from-primary-600 hover:to-primary-700 shadow-sm hover:shadow-md hover:-translate-y-0.5'
               }`}
             >
               {isLastQuestion ? '提交' : '下一题'}

@@ -54,7 +54,7 @@ export function CourseSwitcher({
     <div className="flex items-center gap-2">
       <span className="text-sm text-muted-foreground">{t('正在学习', 'Learning')}:</span>
       <div className="relative" ref={dropdownRef}>
-        <button
+        <button type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 border border-border rounded-lg hover:bg-muted transition-colors"
         >
@@ -83,7 +83,7 @@ export function CourseSwitcher({
               const isSelected = course.course_id === currentCourseId
 
               return (
-                <button
+                <button type="button"
                   key={course.course_id}
                   onClick={() => handleSelect(course.course_id)}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted transition-colors ${

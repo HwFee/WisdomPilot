@@ -1,0 +1,2573 @@
+{
+  "total": 200,
+  "extracted_at": "2026-04-22T14:42:27.751171",
+  "exercises": [
+    {
+      "id": 1,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "A + B 问题",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "你好，世界！",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试",
+        "Special Judge"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "复读机",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试",
+        "文件 IO",
+        "子任务"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "Quine",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试",
+        "Special Judge"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "猜数字 1",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试",
+        "提交答案"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "猜数字 2",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试",
+        "交互题"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "Input Test",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "Shared Memory Test",
+      "source": "loj",
+      "knowledge_points": [
+        "系统测试",
+        "交互题"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "矩阵乘法",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "矩阵"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最大流",
+      "source": "loj",
+      "knowledge_points": [
+        "子任务",
+        "模板",
+        "网络流",
+        "最大流"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最小费用流",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "网络流",
+        "费用流"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "子串查找",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "字符串",
+        "KMP"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "普通平衡树",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "平衡树",
+        "数据结构"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "文艺平衡树",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "平衡树",
+        "数据结构"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "二逼平衡树",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "平衡树",
+        "数据结构",
+        "树套树"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "维护全序集",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "平衡树",
+        "数据结构"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "多项式乘法",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "多项式 / 形式幂级数",
+        "DFT（含 NTT）及FFT"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "并查集",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数据结构",
+        "并查集"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "乘法逆元",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "数论",
+        "乘法逆元"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "后缀排序",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "字符串",
+        "数据结构",
+        "后缀数组"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "三维偏序",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数据结构",
+        "树套树",
+        "三维偏序",
+        "CDQ 分治"
+      ]
+    },
+    {
+      "id": 22,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最大异或和",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数据结构",
+        "线性基",
+        "异或"
+      ]
+    },
+    {
+      "id": 23,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "k 大异或和",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数据结构",
+        "线性基",
+        "异或"
+      ]
+    },
+    {
+      "id": 24,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "无源汇有上下界可行流",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "网络流",
+        "上下界网络流"
+      ]
+    },
+    {
+      "id": 25,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "有源汇有上下界最大流",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "网络流",
+        "上下界网络流"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "有源汇有上下界最小流",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "网络流",
+        "上下界网络流"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "正则表达式",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "字符串",
+        "自动机",
+        "正则表达式"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "单源最短路",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "图论",
+        "最短路"
+      ]
+    },
+    {
+      "id": 29,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "持久化序列",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "平衡树",
+        "数据结构",
+        "可持久化"
+      ]
+    },
+    {
+      "id": 30,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「离线可过」动态图连通性",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "图论"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「强制在线」动态图连通性",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "图论"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最小生成树",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "图论",
+        "最小生成树"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "除数函数求和 1",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "数论",
+        "埃氏筛及欧拉筛"
+      ]
+    },
+    {
+      "id": 34,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "除数函数求和 2",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "数论"
+      ]
+    },
+    {
+      "id": 35,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最大流 加强版",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "网络流",
+        "最大流"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "Lyndon 分解",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "字符串"
+      ]
+    },
+    {
+      "id": 37,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "树状数组 1 ：单点修改，区间查询",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "线段树",
+        "树状数组"
+      ]
+    },
+    {
+      "id": 38,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "树状数组 2 ：区间修改，单点查询",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "树状数组",
+        "差分"
+      ]
+    },
+    {
+      "id": 39,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "树状数组 3 ：区间修改，区间查询",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "线段树",
+        "树状数组",
+        "差分"
+      ]
+    },
+    {
+      "id": 40,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "二维树状数组 1：单点修改，区间查询 ",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "CDQ 分治",
+        "树状数组"
+      ]
+    },
+    {
+      "id": 41,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "二维树状数组 2：区间修改，单点查询",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "CDQ 分治",
+        "树状数组",
+        "差分"
+      ]
+    },
+    {
+      "id": 42,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "二维树状数组 3：区间修改，区间查询",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "树状数组",
+        "差分"
+      ]
+    },
+    {
+      "id": 43,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最小瓶颈路",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "图论",
+        "最小生成树",
+        "瓶颈路"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最小瓶颈路（加强版）",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数据结构",
+        "图论",
+        "最小生成树",
+        "瓶颈路"
+      ]
+    },
+    {
+      "id": 45,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "类欧几里得算法",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "类欧几里得算法"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "树链剖分",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数据结构",
+        "线段树",
+        "树链剖分"
+      ]
+    },
+    {
+      "id": 47,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最小树形图",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "图论"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "回文子串",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "字符串"
+      ]
+    },
+    {
+      "id": 49,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "质数判定",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数论"
+      ]
+    },
+    {
+      "id": 50,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "DFS 序 1",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "DFS 序",
+        "树状数组"
+      ]
+    },
+    {
+      "id": 51,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "DFS 序 2",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "DFS 序",
+        "线段树"
+      ]
+    },
+    {
+      "id": 52,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "DFS 序 3，树上差分 1",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "DFS 序",
+        "树上差分",
+        "LCA"
+      ]
+    },
+    {
+      "id": 53,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "DFS 序 4",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "DFS 序",
+        "树上差分",
+        "LCA"
+      ]
+    },
+    {
+      "id": 54,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "01 分数规划",
+      "source": "loj",
+      "knowledge_points": [
+        "Special Judge",
+        "模板",
+        "分数规划"
+      ]
+    },
+    {
+      "id": 55,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "挑战多项式",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "多项式 / 形式幂级数",
+        "DFT（含 NTT）及FFT"
+      ]
+    },
+    {
+      "id": 56,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "多项式求立方根",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "多项式 / 形式幂级数"
+      ]
+    },
+    {
+      "id": 57,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "子集卷积",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "FWT",
+        "集合幂级数"
+      ]
+    },
+    {
+      "id": 58,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "集合覆盖计数",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "容斥原理",
+        "组合计数",
+        "集合幂级数"
+      ]
+    },
+    {
+      "id": 59,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "集合划分计数",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "容斥原理",
+        "组合计数",
+        "生成函数 / 母函数",
+        "集合幂级数"
+      ]
+    },
+    {
+      "id": 60,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "Tutte 多项式",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "组合计数",
+        "集合幂级数"
+      ]
+    },
+    {
+      "id": 61,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "树形背包",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "背包 DP"
+      ]
+    },
+    {
+      "id": 62,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "乘法逆元 2",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "乘法逆元"
+      ]
+    },
+    {
+      "id": 63,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "快速幂 2",
+      "source": "loj",
+      "knowledge_points": [
+        "快速幂"
+      ]
+    },
+    {
+      "id": 64,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "高斯消元 2",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "高斯消元",
+        "Berlekamp-Massey 算法"
+      ]
+    },
+    {
+      "id": 65,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "高精度除法",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "高精度"
+      ]
+    },
+    {
+      "id": 66,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "拉格朗日插值",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "多项式 / 形式幂级数"
+      ]
+    },
+    {
+      "id": 67,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "拉格朗日插值 2",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "多项式 / 形式幂级数"
+      ]
+    },
+    {
+      "id": 68,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "康托展开",
+      "source": "loj",
+      "knowledge_points": [
+        "模板"
+      ]
+    },
+    {
+      "id": 69,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "阶乘 mod 大质数",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "DFT（含 NTT）及FFT"
+      ]
+    },
+    {
+      "id": 70,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最长公共子串",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "字符串",
+        "后缀自动机"
+      ]
+    },
+    {
+      "id": 71,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "多项式欧几里得",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "多项式 / 形式幂级数",
+        "扩展欧几里德算法",
+        "分治"
+      ]
+    },
+    {
+      "id": 72,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "Runs",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "字符串",
+        "后缀数组"
+      ]
+    },
+    {
+      "id": 73,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "二项卷积",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "DFT（含 NTT）及FFT",
+        "数论",
+        "中国剩余定理"
+      ]
+    },
+    {
+      "id": 74,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "模立方根",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数论"
+      ]
+    },
+    {
+      "id": 75,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "动理序列最值",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "线段树"
+      ]
+    },
+    {
+      "id": 76,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "生成子群阶数",
+      "source": "loj",
+      "knowledge_points": [
+        "模板"
+      ]
+    },
+    {
+      "id": 77,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "多项式求根",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "多项式 / 形式幂级数",
+        "数论"
+      ]
+    },
+    {
+      "id": 78,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "Nim 积",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "博弈论"
+      ]
+    },
+    {
+      "id": 79,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "正则二分图匹配",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "二分图匹配",
+        "随机化"
+      ]
+    },
+    {
+      "id": 80,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "二项式系数",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数论",
+        "Lucas 定理"
+      ]
+    },
+    {
+      "id": 81,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "高精度进制转换",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "DFT（含 NTT）及FFT",
+        "分治",
+        "高精度"
+      ]
+    },
+    {
+      "id": 82,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "单位蒙日矩阵乘法",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "决策单调性"
+      ]
+    },
+    {
+      "id": 83,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "动态树",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "Link-Cut Tree"
+      ]
+    },
+    {
+      "id": 84,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "最小斯坦纳树",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "斯坦纳树"
+      ]
+    },
+    {
+      "id": 85,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "可并堆",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "可并堆"
+      ]
+    },
+    {
+      "id": 86,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "q-整式递推",
+      "source": "loj",
+      "knowledge_points": [
+        "模板"
+      ]
+    },
+    {
+      "id": 87,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "无向图四元环计数",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "图论"
+      ]
+    },
+    {
+      "id": 88,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "素域椭圆曲线数点",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "多项式 / 形式幂级数",
+        "数论"
+      ]
+    },
+    {
+      "id": 89,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "线段树历史和",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "矩阵",
+        "线段树"
+      ]
+    },
+    {
+      "id": 90,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "列 Eulerian 数",
+      "source": "loj",
+      "knowledge_points": [
+        "模板",
+        "数学",
+        "DFT（含 NTT）及FFT"
+      ]
+    },
+    {
+      "id": 91,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round」ZQC 的拼图",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "二分",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 92,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round」ZQC 的树列",
+      "source": "loj",
+      "knowledge_points": [
+        "Special Judge",
+        "数学",
+        "原创",
+        "构造",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 93,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round」ZQC 的截图",
+      "source": "loj",
+      "knowledge_points": [
+        "原创",
+        "Hash",
+        "随机化",
+        "LibreOJ β Round",
+        "hash 表"
+      ]
+    },
+    {
+      "id": 94,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round」ZQC 的课堂",
+      "source": "loj",
+      "knowledge_points": [
+        "平衡树",
+        "数据结构",
+        "线段树",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 95,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round」ZQC 的手办",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "线段树",
+        "原创",
+        "堆",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 96,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round」ZQC 的游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "网络流",
+        "最大流",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 97,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round」ZQC 的作业",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "数论",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 98,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #1」接竹竿",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "区间 DP",
+        "前缀和",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 99,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #1」失控的未来交通工具",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "数学",
+        "并查集",
+        "数论",
+        "扩展欧几里德算法",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 100,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #1」动态几何问题",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "数论",
+        "杜教筛",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 101,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #1」北校门外的回忆",
+      "source": "loj",
+      "knowledge_points": [
+        "平衡树",
+        "数据结构",
+        "线段树",
+        "倍增",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 102,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #1」验题",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "DP",
+        "线段树",
+        "原创",
+        "树链剖分",
+        "树形 DP",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 103,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #1」春游",
+      "source": "loj",
+      "knowledge_points": [
+        "贪心",
+        "状态压缩",
+        "原创",
+        "提交答案",
+        "构造",
+        "背包 DP",
+        "树的重心",
+        "枚举",
+        "区间 DP",
+        "近似算法",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 104,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #1」笔试",
+      "source": "loj",
+      "knowledge_points": [
+        "提交答案",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 105,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #2」模拟只会猜题意",
+      "source": "loj",
+      "knowledge_points": [
+        "LibreOJ β Round",
+        "模拟"
+      ]
+    },
+    {
+      "id": 106,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #2」贪心只能过样例",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "LibreOJ β Round",
+        "bitset"
+      ]
+    },
+    {
+      "id": 107,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #2」DP 一般看规律",
+      "source": "loj",
+      "knowledge_points": [
+        "平衡树",
+        "线段树",
+        "字典树",
+        "LibreOJ β Round",
+        "启发式合并"
+      ]
+    },
+    {
+      "id": 108,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #2」计算几何瞎暴力",
+      "source": "loj",
+      "knowledge_points": [
+        "字典树",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 109,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #2」数论只会 GCD",
+      "source": "loj",
+      "knowledge_points": [
+        "平衡树",
+        "数论",
+        "乘法逆元",
+        "线段树",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 110,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #2」数学上来先打表",
+      "source": "loj",
+      "knowledge_points": [
+        "离线",
+        "分块及按大小分类",
+        "LibreOJ β Round",
+        "启发式合并",
+        "bitset"
+      ]
+    },
+    {
+      "id": 111,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #3」绯色 IOI（开端）",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "构造",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 112,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #3」绯色 IOI（抵达）",
+      "source": "loj",
+      "knowledge_points": [
+        "贪心",
+        "构造",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 113,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #3」绯色 IOI（危机）",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "二分",
+        "原创",
+        "单调栈",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 114,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #3」绯色 IOI（悬念）",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "二分图匹配",
+        "DP",
+        "DFS 序",
+        "线段树",
+        "原创",
+        "树形 DP",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 115,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #4」游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "博弈论",
+        "LibreOJ β Round",
+        "树状数组",
+        "分治"
+      ]
+    },
+    {
+      "id": 116,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #4」多项式",
+      "source": "loj",
+      "knowledge_points": [
+        "构造",
+        "欧拉定理",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 117,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #4」子集",
+      "source": "loj",
+      "knowledge_points": [
+        "图论",
+        "二分图匹配",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 118,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #4」框架",
+      "source": "loj",
+      "knowledge_points": [
+        "LibreOJ β Round",
+        "树状数组",
+        "bitset"
+      ]
+    },
+    {
+      "id": 119,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #4」求和",
+      "source": "loj",
+      "knowledge_points": [
+        "莫比乌斯反演",
+        "容斥原理",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 120,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #5」自然语言",
+      "source": "loj",
+      "knowledge_points": [
+        "字符串",
+        "贪心",
+        "DP",
+        "自动机",
+        "区间 DP",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 121,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #5」最小倍数",
+      "source": "loj",
+      "knowledge_points": [
+        "贪心",
+        "二分",
+        "数位 DP",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 122,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #5」游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "博弈论",
+        "LibreOJ β Round",
+        "基环树"
+      ]
+    },
+    {
+      "id": 123,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #5」随机数列",
+      "source": "loj",
+      "knowledge_points": [
+        "数论",
+        "LibreOJ β Round",
+        "前缀和"
+      ]
+    },
+    {
+      "id": 124,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #6」花煎",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "构造",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 125,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #6」花团",
+      "source": "loj",
+      "knowledge_points": [
+        "背包 DP",
+        "线段树分治",
+        "分治",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 126,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #6」花火",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "DP",
+        "线段树",
+        "决策单调性",
+        "单调栈",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 127,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #6」花札",
+      "source": "loj",
+      "knowledge_points": [
+        "网络流",
+        "二分图匹配",
+        "博弈论",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 128,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOIP Round #1」DNA 序列",
+      "source": "loj",
+      "knowledge_points": [
+        "枚举",
+        "Hash",
+        "模拟",
+        "LibreOJ NOIP Round"
+      ]
+    },
+    {
+      "id": 129,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOIP Round #1」数列递推",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "递推",
+        "LibreOJ NOIP Round",
+        "复杂度分析"
+      ]
+    },
+    {
+      "id": 130,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOIP Round #1」旅游路线",
+      "source": "loj",
+      "knowledge_points": [
+        "图论",
+        "DP",
+        "LibreOJ NOIP Round"
+      ]
+    },
+    {
+      "id": 131,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOIP Round #1」游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "图论",
+        "构造",
+        "LibreOJ NOIP Round"
+      ]
+    },
+    {
+      "id": 132,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOIP Round #1」七曜圣贤",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "单调队列",
+        "LibreOJ NOIP Round"
+      ]
+    },
+    {
+      "id": 133,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOIP Round #1」序列划分",
+      "source": "loj",
+      "knowledge_points": [
+        "贪心",
+        "DP",
+        "构造",
+        "枚举",
+        "LibreOJ NOIP Round"
+      ]
+    },
+    {
+      "id": 134,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #7」奴隶主的游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "构造",
+        "博弈论",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 135,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #7」Array Poisonous Suffix Problem",
+      "source": "loj",
+      "knowledge_points": [
+        "字符串",
+        "后缀数组",
+        "构造",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 136,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #7」小埋与游乐场",
+      "source": "loj",
+      "knowledge_points": [
+        "贪心",
+        "二进制",
+        "LibreOJ β Round",
+        "hash 表"
+      ]
+    },
+    {
+      "id": 137,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #7」网格图",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "图论",
+        "最短路",
+        "线段树",
+        "可持久化",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 138,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #7」匹配字符串",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "矩阵",
+        "DFT（含 NTT）及FFT",
+        "组合计数",
+        "分块及按大小分类",
+        "Lucas 定理",
+        "递推",
+        "LibreOJ β Round"
+      ]
+    },
+    {
+      "id": 139,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #7」某少女附中的体育课",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "DFT（含 NTT）及FFT",
+        "FWT",
+        "LibreOJ β Round",
+        "映射与反演"
+      ]
+    },
+    {
+      "id": 140,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ β Round #7」康普·莱克·西提",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "状态压缩",
+        "提交答案",
+        "拓扑排序",
+        "随机化",
+        "近似算法",
+        "LibreOJ β Round",
+        "连通分量",
+        "复杂度分析",
+        "语义分析"
+      ]
+    },
+    {
+      "id": 141,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #8」Matching",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "构造",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 142,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #8」Matrix",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "构造",
+        "博弈论",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 143,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #8」MIN&MAX I",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "多项式 / 形式幂级数",
+        "DFT（含 NTT）及FFT",
+        "图论",
+        "概率与期望",
+        "组合计数",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 144,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #8」MINIM",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "博弈论",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 145,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #8」MIN&MAX II",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "图论",
+        "线段树",
+        "离线",
+        "平面图",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 146,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #8」抢红包",
+      "source": "loj",
+      "knowledge_points": [
+        "DFT（含 NTT）及FFT",
+        "DP",
+        "概率与期望",
+        "生成函数 / 母函数",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 147,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「Antileaf's Round」咱们去烧菜吧",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "多项式 / 形式幂级数",
+        "DFT（含 NTT）及FFT",
+        "组合计数",
+        "背包 DP",
+        "生成函数 / 母函数",
+        "Special Round"
+      ]
+    },
+    {
+      "id": 148,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「Antileaf's Round」你这衣服租来的吗",
+      "source": "loj",
+      "knowledge_points": [
+        "平衡树",
+        "数据结构",
+        "线段树",
+        "Special Round"
+      ]
+    },
+    {
+      "id": 149,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「Antileaf's Round」我们的 CPU 遭到攻击",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "Link-Cut Tree",
+        "Special Round"
+      ]
+    },
+    {
+      "id": 150,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #9」ZQC 的迷宫",
+      "source": "loj",
+      "knowledge_points": [
+        "交互题",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 151,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #9」Menci 的序列",
+      "source": "loj",
+      "knowledge_points": [
+        "贪心",
+        "二进制",
+        "构造",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 152,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #9」CommonAnts 的调和数",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "数论",
+        "洲阁筛",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 153,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #9」Tangjz 的背包",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "Lucas 定理",
+        "生成函数 / 母函数",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 154,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #10」Snakes 的 Naïve Graph",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "数论",
+        "图论",
+        "二分图匹配",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 155,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #10」613 的天网",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "构造",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 156,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #10」mathematican 的二进制",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "DFT（含 NTT）及FFT",
+        "概率与期望",
+        "二进制",
+        "递推",
+        "生成函数 / 母函数",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 157,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #10」yanQval 的生成树",
+      "source": "loj",
+      "knowledge_points": [
+        "二分",
+        "最小生成树",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 158,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #11」Misaka Network 与测试",
+      "source": "loj",
+      "knowledge_points": [
+        "网络流",
+        "二分图匹配",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 159,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #11」Misaka Network 与任务",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "容斥原理",
+        "组合计数",
+        "FWT",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 160,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #11」Misaka Network 与 Accelerator",
+      "source": "loj",
+      "knowledge_points": [
+        "2-SAT",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 161,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ Round #11」Misaka Network 与求和",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "莫比乌斯反演",
+        "洲阁筛",
+        "杜教筛",
+        "LibreOJ Round"
+      ]
+    },
+    {
+      "id": 162,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #2」单枪匹马",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "矩阵",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 163,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #2」黄金矿工",
+      "source": "loj",
+      "knowledge_points": [
+        "费用流",
+        "Link-Cut Tree",
+        "线段树",
+        "树链剖分",
+        "可并堆",
+        "线段树分治",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 164,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #2」不等关系",
+      "source": "loj",
+      "knowledge_points": [
+        "DFT（含 NTT）及FFT",
+        "容斥原理",
+        "LibreOJ NOI Round",
+        "分治"
+      ]
+    },
+    {
+      "id": 165,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #2」签到游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "线段树",
+        "二分",
+        "最小生成树",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 166,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #2」简单算术",
+      "source": "loj",
+      "knowledge_points": [
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 167,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #2」小球进洞",
+      "source": "loj",
+      "knowledge_points": [
+        "平衡树",
+        "数据结构",
+        "Link-Cut Tree",
+        "线段树",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 168,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「LibreOJ NOI Round #2」笔试",
+      "source": "loj",
+      "knowledge_points": [
+        "提交答案",
+        "LibreOJ NOI Round"
+      ]
+    },
+    {
+      "id": 169,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2017」数字表格",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "数论",
+        "莫比乌斯反演",
+        "SDOI",
+        "2017"
+      ]
+    },
+    {
+      "id": 170,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2017」树点涂色",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "SDOI",
+        "2017",
+        "Link-Cut Tree",
+        "DFS 序",
+        "线段树"
+      ]
+    },
+    {
+      "id": 171,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2017」序列计数",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "矩阵",
+        "多项式 / 形式幂级数",
+        "DP",
+        "SDOI",
+        "2017"
+      ]
+    },
+    {
+      "id": 172,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2017」新生舞会",
+      "source": "loj",
+      "knowledge_points": [
+        "网络流",
+        "费用流",
+        "二分图匹配",
+        "SDOI",
+        "2017",
+        "二分",
+        "分数规划"
+      ]
+    },
+    {
+      "id": 173,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2017」硬币游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "Special Judge",
+        "字符串",
+        "数据结构",
+        "数学",
+        "SDOI",
+        "2017",
+        "概率与期望",
+        "高斯消元"
+      ]
+    },
+    {
+      "id": 174,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2017」相关分析",
+      "source": "loj",
+      "knowledge_points": [
+        "Special Judge",
+        "数据结构",
+        "SDOI",
+        "2017",
+        "线段树"
+      ]
+    },
+    {
+      "id": 175,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2015」小凸玩矩阵",
+      "source": "loj",
+      "knowledge_points": [
+        "网络流",
+        "二分图匹配",
+        "二分",
+        "SCOI",
+        "2015"
+      ]
+    },
+    {
+      "id": 176,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2015」国旗计划",
+      "source": "loj",
+      "knowledge_points": [
+        "SCOI",
+        "2015",
+        "倍增"
+      ]
+    },
+    {
+      "id": 177,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2015」小凸想跑步",
+      "source": "loj",
+      "knowledge_points": [
+        "SCOI",
+        "2015",
+        "计算几何",
+        "半平面交"
+      ]
+    },
+    {
+      "id": 178,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2015」小凸玩密室",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "SCOI",
+        "2015",
+        "树形 DP"
+      ]
+    },
+    {
+      "id": 179,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2015」小凸解密码",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "线段树",
+        "SCOI",
+        "2015",
+        "set"
+      ]
+    },
+    {
+      "id": 180,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2015」情报传递",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "Link-Cut Tree",
+        "SCOI",
+        "2015",
+        "离线",
+        "树链剖分"
+      ]
+    },
+    {
+      "id": 181,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2016」背单词",
+      "source": "loj",
+      "knowledge_points": [
+        "贪心",
+        "2016",
+        "SCOI",
+        "字典树"
+      ]
+    },
+    {
+      "id": 182,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2016」幸运数字",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "线性基",
+        "2016",
+        "SCOI",
+        "树链剖分",
+        "倍增",
+        "异或",
+        "点分治"
+      ]
+    },
+    {
+      "id": 183,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2016」萌萌哒",
+      "source": "loj",
+      "knowledge_points": [
+        "并查集",
+        "2016",
+        "SCOI",
+        "倍增"
+      ]
+    },
+    {
+      "id": 184,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2016」妖怪",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "2016",
+        "SCOI",
+        "计算几何"
+      ]
+    },
+    {
+      "id": 185,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2016」美味",
+      "source": "loj",
+      "knowledge_points": [
+        "2016",
+        "线段树",
+        "SCOI",
+        "异或"
+      ]
+    },
+    {
+      "id": 186,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SCOI2016」围棋",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "2016",
+        "SCOI",
+        "轮廓线 DP"
+      ]
+    },
+    {
+      "id": 187,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「AHOI / HNOI2017」单旋",
+      "source": "loj",
+      "knowledge_points": [
+        "平衡树",
+        "数据结构",
+        "2017",
+        "线段树",
+        "HNOI",
+        "AHOI"
+      ]
+    },
+    {
+      "id": 188,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「AHOI / HNOI2017」影魔",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "2017",
+        "线段树",
+        "离线",
+        "HNOI",
+        "AHOI"
+      ]
+    },
+    {
+      "id": 189,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「AHOI / HNOI2017」礼物",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "DFT（含 NTT）及FFT",
+        "2017",
+        "HNOI",
+        "AHOI"
+      ]
+    },
+    {
+      "id": 190,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「AHOI / HNOI2017」大佬",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "2017",
+        "HNOI",
+        "搜索",
+        "AHOI"
+      ]
+    },
+    {
+      "id": 191,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「AHOI / HNOI2017」队长快跑",
+      "source": "loj",
+      "knowledge_points": [
+        "2017",
+        "计算几何",
+        "HNOI",
+        "AHOI"
+      ]
+    },
+    {
+      "id": 192,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「AHOI / HNOI2017」抛硬币",
+      "source": "loj",
+      "knowledge_points": [
+        "2017",
+        "HNOI",
+        "Lucas 定理",
+        "扩展欧几里德算法",
+        "AHOI"
+      ]
+    },
+    {
+      "id": 193,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「JLOI / SHOI2016」侦查守卫",
+      "source": "loj",
+      "knowledge_points": [
+        "DP",
+        "2016",
+        "树形 DP",
+        "SHOI",
+        "三分"
+      ]
+    },
+    {
+      "id": 194,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「JLOI / SHOI2016」方",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "2016",
+        "SHOI",
+        "三分",
+        "容斥原理",
+        "组合计数"
+      ]
+    },
+    {
+      "id": 195,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「JLOI / SHOI2016」成绩比较",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "多项式 / 形式幂级数",
+        "2016",
+        "高斯消元",
+        "SHOI",
+        "三分",
+        "组合计数"
+      ]
+    },
+    {
+      "id": 196,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SHOI2016」黑暗前的幻想乡",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "图论",
+        "2016",
+        "SHOI",
+        "容斥原理",
+        "矩阵树定理"
+      ]
+    },
+    {
+      "id": 197,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SHOI2016」随机序列",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "2016",
+        "线段树",
+        "SHOI"
+      ]
+    },
+    {
+      "id": 198,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2016」储能表",
+      "source": "loj",
+      "knowledge_points": [
+        "数学",
+        "DP",
+        "SDOI",
+        "2016",
+        "异或",
+        "数位 DP"
+      ]
+    },
+    {
+      "id": 199,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2016」数字配对",
+      "source": "loj",
+      "knowledge_points": [
+        "网络流",
+        "费用流",
+        "二分图匹配",
+        "SDOI",
+        "2016"
+      ]
+    },
+    {
+      "id": 200,
+      "type": "programming",
+      "difficulty": 5,
+      "title": "「SDOI2016」游戏",
+      "source": "loj",
+      "knowledge_points": [
+        "数据结构",
+        "SDOI",
+        "2016",
+        "线段树",
+        "树链剖分"
+      ]
+    }
+  ]
+}

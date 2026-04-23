@@ -1,0 +1,56 @@
+{
+  "chapter_id": 6,
+  "chapter_title": "深入模块化设计与应用",
+  "section_id": 42,
+  "section_title": "指针数组与函数",
+  "total_knowledge_points": 2,
+  "total_exercises": 2,
+  "knowledge_point_coverage": {
+    "162": 1,
+    "163": 1
+  },
+  "knowledge_points": [
+    {
+      "id": 162,
+      "name": "指针数组与函数参数"
+    },
+    {
+      "id": 163,
+      "name": "函数指针与回调"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        162
+      ],
+      "knowledge_point_names": [
+        "指针数组与函数参数"
+      ],
+      "description": "考察知识点：指针数组与函数参数",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        163
+      ],
+      "knowledge_point_names": [
+        "函数指针与回调"
+      ],
+      "description": "考察知识点：函数指针与回调",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

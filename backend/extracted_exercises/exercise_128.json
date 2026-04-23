@@ -1,0 +1,54 @@
+{
+  "id": 128,
+  "chapter_id": null,
+  "stage_id": null,
+  "source": "loj",
+  "source_id": "537",
+  "type": "programming",
+  "difficulty": 5,
+  "difficulty_weight": 1.4,
+  "knowledge_points": [
+    "枚举",
+    "Hash",
+    "模拟",
+    "LibreOJ NOIP Round"
+  ],
+  "content": {
+    "title": "「LibreOJ NOIP Round #1」DNA 序列",
+    "description": "## 题目描述\nNOIP 复赛之前，HSD 桑进行了一项研究，发现人某条染色体上的一段 DNA 序列中连续的 $k$ 个碱基组成的碱基序列与做题的 AC 率有关！于是他想研究一下这种关系。  \r\n现在给出一段 DNA 序列，请帮他求出这段 DNA 序列中所有连续 $k$ 个碱基形成的碱基序列中，出现最多的一种的出现次数。\n\n## 输入格式\n两行，第一行为一段 DNA 序列，保证 DNA 序列合法，即只含有 `A`, `G`, `C`, `T` 四种碱基；  \r\n第二行为一个正整数 $k$，意义与题目描述相同。\n\n## 输出格式\n一行，一个正整数，为题目描述中所求答案。\n\n## 数据范围与提示\n记 DNA 序列长度为 $n$。  \r\n本题共 $10$ 组数据，只有输出与标准输出一致才可以获得该测试点的分数。  \r\n\r\n下面给出每组数据的范围和满足性质情况：\r\n\r\n|测试点编号|$n$|$k$|其他|\r\n|:-:|:-:|:-:|:-:|\r\n|$1$|$=10 ^5$|$=1$|满足性质|\r\n|$2,3$|$\\le 5 \\times 10 ^5$|$=1$|-|\r\n|$4$|$\\le 5 \\times 10 ^5$|$\\le 10$|满足性质|\r\n|$5,6,7,8$|$\\le 10 ^6$|$\\le 10$|-|\r\n|$9,10$|$=5 \\times 10 ^6$|$=10$|-|\r\n\r\n性质：给出的 DNA 碱基序列中每个碱基均相同。  \r\n对于所有数据均保证 $k\\le n$\r\n",
+    "time_limit": 1.0,
+    "memory_limit": 512,
+    "source": "LibreOJ #537",
+    "loj_url": "https://loj.ac/p/537",
+    "samples": [
+      {
+        "input": "AAAAA\n1",
+        "output": "5"
+      },
+      {
+        "input": "ACTCACTC\n4",
+        "output": "2"
+      }
+    ]
+  },
+  "solution": null,
+  "test_cases": [
+    {
+      "input": "AAAAA\n1",
+      "output": "5"
+    },
+    {
+      "input": "ACTCACTC\n4",
+      "output": "2"
+    }
+  ],
+  "hints": null,
+  "skill_tags": null,
+  "common_errors": null,
+  "is_verified": 1,
+  "usage_count": 0,
+  "correct_rate": null,
+  "created_at": "2026-04-22 02:24:09.781146",
+  "updated_at": "2026-04-22 04:23:42.727725",
+  "z_id": "Z537"
+}

@@ -1,0 +1,176 @@
+{
+  "chapter_id": 1,
+  "chapter_title": "Python基础与环境",
+  "section_id": 1,
+  "section_title": "程序设计基础知识",
+  "total_knowledge_points": 7,
+  "knowledge_points": [
+    {
+      "id": 1,
+      "name": "Python简介与特点",
+      "content": "Python是一种高级、解释型、面向对象的编程语言，由Guido van Rossum于1991年创建。其设计哲学强调代码的可读性和简洁性，采用缩进表示代码块结构。Python拥有丰富的标准库和第三方生态，广泛应用于Web开发、数据科学、人工智能、自动化运维、网络爬虫、游戏开发等领域。Python的核心理念是'There should be one—and preferably only one—obvious way to do it'。",
+      "summary": "Python是一种高级解释型面向对象语言，以简洁易读著称，应用领域广泛",
+      "code_example": "# Python的第一个程序\nprint(\"Hello, World!\")\n\n# 简洁的代码风格\nname = \"Python\"\nversion = 3.11\nprint(f\"学习{name} {version}\")",
+      "code_language": "python",
+      "code_explanation": "print函数用于输出信息，f-string是Python3.6+引入的字符串格式化方式，简洁直观。",
+      "difficulty": 1,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "适合作为编程入门语言",
+        "应用领域广泛就业前景好",
+        "语法简洁但功能强大",
+        "社区活跃资源丰富"
+      ],
+      "common_mistakes": [
+        "把Python当成简单的脚本语言忽视其面向对象特性",
+        "混淆解释型语言和编译型语言的区别",
+        "忽视Python的哲学理念"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Python编程环境设置",
+      "content": "Python环境配置包括安装Python解释器、使用pip包管理工具、创建虚拟环境等步骤。Python支持Windows、Linux、macOS等主流操作系统。pip是Python官方的包管理工具，用于安装、升级、卸载第三方库。虚拟环境可以隔离不同项目的依赖，避免版本冲突。国内常用镜像源包括清华大学、阿里云等，可显著提升下载速度。",
+      "summary": "Python环境配置包括解释器、pip包管理、虚拟环境",
+      "code_example": "# 检查Python版本\npython --version\npip --version\n\n# 安装第三方库\npip install requests\npip install numpy pandas\n\n# 配置国内镜像\npip install requests -i https://pypi.tuna.tsinghua.edu.cn/simple\n\n# 创建虚拟环境\npython -m venv myenv\n\n# 激活虚拟环境(Windows)\nmyenv\\Scripts\\activate",
+      "code_language": "bash",
+      "code_explanation": "python --version验证安装，pip install安装库，venv模块创建隔离的Python环境避免依赖冲突。",
+      "difficulty": 1,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "安装时勾选Add Python to PATH",
+        "学会使用pip管理第三方库",
+        "项目开发建议使用虚拟环境",
+        "配置国内镜像加速下载"
+      ],
+      "common_mistakes": [
+        "安装时忘记添加环境变量",
+        "pip安装源速度慢未配置国内镜像",
+        "不同项目混用同一环境导致依赖冲突",
+        "忽视虚拟环境的作用"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "原生环境使用",
+      "content": "Python原生开发环境包括命令行交互模式(REPL)和脚本文件执行两种方式。交互模式适合测试代码片段和调试，脚本文件适合编写完整的程序。IDLE是Python自带的集成开发环境，提供基本的代码编辑和运行功能。Python解释器逐行读取代码并立即执行，这种模式称为REPL(Read-Eval-Print Loop)。",
+      "summary": "Python原生环境包括交互模式和脚本文件执行方式",
+      "code_example": "# 交互模式示例\n>>> print(\"Hello\")\nHello\n>>> 2 + 3\n5\n>>> name = \"Python\"\n>>> len(name)\n6\n>>> exit()\n\n# 脚本文件 hello.py\n# -*- coding: utf-8 -*-\nprint(\"Hello, World!\")\n\n# 运行脚本\npython hello.py",
+      "code_language": "python",
+      "code_explanation": "交互模式下可直接输入代码执行，exit()或quit()退出。脚本文件首行指定UTF-8编码以支持中文。",
+      "difficulty": 1,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "交互模式适合测试简单代码和调试",
+        "脚本文件保存时注意编码为UTF-8",
+        "IDLE适合初学者入门使用",
+        "学会使用help()查看函数帮助"
+      ],
+      "common_mistakes": [
+        "在交互模式下写复杂程序难以调试",
+        "脚本编码问题导致中文乱码",
+        "忘记文件后缀.py",
+        "混淆交互模式和脚本模式的区别"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "第三方IDE开发环境",
+      "content": "常用的Python IDE包括PyCharm、VS Code、Jupyter Notebook等。PyCharm是JetBrains公司开发的专业Python IDE，具有强大的代码补全、重构、调试功能，适合大型项目开发。VS Code是轻量级编辑器，通过Python插件支持开发，配置灵活。Jupyter Notebook是交互式编程环境，支持代码、文档、可视化混合展示，广泛用于数据科学和机器学习领域。",
+      "summary": "常用Python IDE有PyCharm、VS Code、Jupyter Notebook",
+      "code_example": "# PyCharm特点\n# - 强大的代码补全和重构功能\n# - 内置调试器和版本控制\n# - 支持远程开发和数据库工具\n# - 适合大型项目和企业开发\n\n# VS Code + Python插件\n# - 轻量级，启动快速\n# - 丰富的插件市场\n# - 可配置调试\n\n# Jupyter Notebook\n# - 交互式编程环境\n# - 代码单元格执行\n# - 支持Markdown文档\n# - 适合数据分析和可视化",
+      "code_language": "python",
+      "code_explanation": "不同IDE有不同的适用场景，PyCharm适合大型项目，Jupyter适合数据分析，VS Code灵活可配置。",
+      "difficulty": 1,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "大型项目开发推荐PyCharm专业版",
+        "数据分析推荐Jupyter Notebook",
+        "轻量级开发可选VS Code",
+        "学会配置IDE的Python解释器"
+      ],
+      "common_mistakes": [
+        "IDE选择不当影响开发效率",
+        "不熟悉IDE快捷键操作",
+        "不会配置IDE的Python解释器",
+        "忽视IDE的调试功能"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Python基本语法",
+      "content": "Python基本语法包括变量与赋值、数据类型、运算符、控制结构、函数定义等。Python使用缩进表示代码块，不使用大括号，这是Python与其他语言的重要区别。变量无需声明类型，解释器会根据赋值自动推断类型。注释使用#开头，多行注释使用三引号。语句结尾不需分号（也可加分号但不推荐）。",
+      "summary": "Python基本语法包括变量、数据类型、运算符、控制结构、函数",
+      "code_example": "# 变量与数据类型\nname = \"张三\"      # 字符串\nage = 20           # 整数\nheight = 1.75      # 浮点数\nis_student = True  # 布尔值\n\n# 基本运算符\nresult = 10 / 3    # 浮点除法: 3.333...\nresult = 10 // 3   # 整数除法: 3\nresult = 10 % 3    # 取余: 1\nresult = 2 ** 10   # 幂运算: 1024\n\n# 条件语句\nif age >= 18:\n    print(\"成年人\")\nelif age >= 6:\n    print(\"未成年人\")\nelse:\n    print(\"儿童\")",
+      "code_language": "python",
+      "code_explanation": "Python用缩进表示代码块结构，if/for/while/def等语句后需加冒号。range(n)生成0到n-1的序列。",
+      "difficulty": 1,
+      "importance": 5,
+      "related_points": [],
+      "tips": [
+        "Python用缩进表示代码块",
+        "变量无需声明类型",
+        "if/for/def后必须加冒号",
+        "/是浮点除，//是整数除"
+      ],
+      "common_mistakes": [
+        "缩进不一致导致IndentationError",
+        "忘记在语句后加冒号",
+        "混用中英文符号",
+        "整数除法忘记用//"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "类与对象的基本概念",
+      "content": "面向对象编程(OOP)是一种程序设计思想，将现实世界的事物抽象为程序中的对象。类是对一类事物的抽象描述，是创建对象的模板；对象是类的实例，具有属性和方法。Python中一切皆对象，包括数值、字符串、函数等。定义类使用class关键字，__init__方法用于初始化对象，self参数指向对象本身。封装、继承、多态是面向对象的三大特性。",
+      "summary": "类是对象的模板，对象是类的实例，Python中一切皆对象",
+      "code_example": "# 定义类\nclass Student:\n    school = \"清华大学\"  # 类属性\n    \n    def __init__(self, name, age):\n        self.name = name    # 实例属性\n        self.age = age\n    \n    def show_info(self):    # 实例方法\n        print(f\"姓名：{self.name}，年龄：{self.age}\")",
+      "code_language": "python",
+      "code_explanation": "类属性所有对象共享，实例属性每个对象独立。self表示对象本身，类方法用@classmethod装饰器。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "类是模板，对象是实例",
+        "类的方法第一个参数是self",
+        "Python中所有数据都是对象",
+        "类属性vs实例属性要分清"
+      ],
+      "common_mistakes": [
+        "忘记在方法中写self参数",
+        "混淆类属性和实例属性",
+        "不理解__init__构造方法的作用",
+        "忘记类名后加冒号"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "系统定义类的简单使用",
+      "content": "Python内置大量系统类可直接使用。字符串str类提供split、upper、lower、replace、strip等方法。列表list类提供append、remove、insert、sort、reverse等方法。字典dict类提供keys、values、items、get、update等方法。文件操作使用open函数返回文件对象。熟练使用内置类可以高效处理日常编程任务。",
+      "summary": "Python内置类如str、list、dict、file等可直接使用",
+      "code_example": "# 字符串操作\ns = \"  Hello, World!  \"\nprint(s.strip())          # 去首尾空格\nprint(s.upper())           # HELLO, WORLD!\nprint(s.replace(\"World\", \"Python\"))\n\n# 列表操作\nlst = [3, 1, 4, 1, 5, 9, 2, 6]\nlst.append(9)\nlst.sort()\n\n# 字典操作\nd = {\"name\": \"张三\", \"age\": 20}\nprint(d.get(\"name\"))",
+      "code_language": "python",
+      "code_explanation": "with语句自动关闭文件，encoding参数指定UTF-8编码避免中文乱码。字典的get方法安全获取值。",
+      "difficulty": 2,
+      "importance": 4,
+      "related_points": [],
+      "tips": [
+        "善用dir()查看对象可用方法",
+        "官方文档是最好的学习资源",
+        "字符串是不可变对象",
+        "列表的sort()直接修改原列表"
+      ],
+      "common_mistakes": [
+        "不查阅文档不知道有哪些方法可用",
+        "方法参数传递错误",
+        "修改字符串未接收返回值",
+        "忘记文件操作后关闭文件"
+      ]
+    }
+  ]
+}

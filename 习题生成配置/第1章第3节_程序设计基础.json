@@ -1,0 +1,165 @@
+{
+  "chapter_id": 1,
+  "chapter_title": "简单C程序设计",
+  "section_id": 3,
+  "section_title": "程序设计基础",
+  "total_knowledge_points": 7,
+  "total_exercises": 6,
+  "knowledge_point_coverage": {
+    "106": 2,
+    "107": 2,
+    "108": 3,
+    "109": 3,
+    "110": 2,
+    "111": 2,
+    "112": 2
+  },
+  "knowledge_points": [
+    {
+      "id": 106,
+      "name": "算法的基本概念"
+    },
+    {
+      "id": 107,
+      "name": "流程图"
+    },
+    {
+      "id": 108,
+      "name": "伪代码"
+    },
+    {
+      "id": 109,
+      "name": "常见错误分析"
+    },
+    {
+      "id": 110,
+      "name": "编程风格"
+    },
+    {
+      "id": 111,
+      "name": "程序调试方法"
+    },
+    {
+      "id": 112,
+      "name": "程序测试基础"
+    }
+  ],
+  "exercises": [
+    {
+      "exercise_number": 1,
+      "knowledge_points": [
+        106,
+        107,
+        108
+      ],
+      "knowledge_point_names": [
+        "算法的基本概念",
+        "流程图",
+        "伪代码"
+      ],
+      "description": "考察知识点：算法的基本概念、流程图、伪代码",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 2,
+      "knowledge_points": [
+        109,
+        110,
+        111
+      ],
+      "knowledge_point_names": [
+        "常见错误分析",
+        "编程风格",
+        "程序调试方法"
+      ],
+      "description": "考察知识点：常见错误分析、编程风格、程序调试方法",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 3,
+      "knowledge_points": [
+        112
+      ],
+      "knowledge_point_names": [
+        "程序测试基础"
+      ],
+      "description": "考察知识点：程序测试基础",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 4,
+      "knowledge_points": [
+        108,
+        109,
+        110
+      ],
+      "knowledge_point_names": [
+        "伪代码",
+        "常见错误分析",
+        "编程风格"
+      ],
+      "description": "考察知识点：伪代码、常见错误分析、编程风格（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 5,
+      "knowledge_points": [
+        111,
+        112,
+        106
+      ],
+      "knowledge_point_names": [
+        "程序调试方法",
+        "程序测试基础",
+        "算法的基本概念"
+      ],
+      "description": "考察知识点：程序调试方法、程序测试基础、算法的基本概念（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "exercise_number": 6,
+      "knowledge_points": [
+        107,
+        108,
+        109
+      ],
+      "knowledge_point_names": [
+        "流程图",
+        "伪代码",
+        "常见错误分析"
+      ],
+      "description": "考察知识点：流程图、伪代码、常见错误分析（进阶）",
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}

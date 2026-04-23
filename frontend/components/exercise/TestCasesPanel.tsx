@@ -95,7 +95,7 @@ export function TestCasesPanel({
           return (
             <div key={index} className={`test-case-item ${result.passed ? 'passed' : 'failed'}`}>
               {/* Header */}
-              <button
+              <button type="button"
                 onClick={() => toggleCase(index)}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F5F7FA] transition-colors"
               >
@@ -145,7 +145,7 @@ export function TestCasesPanel({
                         {t('输入', 'Input')}
                       </span>
                       <div className="flex items-center gap-2">
-                        <button
+                        <button type="button"
                           onClick={() => handleCopy(result.input, `input-${index}`)}
                           className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                         >
@@ -156,7 +156,7 @@ export function TestCasesPanel({
                           )}
                         </button>
                         {onRunTestCase && (
-                          <button
+                          <button type="button"
                             onClick={() => onRunTestCase(result.input)}
                             className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                             title={t('用此输入运行', 'Run with this input')}
@@ -179,7 +179,7 @@ export function TestCasesPanel({
                       <span className="text-xs font-medium text-[#52C41A] uppercase tracking-wide">
                         {t('期望输出', 'Expected')}
                       </span>
-                      <button
+                      <button type="button"
                         onClick={() => handleCopy(result.expected, `expected-${index}`)}
                         className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                       >
@@ -204,7 +204,7 @@ export function TestCasesPanel({
                         <span className="text-xs font-medium text-[#E74C3C] uppercase tracking-wide">
                           {t('实际输出', 'Actual')}
                         </span>
-                        <button
+                        <button type="button"
                           onClick={() => handleCopy(result.actual, `actual-${index}`)}
                           className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                         >

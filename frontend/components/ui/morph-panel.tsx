@@ -593,7 +593,7 @@ export function MorphPanel() {
                 </p>
               </div>
             </div>
-            <button
+            <button type="button"
               onClick={handleClose}
               className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
               style={{ color: "hsl(var(--muted-foreground))" }}
@@ -626,7 +626,7 @@ export function MorphPanel() {
                   { label: "类似题", prompt: "请给我一道类似的编程练习题" },
                 ]
               })().map(qp => (
-                <button
+                <button type="button"
                   key={qp.label}
                   onClick={() => handleQuickPrompt(qp.prompt)}
                   className="px-2.5 py-1 rounded-full text-xs border transition-all hover:bg-black/5"
@@ -663,7 +663,7 @@ export function MorphPanel() {
                   { label: "提示思路", prompt: "这道题的解题思路是什么？" },
                 ]
               })().map(qp => (
-                <button
+                <button type="button"
                   key={qp.label}
                   onClick={() => handleQuickPrompt(qp.prompt)}
                   className="px-2.5 py-1 rounded-full text-xs border transition-all hover:bg-black/5"
@@ -778,7 +778,7 @@ export function MorphPanel() {
                 }}
                 disabled={isStreaming}
               />
-              <button
+              <button type="button"
                 type="submit"
                 disabled={!inputValue.trim() || isStreaming}
                 className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"

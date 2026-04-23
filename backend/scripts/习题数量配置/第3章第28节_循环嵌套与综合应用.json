@@ -1,0 +1,32 @@
+{
+  "chapter_id": 3,
+  "chapter_title": "循环结构及应用",
+  "section_id": 28,
+  "section_title": "循环嵌套与综合应用",
+  "total_knowledge_points": 2,
+  "total_exercises": 4,
+  "knowledge_points": [
+    {
+      "id": 131,
+      "name": "循环嵌套基础",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    },
+    {
+      "id": 132,
+      "name": "循环嵌套深入与综合应用",
+      "exercises_needed": 2,
+      "bkt_params": {
+        "p_l0": 0.3,
+        "p_t": 0.15,
+        "p_g": 0.2,
+        "p_s": 0.05
+      }
+    }
+  ]
+}
