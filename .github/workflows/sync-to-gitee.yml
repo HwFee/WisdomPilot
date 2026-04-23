@@ -2,7 +2,7 @@ name: 自动同步到 Gitee
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   sync:
@@ -14,9 +14,8 @@ jobs:
           fetch-depth: 0
 
       - name: 推送到 Gitee
-        uses: wearerequired/git-mirror-action@v1
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.GITEE_TOKEN }}
-        with:
-          source-repo: "https://github.com/HwFee/AlcodiingTeach-demo.git"
-          destination-repo: "https://gitee.com/dongyanchang/AlcodiingTeach-demo.git"
+        run: |
+          git config --global user.name "自动同步"
+          git config --global user.email "action@github.com"
+          git remote set-url gitee https://${{ secrets.GITEE_TOKEN }}@gitee.com/dongyanchang/AlcodiingTeach-demo.git || git remote add gitee https://${{ secrets.GITEE_TOKEN }}@gitee.com/dongyanchang/AlcodiingTeach-demo.git
+          git push --force-with-lease gitee HEAD:main
