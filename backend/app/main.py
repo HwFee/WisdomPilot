@@ -96,12 +96,21 @@ app = FastAPI(
 app.add_middleware(RateLimitMiddleware)
 
 # CORS configuration
+# 生产环境需要配置实际的域名
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# 从环境变量添加生产域名（多个域名用逗号分隔）
+import os
+production_origins = os.environ.get("CORS_ORIGINS", "")
+if production_origins:
+    cors_origins.extend([origin.strip() for origin in production_origins.split(",") if origin.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],

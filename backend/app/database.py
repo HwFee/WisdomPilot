@@ -17,9 +17,13 @@ engine = create_async_engine(
 
 @event.listens_for(engine.sync_engine, "connect")
 def _set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore[no-untyped-def
-    """Enable SQLite foreign key enforcement on every new connection (C7)."""
+    """Enable SQLite foreign key enforcement and WAL mode for better concurrency."""
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
+    # WAL mode allows concurrent reads during writes - essential for production
+    cursor.execute("PRAGMA journal_mode=WAL")
+    # Increase busy timeout for write contention (30 seconds)
+    cursor.execute("PRAGMA busy_timeout=30000")
     cursor.close()
 
 
