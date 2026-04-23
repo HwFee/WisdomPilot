@@ -22,6 +22,9 @@ class AuthService:
 
     async def register(self, user_data: UserCreate) -> tuple[User, Token]:
         """Register a new user and return user + token"""
+        # Debug: log password length
+        logger.info(f"Register attempt - email: {user_data.email}, username: {user_data.username}, password length: {len(user_data.password)} bytes: {len(user_data.password.encode('utf-8'))}")
+
         # Check if user already exists
         result = await self.db.execute(
             select(User).where(
