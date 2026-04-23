@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================
-# 智码领航 - 一键部署脚本
+# 智码领航 - 简化部署脚本
 # ============================================
-# 适用于华为云服务器
-# 实现蓝绿部署，零停机更新
+# 适用于华为云服务器（无域名版本）
+# 直接重建容器，有短暂停机（约10秒）
 # ============================================
 
 set -e
@@ -30,74 +30,48 @@ log_error() {
 PROJECT_DIR="/opt/AI-Tutorial"
 cd $PROJECT_DIR
 
-log_info "=== 1. 拉取最新代码（Gitee） ==="
+log_info "=== 1. 拉取最新代码 ==="
 git pull origin main
 
-log_info "=== 2. 判断当前活跃实例 ==="
-# 检查哪个实例正在运行
-if curl -sf http://127.0.0.1:8001/health > /dev/null 2>&1; then
-    ACTIVE="green"
-    STANDBY="blue"
-    ACTIVE_PORT=8001
-    STANDBY_PORT=8002
+log_info "=== 2. 读取环境变量 ==="
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+    log_info "环境变量已加载"
 else
-    ACTIVE="blue"
-    STANDBY="green"
-    ACTIVE_PORT=8002
-    STANDBY_PORT=8001
+    log_warn "未找到 .env 文件"
 fi
-log_info "当前活跃实例: $ACTIVE (端口 $ACTIVE_PORT)，备用实例: $STANDBY (端口 $STANDBY_PORT)"
 
-log_info "=== 3. 构建并重启备用实例 ==="
-docker-compose stop backend-$STANDBY || true
-docker-compose rm -f backend-$STANDBY || true
-docker-compose build backend-$STANDBY
-docker-compose up -d backend-$STANDBY
+log_info "=== 3. 重建并启动后端 ==="
+docker-compose stop backend || true
+docker-compose rm -f backend || true
+docker-compose build --no-cache backend
+docker-compose up -d backend
 
-log_info "=== 4. 等待备用实例启动 ==="
-sleep 10
+log_info "=== 4. 等待后端启动 ==="
+sleep 5
 
-# 健康检查
 MAX_RETRIES=12
 RETRY_COUNT=0
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -sf http://127.0.0.1:$STANDBY_PORT/health > /dev/null 2>&1; then
-        log_info "备用实例启动成功！"
+    if curl -sf http://127.0.0.1:8000/health > /dev/null 2>&1; then
+        log_info "后端启动成功！"
         break
     fi
     RETRY_COUNT=$((RETRY_COUNT + 1))
-    log_warn "等待备用实例启动... ($RETRY_COUNT/$MAX_RETRIES)"
-    sleep 5
+    log_warn "等待后端启动... ($RETRY_COUNT/$MAX_RETRIES)"
+    sleep 3
 done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-    log_error "备用实例启动失败，回滚！"
-    docker-compose up -d backend-$ACTIVE
+    log_error "后端启动失败！"
     exit 1
 fi
 
-log_info "=== 5. 切换 Nginx 流量到备用实例 ==="
-# 更新 Nginx upstream 配置
-if [ "$STANDBY" == "green" ]; then
-    # Green 为主，Blue 为备
-    sed -i 's/server 127.0.0.1:800[12]/server 127.0.0.1:8001;/' /etc/nginx/conf.d/app.conf
-    sed -i 's/server 127.0.0.1:800[12] backup/server 127.0.0.1:8002 backup;/' /etc/nginx/conf.d/app.conf
-else
-    # Blue 为主，Green 为备
-    sed -i 's/server 127.0.0.1:800[12]/server 127.0.0.1:8002;/' /etc/nginx/conf.d/app.conf
-    sed -i 's/server 127.0.0.1:800[12] backup/server 127.0.0.1:8001 backup;/' /etc/nginx/conf.d/app.conf
-fi
-
-nginx -t && nginx -s reload
-log_info "Nginx 配置已更新并重载"
-
-log_info "=== 6. 停止旧的活跃实例 ==="
-docker-compose stop backend-$ACTIVE
-docker-compose rm -f backend-$ACTIVE
-
-log_info "=== 7. 更新前端（如有变化） ==="
-docker-compose build frontend
+log_info "=== 5. 重建并启动前端 ==="
+docker-compose stop frontend || true
+docker-compose rm -f frontend || true
+docker-compose build --no-cache frontend
 docker-compose up -d frontend
 
-log_info "=== 部署完成！当前活跃实例: $STANDBY ==="
-log_info "访问地址: http://你的服务器IP"
+log_info "=== 部署完成！==="
+log_info "访问地址: http://115.175.38.106:3000"
