@@ -148,22 +148,21 @@ class ProfileService:
         """
         # 使用北京时区计算日期
         beijing_tz = timezone(timedelta(hours=8))
-        beijing_now = datetime.now(beijing_tz)
-        beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
-        # 转换为 naive datetime 用于比较（数据库存储的是 naive UTC）
-        today_start_naive = beijing_today_start.replace(tzinfo=None)
+        beijing_today = datetime.now(beijing_tz).date()
 
         if user.last_activity_date:
             last_date = user.last_activity_date
             if hasattr(last_date, 'tzinfo') and last_date.tzinfo:
                 last_date = last_date.replace(tzinfo=None)
-            last_date = last_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            # 将 UTC 时间转换为北京时间后取日期
+            last_beijing = last_date + timedelta(hours=8)
+            last_beijing_date = last_beijing.date()
 
             # If last activity was yesterday, increment streak
-            if today_start_naive - last_date == timedelta(days=1):
+            if (beijing_today - last_beijing_date).days == 1:
                 user.streak_days += 1
             # If last activity was today, don't change streak
-            elif today_start_naive == last_date:
+            elif beijing_today == last_beijing_date:
                 pass
             # If more than 1 day gap, reset streak
             else:
@@ -210,27 +209,22 @@ class ProfileService:
         if user.total_checkin_days == 0:
             return False
 
-        # Streak days must be at least 1 if total_checkin_days > 0
-        # If streak_days > total_checkin_days, data is inconsistent - trust total_checkin_days
-        if user.streak_days == 0 or user.streak_days > user.total_checkin_days:
-            return False
-
         if not user.last_activity_date:
             return False
 
-        # 使用北京时区计算日期
+        # 使用北京时区计算"今天"的日期
         beijing_tz = timezone(timedelta(hours=8))
-        beijing_now = datetime.now(beijing_tz)
-        beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
-        # 转换为 naive datetime 用于比较
-        today_start_naive = beijing_today_start.replace(tzinfo=None)
+        beijing_today = datetime.now(beijing_tz).date()
 
+        # 将 last_activity_date（UTC 存储）转换为北京时间后取日期
         last_date = user.last_activity_date
         if hasattr(last_date, 'tzinfo') and last_date.tzinfo:
             last_date = last_date.replace(tzinfo=None)
-        last_date = last_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        # last_activity_date 是 UTC 时间，+8小时得到北京时间
+        last_beijing = last_date + timedelta(hours=8)
+        last_beijing_date = last_beijing.date()
 
-        return today_start_naive == last_date
+        return beijing_today == last_beijing_date
 
     async def checkin(self, db: AsyncSession, user: User) -> dict:
         """Process daily check-in
@@ -243,10 +237,7 @@ class ProfileService:
         """
         # 使用北京时区计算日期
         beijing_tz = timezone(timedelta(hours=8))
-        beijing_now = datetime.now(beijing_tz)
-        beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
-        # 转换为 naive datetime 用于比较
-        today_start_naive = beijing_today_start.replace(tzinfo=None)
+        beijing_today = datetime.now(beijing_tz).date()
 
         # Check if already checked in today
         if self.is_checked_in_today(user):
@@ -265,13 +256,15 @@ class ProfileService:
             last_date = user.last_activity_date
             if hasattr(last_date, 'tzinfo') and last_date.tzinfo:
                 last_date = last_date.replace(tzinfo=None)
-            last_date = last_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            # 将 UTC 时间转换为北京时间后取日期
+            last_beijing = last_date + timedelta(hours=8)
+            last_beijing_date = last_beijing.date()
 
-            # If last activity was yesterday, increment streak
-            if today_start_naive - last_date == timedelta(days=1):
+            # If last activity was yesterday (Beijing time), increment streak
+            if (beijing_today - last_beijing_date).days == 1:
                 user.streak_days += 1
             # If more than 1 day gap, reset streak
-            else:
+            elif (beijing_today - last_beijing_date).days > 1:
                 user.streak_days = 1
         else:
             # First check-in ever
