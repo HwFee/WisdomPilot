@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from sqlalchemy import String, Boolean, DateTime, Integer, Float, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, TYPE_CHECKING
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from app.models.ai_hint_cache import AIHintCache
     from app.models.tier_transaction import TierTransaction
     from app.models.mastery_xp_transaction import MasteryXpTransaction
+    from app.models.challenge import UserChallenge
 
 
 class User(Base):
@@ -65,6 +66,12 @@ class User(Base):
         Boolean,
         default=False,
         nullable=False
+    )
+    is_test_account: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="Test account - first 3 arena exercises pass without verification"
     )
     cores: Mapped[int] = mapped_column(
         Integer,

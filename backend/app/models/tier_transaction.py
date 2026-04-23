@@ -39,10 +39,10 @@ class TierTransaction(Base):
         nullable=False,
         index=True
     )
-    course_id: Mapped[int] = mapped_column(
+    course_id: Mapped[Optional[int]] = mapped_column(
         Integer,
-        nullable=False,
-        comment="课程ID"
+        nullable=True,
+        comment="课程ID（None表示全局Arena）"
     )
 
     # Tier state before

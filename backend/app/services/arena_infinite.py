@@ -19,18 +19,15 @@ import random
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.arena_exercise_progress import ArenaExerciseProgress
-from app.models.chapter import Chapter
 from app.models.exercise import Exercise
 from app.models.stats import ActivityLog
 from app.models.user import User
 from app.models.user_arena import UserArenaProfile
 from app.services.adaptive_recommendation import (
-    DIFFICULTY_LABELS,
     AdaptiveRecommendationService,
 )
 from app.services.hybrid_recommendation import HybridRecommendationService
@@ -53,6 +50,28 @@ class ChallengePathService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    @staticmethod
+    def _is_strict_passed(value: object) -> bool:
+        """Accept only explicit pass-like values.
+
+        This avoids Python truthiness pitfalls like bool("false") == True.
+        """
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return value == 1
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "1", "pass", "passed", "ok"}
+        return False
+
+    @classmethod
+    def _all_test_cases_passed(cls, test_results: list[dict]) -> bool:
+        """Return True only when every test case is explicitly passed."""
+        if not test_results:
+            return False
+
+        return all(cls._is_strict_passed(result.get("passed")) for result in test_results)
+
     # ========================================
     # Core Methods - Course-based Management
     # ========================================
@@ -60,7 +79,7 @@ class ChallengePathService:
     async def get_or_create_challenge_path(
         self,
         user_id: str,
-        course_id: int,
+        
         difficulty_level: int = 3,
         initial_count: int = 5,
     ) -> tuple[list[Exercise], bool]:
@@ -70,7 +89,7 @@ class ChallengePathService:
             tuple: (exercises, is_new)
         """
         # Get existing progress records
-        existing_progress = await self._get_user_progress(user_id, course_id)
+        existing_progress = await self._get_user_progress(user_id)
 
         if existing_progress:
             # User has existing exercises - fetch them
@@ -79,21 +98,21 @@ class ChallengePathService:
 
         # No existing exercises - create initial set
         exercises = await self._create_initial_exercises(
-            user_id, course_id, difficulty_level, initial_count
+            user_id, difficulty_level, initial_count
         )
         return exercises, True
 
     async def _get_user_progress(
         self,
         user_id: str,
-        course_id: int,
+        
     ) -> list[ArenaExerciseProgress]:
         """Get all progress records for user's challenge path in a course"""
         result = await self.db.execute(
             select(ArenaExerciseProgress)
             .where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
             )
             .order_by(ArenaExerciseProgress.exercise_index)
         )
@@ -123,7 +142,7 @@ class ChallengePathService:
     async def _create_initial_exercises(
         self,
         user_id: str,
-        course_id: int,
+        
         difficulty_level: int,
         count: int,
     ) -> list[Exercise]:
@@ -137,7 +156,7 @@ class ChallengePathService:
             hybrid_service = HybridRecommendationService(self.db)
             recommendations = await hybrid_service.get_recommendations(
                 user_id=user_id,
-                course_id=course_id,
+                course_id=None,
                 limit=count,
                 min_difficulty=max(1, difficulty_level - 1),
                 max_difficulty=min(8, difficulty_level + 1),
@@ -163,7 +182,7 @@ class ChallengePathService:
                     for i, ex in enumerate(selected[:count]):
                         progress = ArenaExerciseProgress(
                             user_id=user_id,
-                            course_id=course_id,
+                            
                             exercise_id=ex.id,
                             exercise_index=i,
                             is_unlocked=(i == 0),
@@ -180,7 +199,7 @@ class ChallengePathService:
                 limit=count,
                 min_difficulty=max(1, difficulty_level - 1),
                 max_difficulty=min(8, difficulty_level + 1),
-                course_id=course_id,
+                
                 learning_path="challenge",
             )
 
@@ -207,7 +226,7 @@ class ChallengePathService:
                     for i, ex in enumerate(selected[:count]):
                         progress = ArenaExerciseProgress(
                             user_id=user_id,
-                            course_id=course_id,
+                            
                             exercise_id=ex.id,
                             exercise_index=i,
                             is_unlocked=(i == 0),
@@ -218,41 +237,56 @@ class ChallengePathService:
                     return selected[:count]
 
         # Fallback: traditional random selection if adaptive fails
-        chapters_result = await self.db.execute(
-            select(Chapter.id).where(Chapter.course_id == course_id)
-        )
-        chapter_ids = [c[0] for c in chapters_result.fetchall()]
+        # Challenge path is independent of courses - select from all verified exercises
+        logger.info(f"Challenge path: selecting {count} exercises from all verified exercises (difficulty_level={difficulty_level})")
 
-        if not chapter_ids:
-            raise ValueError("No chapters available for this course")
-
+        # Try to get exercises with matching difficulty first
         exercises_result = await self.db.execute(
             select(Exercise)
             .where(
-                Exercise.chapter_id.in_(chapter_ids),
+                Exercise.is_verified,
                 Exercise.difficulty == difficulty_level,
             )
             .limit(count * 3)
         )
         all_exercises = exercises_result.scalars().all()
 
+        # If not enough, get exercises within difficulty range
         if len(all_exercises) < count:
             exercises_result = await self.db.execute(
                 select(Exercise)
-                .where(Exercise.chapter_id.in_(chapter_ids))
+                .where(
+                    Exercise.is_verified,
+                    Exercise.difficulty >= max(1, difficulty_level - 1),
+                    Exercise.difficulty <= min(8, difficulty_level + 1),
+                )
+                .limit(count * 3)
+            )
+            all_exercises = exercises_result.scalars().all()
+
+        # If still not enough, gradually lower min difficulty but never exceed max
+        # This ensures new users always get easy problems, never hard ones
+        if len(all_exercises) < count:
+            exercises_result = await self.db.execute(
+                select(Exercise)
+                .where(
+                    Exercise.is_verified,
+                    Exercise.difficulty >= 1,
+                    Exercise.difficulty <= min(8, difficulty_level + 1),
+                )
                 .limit(count * 3)
             )
             all_exercises = exercises_result.scalars().all()
 
         if len(all_exercises) < count:
-            raise ValueError("Not enough exercises available")
+            raise ValueError(f"Not enough verified exercises available (found {len(all_exercises)}, need {count})")
 
         selected = random.sample(list(all_exercises), count)
 
         for i, ex in enumerate(selected):
             progress = ArenaExerciseProgress(
                 user_id=user_id,
-                course_id=course_id,
+                
                 exercise_id=ex.id,
                 exercise_index=i,
                 is_unlocked=(i == 0),
@@ -269,10 +303,10 @@ class ChallengePathService:
     async def get_progress(
         self,
         user_id: str,
-        course_id: int,
+        
     ) -> dict:
         """Get current progress for challenge path"""
-        progress_records = await self._get_user_progress(user_id, course_id)
+        progress_records = await self._get_user_progress(user_id)
 
         if not progress_records:
             return {
@@ -345,6 +379,7 @@ class ChallengePathService:
                         if ex.type == "programming"
                         else None,
                         "type": ex.type,
+                        "z_id": ex.z_id,
                     }
                 )
 
@@ -366,14 +401,14 @@ class ChallengePathService:
     async def get_exercise_by_id(
         self,
         user_id: str,
-        course_id: int,
+        
         exercise_id: int,
     ) -> Optional[dict]:
         """Get specific exercise progress by exercise_id (for wrong book / favorites)"""
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
                 ArenaExerciseProgress.exercise_id == exercise_id,
             )
         )
@@ -409,14 +444,14 @@ class ChallengePathService:
     async def get_exercise_by_index(
         self,
         user_id: str,
-        course_id: int,
+        
         exercise_index: int,
     ) -> Optional[dict]:
         """Get exercise by its index in the challenge path"""
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
                 ArenaExerciseProgress.exercise_index == exercise_index,
             )
         )
@@ -424,7 +459,7 @@ class ChallengePathService:
         if not progress:
             return None
 
-        return await self.get_exercise_by_id(user_id, course_id, progress.exercise_id)
+        return await self.get_exercise_by_id(user_id, progress.exercise_id)
 
     # ========================================
     # Action Methods
@@ -433,7 +468,7 @@ class ChallengePathService:
     async def submit_exercise(
         self,
         user_id: str,
-        course_id: int,
+
         exercise_id: int,
         code: str,
         language: str,
@@ -445,7 +480,7 @@ class ChallengePathService:
 
         Args:
             user_id: User ID
-            course_id: Course ID
+
             exercise_id: Exercise ID
             code: Submitted code
             language: Programming language
@@ -457,7 +492,7 @@ class ChallengePathService:
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+
                 ArenaExerciseProgress.exercise_id == exercise_id,
             )
         )
@@ -465,8 +500,20 @@ class ChallengePathService:
         if not progress:
             raise ValueError("Progress record not found")
 
-        # Determine if correct
-        all_passed = all(r.get("passed", False) for r in test_results)
+        # Check if user is a test account and exercise_index < 3
+        # Test accounts can pass first 3 exercises without verification
+        user_result = await self.db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        is_test_account = user.is_test_account if user else False
+        is_first_three = progress.exercise_index < 3
+
+        # Determine if correct using strict parsing to avoid truthiness bugs.
+        # For test accounts on first 3 exercises, always pass
+        if is_test_account and is_first_three:
+            all_passed = True
+            logger.info(f"[TEST_ACCOUNT] User {user_id[:8]}... is test account, exercise_index={progress.exercise_index}, auto-passing")
+        else:
+            all_passed = self._all_test_cases_passed(test_results)
         now = datetime.utcnow()
 
         # Update progress
@@ -505,13 +552,13 @@ class ChallengePathService:
         added_to_wrong_book = False
         if not all_passed and exercise:
             # Use exercise_key format: arena-{courseId}-{exerciseId}
-            exercise_key = f"arena-{course_id}-{exercise_id}"
+            exercise_key = f"arena-global-{exercise_id}"
             await wrong_question_service.collect_wrong_question_by_key(
                 db=self.db,
                 user_id=user_id,
                 exercise_key=exercise_key,
                 user_answer=code,
-                course_id=course_id,
+                exercise_id=exercise_id,
                 exercise_content=exercise.content,
                 exercise_type=exercise.type,
                 knowledge_points=exercise.knowledge_points,
@@ -532,7 +579,7 @@ class ChallengePathService:
                 extra_data={
                     "learning_path": "challenge",
                     "learning_path_label": "挑战之路",
-                    "course_id": course_id,
+                    
                     "exercise_id": exercise_id,
                     "exercise_index": progress.exercise_index,
                     "exercise_title": exercise_title,
@@ -547,7 +594,7 @@ class ChallengePathService:
         next_result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
                 ArenaExerciseProgress.exercise_index > progress.exercise_index,
             ).order_by(ArenaExerciseProgress.exercise_index).limit(1)
         )
@@ -570,7 +617,6 @@ class ChallengePathService:
         profile_result = await self.db.execute(
             select(UserArenaProfile).where(
                 UserArenaProfile.user_id == user_id,
-                UserArenaProfile.course_id == course_id,
             )
         )
         profile = profile_result.scalar_one_or_none()
@@ -578,11 +624,11 @@ class ChallengePathService:
         if not profile:
             profile = UserArenaProfile(
                 user_id=user_id,
-                course_id=course_id,
+                
             )
             self.db.add(profile)
             await self.db.flush()
-            logger.info(f"[STARS] Created new profile for user {user_id[:8]}... course {course_id}")
+            logger.info(f"[STARS] Created new profile for user {user_id[:8]}... ")
 
         # Get current tier info (always needed for response)
         current_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE
@@ -599,8 +645,8 @@ class ChallengePathService:
             # stars_awarded negative means deducted, but we need separate tracking
             stars_deducted = abs(min(0, progress.stars_awarded)) if progress.stars_awarded < 0 else 0
 
-        logger.info(f"[STARS] === Submit Exercise ===")
-        logger.info(f"[STARS] User: {user_id[:8]}..., Course: {course_id}, Exercise: {exercise_id}")
+        logger.info("[STARS] === Submit Exercise ===")
+        logger.info(f"[STARS] User: {user_id[:8]}...,  Exercise: {exercise_id}")
         logger.info(f"[STARS] is_correct: {all_passed}, attempt_count: {progress.attempt_count}, difficulty: {exercise.difficulty if exercise else '?'}")
         logger.info(f"[STARS] stars_awarded: {progress.stars_awarded}, stars_deducted: {stars_deducted}")
         logger.info(f"[STARS] Current profile - tier: {current_tier.value}, sub_tier: {current_sub_tier}, stars: {current_stars}")
@@ -674,7 +720,7 @@ class ChallengePathService:
                 new_tier = current_tier
                 new_sub_tier = current_sub_tier
                 new_stars = current_stars
-                logger.info(f"[STARS] No stars change (stars_earned == 0)")
+                logger.info("[STARS] No stars change (stars_earned == 0)")
 
             # Update profile
             profile.tier = new_tier.value
@@ -700,7 +746,7 @@ class ChallengePathService:
 
         # Update UserArenaProfile statistics (for quick lookup) - BEFORE commit
         try:
-            await self._update_arena_profile_stats(profile, user_id, course_id)
+            await self._update_arena_profile_stats(profile, user_id)
         except Exception as e:
             logger.warning(f"Failed to update arena profile stats: {e}")
 
@@ -716,7 +762,7 @@ class ChallengePathService:
                     category="arena",
                     reference_type="exercise",
                     reference_id=str(exercise_id),
-                    description=f"挑战之路答对题目",
+                    description="挑战之路答对题目",
                 )
                 logger.info(f"[CORE] Awarded {cores_earned} cores to user {user_id[:8]}... for correct challenge exercise")
             except Exception as e:
@@ -731,7 +777,7 @@ class ChallengePathService:
                 used_protection = getattr(tier_result, 'used_protection', False) if tier_result and stars_earned < 0 else False
                 await tier_tx_service.record_transaction(
                     user_id=user_id,
-                    course_id=course_id,
+                    course_id=None,  # Arena is global, no course_id
                     tier_before=current_tier.value if current_tier else TierRank.BRONZE.value,
                     sub_tier_before=current_sub_tier,
                     stars_before=current_stars,
@@ -759,9 +805,9 @@ class ChallengePathService:
             profile_service = UserProfileService(self.db)
             await profile_service.update_after_exercise(
                 user_id=user_id,
-                course_id=course_id,
                 exercise_id=exercise_id,
                 is_correct=all_passed,
+                course_id=None,  # Arena is global, no course_id
                 time_spent=time_spent,
                 hint_used=hint_used,
                 first_attempt_correct=(progress.attempt_count == 1 and all_passed),
@@ -770,7 +816,7 @@ class ChallengePathService:
             # Log but don't fail the submission
             logger.warning(f"Failed to update user profile: {e}")
 
-        logger.info(f"[STARS] === Returning result ===")
+        logger.info("[STARS] === Returning result ===")
         logger.info(f"[STARS] stars_earned: {stars_earned}, tier_changed: {tier_changed}")
         logger.info(f"[STARS] new_tier: {new_tier.value if new_tier else None}, new_sub_tier: {new_sub_tier}, new_stars: {new_stars}")
 
@@ -798,7 +844,7 @@ class ChallengePathService:
     async def save_code(
         self,
         user_id: str,
-        course_id: int,
+        
         exercise_id: int,
         code: str,
         language: str,
@@ -807,7 +853,7 @@ class ChallengePathService:
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
                 ArenaExerciseProgress.exercise_id == exercise_id,
             )
         )
@@ -826,7 +872,7 @@ class ChallengePathService:
     async def switch_exercise(
         self,
         user_id: str,
-        course_id: int,
+        
         target_index: int,
     ) -> dict:
         """Switch to a different exercise by index"""
@@ -836,7 +882,7 @@ class ChallengePathService:
             .select_from(ArenaExerciseProgress)
             .where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
             )
         )
         total = count_result.scalar() or 0
@@ -848,7 +894,7 @@ class ChallengePathService:
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+                
                 ArenaExerciseProgress.exercise_index == target_index,
             )
         )
@@ -880,8 +926,8 @@ class ChallengePathService:
     async def append_exercises(
         self,
         user_id: str,
-        course_id: int,
-        difficulty_level: int = 3,
+
+        difficulty_level: Optional[int] = None,
         count: int = 5,
     ) -> list[int]:
         """Append more exercises to the challenge path using adaptive recommendation"""
@@ -889,7 +935,7 @@ class ChallengePathService:
         max_index_result = await self.db.execute(
             select(func.max(ArenaExerciseProgress.exercise_index)).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+
             )
         )
         max_index = max_index_result.scalar() or -1
@@ -898,10 +944,25 @@ class ChallengePathService:
         existing_result = await self.db.execute(
             select(ArenaExerciseProgress.exercise_id).where(
                 ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
+
             )
         )
         existing_ids = list(set(row[0] for row in existing_result.fetchall()))
+
+        # Infer difficulty from existing exercises if not provided
+        if difficulty_level is None:
+            # Get existing exercises to calculate average difficulty
+            existing_exercises_result = await self.db.execute(
+                select(Exercise)
+                .where(Exercise.id.in_(existing_ids))
+                .limit(100)
+            )
+            existing_exercises = list(existing_exercises_result.scalars().all())
+            if existing_exercises:
+                avg_difficulty = sum(ex.difficulty for ex in existing_exercises) / len(existing_exercises)
+                difficulty_level = max(1, min(8, round(avg_difficulty)))
+            else:
+                difficulty_level = 1  # Default to easiest for new users
 
         # Get user for adaptive recommendation
         user_result = await self.db.execute(select(User).where(User.id == user_id))
@@ -917,7 +978,7 @@ class ChallengePathService:
                 limit=count,
                 min_difficulty=max(1, difficulty_level - 1),
                 max_difficulty=min(8, difficulty_level + 1),
-                course_id=course_id,
+
                 learning_path="challenge",
                 exclude_ids=existing_ids,
             )
@@ -939,17 +1000,12 @@ class ChallengePathService:
 
         # Fallback: traditional random selection if adaptive fails
         if len(selected) < count:
-            chapters_result = await self.db.execute(
-                select(Chapter.id).where(Chapter.course_id == course_id)
-            )
-            chapter_ids = [c[0] for c in chapters_result.fetchall()]
-
             all_exclude = existing_ids + [ex.id for ex in selected]
 
             exercises_result = await self.db.execute(
                 select(Exercise)
                 .where(
-                    Exercise.chapter_id.in_(chapter_ids),
+                    Exercise.is_verified,
                     Exercise.difficulty == difficulty_level,
                     ~Exercise.id.in_(all_exclude),
                 )
@@ -957,11 +1013,28 @@ class ChallengePathService:
             )
             all_exercises = exercises_result.scalars().all()
 
+            # 如果还不够，放宽到难度范围 ±2，但保持上限不超过 difficulty_level + 2
             if len(all_exercises) < count - len(selected):
                 exercises_result = await self.db.execute(
                     select(Exercise)
                     .where(
-                        Exercise.chapter_id.in_(chapter_ids),
+                        Exercise.is_verified,
+                        Exercise.difficulty >= max(1, difficulty_level - 2),
+                        Exercise.difficulty <= min(8, difficulty_level + 2),
+                        ~Exercise.id.in_(all_exclude),
+                    )
+                    .limit(count * 2)
+                )
+                all_exercises = exercises_result.scalars().all()
+
+            # 最后兜底：只限制最大难度，确保不超出用户选择的难度太多
+            if len(all_exercises) < count - len(selected):
+                exercises_result = await self.db.execute(
+                    select(Exercise)
+                    .where(
+                        Exercise.is_verified,
+                        Exercise.difficulty >= 1,
+                        Exercise.difficulty <= min(8, difficulty_level + 2),
                         ~Exercise.id.in_(all_exclude),
                     )
                     .limit(count * 2)
@@ -986,7 +1059,7 @@ class ChallengePathService:
             last_result = await self.db.execute(
                 select(ArenaExerciseProgress).where(
                     ArenaExerciseProgress.user_id == user_id,
-                    ArenaExerciseProgress.course_id == course_id,
+                    
                     ArenaExerciseProgress.exercise_index == max_index,
                 )
             )
@@ -999,7 +1072,7 @@ class ChallengePathService:
         for i, ex in enumerate(selected):
             progress = ArenaExerciseProgress(
                 user_id=user_id,
-                course_id=course_id,
+                
                 exercise_id=ex.id,
                 exercise_index=max_index + 1 + i,
                 is_unlocked=(i == 0 and (max_index < 0 or last_exercise_completed)),
@@ -1014,39 +1087,71 @@ class ChallengePathService:
         self,
         profile: UserArenaProfile,
         user_id: str,
-        course_id: int,
     ) -> None:
         """Update UserArenaProfile statistics from ArenaExerciseProgress records."""
-        # Get all progress records for this user/course
+        # Get all progress records joined with exercises for difficulty info
         result = await self.db.execute(
-            select(ArenaExerciseProgress).where(
-                ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.course_id == course_id,
-            )
+            select(ArenaExerciseProgress, Exercise)
+            .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
+            .where(ArenaExerciseProgress.user_id == user_id)
+            .order_by(ArenaExerciseProgress.exercise_index)
         )
-        progresses = list(result.scalars().all())
-
-        total = len(progresses)
-        if total == 0:
+        rows = list(result.all())
+        if not rows:
             return
 
-        # Calculate statistics
-        correct = sum(1 for p in progresses if p.is_correct)
+        progresses = [p for p, _ in rows]
+        exercises_map = {p.exercise_id: ex for p, ex in rows}
+
+        total = len(progresses)
+        completed = [p for p in progresses if p.is_completed]
+        correct = [p for p in progresses if p.is_correct]
         total_attempts = sum(p.attempt_count for p in progresses)
         times_spent = [p.time_spent for p in progresses if p.time_spent]
 
+        # Streak calculation (ordered by exercise_index)
+        best_streak = 0
+        current_run = 0
+        for p in progresses:
+            if p.is_correct:
+                current_run += 1
+                best_streak = max(best_streak, current_run)
+            else:
+                current_run = 0
+
+        # Current streak = trailing consecutive correct answers
+        current_streak = 0
+        for p in reversed(progresses):
+            if p.is_correct:
+                current_streak += 1
+            else:
+                break
+
+        # Highest difficulty among completed exercises
+        highest_difficulty = 0
+        for p in completed:
+            ex = exercises_map.get(p.exercise_id)
+            if ex and ex.difficulty > highest_difficulty:
+                highest_difficulty = ex.difficulty
+
         # Update profile
+        profile.total_challenges = len(completed)
+        profile.wins = len(correct)
+        profile.losses = len(completed) - len(correct)
+        profile.best_streak = best_streak
+        profile.current_streak = current_streak
+        profile.highest_difficulty = highest_difficulty
         profile.total_submissions = total_attempts
-        profile.avg_accuracy = correct / total if total > 0 else 0.0
+        profile.avg_accuracy = len(correct) / total if total > 0 else 0.0
         profile.avg_time_spent = sum(times_spent) / len(times_spent) if times_spent else 0.0
 
     async def get_stats(
         self,
         user_id: str,
-        course_id: int,
+        
     ) -> dict:
         """Get challenge path statistics"""
-        progress_records = await self._get_user_progress(user_id, course_id)
+        progress_records = await self._get_user_progress(user_id)
 
         if not progress_records:
             return {
