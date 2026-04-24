@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import {
   X,
   CheckCircle,
@@ -143,6 +143,7 @@ interface ProgressExercise {
 interface ChallengeProgressResponse {
   exercises: ProgressExercise[];
   current_index?: number;
+  session_id?: string;
 }
 
 type FeedbackState = "idle" | "correct" | "wrong";
@@ -479,7 +480,8 @@ const DIFFICULTY_NAMES: Record<number, string> = {
   8: "NOI+/CTSC",
 };
 
-export default function ArenaPage() {
+// 内部组件 - 使用 useSearchParams
+function ArenaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const difficultyFromDashboard = searchParams.get("difficulty");
@@ -598,7 +600,6 @@ export default function ArenaPage() {
       setLoading(true);
 
       // 防止 React StrictMode 重复初始化 session
-
       if (!sessionInitializedRef.current) {
         try {
           await startStageSession(token, 0);
@@ -609,17 +610,35 @@ export default function ArenaPage() {
         } catch (error) {
           console.error("[学习时长] 启动会话失败:", error);
         }
-      } else {
       }
 
-      // 获取挑战之路进度（无 session 概念，独立于课程）
-      const progressData = await getChallengeProgress(token);
+      // 并行获取：挑战进度 + 段位信息 + 智核余额
+      const [progressData, tierData, balanceData] = await Promise.all([
+        getChallengeProgress(token).catch(() => null),
+        getGlobalTierInfo().catch(() => null),
+        getCoreBalance().catch(() => null),
+      ]);
 
       if (!mountedRef.current) return;
 
-      // 如果没有练习题，创建新的挑战之路
-      if (!progressData.exercises || progressData.exercises.length === 0) {
-        // 初始化挑战之路
+      // 处理段位和智核
+      if (tierData) {
+        setTierInfo({
+          tier: tierData.tier,
+          sub_tier: tierData.sub_tier,
+          stars: tierData.stars,
+          full_name: tierData.full_name,
+        });
+      }
+      if (balanceData) {
+        setCoreBalance(balanceData.balance);
+      }
+
+      // 处理挑战进度
+      if (progressData && progressData.exercises && progressData.exercises.length > 0) {
+        processProgressData(progressData, difficulty);
+      } else {
+        // 没有练习题，初始化挑战之路
         await startInfiniteSession(
           {
             difficulty_level: difficulty,
@@ -628,44 +647,15 @@ export default function ArenaPage() {
           token,
         );
 
-        // 重新获取进度
         const newProgressData = await getChallengeProgress(token);
         if (!mountedRef.current) return;
-
         processProgressData(newProgressData, difficulty);
-      } else {
-        processProgressData(progressData, difficulty);
       }
 
       // 设置语言
       const savedLanguage = localStorage.getItem("preferred_language");
       if (savedLanguage && LANGUAGE_MAP[savedLanguage]) {
         setLanguage(savedLanguage);
-      }
-
-      // 获取段位信息
-      try {
-        const tierData = await getGlobalTierInfo();
-        if (mountedRef.current) {
-          setTierInfo({
-            tier: tierData.tier,
-            sub_tier: tierData.sub_tier,
-            stars: tierData.stars,
-            full_name: tierData.full_name,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to get tier info:", error);
-      }
-
-      // 获取智核余额
-      try {
-        const balanceData = await getCoreBalance();
-        if (mountedRef.current) {
-          setCoreBalance(balanceData.balance);
-        }
-      } catch (error) {
-        console.error("Failed to get core balance:", error);
       }
     } catch (error) {
       if (mountedRef.current) {
@@ -695,7 +685,7 @@ export default function ArenaPage() {
       const sampleOutput = samples[0]?.output || testCases[0]?.output || "";
       return {
         id: ex.exercise_id,
-        type: ex.type || "programming",
+        type: "programming" as const,
         difficulty: ex.difficulty || difficulty,
         content: {
           text: ex.content?.text || ex.title,
@@ -704,7 +694,10 @@ export default function ArenaPage() {
           code_template: ex.content?.code_template || getTemplate("python"),
           sample_input: sampleInput,
           sample_output: sampleOutput,
-          samples: samples,
+          samples: samples.map((s: { input?: string; output?: string }) => ({
+            input: s.input || "",
+            output: s.output || "",
+          })),
         },
         knowledge_points: ex.knowledge_points || [],
         test_cases: testCases.map((tc: TestCase) => ({
@@ -727,7 +720,7 @@ export default function ArenaPage() {
         saved_code: ex.saved_code || "",
         current_language: ex.current_language || "python",
         title: ex.title || `题目 ${ex.exercise_index + 1}`,
-        difficulty: ex.difficulty,
+        difficulty: ex.difficulty || 1,
       }),
     );
     setExerciseProgress(initialProgress);
@@ -1064,29 +1057,32 @@ export default function ArenaPage() {
             // Append new exercises to the list
             const newExercises: Exercise[] = newProgressData.exercises
               .filter(
-                (ex: ExerciseProgress) =>
+                (ex: ProgressExercise) =>
                   !exercises.find((e) => e.id === ex.exercise_id),
               )
-              .map((ex: ExerciseProgress) => {
-                const fullEx = newProgressData.exercises.find(
-                  (e: ProgressExercise) => e.exercise_id === ex.exercise_id,
-                );
+              .map((ex: ProgressExercise) => {
                 return {
                   id: ex.exercise_id,
-                  type: fullEx?.type || "programming",
-                  difficulty: ex.difficulty,
+                  type: "programming" as const,
+                  difficulty: ex.difficulty || 1,
                   content: {
-                    title: fullEx?.title || `题目 ${ex.exercise_index + 1}`,
+                    title: ex.title || `题目 ${ex.exercise_index + 1}`,
                     description:
-                      fullEx?.content?.description ||
-                      fullEx?.content?.text ||
+                      ex.content?.description ||
+                      ex.content?.text ||
                       "",
                     code_template:
-                      fullEx?.content?.code_template || getTemplate("python"),
-                    samples: fullEx?.content?.samples || [],
+                      ex.content?.code_template || getTemplate("python"),
+                    samples: (ex.content?.samples || []).map((s: { input?: string; output?: string }) => ({
+                      input: s.input || "",
+                      output: s.output || "",
+                    })),
                   },
-                  knowledge_points: fullEx?.knowledge_points || [],
-                  test_cases: fullEx?.test_cases || [],
+                  knowledge_points: ex.knowledge_points || [],
+                  test_cases: (ex.test_cases || []).map((tc: TestCase) => ({
+                    input: tc.input || "",
+                    output: tc.output || "",
+                  })),
                 };
               });
 
@@ -1777,5 +1773,18 @@ export default function ArenaPage() {
         onSwitch={switchToExercise}
       />
     </div>
+  );
+}
+
+// 主组件 - 用 Suspense 包裹
+export default function ArenaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <ArenaContent />
+    </Suspense>
   );
 }
