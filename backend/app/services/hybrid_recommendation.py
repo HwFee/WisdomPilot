@@ -18,7 +18,7 @@ import math
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.models.exercise import Exercise
 from app.models.user_arena import UserArenaProfile
@@ -328,7 +328,8 @@ class HybridRecommendationService:
             exclude_ids: Exercise IDs to exclude from results.
             limit: Maximum number of exercises to return.
         """
-        query = select(Exercise).distinct().where(
+        # Note: distinct() is unnecessary since Exercise.id is a primary key.
+        query = select(Exercise).where(
             Exercise.is_verified,
             Exercise.difficulty >= min_difficulty,
             Exercise.difficulty <= max_difficulty,
@@ -344,8 +345,9 @@ class HybridRecommendationService:
         if exclude_ids:
             query = query.where(~Exercise.id.in_(exclude_ids))
 
-        # Order by id to ensure consistent results
-        query = query.order_by(Exercise.id).limit(limit)
+        # Random ordering for variety; limit kept small since we only need
+        # enough candidates to produce the final recommendation list.
+        query = query.order_by(func.random()).limit(limit)
 
         result = await self.db.execute(query)
         return list(result.scalars().all())
@@ -433,7 +435,7 @@ class HybridRecommendationService:
         exercises = await self.get_candidate_exercises(
             course_id,
             exclude_ids,
-            limit=200,
+            limit=100,
             min_difficulty=min_difficulty,
             max_difficulty=max_difficulty,
         )

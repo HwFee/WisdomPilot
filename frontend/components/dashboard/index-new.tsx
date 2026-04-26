@@ -33,6 +33,7 @@ import type { ReviewStatsResponse } from '@/types/review'
 import type { UserProfileResponse, LeaderboardEntry, CheckinDetailsResponse, CheckinStatsResponse, Tier } from '@/types/api'
 import { getRecentArenaExercises, RecentArenaExercise, TIER_NAMES } from '@/lib/api/learning-path'
 import { getTierConfig } from '@/lib/icons/tier-icons'
+import { Logo } from '@/components/ui/logo'
 
 // Dashboard components
 import { WelcomeSection } from './WelcomeSection'
@@ -371,9 +372,43 @@ export default function DashboardPage() {
       const result = await checkin(token)
       console.log('Check-in result:', result)
       setIsCheckedIn(true)
-      // Update streak days
+
+      // Update streak days on profile
       if (profile) {
         setProfile({ ...profile, streak_days: result.streak_days })
+      }
+
+      // Update checkin details so the progress bar and stats refresh immediately
+      if (checkinDetails) {
+        setCheckinDetails({
+          ...checkinDetails,
+          streak_days: result.streak_days,
+          total_checkin_days: result.total_checkin_days,
+          checked_in_today: true,
+        })
+      }
+
+      // Update checkin stats (next tier days etc.)
+      if (checkinStats) {
+        // Recalculate next_tier_days based on new streak
+        let next_tier: number | null = null
+        if (result.streak_days < 7) {
+          next_tier = 7 - result.streak_days
+        } else if (result.streak_days < 14) {
+          next_tier = 14 - result.streak_days
+        } else if (result.streak_days < 30) {
+          next_tier = 30 - result.streak_days
+        } else if (result.streak_days < 100) {
+          next_tier = 100 - result.streak_days
+        }
+        setCheckinStats({
+          ...checkinStats,
+          streak_days: result.streak_days,
+          total_checkin_days: result.total_checkin_days,
+          streak_multiplier: result.streak_multiplier,
+          checked_in_today: true,
+          next_tier_days: next_tier,
+        })
       }
     } catch (error) {
       console.error('Check-in failed:', error)
@@ -401,9 +436,7 @@ export default function DashboardPage() {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center shadow-lg shadow-primary/25">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <Logo className="text-blue-500" />
               <div>
                 <h1 className="text-base font-bold text-foreground">智码领航</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">{t('基于生成式AI的实践教学系统', 'AI-Powered Learning')}</p>
@@ -689,7 +722,7 @@ function DualLeaderboardPreview({
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">
-            {activeTab === 'mastery' ? t('章节掌握排名', 'Chapter mastery ranking') : t('挑战之星排名', 'Challenge stars ranking')}
+            {activeTab === 'mastery' ? t('精进经验排名', 'Mastery XP ranking') : t('挑战之星排名', 'Challenge stars ranking')}
           </span>
         )}
         {onViewAll && (

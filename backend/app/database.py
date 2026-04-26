@@ -64,6 +64,39 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
-    """Initialize database tables"""
+    """Initialize database - create tables or apply migrations
+
+    Strategy (avoids asyncio.run() conflict with Alembic's env.py):
+    - If alembic_version table exists: log that migrations are managed by CLI
+    - If not: use create_all (idempotent), then write alembic_version row directly
+    - Actual schema migrations should be run via: alembic upgrade head
+    """
+    from sqlalchemy import text, inspect
+
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        # Check if alembic_version table exists
+        def _check_alembic(sync_conn):
+            inspector = inspect(sync_conn)
+            return 'alembic_version' in inspector.get_table_names()
+
+        has_alembic = await conn.run_sync(_check_alembic)
+
+        if has_alembic:
+            logger.info("Database already tracked by Alembic. Use 'alembic upgrade head' to apply pending migrations.")
+        else:
+            # No alembic tracking - create missing tables (idempotent for existing DB)
+            await conn.run_sync(Base.metadata.create_all)
+
+            # Stamp by directly writing alembic_version row
+            # This avoids calling command.stamp() which loads env.py -> asyncio.run() conflict
+            def _stamp_head(sync_conn):
+                sync_conn.execute(
+                    text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL, CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num))")
+                )
+                sync_conn.execute(
+                    text("INSERT INTO alembic_version (version_num) VALUES (:ver)"),
+                    {"ver": "001_initial"},
+                )
+
+            await conn.run_sync(_stamp_head)
+            logger.info("Database initialized and stamped with Alembic revision 001_initial.")

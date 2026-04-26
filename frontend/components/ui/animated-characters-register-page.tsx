@@ -300,7 +300,7 @@ function RegisterPage() {
                     passwordTouched && passwordResult?.valid && "border-green-500 focus:border-green-500"
                   )}
                 />
-                <button type="button"
+                <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -337,7 +337,7 @@ function RegisterPage() {
                     confirmPasswordTouched && !confirmPasswordError && confirmPassword && "border-green-500 focus:border-green-500"
                   )}
                 />
-                <button type="button"
+                <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"

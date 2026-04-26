@@ -779,7 +779,7 @@ async def get_mastery_progress_by_key(
 class InfiniteSessionStartRequest(BaseModel):
     """Request to start infinite mode session"""
     difficulty_level: int = Field(default=3, ge=1, le=5)
-    initial_count: int = Field(default=5, ge=5, le=50)
+    initial_count: int = Field(default=3, ge=1, le=50)
 
 
 class InfiniteProgressResponse(BaseModel):
@@ -868,6 +868,7 @@ async def start_infinite_session(
 
     exercise_list = [{
         "id": ex.id,
+        "z_id": ex.z_id,
         "title": ex.content.get("title", "") or (ex.content.get("text", "")[:50] if ex.content.get("text") else f"题目 {i+1}"),
         "type": ex.type,
         "difficulty": ex.difficulty,
@@ -900,13 +901,19 @@ async def start_infinite_session(
 async def get_challenge_path_progress(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    lite: bool = Query(True, description="Lite mode: skip full content/test_cases for faster loading"),
 ):
-    """Get challenge path progress (independent of courses)"""
+    """Get challenge path progress (independent of courses)
+
+    lite=True (default): Returns metadata only (title, difficulty, progress state).
+    Lite mode dramatically reduces response size for users with many exercises.
+    Use lite=False to get full content including test_cases.
+    """
     service = get_arena_infinite_service(db)
 
     progress = await service.get_progress(
         user_id=current_user.id,
-        
+        lite=lite,
     )
 
     return progress
@@ -1044,30 +1051,51 @@ async def get_challenge_exercise(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get specific exercise info for wrong question book / favorites navigation"""
+    """Get specific exercise info - returns full content for on-demand loading (lite mode)"""
     service = get_arena_infinite_service(db)
 
     result = await service.get_exercise_by_id(
         user_id=current_user.id,
-        
         exercise_id=exercise_id,
     )
 
     if not result:
         raise HTTPException(status_code=404, detail="Exercise not found in challenge path")
 
-    # Get all progress to find index
-    progress = await service.get_progress(current_user.id, None)
+    # Get total count only (lite mode, no need to load all exercise content)
+    total = await service._get_exercise_count(current_user.id)
 
+    exercise = result.get("exercise")
     return {
-        "exercise": result.get("exercise"),
+        "exercise": {
+            "id": exercise.id,
+            "title": (exercise.content or {}).get("title", ""),
+            "type": exercise.type,
+            "difficulty": exercise.difficulty,
+            "knowledge_points": exercise.knowledge_points or [],
+            "content": {
+                "text": (exercise.content or {}).get("text", ""),
+                "title": (exercise.content or {}).get("title", ""),
+                "description": (exercise.content or {}).get("description", ""),
+                "options": (exercise.content or {}).get("options", []),
+                "code_template": (exercise.content or {}).get("code_template", ""),
+                "input_format": (exercise.content or {}).get("input_format", ""),
+                "output_format": (exercise.content or {}).get("output_format", ""),
+                "sample_input": (exercise.content or {}).get("sample_input", ""),
+                "sample_output": (exercise.content or {}).get("sample_output", ""),
+                "samples": (exercise.content or {}).get("samples", []),
+                "time_limit": (exercise.content or {}).get("time_limit", 1000),
+                "memory_limit": (exercise.content or {}).get("memory_limit", 256),
+            },
+            "test_cases": exercise.test_cases if exercise.type == "programming" else None,
+        },
         "exercise_index": result["exercise_index"],
         "is_unlocked": result["is_unlocked"],
         "is_completed": result["is_completed"],
         "is_correct": result["is_correct"],
         "saved_code": result["saved_code"],
         "current_language": result["current_language"],
-        "total_exercises": progress["total_exercises"],
+        "total_exercises": total,
     }
 
 

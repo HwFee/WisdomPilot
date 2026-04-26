@@ -39,6 +39,7 @@ import {
   TIER_COLORS,
 } from "@/lib/api";
 import { getGlobalTierInfo } from "@/lib/api/tier";
+import { getChallengeExerciseContent } from "@/lib/api/learning-path";
 import { endLearningSessionKeepalive } from "@/lib/api/stats";
 import { executeCode, executeCodeBatch } from "@/lib/api/code";
 import { CodeEditorPanel } from "@/components/exercise/CodeEditorPanel";
@@ -126,6 +127,7 @@ interface ProgressExercise {
   is_completed: boolean;
   is_correct: boolean;
   is_unlocked: boolean;
+  z_id?: string;
   saved_code?: string;
   current_language?: string;
   title?: string;
@@ -544,6 +546,10 @@ function ArenaContent() {
   // Core balance for AI hints
   const [coreBalance, setCoreBalance] = useState<number | undefined>(undefined);
 
+  // Exercise content loading state (lite mode: content loaded on demand)
+  const [contentLoading, setContentLoading] = useState(false);
+  const loadedContentRef = useRef<Set<number>>(new Set()); // tracks which exercises have full content
+
   // Refs
   const codeRef = useRef(code);
   codeRef.current = code;
@@ -599,25 +605,34 @@ function ArenaContent() {
     try {
       setLoading(true);
 
-      // 防止 React StrictMode 重复初始化 session
-      if (!sessionInitializedRef.current) {
-        try {
-          await startStageSession(token, 0);
-          const now = Date.now();
-          sessionStartedAtRef.current = now;
-          sessionEndedRef.current = false;
-          sessionInitializedRef.current = true;
-        } catch (error) {
-          console.error("[学习时长] 启动会话失败:", error);
-        }
-      }
-
-      // 并行获取：挑战进度 + 段位信息 + 智核余额
-      const [progressData, tierData, balanceData] = await Promise.all([
+      // 并行获取：挑战进度 + 段位信息 + 智核余额 + 学习会话
+      const parallelTasks: Promise<unknown>[] = [
         getChallengeProgress(token).catch(() => null),
         getGlobalTierInfo().catch(() => null),
         getCoreBalance().catch(() => null),
-      ]);
+      ];
+
+      // 学习会话也并行启动，不阻塞核心数据加载
+      if (!sessionInitializedRef.current) {
+        parallelTasks.push(
+          startStageSession(token, 0)
+            .then(() => {
+              const now = Date.now();
+              sessionStartedAtRef.current = now;
+              sessionEndedRef.current = false;
+              sessionInitializedRef.current = true;
+            })
+            .catch((error) => {
+              console.error("[学习时长] 启动会话失败:", error);
+            }),
+        );
+      }
+
+      const [progressData, tierData, balanceData] = await Promise.all(parallelTasks) as [
+        ChallengeProgressResponse | null,
+        { tier: string; sub_tier: number; stars: number; full_name: string } | null,
+        { balance: number } | null,
+      ];
 
       if (!mountedRef.current) return;
 
@@ -639,17 +654,43 @@ function ArenaContent() {
         processProgressData(progressData, difficulty);
       } else {
         // 没有练习题，初始化挑战之路
-        await startInfiniteSession(
+        const sessionData = await startInfiniteSession(
           {
             difficulty_level: difficulty,
-            initial_count: 10,
+            initial_count: 3,
           },
           token,
         );
 
-        const newProgressData = await getChallengeProgress(token);
         if (!mountedRef.current) return;
-        processProgressData(newProgressData, difficulty);
+
+        // 直接从 startInfiniteSession 响应构建进度数据，避免再次请求
+        if (sessionData.exercises && sessionData.exercises.length > 0) {
+          const builtProgress: ChallengeProgressResponse = {
+            exercises: sessionData.exercises.map((ex: ChallengeExercise, i: number) => ({
+              exercise_id: ex.id,
+              exercise_index: i,
+              is_completed: false,
+              is_correct: false,
+              is_unlocked: i === 0,
+              z_id: ex.z_id,
+              saved_code: "",
+              current_language: "python",
+              title: ex.title || `题目 ${i + 1}`,
+              difficulty: ex.difficulty,
+              content: ex.content,
+              knowledge_points: ex.knowledge_points || [],
+              test_cases: ex.test_cases || [],
+            })),
+            current_index: 0,
+            session_id: sessionData.session_id,
+          };
+          processProgressData(builtProgress, difficulty);
+        } else {
+          const newProgressData = await getChallengeProgress(token);
+          if (!mountedRef.current) return;
+          processProgressData(newProgressData, difficulty);
+        }
       }
 
       // 设置语言
@@ -677,7 +718,10 @@ function ArenaContent() {
       setSessionId(progressData.session_id);
     }
 
-    // 转换练习题格式
+    // 判断是否是 lite 模式（无 content 字段）
+    const isLite = progressData.exercises.length > 0 && !progressData.exercises[0]?.content;
+
+    // 转换练习题格式 - lite 模式下 content 为空占位
     const exerciseList: Exercise[] = progressData.exercises.map((ex: ProgressExercise) => {
       const testCases = ex.test_cases || [];
       const samples = ex.content?.samples || [];
@@ -685,9 +729,17 @@ function ArenaContent() {
       const sampleOutput = samples[0]?.output || testCases[0]?.output || "";
       return {
         id: ex.exercise_id,
-        type: "programming" as const,
+        z_id: ex.z_id,
+        type: ((ex as ProgressExercise & { type?: string }).type || "programming") as Exercise["type"],
         difficulty: ex.difficulty || difficulty,
-        content: {
+        content: isLite ? {
+          title: ex.title,
+          description: "",
+          code_template: getTemplate("python"),
+          sample_input: "",
+          sample_output: "",
+          samples: [],
+        } : {
           text: ex.content?.text || ex.title,
           title: ex.title,
           description: ex.content?.description || ex.content?.text || ex.title,
@@ -751,6 +803,83 @@ function ArenaContent() {
         exerciseList[validIndex].content.code_template ||
         getTemplate(language);
       setCode(savedCode);
+
+      // Lite 模式下：立即按需加载当前题目的完整内容
+      if (isLite) {
+        loadExerciseContent(exerciseList[validIndex].id, validIndex);
+      }
+    }
+  };
+
+  // 按需加载单个题目的完整内容（lite 模式优化）
+  const loadExerciseContent = async (exerciseId: number, index: number) => {
+    if (loadedContentRef.current.has(exerciseId)) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    setContentLoading(true);
+    try {
+      const data = await getChallengeExerciseContent(exerciseId, token);
+      loadedContentRef.current.add(exerciseId);
+
+      if (!mountedRef.current) return;
+
+      const exercise = data.exercise;
+      const samples = exercise.content?.samples || [];
+      const sampleInput = samples[0]?.input || "";
+      const sampleOutput = samples[0]?.output || "";
+
+      setExercises((prev) => {
+        const updated = [...prev];
+        if (updated[index]) {
+          updated[index] = {
+            ...updated[index],
+            type: (exercise.type || updated[index].type) as Exercise["type"],
+            content: {
+              text: exercise.content?.text || updated[index].content.title,
+              title: exercise.title || updated[index].content.title,
+              description: exercise.content?.description || exercise.content?.text || updated[index].content.title,
+              code_template: exercise.content?.code_template || getTemplate("python"),
+              sample_input: sampleInput,
+              sample_output: sampleOutput,
+              samples: samples.map((s: { input?: string; output?: string }) => ({
+                input: s.input || "",
+                output: s.output || "",
+              })),
+            },
+            knowledge_points: exercise.knowledge_points || [],
+            test_cases: (exercise.test_cases || []).map((tc: { input?: string; output?: string }) => ({
+              input: tc.input || "",
+              output: tc.output || "",
+            })),
+          };
+        }
+        return updated;
+      });
+
+      // 如果当前正在查看这道题，更新代码模板
+      if (index === currentIndex) {
+        setSavedCodes((prev) => {
+          const updated = { ...prev };
+          const existingCode = updated[exerciseId]?.[language];
+          // 只在没有保存代码时才使用模板
+          if (!existingCode || existingCode === getTemplate("python")) {
+            updated[exerciseId] = {
+              ...updated[exerciseId],
+              [language]: exercise.content?.code_template || getTemplate(language),
+            };
+            setCode(exercise.content?.code_template || getTemplate(language));
+          }
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error("[挑战之路] 加载题目内容失败:", error);
+    } finally {
+      if (mountedRef.current) {
+        setContentLoading(false);
+      }
     }
   };
 
@@ -1044,17 +1173,17 @@ function ArenaContent() {
         .slice(currentExerciseIdx + 1)
         .filter((p) => !p.is_completed).length;
 
-      if (remainingUncompleted < 3) {
+      if (remainingUncompleted <= 2) {
         try {
           const appendResult = await appendChallengeExercises(
             { count: 5, difficulty_level: currentDifficultyRef.current },
             token,
           );
           if (appendResult.new_exercise_ids.length > 0) {
-            // Refresh progress to get new exercises
-            const newProgressData = await getChallengeProgress(token);
+            // Refresh progress with lite mode (content loaded on demand)
+            const newProgressData = await getChallengeProgress(token, true);
 
-            // Append new exercises to the list
+            // Append new exercises to the list (lite: no content yet)
             const newExercises: Exercise[] = newProgressData.exercises
               .filter(
                 (ex: ProgressExercise) =>
@@ -1067,22 +1196,14 @@ function ArenaContent() {
                   difficulty: ex.difficulty || 1,
                   content: {
                     title: ex.title || `题目 ${ex.exercise_index + 1}`,
-                    description:
-                      ex.content?.description ||
-                      ex.content?.text ||
-                      "",
-                    code_template:
-                      ex.content?.code_template || getTemplate("python"),
-                    samples: (ex.content?.samples || []).map((s: { input?: string; output?: string }) => ({
-                      input: s.input || "",
-                      output: s.output || "",
-                    })),
+                    description: "",
+                    code_template: getTemplate("python"),
+                    sample_input: "",
+                    sample_output: "",
+                    samples: [],
                   },
-                  knowledge_points: ex.knowledge_points || [],
-                  test_cases: (ex.test_cases || []).map((tc: TestCase) => ({
-                    input: tc.input || "",
-                    output: tc.output || "",
-                  })),
+                  knowledge_points: [],
+                  test_cases: [],
                 };
               });
 
@@ -1165,6 +1286,11 @@ function ArenaContent() {
         setCode(savedCodeForLang);
       } else {
         setCode(targetExercise.content.code_template || getTemplate(language));
+      }
+
+      // 按需加载目标题目的完整内容（如果是 lite 模式还没加载过的）
+      if (!loadedContentRef.current.has(targetExercise.id)) {
+        loadExerciseContent(targetExercise.id, index);
       }
 
       setTestResults([]);

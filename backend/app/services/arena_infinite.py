@@ -81,7 +81,7 @@ class ChallengePathService:
         user_id: str,
         
         difficulty_level: int = 3,
-        initial_count: int = 5,
+        initial_count: int = 3,
     ) -> tuple[list[Exercise], bool]:
         """Get existing exercises or create initial set
 
@@ -105,18 +105,27 @@ class ChallengePathService:
     async def _get_user_progress(
         self,
         user_id: str,
-        
+
     ) -> list[ArenaExerciseProgress]:
         """Get all progress records for user's challenge path in a course"""
         result = await self.db.execute(
             select(ArenaExerciseProgress)
             .where(
                 ArenaExerciseProgress.user_id == user_id,
-                
+
             )
             .order_by(ArenaExerciseProgress.exercise_index)
         )
         return list(result.scalars().all())
+
+    async def _get_exercise_count(self, user_id: str) -> int:
+        """Get total exercise count for user's challenge path (fast COUNT query)"""
+        result = await self.db.execute(
+            select(func.count())
+            .select_from(ArenaExerciseProgress)
+            .where(ArenaExerciseProgress.user_id == user_id)
+        )
+        return result.scalar() or 0
 
     async def _get_exercises_from_progress(
         self,
@@ -139,10 +148,43 @@ class ChallengePathService:
             if p.exercise_id in exercises_map
         ]
 
+    async def _has_behavior_data(self, user_id: str) -> bool:
+        """Quick check if user has any data useful for recommendation.
+
+        Returns True only if user has actual behavior records that can
+        meaningfully influence recommendation scores.
+        """
+        # Check arena profile with behavior embedding
+        profile_result = await self.db.execute(
+            select(UserArenaProfile).where(UserArenaProfile.user_id == user_id)
+        )
+        profile = profile_result.scalar_one_or_none()
+        if profile and getattr(profile, 'behavior_embedding', None):
+            return True
+
+        # Check for any challenge path progress
+        progress_count = await self._get_exercise_count(user_id)
+        if progress_count > 0:
+            return True
+
+        # Check for any activity logs (exercise completion history)
+        activity_result = await self.db.execute(
+            select(ActivityLog)
+            .where(
+                ActivityLog.user_id == user_id,
+                ActivityLog.activity_type == "exercise_complete",
+            )
+            .limit(1)
+        )
+        if activity_result.scalar_one_or_none():
+            return True
+
+        return False
+
     async def _create_initial_exercises(
         self,
         user_id: str,
-        
+
         difficulty_level: int,
         count: int,
     ) -> list[Exercise]:
@@ -151,7 +193,15 @@ class ChallengePathService:
         user_result = await self.db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
 
-        if user:
+        # Fast path: skip expensive recommendation for new users without behavior data.
+        # Recommendation services rely on behavior history (accuracy, attempts, weak points,
+        # embeddings). Without data, their scores default to neutral values, making the
+        # final ranking equivalent to difficulty-filtered random selection.
+        has_behavior = await self._has_behavior_data(user_id) if user else False
+
+        if user and has_behavior:
+            logger.info(f"User {user_id[:8]}... has behavior data, using recommendation services")
+
             # Try hybrid recommendation first (if user has behavior data)
             hybrid_service = HybridRecommendationService(self.db)
             recommendations = await hybrid_service.get_recommendations(
@@ -182,7 +232,7 @@ class ChallengePathService:
                     for i, ex in enumerate(selected[:count]):
                         progress = ArenaExerciseProgress(
                             user_id=user_id,
-                            
+
                             exercise_id=ex.id,
                             exercise_index=i,
                             is_unlocked=(i == 0),
@@ -199,7 +249,7 @@ class ChallengePathService:
                 limit=count,
                 min_difficulty=max(1, difficulty_level - 1),
                 max_difficulty=min(8, difficulty_level + 1),
-                
+
                 learning_path="challenge",
             )
 
@@ -226,7 +276,7 @@ class ChallengePathService:
                     for i, ex in enumerate(selected[:count]):
                         progress = ArenaExerciseProgress(
                             user_id=user_id,
-                            
+
                             exercise_id=ex.id,
                             exercise_index=i,
                             is_unlocked=(i == 0),
@@ -236,16 +286,26 @@ class ChallengePathService:
                     await self.db.flush()
                     return selected[:count]
 
-        # Fallback: traditional random selection if adaptive fails
+        # Fast path for new users: skip recommendation services and use
+        # difficulty-filtered random selection directly.
+        # For new users without behavior data, force difficulty=1 to ensure
+        # they start with the easiest problems, regardless of what difficulty
+        # level the frontend requested.
+        effective_difficulty = 1 if not has_behavior else difficulty_level
+        logger.info(
+            f"Challenge path (fast path): user={user_id[:8]}... "
+            f"has_behavior={has_behavior}, selecting {count} exercises "
+            f"by difficulty={effective_difficulty}"
+        )
         # Challenge path is independent of courses - select from all verified exercises
-        logger.info(f"Challenge path: selecting {count} exercises from all verified exercises (difficulty_level={difficulty_level})")
+        logger.info(f"Challenge path: selecting {count} exercises from all verified exercises (difficulty_level={effective_difficulty})")
 
         # Try to get exercises with matching difficulty first
         exercises_result = await self.db.execute(
             select(Exercise)
             .where(
                 Exercise.is_verified,
-                Exercise.difficulty == difficulty_level,
+                Exercise.difficulty == effective_difficulty,
             )
             .limit(count * 3)
         )
@@ -257,8 +317,8 @@ class ChallengePathService:
                 select(Exercise)
                 .where(
                     Exercise.is_verified,
-                    Exercise.difficulty >= max(1, difficulty_level - 1),
-                    Exercise.difficulty <= min(8, difficulty_level + 1),
+                    Exercise.difficulty >= max(1, effective_difficulty - 1),
+                    Exercise.difficulty <= min(8, effective_difficulty + 1),
                 )
                 .limit(count * 3)
             )
@@ -272,7 +332,7 @@ class ChallengePathService:
                 .where(
                     Exercise.is_verified,
                     Exercise.difficulty >= 1,
-                    Exercise.difficulty <= min(8, difficulty_level + 1),
+                    Exercise.difficulty <= min(8, effective_difficulty + 1),
                 )
                 .limit(count * 3)
             )
@@ -303,9 +363,14 @@ class ChallengePathService:
     async def get_progress(
         self,
         user_id: str,
-        
+        lite: bool = True,
     ) -> dict:
-        """Get current progress for challenge path"""
+        """Get current progress for challenge path
+
+        Args:
+            lite: If True, only return metadata (title, difficulty, progress state).
+                  Skips content, test_cases, knowledge_points for much smaller responses.
+        """
         progress_records = await self._get_user_progress(user_id)
 
         if not progress_records:
@@ -335,53 +400,53 @@ class ChallengePathService:
         if current_index >= len(progress_records):
             current_index = len(progress_records) - 1
 
-        # Build progress list with full exercise content
+        # Build progress list
         progress_list = []
         for p in progress_records:
             ex = exercises.get(p.exercise_id)
             if ex:
-                progress_list.append(
-                    {
-                        "exercise_id": p.exercise_id,
-                        "exercise_index": p.exercise_index,
-                        "is_completed": p.is_completed,
-                        "is_correct": p.is_correct,
-                        "is_unlocked": p.is_unlocked,
-                        "saved_code": (p.saved_codes or {}).get(p.current_language, ""),
-                        "current_language": p.current_language,
-                        "title": (ex.content or {}).get(
-                            "title", f"题目 {p.exercise_index + 1}"
+                item = {
+                    "exercise_id": p.exercise_id,
+                    "exercise_index": p.exercise_index,
+                    "is_completed": p.is_completed,
+                    "is_correct": p.is_correct,
+                    "is_unlocked": p.is_unlocked,
+                    "saved_code": (p.saved_codes or {}).get(p.current_language, ""),
+                    "current_language": p.current_language,
+                    "title": (ex.content or {}).get(
+                        "title", f"题目 {p.exercise_index + 1}"
+                    ),
+                    "difficulty": ex.difficulty,
+                    "type": ex.type,
+                    "z_id": ex.z_id,
+                }
+
+                if not lite:
+                    # Full mode: include all content and test cases
+                    item["content"] = {
+                        "text": (ex.content or {}).get("text", ""),
+                        "title": (ex.content or {}).get("title", ""),
+                        "description": (ex.content or {}).get("description", ""),
+                        "options": (ex.content or {}).get("options", []),
+                        "code_template": (ex.content or {}).get(
+                            "code_template", ""
                         ),
-                        "difficulty": ex.difficulty,
-                        # 完整题目内容
-                        "content": {
-                            "text": (ex.content or {}).get("text", ""),
-                            "title": (ex.content or {}).get("title", ""),
-                            "description": (ex.content or {}).get("description", ""),
-                            "options": (ex.content or {}).get("options", []),
-                            "code_template": (ex.content or {}).get(
-                                "code_template", ""
-                            ),
-                            "input_format": (ex.content or {}).get("input_format", ""),
-                            "output_format": (ex.content or {}).get(
-                                "output_format", ""
-                            ),
-                            "sample_input": (ex.content or {}).get("sample_input", ""),
-                            "sample_output": (ex.content or {}).get(
-                                "sample_output", ""
-                            ),
-                            "samples": (ex.content or {}).get("samples", []),
-                            "time_limit": (ex.content or {}).get("time_limit", 1000),
-                            "memory_limit": (ex.content or {}).get("memory_limit", 256),
-                        },
-                        "knowledge_points": ex.knowledge_points or [],
-                        "test_cases": ex.test_cases
-                        if ex.type == "programming"
-                        else None,
-                        "type": ex.type,
-                        "z_id": ex.z_id,
+                        "input_format": (ex.content or {}).get("input_format", ""),
+                        "output_format": (ex.content or {}).get(
+                            "output_format", ""
+                        ),
+                        "sample_input": (ex.content or {}).get("sample_input", ""),
+                        "sample_output": (ex.content or {}).get(
+                            "sample_output", ""
+                        ),
+                        "samples": (ex.content or {}).get("samples", []),
+                        "time_limit": (ex.content or {}).get("time_limit", 1000),
+                        "memory_limit": (ex.content or {}).get("memory_limit", 256),
                     }
-                )
+                    item["knowledge_points"] = ex.knowledge_points or []
+                    item["test_cases"] = ex.test_cases if ex.type == "programming" else None
+
+                progress_list.append(item)
 
         # Calculate stats
         correct_count = sum(1 for p in progress_records if p.is_correct)

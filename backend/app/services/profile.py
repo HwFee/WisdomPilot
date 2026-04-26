@@ -266,6 +266,9 @@ class ProfileService:
             # If more than 1 day gap, reset streak
             elif (beijing_today - last_beijing_date).days > 1:
                 user.streak_days = 1
+            # days == 0: same day registration, first check-in
+            elif user.streak_days == 0:
+                user.streak_days = 1
         else:
             # First check-in ever
             user.streak_days = 1
@@ -299,6 +302,8 @@ class ProfileService:
             description=f"每日签到奖励 (连续{user.streak_days}天)",
         )
 
+        # Flush to ensure streak_days update is persisted before refresh
+        await db.flush()
         await db.refresh(user)
 
         # Check and award streak achievements

@@ -29,41 +29,6 @@ COURSES = [
         "difficulty_level": 1,
         "icon": "python-icon"
     },
-    {
-        "code": "Java",
-        "name": "Java程序设计",
-        "description": "Java面向对象、JVM、并发编程、Spring框架",
-        "difficulty_level": 2,
-        "icon": "java-icon"
-    },
-    {
-        "code": "Rust",
-        "name": "Rust程序设计",
-        "description": "Rust内存安全、所有权系统、并发编程、系统编程",
-        "difficulty_level": 4,
-        "icon": "rust-icon"
-    },
-    {
-        "code": "DSA",
-        "name": "数据结构与算法",
-        "description": "数组、链表、树、图、排序、搜索、动态规划",
-        "difficulty_level": 3,
-        "icon": "dsa-icon"
-    },
-    {
-        "code": "ADA",
-        "name": "算法设计与分析",
-        "description": "分治、贪心、动态规划、回溯、近似算法、随机算法",
-        "difficulty_level": 4,
-        "icon": "ada-icon"
-    },
-    {
-        "code": "DiscreteMath",
-        "name": "离散数学",
-        "description": "集合论、数理逻辑、图论、组合数学、离散概率",
-        "difficulty_level": 3,
-        "icon": "discrete-icon"
-    },
 ]
 
 

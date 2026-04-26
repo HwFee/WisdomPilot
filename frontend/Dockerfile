@@ -4,8 +4,14 @@
 # 多阶段构建：构建 + 生产镜像
 # ============================================
 
+# 构建时参数
+ARG NEXT_PUBLIC_API_URL
+
 # 阶段1: 构建
 FROM node:20-alpine AS builder
+
+# 接收构建参数
+ARG NEXT_PUBLIC_API_URL
 
 # 设置工作目录
 WORKDIR /app
@@ -21,6 +27,9 @@ RUN pnpm install --frozen-lockfile
 
 # 复制源代码
 COPY . .
+
+# 设置构建时环境变量
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # 构建生产版本
 RUN pnpm build

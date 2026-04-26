@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Code2, BookOpen, Target, Users, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Users, ArrowRight } from 'lucide-react'
 import { getStoredToken } from '@/lib/api'
 import { Card } from '@/components/ui/card'
 import { DifficultyBadge } from '@/components/ui/badge'
@@ -17,7 +17,6 @@ const COURSES = [
     code: 'c',
     name: 'C语言程序设计',
     difficulty: 1,
-    icon: Code2,
     description: '编程入门首选，打好扎实基础',
     learners: '12,580+'
   },
@@ -26,7 +25,6 @@ const COURSES = [
     code: 'cpp',
     name: 'C++程序设计',
     difficulty: 2,
-    icon: Code2,
     description: '面向对象编程，系统开发利器',
     learners: '8,420+'
   },
@@ -35,54 +33,8 @@ const COURSES = [
     code: 'python',
     name: 'Python程序设计',
     difficulty: 1,
-    icon: Code2,
     description: '简洁优雅，人工智能首选语言',
     learners: '25,800+'
-  },
-  {
-    id: 4,
-    code: 'java',
-    name: 'Java程序设计',
-    difficulty: 2,
-    icon: Code2,
-    description: '企业级开发，跨平台应用',
-    learners: '15,300+'
-  },
-  {
-    id: 5,
-    code: 'rust',
-    name: 'Rust程序设计',
-    difficulty: 4,
-    icon: Code2,
-    description: '安全高效，系统编程新星',
-    learners: '3,250+'
-  },
-  {
-    id: 6,
-    code: 'dsa',
-    name: '数据结构与算法',
-    difficulty: 3,
-    icon: Target,
-    description: '程序员内功，面试必考',
-    learners: '18,900+'
-  },
-  {
-    id: 7,
-    code: 'algorithms',
-    name: '算法设计与分析',
-    difficulty: 4,
-    icon: Target,
-    description: '深入算法，提升编程思维',
-    learners: '6,780+'
-  },
-  {
-    id: 8,
-    code: 'discrete',
-    name: '离散数学',
-    difficulty: 3,
-    icon: BookOpen,
-    description: '计算机科学数学基础',
-    learners: '4,560+'
   },
 ]
 
@@ -156,10 +108,9 @@ export default function CoursesPage() {
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto"
           >
             {COURSES.map((course, index) => {
-              const IconComponent = course.icon
               const courseConfig = getCourseConfig(course.code)
 
               return (
@@ -175,56 +126,51 @@ export default function CoursesPage() {
                     <Card
                       variant="interactive"
                       padding="lg"
-                      className="h-full"
+                      className="h-full relative overflow-hidden"
                     >
-                      {/* 难度指示 */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex gap-1">
-                          {[...Array(4)].map((_, i) => (
-                            <div
-                              key={i}
-                              className={`w-2 h-2 rounded-full transition-colors ${
-                                i < course.difficulty ? 'bg-primary' : 'bg-muted'
-                              }`}
-                            />
-                          ))}
+                      {/* 渐变装饰条 */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${courseConfig?.gradient || 'from-primary to-primary-600'}`} />
+
+                      {/* Icon + Name row */}
+                      <div className="flex items-center gap-4 mb-4 mt-2">
+                        <motion.div
+                          whileHover={{ scale: 1.08 }}
+                          className={cn(
+                            "w-14 h-14 rounded-xl flex items-center justify-center shadow-lg",
+                            courseConfig
+                              ? `bg-gradient-to-br ${courseConfig.gradient}`
+                              : "bg-gradient-to-br from-primary to-primary-600"
+                          )}
+                        >
+                          <div className="w-7 h-7 text-white">
+                            {courseConfig?.icon}
+                          </div>
+                        </motion.div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                            {course.name}
+                          </h3>
+                          <div className="flex gap-1 mt-1">
+                            {[...Array(4)].map((_, i) => (
+                              <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
+                            ))}
+                          </div>
                         </div>
-                        {courseConfig && (
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${courseConfig.bgColor} ${courseConfig.color}`}>
-                            {courseConfig.icon}
-                          </span>
-                        )}
                       </div>
 
-                      {/* Icon */}
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className={cn(
-                          "w-14 h-14 rounded-xl flex items-center justify-center mb-4 shadow-lg",
-                          courseConfig
-                            ? `bg-gradient-to-br ${courseConfig.gradient}`
-                            : "bg-gradient-to-br from-primary to-primary-600"
-                        )}
-                      >
-                        <IconComponent className="w-7 h-7 text-white" />
-                      </motion.div>
-
-                      {/* Content */}
-                      <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                        {course.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {/* Description */}
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
                         {course.description}
                       </p>
 
                       {/* Bottom info */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/50">
                         <span className="flex items-center gap-1">
                           <Users className="w-3.5 h-3.5" />
-                          {course.learners}
+                          {course.learners} 学习者
                         </span>
                         <span className="flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-                          进入
+                          进入学习
                           <ArrowRight className="w-3 h-3" />
                         </span>
                       </div>

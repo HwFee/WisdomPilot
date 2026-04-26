@@ -4,7 +4,14 @@
 
 import { ApiError } from "@/types/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+function normalizeApiBaseUrl(rawUrl: string): string {
+  const trimmed = rawUrl.replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed.slice(0, -4) : trimmed;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+);
 const REQUEST_TIMEOUT = 30000; // 30 seconds for regular requests
 const CODE_EXECUTION_TIMEOUT = 60000; // 60 seconds for code execution (Judge0 can be slow)
 
@@ -139,35 +146,49 @@ export async function del<T>(endpoint: string, token: string): Promise<T> {
 export async function postPublic<T>(
   endpoint: string,
   body: unknown,
+  timeout: number = REQUEST_TIMEOUT,
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  // 尝试解析响应体
-  let data: unknown = {};
   try {
-    const text = await response.text();
-    if (text) {
-      data = JSON.parse(text);
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    // 尝试解析响应体
+    let data: unknown = {};
+    try {
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      }
+    } catch {
+      // 响应体不是有效的 JSON，保持空对象
     }
-  } catch {
-    // 响应体不是有效的 JSON，保持空对象
-  }
 
-  if (!response.ok) {
-    const errorDetail =
-      (data as ApiError)?.detail ||
-      response.statusText ||
-      `Request failed with status ${response.status}`;
-    throw new Error(errorDetail);
-  }
+    if (!response.ok) {
+      const errorDetail =
+        (data as ApiError)?.detail ||
+        response.statusText ||
+        `Request failed with status ${response.status}`;
+      throw new Error(errorDetail);
+    }
 
-  return data as T;
+    return data as T;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -200,4 +221,4 @@ export function postKeepalive(
     });
 }
 
-export { API_BASE_URL };
+export { API_BASE_URL, normalizeApiBaseUrl };

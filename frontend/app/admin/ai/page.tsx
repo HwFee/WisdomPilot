@@ -699,7 +699,7 @@ function ApiKeyField({
               {maskedPreview}
             </div>
             {/* 替换按钮 */}
-            <button type="button"
+            <button
               type="button"
               onClick={onEnterReplace}
               className="flex items-center gap-1 px-3 py-2 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors shrink-0"
@@ -708,7 +708,7 @@ function ApiKeyField({
               替换
             </button>
             {/* 删除按钮 */}
-            <button type="button"
+            <button
               type="button"
               onClick={onDelete}
               className="flex items-center gap-1 px-3 py-2 text-sm border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition-colors shrink-0"
@@ -736,7 +736,7 @@ function ApiKeyField({
               autoFocus
               className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background font-mono focus:ring-2 focus:ring-primary focus:border-transparent"
             />
-            <button type="button"
+            <button
               type="button"
               onClick={onCancelReplace}
               className="px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors shrink-0"
@@ -764,7 +764,7 @@ function LocalFirstToggle({ checked, onChange }: { checked: boolean; onChange: (
         <div className="text-sm font-medium">本地优先模式</div>
         <div className="text-xs text-muted-foreground">优先使用本地模型，本地不可用时 fallback 到云端</div>
       </div>
-      <button type="button"
+      <button
         type="button"
         onClick={() => onChange(!checked)}
         className={cn(

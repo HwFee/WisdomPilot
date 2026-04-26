@@ -180,7 +180,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-primary" />
-          {t('题解广场', 'Solutions')}
+          {t('讨论区', 'Discussion')}
         </h3>
         <button type="button"
           onClick={handleEnterSolutions}

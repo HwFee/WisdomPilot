@@ -3,9 +3,8 @@
  */
 
 import { getStoredToken } from './index'
+import { API_BASE_URL } from './client'
 import type { TierConfig, TierInfo, TierRank, UpdateStarsResult } from '@/types/api'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 /**
  * 获取所有段位配置
@@ -21,7 +20,7 @@ export async function getTierConfigs(): Promise<{ tiers: TierConfig[] }> {
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const response = await fetch(`${API_URL}/api/tier/config`, {
+  const response = await fetch(`${API_BASE_URL}/api/tier/config`, {
     headers,
   })
 
@@ -42,7 +41,7 @@ export async function getTierInfo(courseId: number): Promise<TierInfo> {
     throw new Error('未登录')
   }
 
-  const response = await fetch(`${API_URL}/api/tier/profile/${courseId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/tier/profile/${courseId}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -66,7 +65,7 @@ export async function getGlobalTierInfo(): Promise<TierInfo> {
     throw new Error('未登录')
   }
 
-  const response = await fetch(`${API_URL}/api/tier/profile`, {
+  const response = await fetch(`${API_BASE_URL}/api/tier/profile`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -95,7 +94,7 @@ export async function updateStars(
     throw new Error('未登录')
   }
 
-  const response = await fetch(`${API_URL}/api/tier/profile/${courseId}/stars`, {
+  const response = await fetch(`${API_BASE_URL}/api/tier/profile/${courseId}/stars`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,

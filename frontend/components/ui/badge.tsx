@@ -196,18 +196,13 @@ function TierBadge({
  * 课程徽章
  */
 interface CourseBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  course: 'c' | 'cpp' | 'python' | 'java' | 'rust' | 'dsa' | 'ada' | 'discrete'
+  course: 'c' | 'cpp' | 'python'
 }
 
 const COURSE_CONFIG = {
   c: { label: 'C语言', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
   cpp: { label: 'C++', className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' },
   python: { label: 'Python', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-  java: { label: 'Java', className: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
-  rust: { label: 'Rust', className: 'bg-amber-600/10 text-amber-700 border-amber-600/20' },
-  dsa: { label: '数据结构', className: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
-  ada: { label: '算法设计', className: 'bg-pink-500/10 text-pink-600 border-pink-500/20' },
-  discrete: { label: '离散数学', className: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' },
 } as const
 
 function CourseBadge({ course, className, ...props }: CourseBadgeProps) {

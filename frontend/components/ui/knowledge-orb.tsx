@@ -998,7 +998,7 @@ ${kp.title}${optsStr}
                 }}
                 disabled={isStreaming}
               />
-              <button type="button"
+              <button
                 type="submit"
                 disabled={!inputValue.trim() || isStreaming}
                 className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"

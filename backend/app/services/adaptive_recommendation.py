@@ -16,10 +16,11 @@ Based on research:
 """
 
 import json
+import time
 from typing import Optional
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.models.exercise import Exercise
 from app.models.user import User
@@ -63,6 +64,11 @@ class AdaptiveRecommendationService:
     5. Course Context - align with user's current course
     """
 
+    # Simple in-memory TTL cache for knowledge state to avoid repeated DB queries
+    # Key: "{user_id}:{chapter_id or 'none'}", Value: (knowledge_state_dict, timestamp)
+    _knowledge_state_cache: dict[str, tuple[dict, float]] = {}
+    _KNOWLEDGE_CACHE_TTL = 300  # 5 minutes
+
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -93,8 +99,14 @@ class AdaptiveRecommendationService:
         Returns:
             dict with user stats and recommendations
         """
-        # 1. Get user's knowledge state
-        knowledge_state = await self._get_knowledge_state(user.id, chapter_id)
+        # 1. Get user's knowledge state (with short-term caching)
+        cache_key = f"{user.id}:{chapter_id or 'none'}"
+        cached = self._knowledge_state_cache.get(cache_key)
+        if cached and (time.time() - cached[1]) < self._KNOWLEDGE_CACHE_TTL:
+            knowledge_state = cached[0]
+        else:
+            knowledge_state = await self._get_knowledge_state(user.id, chapter_id)
+            self._knowledge_state_cache[cache_key] = (knowledge_state, time.time())
 
         # 2. Determine target difficulty (ZPD)
         target_difficulty = self._calculate_target_difficulty(knowledge_state, learning_path)
@@ -371,7 +383,7 @@ class AdaptiveRecommendationService:
         weak_point_objects = knowledge_state.get("weak_point_objects", [])
         weak_point_kps = [wp.knowledge_point for wp in weak_point_objects]
 
-        # Build base query
+        # Build base query with random ordering for variety
         query = select(Exercise).where(
             Exercise.is_verified,
             Exercise.difficulty >= min_difficulty,
@@ -386,7 +398,10 @@ class AdaptiveRecommendationService:
         if exclude_ids:
             query = query.where(~Exercise.id.in_(exclude_ids))
 
-        result = await self.db.execute(query.limit(500))
+        # Random ordering + limit: we only need a small pool for scoring.
+        # 100 candidates is plenty when we only return ~5-10 recommendations.
+        query = query.order_by(func.random()).limit(100)
+        result = await self.db.execute(query)
         exercises = list(result.scalars().all())
 
         candidates = []
@@ -418,7 +433,8 @@ class AdaptiveRecommendationService:
                 "type": ex.type,
                 "knowledge_points": kp_list,
                 "title": ex.content.get("title", "") if ex.content else "",
-                "embedding": json.loads(ex.embedding) if ex.embedding else None,
+                # NOTE: embedding is not used by _score_candidates, so we skip
+                # the json.loads overhead here. Add it back if scoring uses it.
                 "matches_weak_point": matches_weak_point,
                 "matched_weak_points": [
                     wp for wp in weak_point_kps

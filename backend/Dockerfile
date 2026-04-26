@@ -29,9 +29,17 @@ RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 # 复制应用代码
 COPY ./app ./app
 COPY init_db.py .
+COPY alembic.ini .
+COPY ./migrations ./migrations
 
-# 创建数据目录
-RUN mkdir -p /app/data /app/exercises
+# 创建非 root 用户和数据目录
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup appuser && \
+    mkdir -p /app/data /app/exercises && \
+    chown -R appuser:appgroup /app
+
+# 切换到非 root 用户
+USER appuser
 
 # 暴露端口
 EXPOSE 8000

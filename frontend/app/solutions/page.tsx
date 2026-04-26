@@ -147,7 +147,7 @@ function SolutionsContent() {
                     <Home className="w-5 h-5" />
                   </button>
                   <MessageSquare className="w-6 h-6 text-primary" />
-                  <h1 className="text-lg font-semibold">{t('题解广场', 'Solutions')}</h1>
+                  <h1 className="text-lg font-semibold">{t('讨论区', 'Discussion')}</h1>
                 </div>
                 <button type="button"
                   onClick={() => setPageMode('create')}

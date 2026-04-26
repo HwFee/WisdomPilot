@@ -393,12 +393,29 @@ export async function startInfiniteSession(
 
 /**
  * Get challenge path progress (no session_id needed, independent of courses)
+ * lite=True (default): Returns metadata only, much faster for large exercise lists
+ * lite=False: Returns full content and test_cases for all exercises
  */
 export async function getChallengeProgress(
-  token: string
+  token: string,
+  lite: boolean = true
 ): Promise<InfiniteProgressResponse> {
   return get<InfiniteProgressResponse>(
-    `/api/learning-path/challenge/progress`,
+    `/api/learning-path/challenge/progress?lite=${lite}`,
+    token
+  )
+}
+
+/**
+ * Get full content for a single exercise (used with lite mode)
+ * Fetches complete exercise data on demand when user views an exercise
+ */
+export async function getChallengeExerciseContent(
+  exerciseId: number,
+  token: string
+): Promise<{ exercise: ChallengeExercise; exercise_index: number; is_unlocked: boolean; is_completed: boolean; is_correct: boolean; saved_code: string; current_language: string; total_exercises: number }> {
+  return get(
+    `/api/learning-path/challenge/exercise/${exerciseId}`,
     token
   )
 }

@@ -957,6 +957,7 @@ export interface ChallengeSessionResponse {
 
 export interface ChallengeExercise {
   id: number
+  z_id?: string
   title: string
   type: ExerciseType
   difficulty: number

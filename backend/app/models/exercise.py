@@ -1,7 +1,7 @@
 """Exercise model"""
 
 from datetime import datetime
-from sqlalchemy import String, Text, Integer, Boolean, DateTime, ForeignKey, JSON, Float
+from sqlalchemy import String, Text, Integer, Boolean, DateTime, ForeignKey, JSON, Float, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, List, TYPE_CHECKING
 
@@ -21,6 +21,10 @@ class Exercise(Base):
     """
 
     __tablename__ = "exercises"
+
+    __table_args__ = (
+        Index("ix_exercises_verified_difficulty_id", "is_verified", "difficulty", "id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     chapter_id: Mapped[Optional[int]] = mapped_column(

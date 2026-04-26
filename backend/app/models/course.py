@@ -15,11 +15,8 @@ if TYPE_CHECKING:
 class Course(Base):
     """Course model - represents a programming course
 
-    支持的8门课程：
-    - C, C++, Python, Java, Rust
-    - 数据结构与算法 (DSA)
-    - 算法设计与分析 (ADA)
-    - 离散数学 (DiscreteMath)
+    支持的3门课程：
+    - C, C++, Python
     """
 
     __tablename__ = "courses"
@@ -30,7 +27,7 @@ class Course(Base):
         unique=True,
         index=True,
         nullable=False,
-        comment="Course code: C, C++, Python, Java, Rust, DSA, ADA, DiscreteMath"
+        comment="Course code: C, CPP, Python"
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)

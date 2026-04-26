@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./data.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/data.db"
 
     # JWT
     SECRET_KEY: str

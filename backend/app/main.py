@@ -92,25 +92,32 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Rate limiting middleware (C5, C8) -- must be added before CORS
+# Rate limiting middleware (C5, C8)
+# NOTE: In Starlette, middleware is applied in REVERSE order (last added = outermost).
+# CORS must be outermost so ALL responses (including rate-limit 429s) get CORS headers.
+# Therefore: add RateLimit FIRST (innermost), CORS LAST (outermost).
 app.add_middleware(RateLimitMiddleware)
 
 # CORS configuration
-# 生产环境需要配置实际的域名
+import os
+
 cors_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
-# 从环境变量添加生产域名（多个域名用逗号分隔）
-import os
+# From environment variable (comma-separated)
 production_origins = os.environ.get("CORS_ORIGINS", "")
 if production_origins:
     cors_origins.extend([origin.strip() for origin in production_origins.split(",") if origin.strip()])
 
+# Auto-allow any http origin from any port on the server IP
+allow_origin_regex = r"https?://localhost(:\d+)?|https?://127\.0\.0\.1(:\d+)?|https?://\d+\.\d+\.\d+\.\d+(:\d+)?"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],

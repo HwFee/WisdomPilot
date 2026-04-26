@@ -48,16 +48,11 @@ auth_dependency = Annotated[User, Depends(get_current_active_user)]
 optional_user_dependency = Annotated[Optional[User], Depends(get_optional_user)]
 
 
-# 8门课程初始化数据
+# 3门课程初始化数据
 COURSES_INIT_DATA = [
     {"code": "C", "name": "C语言程序设计", "difficulty_level": 1, "icon": "c"},
     {"code": "CPP", "name": "C++程序设计", "difficulty_level": 2, "icon": "cpp"},
     {"code": "Python", "name": "Python程序设计", "difficulty_level": 1, "icon": "python"},
-    {"code": "Java", "name": "Java程序设计", "difficulty_level": 2, "icon": "java"},
-    {"code": "Rust", "name": "Rust程序设计", "difficulty_level": 4, "icon": "rust"},
-    {"code": "DSA", "name": "数据结构与算法", "difficulty_level": 3, "icon": "dsa"},
-    {"code": "ADA", "name": "算法设计与分析", "difficulty_level": 4, "icon": "ada"},
-    {"code": "DiscreteMath", "name": "离散数学", "difficulty_level": 3, "icon": "math"},
 ]
 
 
@@ -66,7 +61,7 @@ async def get_courses(db: db_dependency):
     """
     Get all active courses with chapter count.
 
-    Returns a list of courses with basic info and chapter count.
+    Returns a list of active courses (C, CPP, Python) with basic info and chapter count.
     This endpoint is public - no authentication required.
     """
     query = (
@@ -75,7 +70,7 @@ async def get_courses(db: db_dependency):
             func.count(Chapter.id).label("chapter_count")
         )
         .outerjoin(Chapter, Course.id == Chapter.course_id)
-        .where(Course.is_active)
+        .where(Course.is_active, Course.code.in_(["C", "CPP", "Python"]))
         .group_by(Course.id)
         .order_by(Course.difficulty_level, Course.code)
     )
@@ -368,7 +363,7 @@ async def get_user_course_progress(
     """
     Get progress for all courses for the current user.
 
-    Returns a list of all 8 courses with user's progress in each:
+    Returns a list of all active courses with user's progress in each:
     - Progress percentage (based on chapter mastery)
     - Mastery score (for 精进之路)
     - Arena tier and score (for 挑战之路)
@@ -377,9 +372,12 @@ async def get_user_course_progress(
     """
     from app.models.user_arena import UserArenaProfile
 
-    # Get all courses
+    # Get active courses (C, CPP, Python)
     courses_result = await db.execute(
-        select(Course).where(Course.is_active).order_by(Course.difficulty_level, Course.code)
+        select(Course)
+        .where(Course.is_active)
+        .where(Course.code.in_(["C", "CPP", "Python"]))
+        .order_by(Course.difficulty_level, Course.code)
     )
     all_courses = courses_result.scalars().all()
 

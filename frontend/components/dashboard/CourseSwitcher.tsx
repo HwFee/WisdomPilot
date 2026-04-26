@@ -15,11 +15,6 @@ const COURSE_GRADIENTS: Record<string, string> = {
   'C': 'from-blue-500 to-cyan-500',
   'CPP': 'from-indigo-500 to-purple-500',
   'Python': 'from-green-500 to-teal-500',
-  'Java': 'from-orange-500 to-red-500',
-  'Rust': 'from-red-500 to-orange-600',
-  'DSA': 'from-emerald-500 to-green-600',
-  'ADA': 'from-violet-500 to-purple-600',
-  'DiscreteMath': 'from-amber-500 to-yellow-600',
 }
 
 export function CourseSwitcher({
