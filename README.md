@@ -60,7 +60,6 @@ NEXT_PUBLIC_API_URL=http://your-backend-host:port
 │   │   ├── services/      # 业务逻辑
 │   │   └── main.py        # 应用入口
 │   ├── tests/             # 测试文件
-│   ├── init_db.py         # 数据库初始化脚本
 │   └── requirements.txt
 │
 ├── frontend/               # Next.js 前端
