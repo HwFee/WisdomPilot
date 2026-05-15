@@ -5,7 +5,7 @@ Converts extracted tags to text and generates vector embeddings.
 
 Services:
 1. Tag-to-text conversion for embedding
-2. OpenAI/MiniMax embedding API integration
+2. SiliconFlow/MiniMax embedding API integration
 3. Embedding storage and retrieval
 """
 
@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 class EmbeddingConfig:
     """Configuration for embedding service."""
 
-    provider: str = "openai"
-    model: str = "text-embedding-3-small"
+    provider: str = "siliconflow"
+    model: str = "BAAI/bge-large-zh-v1.5"
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     dimensions: int = 1536
@@ -43,7 +43,7 @@ class EmbeddingService:
     Service for generating embeddings from exercise tags.
 
     Supports multiple providers:
-    - OpenAI text-embedding-3-small (default)
+    - SiliconFlow BAAI/bge-large-zh-v1.5 (default)
     - MiniMax embedding API
 
     Usage:
@@ -105,7 +105,7 @@ class EmbeddingService:
 
     async def _openai_embedding(self, text: str) -> Optional[list[float]]:
         """Generate embedding using OpenAI-compatible API."""
-        base_url = self.config.base_url or "https://api.openai.com/v1"
+        base_url = self.config.base_url or "https://api.siliconflow.cn/v1"
 
         try:
             # Build request body

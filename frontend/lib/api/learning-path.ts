@@ -241,19 +241,76 @@ export async function submitBaseAnswers(
 
 /**
  * Generate enhanced quiz based on weak points
- * Note: Uses longer timeout (120s) because AI generation takes time
+ * Note: Uses longer timeout (30s) because AI generation of first question takes time
+ * Remaining questions are generated asynchronously and can be polled via getGenerationStatus
  */
 export async function generateEnhancedQuiz(
   courseId: number,
   request: EnhancedQuizGenerateRequest,
   token: string
 ): Promise<EnhancedQuizGenerateResponse> {
-  // AI 生成题目需要较长时间，使用 120 秒超时
+  // AI 生成第一题需要一些时间，使用 30 秒超时
   return post<EnhancedQuizGenerateResponse>(
     `/api/learning-path/mastery/${courseId}/generate-enhanced`,
     token,
     request,
-    120000  // 120 seconds
+    30000  // 30 seconds - just for first question
+  )
+}
+
+/**
+ * Get generation session status (polling for stream)
+ * Returns current progress and all generated exercises so far
+ */
+export async function getGenerationStatus(
+  sessionId: string,
+  token: string
+): Promise<{
+  session_id: string
+  status: string
+  total_count: number
+  generated_count: number
+  exercises: Array<{
+    id: string
+    type: string
+    text: string
+    options: string[]
+    correct_answer: string
+    explanation: string
+    knowledge_points: string[]
+    difficulty: number
+  }>
+  is_completed: boolean
+}> {
+  return get(
+    `/api/learning-path/mastery/generation-status/${sessionId}`,
+    token
+  )
+}
+
+/**
+ * Get all exercises from a generation session (polling for stream)
+ */
+export async function getSessionExercises(
+  sessionId: string,
+  token: string
+): Promise<{
+  session_id: string
+  questions: Array<{
+    id: string
+    type: string
+    text: string
+    options: string[]
+    correct_answer: string
+    explanation: string
+    knowledge_points: string[]
+    difficulty: number
+  }>
+  total_count: number
+}> {
+  return get(
+    `/api/learning-path/mastery/generation/${sessionId}/exercises`,
+    token
   )
 }
 

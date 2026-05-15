@@ -1,12 +1,46 @@
 """Admin service for user management"""
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models import User, LoginSession
 from app.utils.time import utc_now
 
 logger = logging.getLogger(__name__)
+
+# Tables with user_id column that need cascade deletion
+# Ordered to handle foreign key dependencies (child tables first)
+USER_RELATED_TABLES = [
+    "login_sessions",
+    "activity_logs",
+    "learning_sessions",
+    "chapter_progress",
+    "user_weak_points",
+    "spaced_repetition",
+    "user_achievements",
+    "user_challenges",
+    "favorites",
+    "notes",
+    "chapter_mastery",
+    "challenge_sessions",
+    "wrong_questions",
+    "section_base_questions",
+    "user_arena_profiles",
+    "arena_exercise_progress",
+    "mastery_exercise_progress",
+    "section_progress",
+    "core_transactions",
+    "ai_hint_cache",
+    "knowledge_point_mastery",
+    "answer_history",
+    "section_mastery",
+    "course_mastery",
+    "tier_transactions",
+    "mastery_xp_transactions",
+    "solution_likes",
+    "solutions",
+]
+
 
 class AdminService:
     """Admin service for user management"""
@@ -20,18 +54,28 @@ class AdminService:
         return list(result.scalars().all())
 
     async def delete_user(self, user_id: str) -> bool:
-        """Delete a user by ID."""
+        """Delete a user and all associated data (cascade delete)."""
         result = await self.db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if not user:
             return False
 
         try:
-            await self.db.execute(
-                delete(LoginSession).where(LoginSession.user_id == user_id)
-            )
+            # Delete from all related tables using raw SQL (idempotent, skips missing tables)
+            for table in USER_RELATED_TABLES:
+                try:
+                    await self.db.execute(
+                        text(f"DELETE FROM {table} WHERE user_id = :user_id"),
+                        {"user_id": user_id}
+                    )
+                except SQLAlchemyError:
+                    # Table may not exist or not have user_id — skip silently
+                    pass
+
+            # Finally delete the user
             await self.db.execute(delete(User).where(User.id == user_id))
             await self.db.commit()
+            logger.info("Deleted user %s and all associated data", user_id)
             return True
         except IntegrityError as exc:
             logger.error("Integrity error deleting user %s: %s", user_id, exc)

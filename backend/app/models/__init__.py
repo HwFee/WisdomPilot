@@ -33,6 +33,7 @@ from app.models.tier_transaction import TierTransaction
 from app.models.mastery_xp_transaction import MasteryXpTransaction
 from app.models.solution import Solution
 from app.models.solution_like import SolutionLike
+from app.models.exercise_generation import ExerciseGenerationSession
 
 __all__ = [
     # User & Auth
@@ -99,4 +100,6 @@ __all__ = [
     # Solution (题解广场) System
     "Solution",
     "SolutionLike",
+    # Exercise Generation (流式题目生成)
+    "ExerciseGenerationSession",
 ]

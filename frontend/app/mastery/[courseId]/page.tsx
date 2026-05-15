@@ -22,6 +22,7 @@ import { FavoriteButton } from "@/components/exercise/FavoriteButton";
 import { NoteButton } from "@/components/exercise/NoteButton";
 import { NoteEditor } from "@/components/notes/NoteEditor";
 import { KnowledgeOrb } from "@/components/ui/knowledge-orb";
+import { ExerciseSkeleton, GeneratingIndicator } from "@/components/exercise/ExerciseSkeleton";
 import { staggerContainer, staggerItem, fadeIn, scaleIn } from "@/lib/animations";
 
 import {
@@ -41,6 +42,7 @@ import {
   saveMasteryExerciseProgress,
   completeMasteryQuiz,
   getMasteryChapterDetailProgress,
+  getGenerationStatus,
   type MasteryExerciseProgressItem,
 } from "@/lib/api/learning-path";
 import { collectWrongQuestion } from "@/lib/api/wrong-question";
@@ -132,6 +134,10 @@ export default function MasteryPathPage() {
   const [enhancedAnswers, setEnhancedAnswers] = useState<Map<string, string>>(
     new Map(),
   );
+  // Stream generation state
+  const [generationStatus, setGenerationStatus] = useState<"idle" | "generating" | "completed" | "failed">("idle");
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Final result state
   const [finalResult, setFinalResult] =
@@ -824,7 +830,7 @@ export default function MasteryPathPage() {
     }
   };
 
-  // Generate enhanced quiz based on weak points
+  // Generate enhanced quiz based on weak points - now with streaming support
   const handleStartEnhancedQuiz = async () => {
     const token = getStoredToken();
     if (!token || !selectedChapterId || !selectedSectionId) {
@@ -834,6 +840,13 @@ export default function MasteryPathPage() {
 
     currentSectionIdRef.current = selectedSectionId; // 保存到 ref，避免 state 丢失
     setEnhancedLoading(true);
+    setGenerationStatus("generating");
+
+    // Clean up any existing polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
 
     try {
       const response = await generateEnhancedQuiz(
@@ -850,13 +863,25 @@ export default function MasteryPathPage() {
         token,
       );
 
-      if (response.success && response.questions.length > 0) {
+      if (response.success && response.questions && response.questions.length > 0) {
+        // First question is ready, show it immediately
         setEnhancedQuestions(response.questions);
         setEnhancedSessionId(response.session_id);
         setEnhancedAnswers(new Map());
         setCurrentQuestionIndex(0);
         setSubmitted(false);
         setStep("enhanced_quiz");
+        setGenerationProgress({ current: 1, total: 3 }); // Assume 3 questions total
+
+        // Start polling for remaining questions
+        if (response.session_id) {
+          startPollingForMoreExercises(response.session_id, token);
+        }
+      } else if (!response.success) {
+        // 生成失败：后端返回了具体的失败原因
+        const failMsg = response.message || "生成强化测试失败";
+        alert(failMsg);
+        setGenerationStatus("failed");
       } else {
         // No weak points, show success
         setFinalResult({
@@ -874,14 +899,79 @@ export default function MasteryPathPage() {
           message: "所有知识点已掌握！",
         });
         setStep("result");
+        setGenerationStatus("completed");
       }
     } catch (error) {
       console.error("Failed to generate enhanced quiz:", error);
-      alert("生成强化测试失败，请稍后重试");
+      const msg = error instanceof Error ? error.message : "生成强化测试失败，请稍后重试";
+      alert(msg);
+      setGenerationStatus("failed");
     } finally {
       setEnhancedLoading(false);
     }
   };
+
+  // Poll for more exercises from generation session
+  const startPollingForMoreExercises = (sessionId: string, token: string) => {
+    // Poll every 3 seconds for new exercises
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        const status = await getGenerationStatus(sessionId, token);
+
+        if (status.exercises && status.exercises.length > enhancedQuestions.length) {
+          // New exercises available, update state
+          const newExercises = status.exercises.map((ex) => ({
+            id: ex.id,
+            type: ex.type as "choice" | "programming" | "fill_blank",
+            text: ex.text,
+            options: ex.options || [],
+            correct_answer: ex.correct_answer,
+            explanation: ex.explanation,
+            knowledge_points: ex.knowledge_points || [],
+            difficulty: ex.difficulty,
+          }));
+
+          setEnhancedQuestions(newExercises);
+          setGenerationProgress({
+            current: status.generated_count,
+            total: status.total_count,
+          });
+        }
+
+        // Check if generation is complete
+        if (status.is_completed || status.status === "completed") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setGenerationStatus("completed");
+          console.log("[精进之路] 所有题目生成完成");
+        }
+
+        // Check if generation failed
+        if (status.status === "failed") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setGenerationStatus("failed");
+          console.error("[精进之路] 题目生成失败");
+        }
+      } catch (e) {
+        console.error("[精进之路] 轮询失败:", e);
+      }
+    }, 3000); // Poll every 3 seconds
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   // Submit enhanced answer
   const handleSubmitEnhancedAnswer = async () => {
@@ -1390,6 +1480,14 @@ export default function MasteryPathPage() {
 
         <main className="pt-20 pb-24 px-4">
           <div className="max-w-2xl mx-auto">
+            {/* Generation progress indicator */}
+            {generationStatus === "generating" && generationProgress.total > 0 && generationProgress.current < generationProgress.total && (
+              <GeneratingIndicator
+                progress={generationProgress.current}
+                total={generationProgress.total}
+              />
+            )}
+
             {/* Question header */}
             <div className="flex items-center gap-3 mb-6">
               <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium">

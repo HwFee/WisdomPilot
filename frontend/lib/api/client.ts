@@ -40,6 +40,14 @@ export async function fetchWithAuth(
     });
 
     if (!response.ok) {
+      // 401: token过期或无效，清除登录状态并跳转
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+        throw new Error("登录已过期，请重新登录");
+      }
+
       // 尝试解析错误响应体
       let data: unknown = {};
       try {

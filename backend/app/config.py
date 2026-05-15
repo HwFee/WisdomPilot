@@ -20,11 +20,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES_REMEMBER: int = 10080  # 7 days (remember me)
 
     # AI Configuration (independent module)
-    AI_PROVIDER: str = "openai"
+    AI_PROVIDER: str = "deepseek"
     AI_API_KEY: str = ""
-    AI_MODEL: str = "gpt-4o-mini"
+    AI_MODEL: str = "deepseek-v4-flash"
     AI_TEMPERATURE: float = 0.7
-    AI_BASE_URL: str | None = None
+    AI_BASE_URL: str | None = "https://api.deepseek.com"
     AI_LOCAL_FIRST: bool = False
     AI_LOCAL_BASE_URL: str | None = None
 

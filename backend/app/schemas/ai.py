@@ -42,9 +42,9 @@ class CodeReviewResponse(BaseModel):
 class AIProviderConfig(BaseModel):
     """AI 提供商配置"""
 
-    provider: str = "openai"
+    provider: str = "deepseek"
     api_key: str = ""
-    model: str = "gpt-4o-mini"
+    model: str = "deepseek-v4-flash"
     temperature: float = 0.7
     base_url: Optional[str] = None
     local_base_url: Optional[str] = None  # 本地服务地址（自动检测）
@@ -140,7 +140,7 @@ class ChatStreamRequest(BaseModel):
 class ProviderStatus(BaseModel):
     """单个 Provider 的状态"""
 
-    type: str  # "ollama" | "lmstudio" | "minimax" | "openai"
+    type: str  # "ollama" | "lmstudio" | "minimax" | "deepseek"
     address: str
     status: str  # "connected" | "disconnected" | "unknown"
     model: Optional[str] = None
@@ -159,7 +159,7 @@ class AIStatusResponse(BaseModel):
 class TestConnectionRequest(BaseModel):
     """测试 AI 连接请求"""
 
-    provider: str = Field(..., description="ollama | lmstudio | minimax | openai")
+    provider: str = Field(..., description="ollama | lmstudio | minimax | deepseek")
     api_key: Optional[str] = None
     model: Optional[str] = None
     base_url: Optional[str] = None

@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
-from app.services.ai import OllamaProvider, LMStudioProvider, MiniMaxProvider, OpenAIProvider, AIService, ai_service
+from app.services.ai import OllamaProvider, LMStudioProvider, MiniMaxProvider, OpenAIProvider as DeepSeekProvider, AIService, ai_service
 from app.schemas.ai import AIProviderConfig
 
 
@@ -11,9 +11,9 @@ from app.schemas.ai import AIProviderConfig
 def configure_ai_service():
     """Configure AI service with test settings for all AI tests"""
     config = AIProviderConfig(
-        provider="openai",
+        provider="deepseek",
         api_key="test-key",
-        model="gpt-4o-mini",
+        model="deepseek-v4-flash",
         temperature=0.7,
     )
     ai_service.configure(config)
@@ -137,18 +137,18 @@ class TestAIServiceLocalProvider:
         assert service.is_configured()
         assert isinstance(service._provider, LMStudioProvider)
 
-    def test_ai_service_configure_openai_provider(self):
-        """AIService creates OpenAIProvider when provider is 'openai'"""
+    def test_ai_service_configure_deepseek_provider(self):
+        """AIService creates DeepSeekProvider when provider is 'deepseek'"""
         service = AIService()
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="sk-test",
-            model="gpt-4o-mini",
+            model="deepseek-v4-flash",
             temperature=0.7,
         )
         service.configure(config)
         assert service.is_configured()
-        assert isinstance(service._provider, OpenAIProvider)
+        assert isinstance(service._provider, DeepSeekProvider)
 
 
 class TestChoiceExplanation:
@@ -350,9 +350,9 @@ class TestAIServiceMiniMaxConfig:
         service = AIService()
         # Configure main provider first
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="test-key",
-            model="gpt-4o-mini",
+            model="deepseek-v4-flash",
             temperature=0.7,
         )
         service.configure(config)

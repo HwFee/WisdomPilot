@@ -248,3 +248,6 @@ class User(Base):
     note_tags: Mapped[List["NoteTag"]] = relationship(
         "NoteTag", back_populates="user"
     )
+    generation_sessions: Mapped[List["ExerciseGenerationSession"]] = relationship(
+        "ExerciseGenerationSession", back_populates="user"
+    )

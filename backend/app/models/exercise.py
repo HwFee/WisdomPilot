@@ -99,7 +99,7 @@ class Exercise(Base):
         nullable=True,
         comment="Common error patterns"
     )
-    # Vector embedding for similarity search (1536 dimensions for OpenAI embeddings)
+    # Vector embedding for similarity search (1024 dimensions for SiliconFlow embeddings)
     embedding: Mapped[Optional[str]] = mapped_column(
         Text,
         nullable=True,

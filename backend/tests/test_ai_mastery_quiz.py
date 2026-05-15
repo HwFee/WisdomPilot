@@ -20,9 +20,9 @@ class TestGenerateKnowledgeContent:
 
         # Configure AI service
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="test-key",
-            model="gpt-4",
+            model="deepseek-v4-flash",
             temperature=0.7
         )
         ai_service.configure(config)
@@ -81,9 +81,9 @@ class TestGeneratePersonalizedQuiz:
         from app.schemas.mastery_quiz import UserProfileForQuiz
 
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="test-key",
-            model="gpt-4"
+            model="deepseek-v4-flash"
         )
         ai_service.configure(config)
 
@@ -133,9 +133,9 @@ class TestGeneratePersonalizedQuiz:
         from app.schemas.ai import AIProviderConfig
 
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="test-key",
-            model="gpt-4"
+            model="deepseek-v4-flash"
         )
         ai_service.configure(config)
 
@@ -187,9 +187,9 @@ class TestGeneratePersonalizedQuiz:
         from app.schemas.ai import AIProviderConfig
 
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="test-key",
-            model="gpt-4"
+            model="deepseek-v4-flash"
         )
         ai_service.configure(config)
 
@@ -215,9 +215,9 @@ class TestGenerateQuestionAnalysis:
         from app.schemas.ai import AIProviderConfig
 
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="test-key",
-            model="gpt-4"
+            model="deepseek-v4-flash"
         )
         ai_service.configure(config)
 
@@ -243,9 +243,9 @@ class TestGenerateQuestionAnalysis:
         from app.schemas.ai import AIProviderConfig
 
         config = AIProviderConfig(
-            provider="openai",
+            provider="deepseek",
             api_key="test-key",
-            model="gpt-4"
+            model="deepseek-v4-flash"
         )
         ai_service.configure(config)
 

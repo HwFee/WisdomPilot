@@ -306,8 +306,8 @@ async def test_ai_connection(
                 latency_ms=latency,
             )
 
-    elif request.provider == "openai":
-        address = request.base_url or "https://api.openai.com/v1"
+    elif request.provider in ("deepseek", "siliconflow"):
+        address = request.base_url or ("https://api.deepseek.com" if request.provider == "deepseek" else "https://api.siliconflow.cn/v1")
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.post(
@@ -317,7 +317,7 @@ async def test_ai_connection(
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": request.model or "gpt-4o-mini",
+                        "model": request.model or ("deepseek-v4-flash" if request.provider == "deepseek" else "deepseek-ai/DeepSeek-V3"),
                         "max_tokens": 1,
                         "messages": [{"role": "user", "content": "hi"}],
                     },
@@ -327,7 +327,7 @@ async def test_ai_connection(
                     return TestConnectionResponse(
                         success=True,
                         message="连接成功",
-                        model=request.model or "gpt-4o-mini",
+                        model=request.model or ("deepseek-v4-flash" if request.provider == "deepseek" else "deepseek-ai/DeepSeek-V3"),
                         address=address,
                         latency_ms=latency,
                     )

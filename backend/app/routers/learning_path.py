@@ -628,7 +628,68 @@ async def generate_enhanced_quiz(
         request=request,
     )
     logger.info(f"[API] generate_enhanced_quiz 完成: success={result.success}, questions_count={len(result.questions) if result.questions else 0}")
+
+    # 如果生成成功，注册WebSocket会话
+    if result.success and result.session_id:
+        from app.websockets.exercise import websocket_manager
+        websocket_manager.register_session(result.session_id, current_user.id)
+
     return result
+
+
+@router.get("/mastery/generation-status/{session_id}")
+async def get_generation_status(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取题目生成会话状态（轮询接口）
+
+    返回当前已生成的所有题目和生成进度。
+    """
+    from app.services.exercise_generator import ExerciseGeneratorService
+
+    generator = ExerciseGeneratorService(db)
+    session = await generator.get_session(session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权访问此会话")
+
+    # 获取已生成的题目
+    exercises = await generator.get_all_exercises(session_id)
+
+    return {
+        "session_id": session_id,
+        "status": session.status,
+        "total_count": session.total_count,
+        "generated_count": session.generated_count,
+        "exercises": exercises,
+        "is_completed": session.status == "completed",
+    }
+
+
+@router.get("/mastery/generation/{session_id}/exercises")
+async def get_session_exercises(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    获取会话已生成的所有强化题（增强版）（轮询接口）
+
+    前端可以通过轮询此接口来获取新生成的题目。
+    """
+    questions = await section_base_question_service.get_session_exercises(db, session_id)
+
+    return {
+        "session_id": session_id,
+        "questions": [q.model_dump() for q in questions],
+        "total_count": len(questions),
+    }
 
 
 @router.post("/mastery/{course_id}/submit-enhanced", response_model=EnhancedQuizSubmitResponse)

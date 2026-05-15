@@ -227,7 +227,7 @@ export async function getAIStatus(token: string): Promise<AIStatusResponse> {
 // ========================================
 
 export interface TestConnectionRequest {
-  provider: 'openai' | 'minimax' | 'ollama' | 'lmstudio'
+  provider: 'deepseek' | 'siliconflow' | 'minimax' | 'ollama' | 'lmstudio'
   api_key?: string
   model?: string
   base_url?: string

@@ -23,7 +23,6 @@ import {
   Wifi,
   WifiOff,
   Cloud,
-  Cpu,
   ChevronRight,
   Zap,
   Trash2,
@@ -31,18 +30,17 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type TabId = 'openai' | 'minimax' | 'local' | 'status'
+type TabId = 'deepseek' | 'minimax' | 'status'
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'openai', label: 'OpenAI' },
+  { id: 'deepseek', label: 'DeepSeek' },
   { id: 'minimax', label: 'MiniMax' },
-  { id: 'local', label: '本地模型' },
   { id: 'status', label: '状态' },
 ]
 
 export default function AdminAISettingsPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabId>('openai')
+  const [activeTab, setActiveTab] = useState<TabId>('deepseek')
   const [config, setConfig] = useState<AIConfigResponse | null>(null)
   const [status, setStatus] = useState<AIStatusResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -52,15 +50,15 @@ export default function AdminAISettingsPage() {
   const [testResult, setTestResult] = useState<TestConnectionResponse | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // OpenAI state
-  const [openaiKey, setOpenaiKey] = useState('')
-  const [openaiModel, setOpenaiModel] = useState('gpt-4o-mini')
-  const [openaiTemp, setOpenaiTemp] = useState(0.7)
-  const [openaiUrl, setOpenaiUrl] = useState('')
+  // DeepSeek state
+  const [deepseekKey, setOpenaiKey] = useState('')
+  const [deepseekModel, setOpenaiModel] = useState('deepseek-v4-flash')
+  const [deepseekTemp, setOpenaiTemp] = useState(0.7)
+  const [deepseekUrl, setOpenaiUrl] = useState('')
   const [hasOpenaiKey, setHasOpenaiKey] = useState(false)
-  const [openaiKeyPreview, setOpenaiKeyPreview] = useState('')
-  const [openaiKeyLength, setOpenaiKeyLength] = useState(0)
-  const [openaiKeyReplaceMode, setOpenaiKeyReplaceMode] = useState(false)
+  const [deepseekKeyPreview, setOpenaiKeyPreview] = useState('')
+  const [deepseekKeyLength, setOpenaiKeyLength] = useState(0)
+  const [deepseekKeyReplaceMode, setOpenaiKeyReplaceMode] = useState(false)
 
   // MiniMax state
   const [minimaxKey, setMinimaxKey] = useState('')
@@ -72,13 +70,7 @@ export default function AdminAISettingsPage() {
   const [minimaxKeyLength, setMinimaxKeyLength] = useState(0)
   const [minimaxKeyReplaceMode, setMinimaxKeyReplaceMode] = useState(false)
 
-  // Local state
-  const [localProvider, setLocalProvider] = useState<'ollama' | 'lmstudio'>('ollama')
-  const [localUrl, setLocalUrl] = useState('http://localhost:11434')
-  const [localModel, setLocalModel] = useState('')
-  const [localTemp, setLocalTemp] = useState(0.7)
   const [localFirst, setLocalFirst] = useState(false)
-  const [availableModels, setAvailableModels] = useState<string[]>([])
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const currentUser = typeof window !== 'undefined'
@@ -128,28 +120,24 @@ export default function AdminAISettingsPage() {
 
   const applyConfig = (data: AIConfigResponse) => {
     setLocalFirst(data.is_local_first)
-    setHasOpenaiKey(data.provider === 'openai' && data.has_api_key)
+    setHasOpenaiKey(data.provider === 'deepseek' && data.has_api_key)
     setHasMinimaxKey(data.provider === 'minimax' && data.has_api_key)
     // MiniMax key — from config response
     setMinimaxKeyPreview(data.api_key_preview || '')
     setMinimaxKeyLength(data.api_key_length || 0)
     setMinimaxKeyReplaceMode(false)
     setMinimaxKey('')
-    // OpenAI key — from config only when OpenAI is active provider; otherwise keep stored value
-    if (data.provider === 'openai') {
+    // DeepSeek key — from config only when DeepSeek is active provider; otherwise keep stored value
+    if (data.provider === 'deepseek') {
       setOpenaiKeyPreview(data.has_api_key ? (data.api_key_preview || '****') : '')
       setOpenaiKeyLength(data.api_key_length || 0)
     }
     setOpenaiKeyReplaceMode(false)
     setOpenaiKey('')
-    if (data.provider === 'openai') {
-      setActiveTab('openai')
+    if (data.provider === 'deepseek') {
+      setActiveTab('deepseek')
     } else if (data.provider === 'minimax') {
       setActiveTab('minimax')
-    } else if (data.provider === 'ollama' || data.provider === 'lmstudio') {
-      setActiveTab('local')
-      setLocalProvider(data.provider as 'ollama' | 'lmstudio')
-      setLocalUrl(data.connection_address || (data.provider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:1234'))
     }
   }
 
@@ -158,25 +146,25 @@ export default function AdminAISettingsPage() {
     setTimeout(() => setMessage(null), 4000)
   }
 
-  const handleSaveOpenAI = async () => {
+  const handleSaveDeepSeek = async () => {
     if (!token) return
     setIsSaving(true)
     try {
-      const req: UpdateAIConfigRequest = { provider: 'openai', temperature: openaiTemp, model: openaiModel }
+      const req: UpdateAIConfigRequest = { provider: 'deepseek', temperature: deepseekTemp, model: deepseekModel }
       // 替换模式：输入了新密钥则更新；清空则删除
-      if (openaiKeyReplaceMode) {
-        req.api_key = openaiKey || ''
-      } else if (openaiKey) {
+      if (deepseekKeyReplaceMode) {
+        req.api_key = deepseekKey || ''
+      } else if (deepseekKey) {
         // 非替换模式但有新输入（追加情况）
-        req.api_key = openaiKey
+        req.api_key = deepseekKey
       }
       // else: 保持空字符串，且没有替换模式 → 不更新 key
-      if (openaiUrl.trim()) req.base_url = openaiUrl.trim()
+      if (deepseekUrl.trim()) req.base_url = deepseekUrl.trim()
       req.is_local_first = localFirst
       await updateAIConfig(token, req)
       setOpenaiKey('')
       setOpenaiKeyReplaceMode(false)
-      showMessage('success', 'OpenAI 配置已保存')
+      showMessage('success', 'DeepSeek 配置已保存')
       fetchConfig()
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : '保存失败')
@@ -210,34 +198,16 @@ export default function AdminAISettingsPage() {
     }
   }
 
-  const handleSaveLocal = async () => {
-    if (!token) return
-    setIsSaving(true)
-    try {
-      const req: UpdateAIConfigRequest = { provider: localProvider, temperature: localTemp }
-      if (localModel.trim()) req.model = localModel.trim()
-      if (localUrl.trim()) req.local_base_url = localUrl.trim()
-      req.is_local_first = localFirst
-      await updateAIConfig(token, req)
-      showMessage('success', '本地模型配置已保存')
-      fetchConfig()
-    } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : '保存失败')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleTestOpenAI = async () => {
+  const handleTestDeepSeek = async () => {
     if (!token) return
     setIsTesting(true)
     setTestResult(null)
     try {
       const result = await testAIConnection(token, {
-        provider: 'openai',
-        api_key: openaiKey || undefined,
-        model: openaiModel,
-        base_url: openaiUrl || undefined,
+        provider: 'deepseek',
+        api_key: deepseekKey || undefined,
+        model: deepseekModel,
+        base_url: deepseekUrl || undefined,
       })
       setTestResult(result)
     } catch (err) {
@@ -257,24 +227,6 @@ export default function AdminAISettingsPage() {
         api_key: minimaxKey || undefined,
         model: minimaxModel,
         base_url: minimaxUrl || undefined,
-      })
-      setTestResult(result)
-    } catch (err) {
-      setTestResult({ success: false, message: err instanceof Error ? err.message : '测试失败' })
-    } finally {
-      setIsTesting(false)
-    }
-  }
-
-  const handleTestLocal = async () => {
-    if (!token) return
-    setIsTesting(true)
-    setTestResult(null)
-    try {
-      const result = await testAIConnection(token, {
-        provider: localProvider,
-        model: localModel || undefined,
-        local_base_url: localUrl || undefined,
       })
       setTestResult(result)
     } catch (err) {
@@ -359,25 +311,25 @@ export default function AdminAISettingsPage() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'openai' && (
+        {activeTab === 'deepseek' && (
           <ConfigCard
-            title="OpenAI"
-            description="使用 OpenAI GPT 系列模型"
+            title="DeepSeek"
+            description="使用 DeepSeek GPT 系列模型"
             icon={<Cloud className="w-5 h-5" />}
             isSaving={isSaving}
             isTesting={isTesting}
             testResult={testResult}
-            onSave={handleSaveOpenAI}
-            onTest={handleTestOpenAI}
+            onSave={handleSaveDeepSeek}
+            onTest={handleTestDeepSeek}
           >
             <ApiKeyField
               label="API Key"
               hasKey={hasOpenaiKey}
-              preview={openaiKeyPreview}
-              keyLength={openaiKeyLength}
-              value={openaiKey}
+              preview={deepseekKeyPreview}
+              keyLength={deepseekKeyLength}
+              value={deepseekKey}
               onChange={setOpenaiKey}
-              replaceMode={openaiKeyReplaceMode}
+              replaceMode={deepseekKeyReplaceMode}
               onEnterReplace={() => setOpenaiKeyReplaceMode(true)}
               onCancelReplace={() => {
                 setOpenaiKeyReplaceMode(false)
@@ -387,7 +339,7 @@ export default function AdminAISettingsPage() {
                 if (!token) return
                 setIsSaving(true)
                 try {
-                  await updateAIConfig(token, { provider: 'openai', api_key: '' })
+                  await updateAIConfig(token, { provider: 'deepseek', api_key: '' })
                   setOpenaiKeyPreview('')
                   setOpenaiKeyLength(0)
                   showMessage('success', '密钥已删除')
@@ -402,19 +354,17 @@ export default function AdminAISettingsPage() {
             />
             <Field label="模型">
               <select
-                value={openaiModel}
+                value={deepseekModel}
                 onChange={e => setOpenaiModel(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="gpt-4o-mini">GPT-4o Mini</option>
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                <option value="deepseek-v4-flash">deepseek-v4-flash</option>
               </select>
             </Field>
-            <Field label={`温度参数: ${openaiTemp}`}>
+            <Field label={`温度参数: ${deepseekTemp}`}>
               <input
                 type="range" min="0" max="1" step="0.1"
-                value={openaiTemp}
+                value={deepseekTemp}
                 onChange={e => setOpenaiTemp(parseFloat(e.target.value))}
                 className="w-full"
               />
@@ -422,12 +372,12 @@ export default function AdminAISettingsPage() {
                 <span>精确 (0)</span><span>创意 (1)</span>
               </div>
             </Field>
-            <Field label="Base URL（可选）" hint="用于代理或兼容 OpenAI 接口的其他服务">
+            <Field label="Base URL（可选）" hint="用于代理或兼容 DeepSeek 接口的其他服务">
               <input
                 type="text"
-                value={openaiUrl}
+                value={deepseekUrl}
                 onChange={e => setOpenaiUrl(e.target.value)}
-                placeholder="https://api.openai.com/v1"
+                placeholder="https://api.deepseek.com"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </Field>
@@ -502,90 +452,6 @@ export default function AdminAISettingsPage() {
                 type="range" min="0" max="1" step="0.1"
                 value={minimaxTemp}
                 onChange={e => setMinimaxTemp(parseFloat(e.target.value))}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>精确 (0)</span><span>创意 (1)</span>
-              </div>
-            </Field>
-            <LocalFirstToggle checked={localFirst} onChange={setLocalFirst} />
-          </ConfigCard>
-        )}
-
-        {activeTab === 'local' && (
-          <ConfigCard
-            title="本地模型"
-            description="使用 Ollama 或 LM Studio 运行的本地大模型"
-            icon={<Cpu className="w-5 h-5" />}
-            isSaving={isSaving}
-            isTesting={isTesting}
-            testResult={testResult}
-            onSave={handleSaveLocal}
-            onTest={handleTestLocal}
-          >
-            <Field label="本地服务类型">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLocalProvider('ollama')
-                    setLocalUrl('http://localhost:11434')
-                    setAvailableModels([])
-                    setLocalModel('')
-                  }}
-                  className={cn(
-                    'flex-1 px-4 py-2 text-sm rounded-lg border transition-all',
-                    localProvider === 'ollama'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/50'
-                  )}
-                >
-                  Ollama
-                  <span className="block text-xs font-normal mt-0.5 opacity-70">端口 11434</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLocalProvider('lmstudio')
-                    setLocalUrl('http://localhost:1234')
-                    setAvailableModels([])
-                    setLocalModel('')
-                  }}
-                  className={cn(
-                    'flex-1 px-4 py-2 text-sm rounded-lg border transition-all',
-                    localProvider === 'lmstudio'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/50'
-                  )}
-                >
-                  LM Studio
-                  <span className="block text-xs font-normal mt-0.5 opacity-70">端口 1234</span>
-                </button>
-              </div>
-            </Field>
-            <Field label="服务地址">
-              <input
-                type="text"
-                value={localUrl}
-                onChange={e => setLocalUrl(e.target.value)}
-                placeholder={localProvider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:1234'}
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </Field>
-            <Field label="模型名称" hint="手动输入或留空后自动检测">
-              <input
-                type="text"
-                value={localModel}
-                onChange={e => setLocalModel(e.target.value)}
-                placeholder="qwen2.5-coder:latest"
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </Field>
-            <Field label={`温度参数: ${localTemp}`}>
-              <input
-                type="range" min="0" max="1" step="0.1"
-                value={localTemp}
-                onChange={e => setLocalTemp(parseFloat(e.target.value))}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">

@@ -12,7 +12,7 @@ Section Base Question Service - 小节基础测试题服务
 """
 
 import uuid
-from typing import List
+from typing import List, Optional, Callable, Awaitable
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from collections import defaultdict
@@ -251,27 +251,23 @@ class SectionBaseQuestionService:
         db: AsyncSession,
         request: EnhancedQuizGenerateRequest,
         user_id: str,
+        progress_callback: Optional[Callable[[int, dict, int, int], Awaitable[None]]] = None,
     ) -> EnhancedQuizGenerateResponse:
         """
-        根据薄弱点生成强化测试题，并持久化到数据库
+        流式生成强化测试题 - 第一题立即可用，剩余异步生成
 
         Args:
             db: 数据库会话
             request: 生成请求（包含薄弱点）
             user_id: 用户ID
+            progress_callback: 每生成一题的回调（用于WebSocket推送）
 
         Returns:
-            包含 AI 生成的强化测试题
-
-        存储方案：
-        - 强化题存储到 section_base_questions 表
-        - question_source = 'enhanced'
-        - user_id = 生成用户ID（用户隔离）
-        - 这样错题本可以统一查看基础题和强化题
+            包含第一题和会话ID，剩余题目在后台生成
         """
-        import json
-        import re
         import logging
+        from app.services.exercise_generator import ExerciseGeneratorService
+
         logger = logging.getLogger(__name__)
 
         if not request.weak_points:
@@ -298,153 +294,122 @@ class SectionBaseQuestionService:
         chapter = chapter_result.scalar_one_or_none()
         chapter_title = chapter.title if chapter else f"章节 {request.chapter_id}"
 
-        # 使用 AI 生成强化题
         try:
-            prompt = f"""你是一个专业的编程教育题目出题专家。请根据以下薄弱知识点，生成 {request.question_count} 道强化练习题。
+            # 使用 ExerciseGeneratorService 实现流式生成
+            generator = ExerciseGeneratorService(db)
 
-课程: C语言程序设计
-章节: {chapter_title}
-小节: {section.title}
-薄弱知识点: {', '.join(request.weak_points)}
-已掌握知识点: {', '.join(request.strong_points) if request.strong_points else '无'}
-
-要求：
-1. 题目要针对薄弱知识点进行强化训练
-2. 难度适中，循序渐进
-3. 提供清晰的解析
-
-请严格按以下 JSON 格式返回，不要有任何其他内容：
-```json
-[
-  {{
-    "id": "1",
-    "type": "choice",
-    "text": "题目内容",
-    "options": ["选项A", "选项B", "选项C", "选项D"],
-    "correct_answer": "A",
-    "explanation": "解析内容",
-    "knowledge_points": ["知识点1", "知识点2"],
-    "difficulty": 2
-  }}
-]
-```
-
-只返回 JSON 数组，不要有任何其他文字说明。"""
-
-            logger.info(f"[强化题生成] 开始生成, weak_points={request.weak_points}")
-
-            # 获取当前小节已有的最大 order_index
-            max_order_result = await db.execute(
-                select(func.max(SectionBaseQuestion.order_index)).where(
-                    SectionBaseQuestion.section_id == request.section_id,
-                    SectionBaseQuestion.is_active,
-                )
-            )
-            max_order = max_order_result.scalar() or 0
-            logger.info(f"[强化题生成] 当前最大 order_index: {max_order}")
-
-            response = await ai_service.generate(prompt)
-            logger.info(f"[强化题生成] AI响应: {response[:500]}...")
-
-            # 解析 AI 响应
-            questions = []
-            db_questions = []
-            try:
-                # 尝试提取 JSON 数组
-                json_match = re.search(r'\[[\s\S]*\]', response)
-                if json_match:
-                    json_str = json_match.group(0)
-                    raw_questions = json.loads(json_str)
-
-                    for i, q in enumerate(raw_questions[:request.question_count]):
-                        question = EnhancedQuizQuestion(
-                            id=q.get('id', str(i + 1)),
-                            type=q.get('type', 'choice'),
-                            text=q.get('text', ''),
-                            options=q.get('options', []),
-                            correct_answer=q.get('correct_answer', ''),
-                            explanation=q.get('explanation', ''),
-                            knowledge_points=q.get('knowledge_points', []),
-                            difficulty=q.get('difficulty', 2),
-                        )
-                        questions.append(question)
-
-                        # 创建数据库记录
-                        # order_index 从当前最大值+1开始，追加到后面
-                        db_question = SectionBaseQuestion(
-                            section_id=request.section_id,
-                            chapter_id=request.chapter_id,
-                            user_id=user_id,
-                            question_source='enhanced',
-                            order_index=max_order + i + 1,
-                            question_type=q.get('type', 'choice'),
-                            question_text=q.get('text', ''),
-                            options=q.get('options', []),
-                            correct_answer=q.get('correct_answer', ''),
-                            explanation=q.get('explanation', ''),
-                            knowledge_points=q.get('knowledge_points', []),
-                            difficulty=q.get('difficulty', 2),
-                            is_active=True,
-                        )
-                        db_questions.append(db_question)
-
-                    logger.info(f"[强化题生成] 成功解析 {len(questions)} 道题目")
-                else:
-                    logger.warning(f"[强化题生成] 未找到 JSON 数组，响应: {response[:200]}")
-            except json.JSONDecodeError as e:
-                logger.error(f"[强化题生成] JSON 解析失败: {e}")
-                # 如果解析失败，创建一些默认题目
-                for i, kp in enumerate(request.weak_points[:request.question_count]):
-                    questions.append(EnhancedQuizQuestion(
-                        id=str(i + 1),
-                        type="choice",
-                        text=f"关于 {kp} 的练习题（AI生成失败，请稍后重试）",
-                        options=["选项A", "选项B", "选项C", "选项D"],
-                        correct_answer="A",
-                        explanation=f"本题考查 {kp} 相关知识",
-                        knowledge_points=[kp],
-                        difficulty=2,
-                    ))
-
-            # 持久化到数据库
-            if db_questions:
-                db.add_all(db_questions)
-                await db.commit()
-                # 刷新获取 ID
-                for q in db_questions:
-                    await db.refresh(q)
-                logger.info(f"[强化题生成] 已保存 {len(db_questions)} 道题目到数据库")
-
-            session_id = str(uuid.uuid4())
-
-            # 更新返回的题目 ID 为数据库 ID
-            for i, (q, db_q) in enumerate(zip(questions, db_questions)):
-                q.id = str(db_q.id)
-
-            # 存储会话（内存中保留一份副本）
-            self._enhanced_sessions[session_id] = EnhancedQuizSession(
-                session_id=session_id,
+            session_id, first_exercise, remaining_count = await generator.generate_first_then_stream(
                 user_id=user_id,
+                session_type="enhanced",
                 section_id=request.section_id,
                 chapter_id=request.chapter_id,
                 course_id=request.course_id,
-                questions=[q.model_dump() for q in questions],
+                weak_points=request.weak_points,
+                strong_points=request.strong_points or [],
+                question_count=request.question_count or 3,
+                section_title=section.title,
+                chapter_title=chapter_title,
+                progress_callback=progress_callback,
             )
+
+            # 转换第一题为返回格式
+            first_question = EnhancedQuizQuestion(
+                id=str(first_exercise.get("id", "1")),
+                type=first_exercise.get("type", "choice"),
+                text=first_exercise.get("text", ""),
+                options=first_exercise.get("options", []),
+                correct_answer=first_exercise.get("correct_answer", ""),
+                explanation=first_exercise.get("explanation", ""),
+                knowledge_points=first_exercise.get("knowledge_points", []),
+                difficulty=first_exercise.get("difficulty", 2),
+            )
+
+            # 也保存第一题到 SectionBaseQuestion，让用户可以回顾
+            try:
+                max_order_result = await db.execute(
+                    select(func.max(SectionBaseQuestion.order_index)).where(
+                        SectionBaseQuestion.section_id == request.section_id,
+                        SectionBaseQuestion.is_active,
+                    )
+                )
+                max_order = max_order_result.scalar() or 0
+
+                db_question = SectionBaseQuestion(
+                    section_id=request.section_id,
+                    chapter_id=request.chapter_id,
+                    user_id=user_id,
+                    question_source='enhanced',
+                    order_index=max_order + 1,
+                    question_type=first_exercise.get("type", "choice"),
+                    question_text=first_exercise.get("text", ""),
+                    options=first_exercise.get("options", []),
+                    correct_answer=first_exercise.get("correct_answer", ""),
+                    explanation=first_exercise.get("explanation", ""),
+                    knowledge_points=first_exercise.get("knowledge_points", []),
+                    difficulty=first_exercise.get("difficulty", 2),
+                    is_active=True,
+                )
+                db.add(db_question)
+                await db.commit()
+                await db.refresh(db_question)
+                # 更新ID为数据库ID
+                first_question.id = str(db_question.id)
+            except Exception as e:
+                logger.warning(f"保存第一题到数据库失败: {e}")
+                # 不影响主流程，继续
+
+            logger.info(f"[强化题生成-流式] 第一题已生成, session_id={session_id[:8]}..., 剩余{remaining_count}题在后台生成")
 
             return EnhancedQuizGenerateResponse(
                 success=True,
                 session_id=session_id,
-                questions=questions,
+                questions=[first_question],  # 只返回第一题
                 weak_points_addressed=request.weak_points,
-                message=f"成功生成 {len(questions)} 道强化题"
+                message=f"已生成第1题，剩余{remaining_count}题正在生成中..."
             )
 
+        except ValueError as e:
+            logger.error(f"[强化题生成-流式] 生成失败: {e}")
+            return EnhancedQuizGenerateResponse(
+                success=False,
+                message=str(e)
+            )
         except Exception as e:
-            logger.error(f"[强化题生成] 异常: {e}")
+            logger.error(f"[强化题生成-流式] 异常: {e}")
             return EnhancedQuizGenerateResponse(
                 success=False,
                 message=f"生成强化题失败: {str(e)}"
             )
+
+    async def get_session_exercises(
+        self,
+        db: AsyncSession,
+        session_id: str,
+    ) -> list[EnhancedQuizQuestion]:
+        """
+        获取会话已生成的所有题目
+
+        用于前端轮询获取最新生成的题目
+        """
+        from app.services.exercise_generator import ExerciseGeneratorService
+
+        generator = ExerciseGeneratorService(db)
+        exercises = await generator.get_all_exercises(session_id)
+
+        questions = []
+        for ex in exercises:
+            questions.append(EnhancedQuizQuestion(
+                id=str(ex.get("id", "")),
+                type=ex.get("type", "choice"),
+                text=ex.get("text", ""),
+                options=ex.get("options", []),
+                correct_answer=ex.get("correct_answer", ""),
+                explanation=ex.get("explanation", ""),
+                knowledge_points=ex.get("knowledge_points", []),
+                difficulty=ex.get("difficulty", 2),
+            ))
+
+        return questions
 
     async def submit_enhanced_quiz(
         self,

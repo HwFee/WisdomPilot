@@ -839,8 +839,8 @@ class HybridRecommendationRequest:
 
 class EmbeddingConfigRequest:
     """Request model for updating embedding configuration"""
-    provider: str = "openai"
-    model: str = "text-embedding-3-small"
+    provider: str = "siliconflow"
+    model: str = "BAAI/bge-large-zh-v1.5"
     api_key: Optional[str] = None
     base_url: Optional[str] = None
 

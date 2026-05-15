@@ -21,13 +21,13 @@ class AIProvider:
 
 
 class OpenAIProvider(AIProvider):
-    """OpenAI API 实现 - 独立模块"""
+    """DeepSeek 兼容 API 实现 - 独立模块"""
 
     _client: Optional[httpx.AsyncClient] = None
 
     def __init__(self, config: AIProviderConfig):
         self.config = config
-        self.base_url = config.base_url or "https://api.openai.com/v1"
+        self.base_url = config.base_url or "https://api.deepseek.com"
 
     def _get_client(self) -> httpx.AsyncClient:
         """获取共享的 AsyncClient（连接池复用）"""
@@ -442,7 +442,7 @@ class AIService:
     def configure(self, config: AIProviderConfig):
         """配置 AI 提供商"""
         self._config = config
-        if config.provider in ("openai", "siliconflow"):
+        if config.provider in ("openai", "siliconflow", "deepseek"):
             # siliconflow uses OpenAI-compatible API
             self._provider = OpenAIProvider(config)
         elif config.provider == "minimax":

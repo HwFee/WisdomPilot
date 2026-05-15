@@ -155,6 +155,20 @@ if settings.ENABLE_TEST_SANDBOX:
     app.include_router(test_sandbox_router)
 app.include_router(solutions_router)
 
+# WebSocket endpoints
+@app.websocket("/ws/exercises")
+async def exercise_websocket(websocket):
+    """WebSocket endpoint for exercise generation streaming"""
+    from app.websockets.exercise import exercise_websocket_endpoint
+    from starlette.datastructures import QueryParams
+
+    # Parse token from query params
+    query_string = websocket.scope.get("query_string", b"").decode("utf-8")
+    params = QueryParams(query_string)
+    token = params.get("token", "")
+
+    await exercise_websocket_endpoint(websocket, token)
+
 
 @app.get("/")
 async def root():
