@@ -206,20 +206,33 @@ class ExerciseGeneratorService:
                 ]
                 gather_start = datetime.now(timezone.utc)
                 logger.info(f"[{session_id[:8]}] asyncio.gather() 开始, 共{total_count}个任务")
-                await asyncio.gather(*tasks)
+                results = await asyncio.gather(*tasks, return_exceptions=True)
                 gather_end = datetime.now(timezone.utc)
                 logger.info(f"[{session_id[:8]}] asyncio.gather() 完成, 总耗时={(gather_end - gather_start).total_seconds():.3f}s")
 
-                # 标记完成
-                async with _db_write_lock:
-                    await service._complete_session(session_id)
-                    await db.commit()
+                # 统计失败任务
+                failed_count = sum(1 for r in results if isinstance(r, Exception))
+                if failed_count > 0:
+                    logger.warning(f"[{session_id[:8]}] {failed_count}/{total_count} 道题生成失败")
 
-                logger.info(f"会话 {session_id[:8]}... 题目生成完成")
+                # 检查是否至少生成了一道题
+                db_session = await service.get_session(session_id)
+                if db_session and db_session.generated_count > 0:
+                    async with _db_write_lock:
+                        await service._complete_session(session_id)
+                        await db.commit()
+                    logger.info(f"会话 {session_id[:8]}... 题目生成完成 ({db_session.generated_count}/{total_count})")
+                else:
+                    async with _db_write_lock:
+                        await service._fail_session(session_id, "所有题目生成失败")
+                        await db.commit()
+                    logger.error(f"会话 {session_id[:8]}... 所有题目生成失败")
 
             except Exception as e:
                 logger.error(f"后台生成任务失败: {e}")
-                await service._fail_session(session_id, str(e))
+                async with _db_write_lock:
+                    await service._fail_session(session_id, str(e))
+                    await db.commit()
 
     async def _generate_single_exercise(
         self,
@@ -323,7 +336,7 @@ class ExerciseGeneratorService:
             return None
 
     async def _append_exercise(self, session_id: str, exercise: dict) -> None:
-        """追加题目到会话"""
+        """追加题目到会话（注意：调用方负责 commit）"""
         result = await self.db.execute(
             select(ExerciseGenerationSession).where(
                 ExerciseGenerationSession.id == session_id
@@ -332,10 +345,11 @@ class ExerciseGeneratorService:
         session = result.scalar_one_or_none()
         if session:
             session.add_exercise(exercise)
-            await self.db.commit()
+        else:
+            logger.error(f"_append_exercise: session {session_id[:8]}... not found")
 
     async def _complete_session(self, session_id: str) -> None:
-        """标记会话完成"""
+        """标记会话完成（注意：调用方负责 commit）"""
         result = await self.db.execute(
             select(ExerciseGenerationSession).where(
                 ExerciseGenerationSession.id == session_id
@@ -344,10 +358,11 @@ class ExerciseGeneratorService:
         session = result.scalar_one_or_none()
         if session:
             session.complete()
-            await self.db.commit()
+        else:
+            logger.error(f"_complete_session: session {session_id[:8]}... not found")
 
     async def _fail_session(self, session_id: str, error: str) -> None:
-        """标记会话失败"""
+        """标记会话失败（注意：调用方负责 commit）"""
         result = await self.db.execute(
             select(ExerciseGenerationSession).where(
                 ExerciseGenerationSession.id == session_id
@@ -356,7 +371,8 @@ class ExerciseGeneratorService:
         session = result.scalar_one_or_none()
         if session:
             session.fail(error)
-            await self.db.commit()
+        else:
+            logger.error(f"_fail_session: session {session_id[:8]}... not found")
 
     async def get_session(self, session_id: str) -> Optional[ExerciseGenerationSession]:
         """获取会话"""

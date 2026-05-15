@@ -31,6 +31,8 @@ class ExerciseWebSocketManager:
         self.user_connections: Dict[str, Set[WebSocket]] = {}
         # session_id -> user_id
         self.session_users: Dict[str, str] = {}
+        # websocket -> set of session_ids (用于断开时清理 session_users)
+        self.connection_sessions: Dict[WebSocket, Set[str]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: str) -> bool:
         """建立WebSocket连接，返回是否成功"""
@@ -38,6 +40,7 @@ class ExerciseWebSocketManager:
             if user_id not in self.user_connections:
                 self.user_connections[user_id] = set()
             self.user_connections[user_id].add(websocket)
+            self.connection_sessions[websocket] = set()
             logger.info(f"WebSocket连接建立: user={user_id[:8]}..., 当前连接数={len(self.user_connections[user_id])}")
             return True
         except Exception as e:
@@ -45,16 +48,25 @@ class ExerciseWebSocketManager:
             return False
 
     def disconnect(self, websocket: WebSocket, user_id: str) -> None:
-        """断开WebSocket连接"""
+        """断开WebSocket连接，清理相关session映射"""
+        # 清理该连接注册的所有session
+        sessions = self.connection_sessions.pop(websocket, set())
+        for session_id in sessions:
+            self.session_users.pop(session_id, None)
+
         if user_id in self.user_connections:
             self.user_connections[user_id].discard(websocket)
             if not self.user_connections[user_id]:
                 del self.user_connections[user_id]
-            logger.info(f"WebSocket连接断开: user={user_id[:8]}...")
+            logger.info(f"WebSocket连接断开: user={user_id[:8]}..., 清理sessions={len(sessions)}")
 
-    def register_session(self, session_id: str, user_id: str) -> None:
+    def register_session(self, session_id: str, user_id: str, websocket: WebSocket | None = None) -> None:
         """注册会话，建立session到user的映射"""
         self.session_users[session_id] = user_id
+        if websocket:
+            if websocket not in self.connection_sessions:
+                self.connection_sessions[websocket] = set()
+            self.connection_sessions[websocket].add(session_id)
 
     def unregister_session(self, session_id: str) -> None:
         """注销会话"""
@@ -94,13 +106,14 @@ class ExerciseWebSocketManager:
             self.disconnect(dead, user_id)
 
     async def send_completion(self, session_id: str, total_count: int) -> None:
-        """推送生成完成消息"""
+        """推送生成完成消息，完成后注销session"""
         user_id = self.session_users.get(session_id)
         if not user_id:
             return
 
         connections = self.user_connections.get(user_id, set())
         if not connections:
+            self.unregister_session(session_id)
             return
 
         message = {
@@ -121,14 +134,18 @@ class ExerciseWebSocketManager:
         for dead in dead_connections:
             self.disconnect(dead, user_id)
 
+        # 生成完成，注销session
+        self.unregister_session(session_id)
+
     async def send_error(self, session_id: str, error: str) -> None:
-        """推送生成错误"""
+        """推送生成错误，完成后注销session"""
         user_id = self.session_users.get(session_id)
         if not user_id:
             return
 
         connections = self.user_connections.get(user_id, set())
         if not connections:
+            self.unregister_session(session_id)
             return
 
         message = {
@@ -149,6 +166,9 @@ class ExerciseWebSocketManager:
         for dead in dead_connections:
             self.disconnect(dead, user_id)
 
+        # 生成失败，注销session
+        self.unregister_session(session_id)
+
 
 # 全局管理器实例
 websocket_manager = ExerciseWebSocketManager()
@@ -165,7 +185,13 @@ async def exercise_websocket_endpoint(websocket: WebSocket, token: str):
     3. 自动处理断开
     """
     # 验证token
-    payload = decode_token(token)
+    try:
+        payload = decode_token(token)
+    except Exception as e:
+        logger.warning(f"Token decode failed: {e}")
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
     if not payload:
         await websocket.close(code=4001, reason="Invalid token")
         return
@@ -203,10 +229,10 @@ async def exercise_websocket_endpoint(websocket: WebSocket, token: str):
                     if msg.get("action") == "subscribe":
                         session_id = msg.get("session_id")
                         if session_id:
-                            websocket_manager.register_session(session_id, user_id)
+                            websocket_manager.register_session(session_id, user_id, websocket)
                             await websocket.send_json({"type": "subscribed", "session_id": session_id})
                 except json.JSONDecodeError:
-                    pass
+                    logger.warning(f"收到无效JSON消息: {data[:100]}")
 
             except asyncio.TimeoutError:
                 # 发送心跳检测

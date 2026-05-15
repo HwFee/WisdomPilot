@@ -89,12 +89,13 @@ async def init_db():
         else:
             # No alembic tracking - stamp by directly writing alembic_version row
             # This avoids calling command.stamp() which loads env.py -> asyncio.run() conflict
+            # Use INSERT OR IGNORE to handle concurrent startup race condition
             def _stamp_head(sync_conn):
                 sync_conn.execute(
                     text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL, CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num))")
                 )
                 sync_conn.execute(
-                    text("INSERT INTO alembic_version (version_num) VALUES (:ver)"),
+                    text("INSERT OR IGNORE INTO alembic_version (version_num) VALUES (:ver)"),
                     {"ver": "001_initial"},
                 )
 
