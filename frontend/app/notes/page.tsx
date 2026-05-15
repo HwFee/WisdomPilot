@@ -29,7 +29,7 @@ export default function NotesPage() {
   const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
   const [isFullPageEditor, setIsFullPageEditor] = useState(false)
   const hasFetched = useRef(false)
-  const pollingRef = useRef<NodeJS.Timeout | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchData = useCallback(async (token: string) => {
     try {

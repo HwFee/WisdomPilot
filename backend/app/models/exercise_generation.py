@@ -57,11 +57,15 @@ class ExerciseGenerationSession(Base):
         return datetime.now(timezone.utc) > self.expires_at
 
     def add_exercise(self, exercise: dict) -> None:
-        """添加一道生成的题目
+        """添加一道生成的题目（按 index 有序插入）
 
         注意：JSON 列不会自动检测列表内部变更，必须重新赋值整个列表。
+        按 exercise['index'] 排序，确保顺序与生成请求一致。
         """
-        self.generated_exercises = self.generated_exercises + [exercise]
+        new_list = self.generated_exercises + [exercise]
+        # 按 index 排序（若 exercise 无 index，则放在末尾）
+        new_list.sort(key=lambda e: e.get("index", 9999))
+        self.generated_exercises = new_list
         self.generated_count = len(self.generated_exercises)
         self.updated_at = datetime.now(timezone.utc)
 

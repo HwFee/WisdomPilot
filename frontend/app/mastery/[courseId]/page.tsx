@@ -137,7 +137,7 @@ export default function MasteryPathPage() {
   // Stream generation state
   const [generationStatus, setGenerationStatus] = useState<"idle" | "generating" | "completed" | "failed">("idle");
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Final result state
   const [finalResult, setFinalResult] =
@@ -412,9 +412,6 @@ export default function MasteryPathPage() {
           xp_earned: 0,
         });
         setStep("analysis");
-        console.log(
-          `[精进之路] 所有基础题已完成，直接进入分析界面: 正确=${correctCount}/${data.questions.length}`,
-        );
         return;
       }
 
@@ -430,13 +427,6 @@ export default function MasteryPathPage() {
         );
         if (foundIndex >= 0) {
           startIndex = foundIndex;
-          console.log(
-            `[精进之路] 从错题本跳转: 找到题目 ID=${targetQuestionId}, 索引=${foundIndex + 1}`,
-          );
-        } else {
-          console.warn(
-            `[精进之路] 从错题本跳转: 未找到题目 ID=${targetQuestionId}，从头开始`,
-          );
         }
       } else {
         // 正常进入，检查是否有进度可恢复
@@ -452,9 +442,6 @@ export default function MasteryPathPage() {
         }
         if (firstUncompletedIndex >= 0) {
           startIndex = firstUncompletedIndex;
-          console.log(
-            `[精进之路] 恢复进度: 从第 ${firstUncompletedIndex + 1} 题继续`,
-          );
         }
       }
 
@@ -470,9 +457,6 @@ export default function MasteryPathPage() {
         setIsCorrect(false);
       }
 
-      console.log(
-        `[精进之路] 开始答题: 起始题目=${startIndex + 1}, 总题数=${data.questions.length}, 已恢复答案=${restoredAnswers.size}个, 已完成=${completedMap.size}个`,
-      );
     } catch (error) {
       console.error("Failed to fetch base questions:", error);
       alert("加载测试题失败，请稍后重试");
@@ -499,7 +483,7 @@ export default function MasteryPathPage() {
         course_name: overview?.chapters[0]?.title || ''
       }));
     } catch (e) {
-      console.warn('Failed to save chapter info to localStorage:', e);
+      // localStorage save failed, ignore
     }
 
     // Navigate to section selection page
@@ -589,9 +573,6 @@ export default function MasteryPathPage() {
           xp_earned: 0,
         });
         setStep("analysis");
-        console.log(
-          `[精进之路] 所有基础题已完成，直接进入分析界面: 正确=${correctCount}/${data.questions.length}`,
-        );
         return;
       }
 
@@ -941,7 +922,6 @@ export default function MasteryPathPage() {
             current: status.generated_count,
             total: status.total_count,
           });
-          console.log(`[精进之路] 检测到新题目: 总数=${newCount}`);
         }
 
         // Check if generation is complete
@@ -951,7 +931,6 @@ export default function MasteryPathPage() {
             pollingIntervalRef.current = null;
           }
           setGenerationStatus("completed");
-          console.log("[精进之路] 所有题目生成完成");
         }
 
         // Check if generation failed
@@ -1011,7 +990,7 @@ export default function MasteryPathPage() {
       const questionId = parseInt(currentQuestion.id, 10);
       if (isNaN(questionId)) {
         // 非数字ID（临时ID如"temp_1"），跳过进度保存和错题收集
-        console.log("[精进之路-强化题] 跳过进度保存：非数字question_id", currentQuestion.id);
+        // 跳过进度保存和错题收集
       } else {
         // 统一使用 mastery- 前缀，方便与收藏去重匹配
         const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${questionId}`;

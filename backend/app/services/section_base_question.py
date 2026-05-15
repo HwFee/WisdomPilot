@@ -297,38 +297,38 @@ class SectionBaseQuestionService:
                 difficulty=first_exercise.get("difficulty", 2),
             )
 
-            # 也保存第一题到 SectionBaseQuestion，让用户可以回顾
-            # 保存第一题到 SectionBaseQuestion，让用户可以回顾
+            # 保存第一题到 SectionBaseQuestion（让用户可以回顾）
+            # 使用独立 session，避免失败时污染主事务
+            from app.database import AsyncSessionLocal
             try:
-                max_order_result = await db.execute(
-                    select(func.max(SectionBaseQuestion.order_index)).where(
-                        SectionBaseQuestion.section_id == request.section_id,
-                        SectionBaseQuestion.is_active,
+                async with AsyncSessionLocal() as save_db:
+                    max_order_result = await save_db.execute(
+                        select(func.max(SectionBaseQuestion.order_index)).where(
+                            SectionBaseQuestion.section_id == request.section_id,
+                            SectionBaseQuestion.is_active,
+                        )
                     )
-                )
-                max_order = max_order_result.scalar() or 0
+                    max_order = max_order_result.scalar() or 0
 
-                db_question = SectionBaseQuestion(
-                    section_id=request.section_id,
-                    chapter_id=request.chapter_id,
-                    user_id=user_id,
-                    question_source='enhanced',
-                    order_index=max_order + 1,
-                    question_type=first_exercise.get("type", "choice"),
-                    question_text=first_exercise.get("text", ""),
-                    options=first_exercise.get("options", []),
-                    correct_answer=first_exercise.get("correct_answer", ""),
-                    explanation=first_exercise.get("explanation", ""),
-                    knowledge_points=first_exercise.get("knowledge_points", []),
-                    difficulty=first_exercise.get("difficulty", 2),
-                    is_active=True,
-                )
-                db.add(db_question)
-                await db.commit()
-                # 不更新前端ID，保持前后端使用同一套临时ID（避免后台任务竞态）
+                    db_question = SectionBaseQuestion(
+                        section_id=request.section_id,
+                        chapter_id=request.chapter_id,
+                        user_id=user_id,
+                        question_source='enhanced',
+                        order_index=max_order + 1,
+                        question_type=first_exercise.get("type", "choice"),
+                        question_text=first_exercise.get("text", ""),
+                        options=first_exercise.get("options", []),
+                        correct_answer=first_exercise.get("correct_answer", ""),
+                        explanation=first_exercise.get("explanation", ""),
+                        knowledge_points=first_exercise.get("knowledge_points", []),
+                        difficulty=first_exercise.get("difficulty", 2),
+                        is_active=True,
+                    )
+                    save_db.add(db_question)
+                    await save_db.commit()
             except Exception as e:
-                logger.warning(f"保存第一题到数据库失败: {e}")
-                # 不影响主流程，继续
+                logger.error(f"保存第一题到回顾表失败: {e}")
 
             logger.info(f"[强化题生成-流式] 第一题已生成, session_id={session_id[:8]}..., 剩余{remaining_count}题在后台生成")
 

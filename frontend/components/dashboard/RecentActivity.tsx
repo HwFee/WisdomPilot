@@ -61,7 +61,6 @@ export function RecentActivity({
   lang = "zh",
   compact = false,
 }: RecentActivityProps) {
-  console.log('[RecentActivity] Received activities:', activities?.length || 0, activities)
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en);
 
   const getLearningPathLabel = (activity: Activity) => {

@@ -77,7 +77,7 @@ export function useExerciseStream() {
   });
 
   const wsRef = useRef<WebSocket | null>(null);
-  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * 建立WebSocket连接

@@ -30,9 +30,9 @@ ExerciseGeneratedCallback = Callable[[int, dict, int, int], Awaitable[None]]
 """回调函数: (index, exercise, current_count, total_count)"""
 
 # 限制并发 API 调用数（避免触发服务商速率限制）
-# 3道题同时生成，所以信号量至少为3
 _api_semaphore = asyncio.Semaphore(3)
 # 保护数据库写入（避免并发修改 JSON 列导致数据丢失）
+# 全局锁，防止多任务同时写入同一 session 的 JSON 列
 _db_write_lock = asyncio.Lock()
 
 
@@ -126,7 +126,16 @@ class ExerciseGeneratorService:
             async with AsyncSessionLocal() as poll_db:
                 poll_service = ExerciseGeneratorService(poll_db)
                 db_session = await poll_service.get_session(session.id)
-                if db_session and len(db_session.generated_exercises) > 0:
+                if db_session and db_session.generated_exercises:
+                    # 按 index 查找第一题（index=0）
+                    first = next(
+                        (ex for ex in db_session.generated_exercises if ex.get("index") == 0),
+                        None
+                    )
+                    if first:
+                        first_exercise = first
+                        break
+                    # 兜底：如果还没有 index=0，但至少有一题，先返回（旧数据兼容）
                     first_exercise = db_session.generated_exercises[0]
                     break
 
@@ -180,13 +189,18 @@ class ExerciseGeneratorService:
 
                 # 2. 写入数据库（串行，避免并发修改 JSON 列）
                 lock_wait_start = datetime.now(timezone.utc)
-                async with _db_write_lock:
-                    lock_acquired = datetime.now(timezone.utc)
-                    logger.info(f"[T{index+1}] 获取DB锁, 等待={(lock_acquired - lock_wait_start).total_seconds():.3f}s")
-                    await service._append_exercise(session_id, exercise)
-                    await db.commit()
-                    db_done = datetime.now(timezone.utc)
-                    logger.info(f"[T{index+1}] DB写入完成, 耗时={(db_done - lock_acquired).total_seconds():.3f}s")
+                try:
+                    async with asyncio.timeout(15.0):
+                        async with _db_write_lock:
+                            lock_acquired = datetime.now(timezone.utc)
+                            logger.info(f"[T{index+1}] 获取DB锁, 等待={(lock_acquired - lock_wait_start).total_seconds():.3f}s")
+                            await service._append_exercise(session_id, exercise)
+                            await db.commit()
+                            db_done = datetime.now(timezone.utc)
+                            logger.info(f"[T{index+1}] DB写入完成, 耗时={(db_done - lock_acquired).total_seconds():.3f}s")
+                except asyncio.TimeoutError:
+                    logger.error(f"[T{index+1}] 获取DB锁超时(15s)，放弃写入")
+                    return
 
                 # 3. 回调通知
                 if progress_callback:

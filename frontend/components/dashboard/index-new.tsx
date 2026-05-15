@@ -163,16 +163,13 @@ export default function DashboardPage() {
       if (reviewResult) setReviewStats(reviewResult)
 
       // Fetch activities
-      console.log('[Dashboard] Fetching activities from:', `${API_BASE_URL}/api/users/me/activities?limit=10`)
       let activitiesResponse
       try {
         const r = await fetch(`${API_BASE_URL}/api/users/me/activities?limit=10`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
-        console.log('[Dashboard] Activities response status:', r.status)
         if (r.ok) {
           activitiesResponse = await r.json()
-          console.log('[Dashboard] Activities received:', activitiesResponse.activities?.length || 0)
         } else {
           console.error('[Dashboard] Activities fetch failed:', r.status)
           activitiesResponse = { activities: [] }
@@ -309,7 +306,6 @@ export default function DashboardPage() {
   // 监听仪表盘刷新事件
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('Dashboard refresh event received')
       const token = getStoredToken()
       if (token) {
         fetchData(token)
@@ -330,7 +326,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('Page became visible, refreshing data...')
         const token = getStoredToken()
         if (token) {
           fetchData(token)
@@ -384,9 +379,7 @@ export default function DashboardPage() {
     }
 
     try {
-      console.log('Attempting check-in...')
       const result = await checkin(token)
-      console.log('Check-in result:', result)
       setIsCheckedIn(true)
 
       // Update streak days on profile
