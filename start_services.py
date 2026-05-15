@@ -206,6 +206,36 @@ def ensure_frontend_dependencies(frontend_dir: Path, pnpm_cmd: str) -> None:
         raise RuntimeError("前端依赖安装失败。")
 
 
+def ensure_backend_env(backend_dir: Path) -> None:
+    env_file = backend_dir / ".env"
+    example_file = backend_dir / ".env.example"
+
+    if env_file.exists():
+        content = env_file.read_text(encoding="utf-8")
+        for line in content.splitlines():
+            if line.startswith("SECRET_KEY=") and len(line.split("=", 1)[1]) >= 32:
+                return
+        print("[检查] .env 中 SECRET_KEY 为空，正在重新生成...")
+
+    import secrets
+
+    secret_key = secrets.token_hex(32)
+
+    if example_file.exists():
+        print("[检查] 从 .env.example 创建 .env 并生成 SECRET_KEY...")
+        content = example_file.read_text(encoding="utf-8")
+        lines = []
+        for line in content.splitlines():
+            if line.startswith("SECRET_KEY="):
+                lines.append(f"SECRET_KEY={secret_key}")
+            else:
+                lines.append(line)
+        env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    else:
+        print("[检查] 创建 .env 文件并生成 SECRET_KEY...")
+        env_file.write_text(f"SECRET_KEY={secret_key}\n", encoding="utf-8")
+
+
 def start_backend(backend_dir: Path, log_dir: Path, reload_backend: bool) -> subprocess.Popen:
     stdout_file = open(log_dir / "backend.log", "w", encoding="utf-8")
     stderr_file = open(log_dir / "backend.err.log", "w", encoding="utf-8")
@@ -278,6 +308,8 @@ def main() -> int:
 
     stop_previous_run(state_file, current_pid=os.getpid())
     cleanup_ports([BACKEND_PORT, FRONTEND_PORT])
+
+    ensure_backend_env(backend_dir)
 
     pnpm_cmd = resolve_pnpm()
     ensure_frontend_dependencies(frontend_dir, pnpm_cmd)
