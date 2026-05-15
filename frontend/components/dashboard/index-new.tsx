@@ -24,6 +24,7 @@ import {
   getLearningStatistics,
   CourseProgress,
   TodayStatsResponse,
+  API_BASE_URL,
 } from '@/lib/api'
 import {
   Sparkles, Zap, Trophy, Clock, Target, Star,
@@ -162,9 +163,24 @@ export default function DashboardPage() {
       if (reviewResult) setReviewStats(reviewResult)
 
       // Fetch activities
-      const activitiesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/activities?limit=10`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      }).then(r => r.ok ? r.json() : { activities: [] }).catch(() => ({ activities: [] }))
+      console.log('[Dashboard] Fetching activities from:', `${API_BASE_URL}/api/users/me/activities?limit=10`)
+      let activitiesResponse
+      try {
+        const r = await fetch(`${API_BASE_URL}/api/users/me/activities?limit=10`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        console.log('[Dashboard] Activities response status:', r.status)
+        if (r.ok) {
+          activitiesResponse = await r.json()
+          console.log('[Dashboard] Activities received:', activitiesResponse.activities?.length || 0)
+        } else {
+          console.error('[Dashboard] Activities fetch failed:', r.status)
+          activitiesResponse = { activities: [] }
+        }
+      } catch (err) {
+        console.error('[Dashboard] Activities fetch error:', err)
+        activitiesResponse = { activities: [] }
+      }
       if (!isMounted.current) return
       setActivities(activitiesResponse.activities || [])
 

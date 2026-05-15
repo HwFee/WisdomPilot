@@ -66,14 +66,17 @@ async def get_db() -> AsyncSession:
 async def init_db():
     """Initialize database - create tables or apply migrations
 
-    Strategy (avoids asyncio.run() conflict with Alembic's env.py):
-    - If alembic_version table exists: log that migrations are managed by CLI
-    - If not: use create_all (idempotent), then write alembic_version row directly
-    - Actual schema migrations should be run via: alembic upgrade head
+    Strategy:
+    - Always run create_all (idempotent: only creates missing tables)
+    - This ensures new model tables are created even when alembic_version exists
+    - For actual schema migrations, run: alembic upgrade head
     """
     from sqlalchemy import text, inspect
 
     async with engine.begin() as conn:
+        # Always create missing tables (idempotent - won't drop existing tables)
+        await conn.run_sync(Base.metadata.create_all)
+
         # Check if alembic_version table exists
         def _check_alembic(sync_conn):
             inspector = inspect(sync_conn)
@@ -82,12 +85,9 @@ async def init_db():
         has_alembic = await conn.run_sync(_check_alembic)
 
         if has_alembic:
-            logger.info("Database already tracked by Alembic. Use 'alembic upgrade head' to apply pending migrations.")
+            logger.info("Database tables ensured (new tables created if needed). Alembic tracked.")
         else:
-            # No alembic tracking - create missing tables (idempotent for existing DB)
-            await conn.run_sync(Base.metadata.create_all)
-
-            # Stamp by directly writing alembic_version row
+            # No alembic tracking - stamp by directly writing alembic_version row
             # This avoids calling command.stamp() which loads env.py -> asyncio.run() conflict
             def _stamp_head(sync_conn):
                 sync_conn.execute(

@@ -85,9 +85,9 @@ async def get_my_activities(
         "activities": [
             {
                 "id": a.id,
-                "type": a.activity_type,
+                "activity_type": a.activity_type,
                 "description": a.description,
-                "details": {
+                "extra_data": {
                     **(a.extra_data or {}),
                     "learning_path": (a.extra_data or {}).get("learning_path"),
                     "learning_path_label": (a.extra_data or {}).get(
@@ -95,7 +95,7 @@ async def get_my_activities(
                     ),
                 },
                 # 添加 UTC 时区标识，确保前端正确解析
-                "timestamp": a.created_at.isoformat() + "Z" if a.created_at else None,
+                "created_at": a.created_at.isoformat() + "Z" if a.created_at else None,
             }
             for a in activities
         ],

@@ -14,7 +14,7 @@ from typing import Dict, Set
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
-from app.services.auth import verify_token
+from app.utils.security import decode_token
 
 logger = logging.getLogger(__name__)
 
@@ -165,14 +165,19 @@ async def exercise_websocket_endpoint(websocket: WebSocket, token: str):
     3. 自动处理断开
     """
     # 验证token
-    user = verify_token(token)
-    if not user:
+    payload = decode_token(token)
+    if not payload:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+
+    user_id = payload.get("sub")
+    if not user_id:
         await websocket.close(code=4001, reason="Invalid token")
         return
 
     await websocket.accept()
 
-    if not await websocket_manager.connect(websocket, user.id):
+    if not await websocket_manager.connect(websocket, user_id):
         await websocket.close(code=4002, reason="Connection failed")
         return
 
@@ -198,7 +203,7 @@ async def exercise_websocket_endpoint(websocket: WebSocket, token: str):
                     if msg.get("action") == "subscribe":
                         session_id = msg.get("session_id")
                         if session_id:
-                            websocket_manager.register_session(session_id, user.id)
+                            websocket_manager.register_session(session_id, user_id)
                             await websocket.send_json({"type": "subscribed", "session_id": session_id})
                 except json.JSONDecodeError:
                     pass
@@ -215,8 +220,8 @@ async def exercise_websocket_endpoint(websocket: WebSocket, token: str):
                     break
 
     except WebSocketDisconnect:
-        logger.info(f"WebSocket断开: user={user.id[:8]}...")
+        logger.info(f"WebSocket断开: user={user_id[:8]}...")
     except Exception as e:
         logger.error(f"WebSocket异常: {e}")
     finally:
-        websocket_manager.disconnect(websocket, user.id)
+        websocket_manager.disconnect(websocket, user_id)

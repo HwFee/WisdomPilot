@@ -10,7 +10,7 @@ interface Activity {
   description: string;
   created_at?: string;
   timestamp?: string;
-  details?: {
+  extra_data?: {
     stage_id?: number;
     stage_name?: string;
     exercise_id?: number;
@@ -21,6 +21,24 @@ interface Activity {
     learning_path?: "mastery" | "challenge" | string;
     learning_path_label?: string;
     // 精进之路/挑战之路共用字段
+    section_id?: number;
+    section_title?: string;
+    chapter_title?: string;
+    order_index?: number;
+    difficulty?: number;
+    exercise_index?: number;
+  };
+  // 兼容旧字段名
+  details?: {
+    stage_id?: number;
+    stage_name?: string;
+    exercise_id?: number;
+    exercise_title?: string;
+    exercises_completed?: number;
+    exercises_correct?: number;
+    is_correct?: boolean;
+    learning_path?: "mastery" | "challenge" | string;
+    learning_path_label?: string;
     section_id?: number;
     section_title?: string;
     chapter_title?: string;
@@ -43,14 +61,15 @@ export function RecentActivity({
   lang = "zh",
   compact = false,
 }: RecentActivityProps) {
+  console.log('[RecentActivity] Received activities:', activities?.length || 0, activities)
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en);
 
   const getLearningPathLabel = (activity: Activity) => {
-    const details = activity.details;
-    const explicitLabel = details?.learning_path_label;
+    const data = activity.extra_data || activity.details;
+    const explicitLabel = data?.learning_path_label;
     if (explicitLabel) return explicitLabel;
 
-    const learningPath = details?.learning_path;
+    const learningPath = data?.learning_path;
     if (learningPath === "mastery") {
       return t("精进之路", "Mastery");
     }
@@ -62,7 +81,7 @@ export function RecentActivity({
   };
 
   const getLearningPathBadgeClass = (activity: Activity) => {
-    const learningPath = activity.details?.learning_path;
+    const learningPath = (activity.extra_data || activity.details)?.learning_path;
     if (learningPath === "mastery") {
       return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
     }
@@ -78,10 +97,10 @@ export function RecentActivity({
     if (!type) return Pin;
 
     if (type === "exercise_complete") {
-      const details = activity.details;
-      if (details?.is_correct === true) {
+      const data = activity.extra_data || activity.details;
+      if (data?.is_correct === true) {
         return CheckCircle;
-      } else if (details?.is_correct === false) {
+      } else if (data?.is_correct === false) {
         return XCircle;
       }
       return FileText;
@@ -105,19 +124,19 @@ export function RecentActivity({
   // 获取活动显示文本 - 对于练习完成，显示丰富信息
   const getActivityText = (activity: Activity) => {
     const type = activity.type || activity.activity_type;
-    const details = activity.details;
+    const data = activity.extra_data || activity.details;
 
-    if (type === "exercise_complete" && details) {
-      const learningPath = details.learning_path;
+    if (type === "exercise_complete" && data) {
+      const learningPath = data.learning_path;
 
       // 精进之路：练习题X + 小节信息 + 正确/错误
       if (learningPath === "mastery") {
-        const exerciseTitle = details.exercise_title || "练习题";
+        const exerciseTitle = data.exercise_title || "练习题";
         // 组合章节和小节信息
-        const sectionInfo = details.chapter_title || details.section_title
-          ? `(${[details.chapter_title, details.section_title].filter(Boolean).join('-')})`
+        const sectionInfo = data.chapter_title || data.section_title
+          ? `(${[data.chapter_title, data.section_title].filter(Boolean).join('-')})`
           : "";
-        const isCorrect = details.is_correct;
+        const isCorrect = data.is_correct;
 
         return (
           <>
@@ -130,10 +149,10 @@ export function RecentActivity({
 
       // 挑战之路：难度X + 题目名称 + 正确/错误
       if (learningPath === "challenge") {
-        const difficulty = details.difficulty;
-        const exerciseTitle = details.exercise_title;
-        const sectionInfo = details.section_title ? `(${details.section_title})` : "";
-        const isCorrect = details.is_correct;
+        const difficulty = data.difficulty;
+        const exerciseTitle = data.exercise_title;
+        const sectionInfo = data.section_title ? `(${data.section_title})` : "";
+        const isCorrect = data.is_correct;
 
         return (
           <>
@@ -149,12 +168,12 @@ export function RecentActivity({
       }
 
       // 默认显示
-      const exerciseName = details.exercise_title || details.stage_name || "练习";
+      const exerciseName = data.exercise_title || data.stage_name || "练习";
       return (
         <>
           <span className="text-foreground">{exerciseName}</span>
-          {details.is_correct === true && <span className="text-emerald-500 ml-1">✓</span>}
-          {details.is_correct === false && <span className="text-red-500 ml-1">✗</span>}
+          {data.is_correct === true && <span className="text-emerald-500 ml-1">✓</span>}
+          {data.is_correct === false && <span className="text-red-500 ml-1">✗</span>}
         </>
       );
     }

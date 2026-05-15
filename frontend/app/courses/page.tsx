@@ -4,14 +4,25 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Users, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Users, ArrowRight, Loader2 } from 'lucide-react'
 import { getStoredToken } from '@/lib/api'
+import { getCourses } from '@/lib/api/courses'
 import { Card } from '@/components/ui/card'
 import { DifficultyBadge } from '@/components/ui/badge'
 import { staggerContainer, staggerItem } from '@/lib/animations'
 import { getCourseConfig } from '@/lib/icons/course-icons'
 
-const COURSES = [
+interface Course {
+  id: number
+  code: string
+  name: string
+  difficulty: number
+  description: string
+  learners: string
+}
+
+// Fallback data in case API fails
+const FALLBACK_COURSES: Course[] = [
   {
     id: 1,
     code: 'c',
@@ -42,6 +53,9 @@ export default function CoursesPage() {
   const router = useRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [courses, setCourses] = useState<Course[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -51,9 +65,47 @@ export default function CoursesPage() {
       return
     }
     setIsLoggedIn(true)
+
+    // Fetch real courses from API
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true)
+        const response = await getCourses(token)
+        if (response.courses && response.courses.length > 0) {
+          // Transform API data to component format
+          const transformedCourses: Course[] = response.courses.map((course: {
+            id: number
+            code: string
+            name: string
+            description?: string
+            difficulty_level?: number
+          }) => ({
+            id: course.id,
+            code: course.code.toLowerCase(),
+            name: course.name,
+            difficulty: course.difficulty_level || 1,
+            description: course.description || `${course.name}课程`,
+            learners: '1,000+',
+          }))
+          setCourses(transformedCourses)
+        } else {
+          // Use fallback if no courses returned
+          setCourses(FALLBACK_COURSES)
+        }
+      } catch (err) {
+        console.error('Failed to fetch courses:', err)
+        setError('获取课程列表失败')
+        // Use fallback data on error
+        setCourses(FALLBACK_COURSES)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCourses()
   }, [router])
 
-  if (!mounted) {
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -110,7 +162,7 @@ export default function CoursesPage() {
             animate="animate"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto"
           >
-            {COURSES.map((course, index) => {
+            {courses.map((course, index) => {
               const courseConfig = getCourseConfig(course.code)
 
               return (

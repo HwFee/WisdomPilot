@@ -16,6 +16,7 @@ from app.models import CoreTransaction  # noqa: F401 - registers core transactio
 from app.models import TierTransaction  # noqa: F401 - registers tier transaction model
 from app.models import MasteryXpTransaction  # noqa: F401 - registers mastery xp transaction model
 from app.models import Solution  # noqa: F401 - registers solution model
+from app.models import ExerciseGenerationSession  # noqa: F401 - registers exercise generation session model
 from app.middleware import RateLimitMiddleware
 from app.config import get_settings
 

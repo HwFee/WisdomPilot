@@ -57,8 +57,11 @@ class ExerciseGenerationSession(Base):
         return datetime.now(timezone.utc) > self.expires_at
 
     def add_exercise(self, exercise: dict) -> None:
-        """添加一道生成的题目"""
-        self.generated_exercises.append(exercise)
+        """添加一道生成的题目
+
+        注意：JSON 列不会自动检测列表内部变更，必须重新赋值整个列表。
+        """
+        self.generated_exercises = self.generated_exercises + [exercise]
         self.generated_count = len(self.generated_exercises)
         self.updated_at = datetime.now(timezone.utc)
 

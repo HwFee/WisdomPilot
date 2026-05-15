@@ -29,6 +29,12 @@ logger = logging.getLogger(__name__)
 ExerciseGeneratedCallback = Callable[[int, dict, int, int], Awaitable[None]]
 """回调函数: (index, exercise, current_count, total_count)"""
 
+# 限制并发 API 调用数（避免触发服务商速率限制）
+# 3道题同时生成，所以信号量至少为3
+_api_semaphore = asyncio.Semaphore(3)
+# 保护数据库写入（避免并发修改 JSON 列导致数据丢失）
+_db_write_lock = asyncio.Lock()
+
 
 class ExerciseGeneratorService:
     """流式题目生成服务
@@ -56,7 +62,10 @@ class ExerciseGeneratorService:
         chapter_title: str,
         progress_callback: Optional[ExerciseGeneratedCallback] = None,
     ) -> tuple[str, dict, int]:
-        """生成第一题并返回，剩余题目异步生成
+        """点击即同时生成所有题目，返回第一题
+
+        核心改动：不再阻塞生成第一题。创建session后立即在后台
+        并发启动全部题目的生成，主请求只轮询等待第一题落库。
 
         Args:
             user_id: 用户ID
@@ -94,45 +103,39 @@ class ExerciseGeneratorService:
         await self.db.commit()
         await self.db.refresh(session)
 
-        # 生成第一题（阻塞）
-        first_exercise = await self._generate_single_exercise(
-            index=0,
-            weak_points=weak_points,
-            strong_points=strong_points,
-            section_title=section_title,
-            chapter_title=chapter_title,
+        # 立即在后台并发启动全部题目的生成（包括第1题）
+        asyncio.create_task(
+            self._generate_all_async(
+                session_id=session.id,
+                user_id=user_id,
+                section_title=section_title,
+                chapter_title=chapter_title,
+                weak_points=weak_points,
+                strong_points=strong_points,
+                total_count=question_count,
+                progress_callback=progress_callback,
+            )
         )
 
+        # 轮询等待第一题落库（最多等60秒）
+        # 注意：使用独立 session 查询，避免事务隔离导致看不到后台写入
+        first_exercise = None
+        from app.database import AsyncSessionLocal
+        for _ in range(120):  # 120 * 0.5s = 60s
+            await asyncio.sleep(0.5)
+            async with AsyncSessionLocal() as poll_db:
+                poll_service = ExerciseGeneratorService(poll_db)
+                db_session = await poll_service.get_session(session.id)
+                if db_session and len(db_session.generated_exercises) > 0:
+                    first_exercise = db_session.generated_exercises[0]
+                    break
+
         if first_exercise is None:
-            session.fail("第一题生成失败")
-            await self.db.commit()
             raise ValueError("生成题目失败，请稍后重试")
 
-        # 保存第一题
-        session.add_exercise(first_exercise)
-        await self.db.commit()
+        return session.id, first_exercise, question_count - 1
 
-        # 启动后台任务生成剩余题目
-        remaining_count = question_count - 1
-        if remaining_count > 0:
-            # 创建独立的数据库会话来避免阻塞主请求
-            asyncio.create_task(
-                self._generate_remaining_async(
-                    session_id=session.id,
-                    user_id=user_id,
-                    section_title=section_title,
-                    chapter_title=chapter_title,
-                    weak_points=weak_points,
-                    strong_points=strong_points,
-                    start_index=1,
-                    total_count=question_count,
-                    progress_callback=progress_callback,
-                )
-            )
-
-        return session.id, first_exercise, remaining_count
-
-    async def _generate_remaining_async(
+    async def _generate_all_async(
         self,
         session_id: str,
         user_id: str,
@@ -140,46 +143,78 @@ class ExerciseGeneratorService:
         chapter_title: str,
         weak_points: list[str],
         strong_points: list[str],
-        start_index: int,
         total_count: int,
         progress_callback: Optional[ExerciseGeneratedCallback],
     ) -> None:
-        """后台异步生成剩余题目
+        """后台异步生成全部题目（并发生成，串行写入）
 
-        使用独立的数据库会话来避免与主请求冲突。
+        所有题目从点击那一刻同时开始生成（受信号量限制并发数），
+        生成完成后串行写入数据库（受锁保护避免竞争）。
         """
         from app.database import AsyncSessionLocal
 
         async with AsyncSessionLocal() as db:
             service = ExerciseGeneratorService(db)
 
-            try:
-                for i in range(start_index, total_count):
+            async def generate_one(index: int) -> None:
+                task_start = datetime.now(timezone.utc)
+                logger.info(f"[T{index+1}] 任务启动")
+
+                # 1. 生成题目（并发，但受信号量限制避免 API 速率限制）
+                async with _api_semaphore:
+                    sem_acquired = datetime.now(timezone.utc)
+                    logger.info(f"[T{index+1}] 获取信号量, 等待={(sem_acquired - task_start).total_seconds():.3f}s")
                     exercise = await service._generate_single_exercise(
-                        index=i,
+                        index=index,
                         weak_points=weak_points,
                         strong_points=strong_points,
                         section_title=section_title,
                         chapter_title=chapter_title,
                     )
+                    api_done = datetime.now(timezone.utc)
+                    logger.info(f"[T{index+1}] API调用完成, 耗时={(api_done - sem_acquired).total_seconds():.3f}s")
 
-                    if exercise is None:
-                        logger.error(f"第{i+1}题生成失败")
-                        # 继续生成下一题，不中断
-                        continue
+                if exercise is None:
+                    logger.error(f"第{index + 1}题生成失败")
+                    return
 
-                    # 保存到数据库
+                # 2. 写入数据库（串行，避免并发修改 JSON 列）
+                lock_wait_start = datetime.now(timezone.utc)
+                async with _db_write_lock:
+                    lock_acquired = datetime.now(timezone.utc)
+                    logger.info(f"[T{index+1}] 获取DB锁, 等待={(lock_acquired - lock_wait_start).total_seconds():.3f}s")
                     await service._append_exercise(session_id, exercise)
+                    await db.commit()
+                    db_done = datetime.now(timezone.utc)
+                    logger.info(f"[T{index+1}] DB写入完成, 耗时={(db_done - lock_acquired).total_seconds():.3f}s")
 
-                    # 调用进度回调
-                    if progress_callback:
-                        try:
-                            await progress_callback(i, exercise, i + 1, total_count)
-                        except Exception as e:
-                            logger.error(f"进度回调失败: {e}")
+                # 3. 回调通知
+                if progress_callback:
+                    try:
+                        await progress_callback(index, exercise, index + 1, total_count)
+                    except Exception as e:
+                        logger.error(f"进度回调失败: {e}")
+
+                task_done = datetime.now(timezone.utc)
+                logger.info(f"[T{index+1}] 任务总耗时={(task_done - task_start).total_seconds():.3f}s")
+
+            try:
+                # 并发启动所有题目的生成（从0开始，包括第一题）
+                tasks = [
+                    generate_one(i)
+                    for i in range(total_count)
+                ]
+                gather_start = datetime.now(timezone.utc)
+                logger.info(f"[{session_id[:8]}] asyncio.gather() 开始, 共{total_count}个任务")
+                await asyncio.gather(*tasks)
+                gather_end = datetime.now(timezone.utc)
+                logger.info(f"[{session_id[:8]}] asyncio.gather() 完成, 总耗时={(gather_end - gather_start).total_seconds():.3f}s")
 
                 # 标记完成
-                await service._complete_session(session_id)
+                async with _db_write_lock:
+                    await service._complete_session(session_id)
+                    await db.commit()
+
                 logger.info(f"会话 {session_id[:8]}... 题目生成完成")
 
             except Exception as e:
@@ -232,10 +267,16 @@ class ExerciseGeneratorService:
 只返回 JSON 对象，不要有任何其他文字说明。"""
 
         try:
+            api_start = datetime.now(timezone.utc)
             response = await ai_service.generate(prompt)
+            api_end = datetime.now(timezone.utc)
+            logger.info(f"[T{index+1}] ai_service.generate() 耗时={(api_end - api_start).total_seconds():.3f}s")
 
             # 解析 JSON
+            parse_start = datetime.now(timezone.utc)
             exercise = self._parse_exercise_response(response, index)
+            parse_end = datetime.now(timezone.utc)
+            logger.info(f"[T{index+1}] JSON解析耗时={(parse_end - parse_start).total_seconds():.3f}s")
 
             if exercise:
                 logger.info(f"第{index+1}题生成成功")

@@ -913,13 +913,18 @@ export default function MasteryPathPage() {
 
   // Poll for more exercises from generation session
   const startPollingForMoreExercises = (sessionId: string, token: string) => {
+    // 使用局部变量跟踪最新题目数量，避免闭包问题
+    let lastExerciseCount = 1; // 初始已有第一题
+
     // Poll every 3 seconds for new exercises
     pollingIntervalRef.current = setInterval(async () => {
       try {
         const status = await getGenerationStatus(sessionId, token);
+        const newCount = status.exercises?.length || 0;
 
-        if (status.exercises && status.exercises.length > enhancedQuestions.length) {
+        if (newCount > lastExerciseCount) {
           // New exercises available, update state
+          lastExerciseCount = newCount;
           const newExercises = status.exercises.map((ex) => ({
             id: ex.id,
             type: ex.type as "choice" | "programming" | "fill_blank",
@@ -936,6 +941,7 @@ export default function MasteryPathPage() {
             current: status.generated_count,
             total: status.total_count,
           });
+          console.log(`[精进之路] 检测到新题目: 总数=${newCount}`);
         }
 
         // Check if generation is complete
@@ -1003,51 +1009,56 @@ export default function MasteryPathPage() {
     const sectionIdToSave = selectedSectionId ?? currentSectionIdRef.current ?? undefined;
     if (token && selectedChapterId && sectionIdToSave) {
       const questionId = parseInt(currentQuestion.id, 10);
-      // 统一使用 mastery- 前缀，方便与收藏去重匹配
-      const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${questionId}`;
+      if (isNaN(questionId)) {
+        // 非数字ID（临时ID如"temp_1"），跳过进度保存和错题收集
+        console.log("[精进之路-强化题] 跳过进度保存：非数字question_id", currentQuestion.id);
+      } else {
+        // 统一使用 mastery- 前缀，方便与收藏去重匹配
+        const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${questionId}`;
 
-      try {
-        // 保存进度到 MasteryExerciseProgress 表
-        await saveMasteryExerciseProgress(
-          {
-            course_id: courseId,
-            chapter_id: selectedChapterId,
-            section_id: sectionIdToSave,
-            question_id: questionId,
-            question_type: "enhanced",
-            exercise_key: exerciseKey,
-            is_completed: true,
-            is_correct: correct,
-            user_answer: answer,
-            correct_answer: currentQuestion.correct_answer || "",
-            attempt_count: 1,
-          },
-          token,
-        );
-      } catch (error) {
-        console.error("[精进之路-强化题] 进度保存失败:", error);
-      }
-
-      // Collect wrong question if incorrect (跟基础题一样的逻辑)
-      if (!correct) {
         try {
-          await collectWrongQuestion(token, {
-            exercise_key: exerciseKey,
-            user_answer: answer,
-            course_id: courseId,
-            chapter_id: selectedChapterId,
-            section_id: selectedSectionId ?? undefined,
-            exercise_id: questionId,
-            exercise_content: {
-              text: currentQuestion.text,
-              options: currentQuestion.options,
-              type: "choice",
+          // 保存进度到 MasteryExerciseProgress 表
+          await saveMasteryExerciseProgress(
+            {
+              course_id: courseId,
+              chapter_id: selectedChapterId,
+              section_id: sectionIdToSave,
+              question_id: questionId,
+              question_type: "enhanced",
+              exercise_key: exerciseKey,
+              is_completed: true,
+              is_correct: correct,
+              user_answer: answer,
+              correct_answer: currentQuestion.correct_answer || "",
+              attempt_count: 1,
             },
-            exercise_type: "choice",
-            knowledge_points: currentQuestion.knowledge_points || [],
-          });
+            token,
+          );
         } catch (error) {
-          console.error("[精进之路-强化题] 错题收集失败:", error);
+          console.error("[精进之路-强化题] 进度保存失败:", error);
+        }
+
+        // Collect wrong question if incorrect (跟基础题一样的逻辑)
+        if (!correct) {
+          try {
+            await collectWrongQuestion(token, {
+              exercise_key: exerciseKey,
+              user_answer: answer,
+              course_id: courseId,
+              chapter_id: selectedChapterId,
+              section_id: selectedSectionId ?? undefined,
+              exercise_id: questionId,
+              exercise_content: {
+                text: currentQuestion.text,
+                options: currentQuestion.options,
+                type: "choice",
+              },
+              exercise_type: "choice",
+              knowledge_points: currentQuestion.knowledge_points || [],
+            });
+          } catch (error) {
+            console.error("[精进之路-强化题] 错题收集失败:", error);
+          }
         }
       }
     }
@@ -1058,10 +1069,11 @@ export default function MasteryPathPage() {
     if (currentQuestionIndex < enhancedQuestions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
       setSubmitted(false);
-    } else {
-      // Submit all enhanced answers
+    } else if (generationStatus === "completed" || enhancedQuestions.length >= generationProgress.total) {
+      // 生成完成或题目数已满足即可提交
       await handleSubmitAllEnhancedAnswers();
     }
+    // 如果生成未完成且题目数不足，不做任何事（按钮已禁用）
   };
 
   // Submit all enhanced answers
@@ -1480,14 +1492,6 @@ export default function MasteryPathPage() {
 
         <main className="pt-20 pb-24 px-4">
           <div className="max-w-2xl mx-auto">
-            {/* Generation progress indicator */}
-            {generationStatus === "generating" && generationProgress.total > 0 && generationProgress.current < generationProgress.total && (
-              <GeneratingIndicator
-                progress={generationProgress.current}
-                total={generationProgress.total}
-              />
-            )}
-
             {/* Question header */}
             <div className="flex items-center gap-3 mb-6">
               <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium">
@@ -1595,7 +1599,7 @@ export default function MasteryPathPage() {
                   : handleSubmitEnhancedAnswer
               }
               disabled={
-                !enhancedAnswers.get(currentQuestion.id) || enhancedLoading
+                !enhancedAnswers.get(currentQuestion.id) || enhancedLoading || (submitted && isLastQuestion && generationStatus !== "completed" && enhancedQuestions.length < generationProgress.total)
               }
               className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
@@ -1606,7 +1610,14 @@ export default function MasteryPathPage() {
                 </span>
               ) : submitted ? (
                 isLastQuestion ? (
-                  "完成测试"
+                  generationStatus === "completed" || enhancedQuestions.length >= generationProgress.total ? (
+                    "完成测试"
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      正在生成更多题目...
+                    </span>
+                  )
                 ) : (
                   "下一题"
                 )

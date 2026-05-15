@@ -1,13 +1,13 @@
-"""
-Exercise WebSocket Client - 题目生成实时推送客户端
-
-提供：
-1. WebSocket连接管理
-2. 题目生成状态跟踪
-3. 轮询备选机制
-
-简化实现，优先稳定性。
-"""
+/**
+ * Exercise WebSocket Client - 题目生成实时推送客户端
+ *
+ * 提供：
+ * 1. WebSocket连接管理
+ * 2. 题目生成状态跟踪
+ * 3. 轮询备选机制
+ *
+ * 简化实现，优先稳定性。
+ */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 

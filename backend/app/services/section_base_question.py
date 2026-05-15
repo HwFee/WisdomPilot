@@ -11,8 +11,7 @@ Section Base Question Service - 小节基础测试题服务
 - 题目现在按小节组织，section_id 为必填字段
 """
 
-import uuid
-from typing import List, Optional, Callable, Awaitable
+from typing import Optional, Callable, Awaitable
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from collections import defaultdict
@@ -31,34 +30,8 @@ from app.schemas.section_base_question import (
     EnhancedQuizSubmitRequest,
     EnhancedQuizSubmitResponse,
 )
-from app.utils.time import utc_now
-
-
-class EnhancedQuizSession:
-    """强化测试会话（内存存储）"""
-    def __init__(
-        self,
-        session_id: str,
-        user_id: str,
-        section_id: int,
-        chapter_id: int,
-        course_id: int,
-        questions: List[dict],
-    ):
-        self.session_id = session_id
-        self.user_id = user_id
-        self.section_id = section_id
-        self.chapter_id = chapter_id
-        self.course_id = course_id
-        self.questions = questions
-        self.created_at = utc_now()
-
-
 class SectionBaseQuestionService:
     """小节基础测试题服务"""
-
-    # 内存中的强化测试会话
-    _enhanced_sessions: dict[str, EnhancedQuizSession] = {}
 
     async def get_section_base_questions(
         self,
@@ -325,6 +298,7 @@ class SectionBaseQuestionService:
             )
 
             # 也保存第一题到 SectionBaseQuestion，让用户可以回顾
+            # 保存第一题到 SectionBaseQuestion，让用户可以回顾
             try:
                 max_order_result = await db.execute(
                     select(func.max(SectionBaseQuestion.order_index)).where(
@@ -351,9 +325,7 @@ class SectionBaseQuestionService:
                 )
                 db.add(db_question)
                 await db.commit()
-                await db.refresh(db_question)
-                # 更新ID为数据库ID
-                first_question.id = str(db_question.id)
+                # 不更新前端ID，保持前后端使用同一套临时ID（避免后台任务竞态）
             except Exception as e:
                 logger.warning(f"保存第一题到数据库失败: {e}")
                 # 不影响主流程，继续
@@ -429,9 +401,13 @@ class SectionBaseQuestionService:
             包含结果和学习建议
         """
         from app.models.user import User
+        from app.services.exercise_generator import ExerciseGeneratorService
 
-        session = self._enhanced_sessions.get(request.session_id)
-        if not session:
+        # 始终以数据库为唯一真实来源（后台异步生成的题目不在内存中）
+        generator = ExerciseGeneratorService(db)
+        db_session = await generator.get_session(request.session_id)
+
+        if not db_session:
             return EnhancedQuizSubmitResponse(
                 success=False,
                 session_id=request.session_id,
@@ -442,17 +418,19 @@ class SectionBaseQuestionService:
                 message="会话不存在或已过期"
             )
 
+        questions = db_session.generated_exercises
+
         # 计算结果
         results = []
         correct_count = 0
 
         for answer in request.answers:
             question = next(
-                (q for q in session.questions if q.get("id") == answer.get("question_id")),
+                (q for q in questions if str(q.get("id", "")) == str(answer.get("question_id", ""))),
                 None
             )
             if question:
-                is_correct = answer.get("answer", "").strip().upper() == question.get("correct_answer", "").strip().upper()
+                is_correct = answer.get("answer", "").strip().upper() == str(question.get("correct_answer", "")).strip().upper()
                 if is_correct:
                     correct_count += 1
                 results.append({
@@ -462,7 +440,7 @@ class SectionBaseQuestionService:
                     "correct_answer": question.get("correct_answer"),
                 })
 
-        accuracy = correct_count / len(session.questions) if session.questions else 0
+        accuracy = correct_count / len(questions) if questions else 0
         passed = accuracy >= 0.8
 
         # 更新用户精进之路经验值
@@ -492,14 +470,11 @@ class SectionBaseQuestionService:
         if accuracy < 0.5:
             recommendations.append("基础掌握较弱，建议重新学习小节内容")
 
-        # 清理会话
-        del self._enhanced_sessions[request.session_id]
-
         return EnhancedQuizSubmitResponse(
             success=True,
             session_id=request.session_id,
             section_id=request.section_id,
-            total_questions=len(session.questions),
+            total_questions=len(questions),
             correct_answers=correct_count,
             accuracy=accuracy,
             xp_earned=xp_earned,
