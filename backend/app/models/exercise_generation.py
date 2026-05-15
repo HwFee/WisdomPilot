@@ -1,7 +1,7 @@
 """Exercise Generation Session - 题目生成会话模型"""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from sqlalchemy import String, Integer, ForeignKey, Text, JSON, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -46,7 +46,7 @@ class ExerciseGenerationSession(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc).replace(hour=datetime.now(timezone.utc).hour + 24)
+        default=lambda: datetime.now(timezone.utc) + timedelta(days=1)
     )
 
     # 关联
