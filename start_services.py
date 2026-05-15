@@ -208,7 +208,7 @@ def ensure_frontend_dependencies(frontend_dir: Path, pnpm_cmd: str) -> None:
 
 def ensure_backend_env(backend_dir: Path) -> None:
     env_file = backend_dir / ".env"
-    example_file = backend_dir / ".env.example"
+    example_file = backend_dir.parent / ".env.example"
 
     if env_file.exists():
         content = env_file.read_text(encoding="utf-8")

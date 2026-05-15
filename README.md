@@ -13,54 +13,17 @@ git clone https://github.com/HwFee/zhima-linghang-demo.git
 cd zhima-linghang-demo
 ```
 
-### 2. 后端启动
+### 2. 一键启动(Windows 推荐)
 
-```bash
-# 进入后端目录
-cd backend
+双击 `start.ps1`(或在 PowerShell 执行 `.\start.ps1`),启动器会:
+- 自动检测端口,清理残留进程
+- 检查并初始化 `backend/.env`(从根目录 `.env.example` 生成,自动填入随机 SECRET_KEY)
+- 自动 `pnpm install`(如缺依赖)
+- 同时拉起后端 `http://localhost:8000` 与前端 `http://localhost:3000`
 
-# 创建虚拟环境（推荐）
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # Linux/Mac
+按 Ctrl+C 关闭所有进程,或双击 `stop.ps1` 停止。
 
-# 安装依赖
-pip install -r requirements.txt
-
-# 配置环境变量（复制示例文件并修改）
-copy .env.example .env
-# 编辑 .env 文件，配置 AI_API_KEY 等
-
-# 初始化数据库
-python init_db.py
-
-# 启动后端服务
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-后端启动成功后访问: http://localhost:8000/docs 查看 API 文档
-
-### 3. 前端启动
-
-```bash
-# 新开一个终端，进入前端目录
-cd frontend
-
-# 安装依赖（使用 pnpm）
-npm install -g pnpm  # 如果没有安装 pnpm
-pnpm install
-
-# 配置环境变量
-# 创建 .env.local 文件，内容如下：
-# NEXT_PUBLIC_API_URL=http://localhost:8000
-
-# 启动前端服务
-pnpm dev
-```
-
-前端启动成功后访问: http://localhost:3000
-
-### 4. 开始使用
+### 3. 开始使用
 
 1. 打开浏览器访问 http://localhost:3000
 2. 点击"注册"创建账号
@@ -74,26 +37,16 @@ pnpm dev
 
 ## 环境变量配置
 
-### 后端 (.env)
+环境变量模板在项目根目录 `.env.example`,双击 `start.ps1` 启动时,启动器会自动:
+1. 如果 `backend/.env` 不存在,从根目录 `.env.example` 复制生成,并填入随机的 `SECRET_KEY`
+2. 如果 `backend/.env` 已存在且 `SECRET_KEY` 合法,直接使用
 
-```env
-# AI 配置
-AI_PROVIDER=openai
-AI_API_KEY=your-api-key
-AI_MODEL=gpt-4
-AI_BASE_URL=https://api.openai.com/v1
+需要修改 AI 配置时,编辑 `backend/.env` 文件(填入 `AI_API_KEY`、`EMBEDDING_API_KEY` 等)。
 
-# JWT 密钥
-SECRET_KEY=your-secret-key
+前端默认连 `http://localhost:8000`,如需自定义,建 `frontend/.env.local` 并写:
 
-# 数据库
-DATABASE_URL=sqlite+aiosqlite:///./data.db
 ```
-
-### 前端 (.env.local)
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://your-backend-host:port
 ```
 
 ## 项目结构
@@ -129,34 +82,3 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 6. 数据结构与算法
 7. 算法设计与分析
 8. 离散数学
-
-## 常用命令
-
-### 后端
-
-```bash
-# 启动服务
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-# 运行测试
-pytest
-
-# 测试覆盖率
-pytest --cov=app --cov-report=term-missing
-```
-
-### 前端
-
-```bash
-# 开发模式
-pnpm dev
-
-# 构建生产版本
-pnpm build
-
-# 启动生产服务
-pnpm start
-
-# 运行测试
-pnpm test
-```
