@@ -40,7 +40,7 @@ class ExerciseGeneratorService:
     """流式题目生成服务
 
     核心方法:
-    - generate_first_then_stream: 生成第一题并返回，剩余题目异步生成
+    - start_generation_session: 并发生成所有题目，返回第一题，剩余在后台继续
     - get_session: 获取会话状态
     - get_all_exercises: 获取会话已生成的所有题目
     """
@@ -48,7 +48,7 @@ class ExerciseGeneratorService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def generate_first_then_stream(
+    async def start_generation_session(
         self,
         user_id: str,
         session_type: str,
@@ -62,10 +62,10 @@ class ExerciseGeneratorService:
         chapter_title: str,
         progress_callback: Optional[ExerciseGeneratedCallback] = None,
     ) -> tuple[str, dict, int]:
-        """点击即同时生成所有题目，返回第一题
+        """启动并发生成会话，返回第一题
 
-        核心改动：不再阻塞生成第一题。创建session后立即在后台
-        并发启动全部题目的生成，主请求只轮询等待第一题落库。
+        创建session后立即在后台并发启动全部题目的生成，
+        主请求轮询等待第一题落库后返回。
 
         Args:
             user_id: 用户ID

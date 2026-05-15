@@ -78,23 +78,28 @@ export function useExerciseStream() {
 
   const wsRef = useRef<WebSocket | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 3;
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentTokenRef = useRef<string | null>(null);
 
   /**
-   * 建立WebSocket连接
+   * 建立WebSocket连接（支持自动重连）
    */
   const connect = useCallback((token: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
 
+    currentTokenRef.current = token;
     setState(prev => ({ ...prev, status: 'connecting' }));
 
     const ws = new WebSocket(`${WS_URL}?token=${token}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('[ExerciseWebSocket] 连接成功');
-      setState(prev => ({ ...prev, status: 'generating' }));
+      reconnectAttemptsRef.current = 0;
+      setState(prev => ({ ...prev, status: 'generating', error: null }));
 
       // 启动心跳
       if (heartbeatRef.current) {
@@ -117,12 +122,11 @@ export function useExerciseStream() {
         const message: ExerciseStreamMessage = JSON.parse(data);
         handleMessage(message);
       } catch (e) {
-        console.error('[ExerciseWebSocket] 消息解析失败:', e);
+        // ignore parse errors
       }
     };
 
-    ws.onerror = (error) => {
-      console.error('[ExerciseWebSocket] 连接错误:', error);
+    ws.onerror = () => {
       setState(prev => ({
         ...prev,
         status: prev.status === 'generating' ? prev.status : 'failed',
@@ -131,10 +135,18 @@ export function useExerciseStream() {
     };
 
     ws.onclose = () => {
-      console.log('[ExerciseWebSocket] 连接关闭');
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
+      }
+
+      // 自动重连（指数退避）
+      if (reconnectAttemptsRef.current < maxReconnectAttempts && currentTokenRef.current) {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 8000);
+        reconnectAttemptsRef.current += 1;
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connect(currentTokenRef.current!);
+        }, delay);
       }
     };
   }, []);
@@ -173,9 +185,14 @@ export function useExerciseStream() {
   }, []);
 
   /**
-   * 断开WebSocket连接
+   * 断开WebSocket连接（阻止自动重连）
    */
   const disconnect = useCallback(() => {
+    currentTokenRef.current = null;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -190,6 +207,7 @@ export function useExerciseStream() {
    * 重置状态
    */
   const reset = useCallback(() => {
+    reconnectAttemptsRef.current = 0;
     disconnect();
     setState({
       sessionId: null,

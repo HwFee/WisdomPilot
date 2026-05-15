@@ -271,7 +271,7 @@ class SectionBaseQuestionService:
             # 使用 ExerciseGeneratorService 实现流式生成
             generator = ExerciseGeneratorService(db)
 
-            session_id, first_exercise, remaining_count = await generator.generate_first_then_stream(
+            session_id, first_exercise, remaining_count = await generator.start_generation_session(
                 user_id=user_id,
                 session_type="enhanced",
                 section_id=request.section_id,

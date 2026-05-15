@@ -73,14 +73,30 @@ class ExerciseWebSocketManager:
         if session_id in self.session_users:
             del self.session_users[session_id]
 
+    async def _send_to_user(self, user_id: str, message: dict) -> set[WebSocket]:
+        """向用户的所有连接发送消息，返回失效连接"""
+        connections = self.user_connections.get(user_id, set())
+        if not connections:
+            return set()
+
+        dead_connections = set()
+        for conn in connections:
+            try:
+                if conn.client_state == WebSocketState.CONNECTED:
+                    await conn.send_json(message)
+            except Exception as e:
+                logger.error(f"WebSocket发送失败: {e}")
+                dead_connections.add(conn)
+
+        for dead in dead_connections:
+            self.disconnect(dead, user_id)
+
+        return dead_connections
+
     async def send_exercise(self, session_id: str, index: int, exercise: dict) -> None:
         """推送新题目到用户"""
         user_id = self.session_users.get(session_id)
         if not user_id:
-            return
-
-        connections = self.user_connections.get(user_id, set())
-        if not connections:
             return
 
         message = {
@@ -91,29 +107,12 @@ class ExerciseWebSocketManager:
             "progress": index + 1,
         }
 
-        # 向所有连接发送（多标签页场景）
-        dead_connections = set()
-        for conn in connections:
-            try:
-                if conn.client_state == WebSocketState.CONNECTED:
-                    await conn.send_json(message)
-            except Exception as e:
-                logger.error(f"WebSocket发送失败: {e}")
-                dead_connections.add(conn)
-
-        # 清理失效连接
-        for dead in dead_connections:
-            self.disconnect(dead, user_id)
+        await self._send_to_user(user_id, message)
 
     async def send_completion(self, session_id: str, total_count: int) -> None:
         """推送生成完成消息，完成后注销session"""
         user_id = self.session_users.get(session_id)
         if not user_id:
-            return
-
-        connections = self.user_connections.get(user_id, set())
-        if not connections:
-            self.unregister_session(session_id)
             return
 
         message = {
@@ -122,19 +121,7 @@ class ExerciseWebSocketManager:
             "total_count": total_count,
         }
 
-        dead_connections = set()
-        for conn in connections:
-            try:
-                if conn.client_state == WebSocketState.CONNECTED:
-                    await conn.send_json(message)
-            except Exception as e:
-                logger.error(f"WebSocket发送失败: {e}")
-                dead_connections.add(conn)
-
-        for dead in dead_connections:
-            self.disconnect(dead, user_id)
-
-        # 生成完成，注销session
+        await self._send_to_user(user_id, message)
         self.unregister_session(session_id)
 
     async def send_error(self, session_id: str, error: str) -> None:
@@ -143,30 +130,13 @@ class ExerciseWebSocketManager:
         if not user_id:
             return
 
-        connections = self.user_connections.get(user_id, set())
-        if not connections:
-            self.unregister_session(session_id)
-            return
-
         message = {
             "type": "generation_failed",
             "session_id": session_id,
             "error": error,
         }
 
-        dead_connections = set()
-        for conn in connections:
-            try:
-                if conn.client_state == WebSocketState.CONNECTED:
-                    await conn.send_json(message)
-            except Exception as e:
-                logger.error(f"WebSocket发送失败: {e}")
-                dead_connections.add(conn)
-
-        for dead in dead_connections:
-            self.disconnect(dead, user_id)
-
-        # 生成失败，注销session
+        await self._send_to_user(user_id, message)
         self.unregister_session(session_id)
 
 
@@ -238,6 +208,9 @@ async def exercise_websocket_endpoint(websocket: WebSocket, token: str):
                 # 发送心跳检测
                 try:
                     await websocket.send_text("ping")
+                except Exception:
+                    break
+                try:
                     # 等待pong
                     response = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
                     if response != "pong":
