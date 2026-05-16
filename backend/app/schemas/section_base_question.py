@@ -74,11 +74,11 @@ class BaseAnswersSubmitResponse(BaseModel):
     results: List[BaseQuestionResult]
     weak_points: List[str] = Field(
         default_factory=list,
-        description="识别的薄弱知识点"
+        description="薄弱知识点（BKT p_l < 0.80 或首次简单统计兜底）"
     )
     strong_points: List[str] = Field(
         default_factory=list,
-        description="掌握较好的知识点"
+        description="已掌握知识点（BKT p_l >= 0.80）"
     )
     xp_earned: int = Field(default=0, description="获得的经验值")
 
@@ -159,4 +159,19 @@ class EnhancedQuizSubmitResponse(BaseModel):
         default=False,
         description="是否通过（正确率>=80%）"
     )
+    message: str = Field(default="", description="结果消息")
+
+
+class PersistEnhancedQuestionRequest(BaseModel):
+    """持久化单道强化题到 SectionBaseQuestion（用户做题提交时调用）"""
+    session_id: str = Field(..., description="生成会话ID")
+    question_index: int = Field(..., ge=0, description="题目在会话中的索引（0,1,2...）")
+    section_id: int = Field(..., description="小节ID")
+    chapter_id: Optional[int] = Field(default=None, description="章节ID")
+
+
+class PersistEnhancedQuestionResponse(BaseModel):
+    """持久化强化题响应"""
+    success: bool
+    question_id: int = Field(default=0, description="持久化后的真实数据库ID")
     message: str = Field(default="", description="结果消息")

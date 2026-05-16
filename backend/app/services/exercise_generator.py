@@ -30,9 +30,9 @@ ExerciseGeneratedCallback = Callable[[int, dict, int, int], Awaitable[None]]
 """回调函数: (index, exercise, current_count, total_count)"""
 
 # 限制并发 API 调用数（避免触发服务商速率限制）
+# 3道题同时生成，所以信号量至少为3
 _api_semaphore = asyncio.Semaphore(3)
 # 保护数据库写入（避免并发修改 JSON 列导致数据丢失）
-# 全局锁，防止多任务同时写入同一 session 的 JSON 列
 _db_write_lock = asyncio.Lock()
 
 
@@ -40,7 +40,7 @@ class ExerciseGeneratorService:
     """流式题目生成服务
 
     核心方法:
-    - start_generation_session: 并发生成所有题目，返回第一题，剩余在后台继续
+    - generate_first_then_stream: 生成第一题并返回，剩余题目异步生成
     - get_session: 获取会话状态
     - get_all_exercises: 获取会话已生成的所有题目
     """
@@ -48,7 +48,7 @@ class ExerciseGeneratorService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def start_generation_session(
+    async def generate_first_then_stream(
         self,
         user_id: str,
         session_type: str,
@@ -62,10 +62,10 @@ class ExerciseGeneratorService:
         chapter_title: str,
         progress_callback: Optional[ExerciseGeneratedCallback] = None,
     ) -> tuple[str, dict, int]:
-        """启动并发生成会话，返回第一题
+        """点击即同时生成所有题目，返回第一题
 
-        创建session后立即在后台并发启动全部题目的生成，
-        主请求轮询等待第一题落库后返回。
+        核心改动：不再阻塞生成第一题。创建session后立即在后台
+        并发启动全部题目的生成，主请求只轮询等待第一题落库。
 
         Args:
             user_id: 用户ID
@@ -108,6 +108,8 @@ class ExerciseGeneratorService:
             self._generate_all_async(
                 session_id=session.id,
                 user_id=user_id,
+                section_id=section_id,
+                chapter_id=chapter_id,
                 section_title=section_title,
                 chapter_title=chapter_title,
                 weak_points=weak_points,
@@ -126,16 +128,7 @@ class ExerciseGeneratorService:
             async with AsyncSessionLocal() as poll_db:
                 poll_service = ExerciseGeneratorService(poll_db)
                 db_session = await poll_service.get_session(session.id)
-                if db_session and db_session.generated_exercises:
-                    # 按 index 查找第一题（index=0）
-                    first = next(
-                        (ex for ex in db_session.generated_exercises if ex.get("index") == 0),
-                        None
-                    )
-                    if first:
-                        first_exercise = first
-                        break
-                    # 兜底：如果还没有 index=0，但至少有一题，先返回（旧数据兼容）
+                if db_session and len(db_session.generated_exercises) > 0:
                     first_exercise = db_session.generated_exercises[0]
                     break
 
@@ -148,6 +141,8 @@ class ExerciseGeneratorService:
         self,
         session_id: str,
         user_id: str,
+        section_id: Optional[int],
+        chapter_id: Optional[int],
         section_title: str,
         chapter_title: str,
         weak_points: list[str],
@@ -158,7 +153,8 @@ class ExerciseGeneratorService:
         """后台异步生成全部题目（并发生成，串行写入）
 
         所有题目从点击那一刻同时开始生成（受信号量限制并发数），
-        生成完成后串行写入数据库（受锁保护避免竞争）。
+        生成完成后串行写入 ExerciseGenerationSession（受锁保护避免竞争）。
+        不写入 SectionBaseQuestion——强化题在用户做题提交时才持久化。
         """
         from app.database import AsyncSessionLocal
 
@@ -187,20 +183,15 @@ class ExerciseGeneratorService:
                     logger.error(f"第{index + 1}题生成失败")
                     return
 
-                # 2. 写入数据库（串行，避免并发修改 JSON 列）
+                # 2. 写入 ExerciseGenerationSession（串行，避免并发修改 JSON 列）
                 lock_wait_start = datetime.now(timezone.utc)
-                try:
-                    async with asyncio.timeout(15.0):
-                        async with _db_write_lock:
-                            lock_acquired = datetime.now(timezone.utc)
-                            logger.info(f"[T{index+1}] 获取DB锁, 等待={(lock_acquired - lock_wait_start).total_seconds():.3f}s")
-                            await service._append_exercise(session_id, exercise)
-                            await db.commit()
-                            db_done = datetime.now(timezone.utc)
-                            logger.info(f"[T{index+1}] DB写入完成, 耗时={(db_done - lock_acquired).total_seconds():.3f}s")
-                except asyncio.TimeoutError:
-                    logger.error(f"[T{index+1}] 获取DB锁超时(15s)，放弃写入")
-                    return
+                async with _db_write_lock:
+                    lock_acquired = datetime.now(timezone.utc)
+                    logger.info(f"[T{index+1}] 获取DB锁, 等待={(lock_acquired - lock_wait_start).total_seconds():.3f}s")
+                    await service._append_exercise(session_id, exercise)
+                    await db.commit()
+                    db_done = datetime.now(timezone.utc)
+                    logger.info(f"[T{index+1}] DB写入完成, 耗时={(db_done - lock_acquired).total_seconds():.3f}s")
 
                 # 3. 回调通知
                 if progress_callback:
@@ -220,33 +211,20 @@ class ExerciseGeneratorService:
                 ]
                 gather_start = datetime.now(timezone.utc)
                 logger.info(f"[{session_id[:8]}] asyncio.gather() 开始, 共{total_count}个任务")
-                results = await asyncio.gather(*tasks, return_exceptions=True)
+                await asyncio.gather(*tasks)
                 gather_end = datetime.now(timezone.utc)
                 logger.info(f"[{session_id[:8]}] asyncio.gather() 完成, 总耗时={(gather_end - gather_start).total_seconds():.3f}s")
 
-                # 统计失败任务
-                failed_count = sum(1 for r in results if isinstance(r, Exception))
-                if failed_count > 0:
-                    logger.warning(f"[{session_id[:8]}] {failed_count}/{total_count} 道题生成失败")
+                # 标记完成
+                async with _db_write_lock:
+                    await service._complete_session(session_id)
+                    await db.commit()
 
-                # 检查是否至少生成了一道题
-                db_session = await service.get_session(session_id)
-                if db_session and db_session.generated_count > 0:
-                    async with _db_write_lock:
-                        await service._complete_session(session_id)
-                        await db.commit()
-                    logger.info(f"会话 {session_id[:8]}... 题目生成完成 ({db_session.generated_count}/{total_count})")
-                else:
-                    async with _db_write_lock:
-                        await service._fail_session(session_id, "所有题目生成失败")
-                        await db.commit()
-                    logger.error(f"会话 {session_id[:8]}... 所有题目生成失败")
+                logger.info(f"会话 {session_id[:8]}... 题目生成完成")
 
             except Exception as e:
                 logger.error(f"后台生成任务失败: {e}")
-                async with _db_write_lock:
-                    await service._fail_session(session_id, str(e))
-                    await db.commit()
+                await service._fail_session(session_id, str(e))
 
     async def _generate_single_exercise(
         self,
@@ -350,7 +328,7 @@ class ExerciseGeneratorService:
             return None
 
     async def _append_exercise(self, session_id: str, exercise: dict) -> None:
-        """追加题目到会话（注意：调用方负责 commit）"""
+        """追加题目到会话"""
         result = await self.db.execute(
             select(ExerciseGenerationSession).where(
                 ExerciseGenerationSession.id == session_id
@@ -359,11 +337,10 @@ class ExerciseGeneratorService:
         session = result.scalar_one_or_none()
         if session:
             session.add_exercise(exercise)
-        else:
-            logger.error(f"_append_exercise: session {session_id[:8]}... not found")
+            await self.db.commit()
 
     async def _complete_session(self, session_id: str) -> None:
-        """标记会话完成（注意：调用方负责 commit）"""
+        """标记会话完成"""
         result = await self.db.execute(
             select(ExerciseGenerationSession).where(
                 ExerciseGenerationSession.id == session_id
@@ -372,11 +349,10 @@ class ExerciseGeneratorService:
         session = result.scalar_one_or_none()
         if session:
             session.complete()
-        else:
-            logger.error(f"_complete_session: session {session_id[:8]}... not found")
+            await self.db.commit()
 
     async def _fail_session(self, session_id: str, error: str) -> None:
-        """标记会话失败（注意：调用方负责 commit）"""
+        """标记会话失败"""
         result = await self.db.execute(
             select(ExerciseGenerationSession).where(
                 ExerciseGenerationSession.id == session_id
@@ -385,8 +361,7 @@ class ExerciseGeneratorService:
         session = result.scalar_one_or_none()
         if session:
             session.fail(error)
-        else:
-            logger.error(f"_fail_session: session {session_id[:8]}... not found")
+            await self.db.commit()
 
     async def get_session(self, session_id: str) -> Optional[ExerciseGenerationSession]:
         """获取会话"""

@@ -152,13 +152,22 @@ class MasteryProgressService:
                         if chapter_title_result:
                             chapter_title = chapter_title_result
 
-            # 统一使用"练习题X"格式，X为order_index
-            if question:
-                question_title = f"练习题{question.order_index}"
-                question_difficulty = question.difficulty
+            # 题号计算：统一使用数据库 order_index（小节内序号）
+            # 强化题在提交时通过 persist_enhanced_question 写入 SectionBaseQuestion，
+            # 其 order_index = max(基础题order_index) + 1，是小节内的真实位置。
+            # 所以"最近动态"和"小节题号"完全一致，不区分基础/强化，统一显示"练习题N"。
+            if question and question.order_index:
+                display_index = question.order_index
+                logger.info(f"[save_exercise_progress] 题号: 使用 order_index={question.order_index}")
+            elif request.question_index and request.question_index > 0:
+                display_index = request.question_index
+                logger.info(f"[save_exercise_progress] 题号: 兜底使用前端 question_index={request.question_index}")
             else:
-                question_title = f"练习题{request.question_id}"
-                question_difficulty = 1
+                display_index = request.question_id
+                logger.info(f"[save_exercise_progress] 题号: 兜底使用 question_id={request.question_id}")
+
+            question_title = f"练习题{display_index}"
+            question_difficulty = question.difficulty if question else 1
 
             activity_extra_data = {
                 "learning_path": "mastery",

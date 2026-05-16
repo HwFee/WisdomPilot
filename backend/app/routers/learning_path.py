@@ -515,6 +515,8 @@ from app.schemas.section_base_question import (
     EnhancedQuizGenerateResponse,
     EnhancedQuizSubmitRequest,
     EnhancedQuizSubmitResponse,
+    PersistEnhancedQuestionRequest,
+    PersistEnhancedQuestionResponse,
 )
 from app.services.mastery_progress import mastery_progress_service
 from app.schemas.mastery_progress import (
@@ -715,6 +717,43 @@ async def submit_enhanced_quiz(
     )
     logger.info(f"[API] submit_enhanced_quiz 完成: correct={result.correct_answers}/{result.total_questions}")
     return result
+
+
+@router.post("/mastery/{course_id}/persist-enhanced-question", response_model=PersistEnhancedQuestionResponse)
+async def persist_enhanced_question(
+    course_id: int,
+    request: PersistEnhancedQuestionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    持久化单道强化题到 SectionBaseQuestion（用户做题提交时调用）
+
+    从 ExerciseGenerationSession 中获取指定索引的题目，
+    保存到 SectionBaseQuestion 获得真实数据库ID，用于进度保存和错题本跳转。
+    """
+    print(f"\n[ROUTE_DEBUG] === persist_enhanced_question ENDPOINT entered === "
+          f"course_id={course_id} user={current_user.id[:8] if current_user else 'NONE'} "
+          f"session={request.session_id[:8] if request.session_id else 'NONE'} "
+          f"index={request.question_index}", flush=True)
+    try:
+        result = await section_base_question_service.persist_enhanced_question(
+            db=db,
+            user_id=current_user.id,
+            request=request,
+        )
+        print(f"[ROUTE_DEBUG] === persist_enhanced_question RETURNED success={result.success} "
+              f"qid={result.question_id} ===", flush=True)
+        return result
+    except Exception as e:
+        import traceback
+        print(f"\n[ROUTE_DEBUG] !!! Router-level exception: {type(e).__name__}: {e}", flush=True)
+        traceback.print_exc()
+        return PersistEnhancedQuestionResponse(
+            success=False,
+            question_id=0,
+            message=f"路由层异常: {type(e).__name__}: {str(e)}"
+        )
 
 
 # ========== Mastery Progress Endpoints (精进之路进度) ==========

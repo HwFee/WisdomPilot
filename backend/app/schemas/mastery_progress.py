@@ -16,6 +16,7 @@ class MasteryExerciseProgressSaveRequest(BaseModel):
     is_correct: bool = Field(default=False, description="是否答对")
     user_answer: Optional[str] = Field(default=None, description="用户答案")
     correct_answer: Optional[str] = Field(default=None, description="正确答案")
+    question_index: int = Field(default=0, description="题目在当前测试中的显示顺序（1-based），用于最近动态题号")
     attempt_count: int = Field(default=1, description="尝试次数")
 
 

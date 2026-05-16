@@ -315,6 +315,35 @@ export async function getSessionExercises(
 }
 
 /**
+ * Persist a single enhanced question to SectionBaseQuestion (called when user submits answer)
+ * Returns the real database question_id for progress saving and wrong-question book navigation.
+ */
+export interface PersistEnhancedQuestionRequest {
+  session_id: string
+  question_index: number
+  section_id: number
+  chapter_id?: number
+}
+
+export interface PersistEnhancedQuestionResponse {
+  success: boolean
+  question_id: number
+  message: string
+}
+
+export async function persistEnhancedQuestion(
+  courseId: number,
+  request: PersistEnhancedQuestionRequest,
+  token: string
+): Promise<PersistEnhancedQuestionResponse> {
+  return post<PersistEnhancedQuestionResponse>(
+    `/api/learning-path/mastery/${courseId}/persist-enhanced-question`,
+    token,
+    request
+  )
+}
+
+/**
  * Submit enhanced quiz answers
  */
 export async function submitEnhancedQuiz(
@@ -564,6 +593,7 @@ export interface SaveMasteryExerciseProgressRequest {
   chapter_id: number
   section_id?: number  // 小节ID，用于小节级掌握度聚合
   question_id: number
+  question_index?: number  // 题目在当前测试中的显示顺序（1-based），用于最近动态题号
   question_type?: 'base' | 'enhanced'
   exercise_key?: string
   is_completed: boolean

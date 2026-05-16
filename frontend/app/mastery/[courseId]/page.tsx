@@ -43,6 +43,8 @@ import {
   completeMasteryQuiz,
   getMasteryChapterDetailProgress,
   getGenerationStatus,
+  persistEnhancedQuestion,
+  getSectionMastery,
   type MasteryExerciseProgressItem,
 } from "@/lib/api/learning-path";
 import { collectWrongQuestion } from "@/lib/api/wrong-question";
@@ -378,26 +380,68 @@ export default function MasteryPathPage() {
       if (allCompleted && targetQuestionId === 0) {
         // 所有基础题都完成了，计算结果并直接跳到分析界面
         let correctCount = 0;
-        const weakPoints: string[] = [];
-        const strongPoints: string[] = [];
-
         for (const q of data.questions) {
-          const isCorrect = completedMap.get(q.id);
-          if (isCorrect) {
+          if (completedMap.get(q.id)) {
             correctCount++;
-            // 收集知识点作为强项
+          }
+        }
+
+        // 优先使用 BKT 掌握度分类知识点，兜底用简单统计
+        let weakPoints: string[] = [];
+        let strongPoints: string[] = [];
+        try {
+          const sectionMastery = await getSectionMastery(selectedSectionId!, token);
+          const kpMasteries = sectionMastery.knowledge_points || [];
+          const allKps = new Set<string>();
+          for (const q of data.questions) {
             for (const kp of q.knowledge_points || []) {
-              if (!strongPoints.includes(kp)) {
+              allKps.add(kp);
+            }
+          }
+          const bktKps = new Map(kpMasteries.map((m: any) => [m.name, m]));
+          for (const kp of allKps) {
+            const bktKp = bktKps.get(kp);
+            if (bktKp && bktKp.total_attempts > 0) {
+              if (bktKp.is_mastered) {
+                strongPoints.push(kp);
+              } else {
+                weakPoints.push(kp);
+              }
+            } else {
+              // 无 BKT 数据，简单统计兜底
+              let kpCorrect = 0;
+              let kpWrong = 0;
+              for (const q of data.questions) {
+                if ((q.knowledge_points || []).includes(kp)) {
+                  if (completedMap.get(q.id)) {
+                    kpCorrect++;
+                  } else {
+                    kpWrong++;
+                  }
+                }
+              }
+              if (kpWrong >= kpCorrect) {
+                weakPoints.push(kp);
+              } else {
                 strongPoints.push(kp);
               }
             }
-          } else {
-            // 错题的知识点作为薄弱点
+          }
+        } catch {
+          // BKT 接口失败，兜底简单统计
+          const kpStats = new Map<string, { correct: number; wrong: number }>();
+          for (const q of data.questions) {
+            const isCorrect = completedMap.get(q.id);
             for (const kp of q.knowledge_points || []) {
-              if (!weakPoints.includes(kp)) {
-                weakPoints.push(kp);
-              }
+              const s = kpStats.get(kp) || { correct: 0, wrong: 0 };
+              if (isCorrect) s.correct++;
+              else s.wrong++;
+              kpStats.set(kp, s);
             }
+          }
+          for (const [kp, stats] of kpStats) {
+            if (stats.wrong >= stats.correct) weakPoints.push(kp);
+            else strongPoints.push(kp);
           }
         }
 
@@ -539,26 +583,68 @@ export default function MasteryPathPage() {
       if (allCompleted && targetQuestionId === 0) {
         // 所有基础题都完成了，计算结果并直接跳到分析界面
         let correctCount = 0;
-        const weakPoints: string[] = [];
-        const strongPoints: string[] = [];
-
         for (const q of data.questions) {
-          const isCorrect = completedMap.get(q.id);
-          if (isCorrect) {
+          if (completedMap.get(q.id)) {
             correctCount++;
-            // 收集知识点作为强项
+          }
+        }
+
+        // 优先使用 BKT 掌握度分类知识点，兜底用简单统计
+        let weakPoints: string[] = [];
+        let strongPoints: string[] = [];
+        try {
+          const sectionMastery = await getSectionMastery(selectedSectionId!, token);
+          const kpMasteries = sectionMastery.knowledge_points || [];
+          const allKps = new Set<string>();
+          for (const q of data.questions) {
             for (const kp of q.knowledge_points || []) {
-              if (!strongPoints.includes(kp)) {
+              allKps.add(kp);
+            }
+          }
+          const bktKps = new Map(kpMasteries.map((m: any) => [m.name, m]));
+          for (const kp of allKps) {
+            const bktKp = bktKps.get(kp);
+            if (bktKp && bktKp.total_attempts > 0) {
+              if (bktKp.is_mastered) {
+                strongPoints.push(kp);
+              } else {
+                weakPoints.push(kp);
+              }
+            } else {
+              // 无 BKT 数据，简单统计兜底
+              let kpCorrect = 0;
+              let kpWrong = 0;
+              for (const q of data.questions) {
+                if ((q.knowledge_points || []).includes(kp)) {
+                  if (completedMap.get(q.id)) {
+                    kpCorrect++;
+                  } else {
+                    kpWrong++;
+                  }
+                }
+              }
+              if (kpWrong >= kpCorrect) {
+                weakPoints.push(kp);
+              } else {
                 strongPoints.push(kp);
               }
             }
-          } else {
-            // 错题的知识点作为薄弱点
+          }
+        } catch {
+          // BKT 接口失败，兜底简单统计
+          const kpStats = new Map<string, { correct: number; wrong: number }>();
+          for (const q of data.questions) {
+            const isCorrect = completedMap.get(q.id);
             for (const kp of q.knowledge_points || []) {
-              if (!weakPoints.includes(kp)) {
-                weakPoints.push(kp);
-              }
+              const s = kpStats.get(kp) || { correct: 0, wrong: 0 };
+              if (isCorrect) s.correct++;
+              else s.wrong++;
+              kpStats.set(kp, s);
             }
+          }
+          for (const [kp, stats] of kpStats) {
+            if (stats.wrong >= stats.correct) weakPoints.push(kp);
+            else strongPoints.push(kp);
           }
         }
 
@@ -689,6 +775,7 @@ export default function MasteryPathPage() {
             chapter_id: selectedChapterId,
             section_id: sectionIdToSave,
             question_id: currentQuestion.id,
+            question_index: currentQuestionIndex + 1,
             question_type: "base",
             exercise_key: exerciseKey,
             is_completed: true,
@@ -987,11 +1074,51 @@ export default function MasteryPathPage() {
     // 使用 ref 作为后备，避免 state 丢失导致 section_id 为空
     const sectionIdToSave = selectedSectionId ?? currentSectionIdRef.current ?? undefined;
     if (token && selectedChapterId && sectionIdToSave) {
-      const questionId = parseInt(currentQuestion.id, 10);
-      if (isNaN(questionId)) {
-        // 非数字ID（临时ID如"temp_1"），跳过进度保存和错题收集
-        // 跳过进度保存和错题收集
-      } else {
+      let questionId = parseInt(currentQuestion.id, 10);
+
+      // 如果是临时ID（如 "temp_0"），先持久化到 SectionBaseQuestion 获得真实数据库ID
+      if (isNaN(questionId) && enhancedSessionId) {
+        const oldId = currentQuestion.id;
+        try {
+          const persistResult = await persistEnhancedQuestion(
+            courseId,
+            {
+              session_id: enhancedSessionId,
+              question_index: currentQuestionIndex,
+              section_id: sectionIdToSave,
+              chapter_id: selectedChapterId,
+            },
+            token,
+          );
+          if (persistResult.success && persistResult.question_id) {
+            questionId = persistResult.question_id;
+            const newId = String(questionId);
+            // 更新本地题目ID，避免重复持久化
+            currentQuestion.id = newId;
+            setEnhancedQuestions((prev) => {
+              const next = [...prev];
+              next[currentQuestionIndex] = { ...next[currentQuestionIndex], id: newId };
+              return next;
+            });
+            // 同步迁移 enhancedAnswers Map 的 key：旧 temp_N → 新真实ID
+            // 否则最终批量提交时会用旧 key，后端按真实ID匹配失败导致0正确
+            setEnhancedAnswers((prev) => {
+              if (!prev.has(oldId)) return prev;
+              const next = new Map(prev);
+              const savedAnswer = next.get(oldId)!;
+              next.delete(oldId);
+              next.set(newId, savedAnswer);
+              return next;
+            });
+          } else {
+            console.error("[精进之路-强化题] 持久化失败:", persistResult.message);
+          }
+        } catch (error) {
+          console.error("[精进之路-强化题] 持久化接口调用失败:", error);
+        }
+      }
+
+      if (questionId && !isNaN(questionId)) {
         // 统一使用 mastery- 前缀，方便与收藏去重匹配
         const exerciseKey = `mastery-${courseId}-${selectedChapterId}-${questionId}`;
 
@@ -1003,6 +1130,7 @@ export default function MasteryPathPage() {
               chapter_id: selectedChapterId,
               section_id: sectionIdToSave,
               question_id: questionId,
+              question_index: currentQuestionIndex + 1,
               question_type: "enhanced",
               exercise_key: exerciseKey,
               is_completed: true,
