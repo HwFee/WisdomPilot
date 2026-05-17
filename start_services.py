@@ -249,9 +249,8 @@ def start_backend(backend_dir: Path, log_dir: Path, reload_backend: bool) -> sub
         "0.0.0.0",
         "--port",
         str(BACKEND_PORT),
+        "--reload",
     ]
-    if reload_backend:
-        command.append("--reload")
 
     print(f"[启动] 后端 FastAPI: {' '.join(command)}")
     creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0

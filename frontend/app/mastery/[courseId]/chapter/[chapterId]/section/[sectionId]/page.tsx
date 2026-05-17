@@ -513,7 +513,7 @@ export default function SectionLearningPage() {
             ) : (
               <>
                 <Play className="w-5 h-5" />
-                开始测试
+                小节测试
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

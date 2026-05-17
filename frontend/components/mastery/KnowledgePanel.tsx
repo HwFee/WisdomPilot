@@ -144,7 +144,7 @@ export function KnowledgePanel({
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
-            开始测试
+            小节测试
           </button>
         </div>
       </motion.div>
@@ -238,13 +238,16 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
                         </code>
                       )
                     },
-                    pre({ children }) {
-                      return (
-                        <pre className="bg-muted rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose border border-border/50">
-                          {children}
-                        </pre>
-                      )
-                    },
+pre({ children }) {
+                       return (
+                         <pre
+                           className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose"
+                           style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' }}
+                         >
+                           {children}
+                         </pre>
+                       )
+                     },
                     // 标题样式
                     h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3">{children}</h2>,

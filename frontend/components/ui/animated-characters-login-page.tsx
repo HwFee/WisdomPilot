@@ -6,18 +6,17 @@ import { Button } from "@/components/ui/button-enhanced";
 import { Input } from "@/components/ui/input-enhanced";
 import { Label } from "@/components/ui/input-enhanced";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Sparkles, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, User, Sparkles, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import { login } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { validateEmail } from "@/lib/utils/validation";
 import { CharacterGroup } from "@/components/ui/animated-characters";
 import { fadeIn, slideUp } from "@/lib/animations";
 
 function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,8 +27,7 @@ function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
 
   // Field validation states
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [usernameTouched, setUsernameTouched] = useState(false);
 
   const t = (en: string, zh: string) => lang === 'en' ? en : zh;
 
@@ -38,23 +36,13 @@ function LoginPage() {
     setIsLookingAway(isPasswordField);
   }, [isPasswordField]);
 
-  // Real-time email validation
-  useEffect(() => {
-    if (emailTouched && email) {
-      const result = validateEmail(email, lang);
-      setEmailError(result.valid ? null : result.error || null);
-    }
-  }, [email, emailTouched, lang]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setEmailTouched(true);
+    setUsernameTouched(true);
 
-    // Validate email
-    const emailResult = validateEmail(email, lang);
-    if (!emailResult.valid) {
-      setError(emailResult.error || t("Invalid email", "邮箱格式错误"));
+    if (!username.trim()) {
+      setError(t("Please enter username", "请输入用户名"));
       return;
     }
 
@@ -66,7 +54,7 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password, rememberMe);
+      await login(username.trim(), password, rememberMe);
       // Check if user is admin and redirect accordingly
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -78,7 +66,7 @@ function LoginPage() {
       }
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("Invalid email or password", "邮箱或密码错误"));
+      setError(err instanceof Error ? err.message : t("Invalid username or password", "用户名或密码错误"));
     } finally {
       setIsLoading(false);
     }
@@ -240,19 +228,17 @@ function LoginPage() {
               transition={{ duration: 0.3, delay: 0.3 }}
               className="space-y-2"
             >
-              <Label htmlFor="email" required>{t('Email', '邮箱地址')}</Label>
+              <Label htmlFor="username" required>{t('Username', '用户名')}</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder={t('you@example.com', 'you@example.com')}
-                value={email}
-                autoComplete="off"
-                leftIcon={<Mail className="size-4" />}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder={t('Enter your username', '请输入用户名')}
+                value={username}
+                autoComplete="username"
+                leftIcon={<User className="size-4" />}
+                onChange={(e) => setUsername(e.target.value)}
                 onFocus={() => setIsTyping(true)}
-                onBlur={() => { setIsTyping(false); setEmailTouched(true); }}
-                errorMessage={emailTouched && emailError ? emailError : undefined}
-                successMessage={emailTouched && !emailError && email ? t('Valid email', '邮箱格式正确') : undefined}
+                onBlur={() => { setIsTyping(false); setUsernameTouched(true); }}
                 inputSize="lg"
               />
             </motion.div>

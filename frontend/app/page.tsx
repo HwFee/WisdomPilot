@@ -16,13 +16,9 @@ import {
 } from 'lucide-react'
 import { getCourseConfig } from '@/lib/icons/course-icons'
 import { Logo } from '@/components/ui/logo'
+import { getCourses } from '@/lib/api/courses'
+import type { CourseSummary } from '@/types/api'
 
-// 实际 seeded 的 3 门课程
-const COURSES = [
-  { id: 1, code: 'c', name: 'C语言程序设计', difficulty: 1, description: '编程入门首选，打好扎实基础' },
-  { id: 2, code: 'cpp', name: 'C++程序设计', difficulty: 2, description: '面向对象编程，系统开发利器' },
-  { id: 3, code: 'python', name: 'Python程序设计', difficulty: 1, description: '简洁优雅，人工智能首选语言' },
-]
 
 const FEATURES = [
   {
@@ -54,11 +50,25 @@ const FEATURES = [
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [courses, setCourses] = useState<CourseSummary[]>([])
+  const [coursesLoading, setCoursesLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
     const token = localStorage.getItem('token')
     setIsLoggedIn(!!token)
+
+    // 从 API 获取真实课程数据（未登录也能访问）
+    getCourses()
+      .then((data) => {
+        setCourses(data.courses)
+      })
+      .catch((err) => {
+        console.error('Failed to fetch courses:', err)
+      })
+      .finally(() => {
+        setCoursesLoading(false)
+      })
   }, [])
 
   if (!mounted) {
@@ -193,51 +203,57 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {COURSES.map((course) => {
-              const config = getCourseConfig(course.code.toLowerCase())
-              return (
-                <Link
-                  key={course.id}
-                  href={isLoggedIn ? `/mastery/${course.id}` : '/register'}
-                  className="group relative p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all card-interactive overflow-hidden"
-                >
-                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config?.gradient || 'from-primary to-primary-600'}`} />
+          {coursesLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              {courses.map((course) => {
+                const config = getCourseConfig(course.code.toLowerCase())
+                return (
+                  <Link
+                    key={course.id}
+                    href={`/mastery/${course.id}`}
+                    className="group relative p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all card-interactive overflow-hidden"
+                  >
+                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config?.gradient || 'from-primary to-primary-600'}`} />
 
-                  <div className="flex items-center gap-4 mb-4 mt-2">
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${config?.gradient || 'from-primary to-primary-600'} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}
-                    >
-                      <div className="w-7 h-7 text-white">{config?.icon}</div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {course.name}
-                      </h3>
-                      <div className="flex gap-1 mt-1">
-                        {[...Array(4)].map((_, i) => (
-                          <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
-                        ))}
+                    <div className="flex items-center gap-4 mb-4 mt-2">
+                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${config?.gradient || 'from-primary to-primary-600'} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}
+                      >
+                        <div className="w-7 h-7 text-white">{config?.icon}</div>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {course.name}
+                        </h3>
+                        <div className="flex gap-1 mt-1">
+                          {[...Array(4)].map((_, i) => (
+                            <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                    {course.description}
-                  </p>
+                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                      {course.description || '暂无描述'}
+                    </p>
 
-                  <div className="flex items-center justify-between text-xs pt-3 border-t border-border/50">
-                    <span className="text-muted-foreground">
-                      难度 {Array(course.difficulty).fill('★').join('')}
-                    </span>
-                    <span className="flex items-center gap-1 text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      开始学习
-                      <ChevronRight className="w-3 h-3" />
-                    </span>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
+                    <div className="flex items-center justify-between text-xs pt-3 border-t border-border/50">
+                      <span className="text-muted-foreground">
+                        难度 {Array(course.difficulty_level).fill('★').join('')}
+                      </span>
+                      <span className="flex items-center gap-1 text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        开始学习
+                        <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
         </div>
       </section>
 

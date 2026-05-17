@@ -1520,36 +1520,46 @@ function ArenaContent() {
               </div>
 
               {currentExercise.content.description && (
-                <div className="prose prose-sm max-w-none mb-6">
+                <div className="text-[#606266] leading-relaxed mb-6">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeKatex]}
                     components={{
-                      h2: ({ children }) => (
-                        <h3 className="text-base font-semibold text-[#303133] mt-4 mb-2 border-b border-[#E4E7ED] pb-2">
-                          {children}
-                        </h3>
-                      ),
-                      p: ({ children }) => (
-                        <p className="text-[#606266] mb-2 leading-relaxed">
-                          {children}
-                        </p>
-                      ),
+                      h1: ({ children }) => <h1 className="text-xl font-bold text-[#303133] mb-2 mt-4">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-lg font-semibold text-[#303133] mt-4 mb-2 border-b border-[#E4E7ED] pb-2">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-base font-semibold text-[#303133] mt-3 mb-2">{children}</h3>,
+                      p: ({ children }) => <p className="text-[#606266] mb-2 leading-relaxed">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                      li: ({ children }) => <li className="text-[#606266]">{children}</li>,
+                      blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-[#606266]">{children}</blockquote>,
+                      strong: ({ children }) => <strong className="font-semibold text-[#303133]">{children}</strong>,
                       code: ({ className, children, ...props }) => {
                         const isInline = !className;
                         return isInline ? (
-                          <code
-                            className="bg-[#F5F7FA] px-1.5 py-0.5 rounded text-sm text-[#E74C3C] font-mono border border-[#E4E7ED]"
-                            {...props}
-                          >
+                          <code className="bg-[#F5F7FA] px-1.5 py-0.5 rounded text-sm text-[#E74C3C] font-mono border border-[#E4E7ED]" {...props}>
                             {children}
                           </code>
                         ) : (
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
+                          <code className={className} {...props}>{children}</code>
                         );
                       },
+                      pre: ({ children }) => (
+                        <pre
+                          className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3"
+                          style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' }}
+                        >
+                          {children}
+                        </pre>
+                      ),
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-3">
+                          <table className="min-w-full border-collapse border border-[#E4E7ED]">{children}</table>
+                        </div>
+                      ),
+                      thead: ({ children }) => <thead className="bg-[#F5F7FA]">{children}</thead>,
+                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-[#303133] border border-[#E4E7ED]">{children}</th>,
+                      td: ({ children }) => <td className="px-3 py-2 text-sm text-[#606266] border border-[#E4E7ED]">{children}</td>,
                     }}
                   >
                     {currentExercise.content.description}

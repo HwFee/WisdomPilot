@@ -60,17 +60,13 @@ export default function CoursesPage() {
   useEffect(() => {
     setMounted(true)
     const token = getStoredToken()
-    if (!token) {
-      router.push('/login')
-      return
-    }
-    setIsLoggedIn(true)
+    setIsLoggedIn(!!token)
 
-    // Fetch real courses from API
+    // Fetch real courses from API (公开接口，未登录也能访问)
     const fetchCourses = async () => {
       try {
         setIsLoading(true)
-        const response = await getCourses(token)
+        const response = await getCourses(token || undefined)
         if (response.courses && response.courses.length > 0) {
           // Transform API data to component format
           const transformedCourses: Course[] = response.courses.map((course: {
@@ -103,7 +99,7 @@ export default function CoursesPage() {
     }
 
     fetchCourses()
-  }, [router])
+  }, [])
 
   if (!mounted || isLoading) {
     return (
@@ -125,7 +121,7 @@ export default function CoursesPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <Link
-              href="/dashboard"
+              href={getStoredToken() ? "/dashboard" : "/"}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />

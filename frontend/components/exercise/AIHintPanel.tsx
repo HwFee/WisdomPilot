@@ -5,6 +5,11 @@ import { createPortal } from "react-dom";
 import { Lightbulb, Sparkles, BookOpen, Gem, Loader2, X, AlertCircle, GripVertical } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import rehypeHighlight from "rehype-highlight";
+import "katex/dist/katex.min.css";
+import "highlight.js/styles/github-dark.css";
 import { cn } from "@/lib/utils";
 
 // ========================================
@@ -167,8 +172,51 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <div className="text-muted-foreground leading-relaxed">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex, rehypeHighlight]}
+                  components={{
+                    h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mt-3 mb-2">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-base font-medium text-foreground mt-2 mb-1">{children}</h3>,
+                    p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
+                    ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                    li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
+                    strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                    code({ className, children, ...props }) {
+                      const isInline = !className
+                      if (isInline) {
+                        return (
+<code className="bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                        )
+                      }
+                      return <code className={className} {...props}>{children}</code>
+                    },
+                    pre({ children }) {
+                      return (
+                        <pre
+                          className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3"
+                          style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' }}
+                        >
+                          {children}
+                        </pre>
+                      )
+                    },
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-3">
+                        <table className="min-w-full border-collapse border border-border">{children}</table>
+                      </div>
+                    ),
+                    thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+                    th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-foreground border border-border">{children}</th>,
+                    td: ({ children }) => <td className="px-3 py-2 text-sm text-muted-foreground border border-border">{children}</td>,
+                  }}
+                >
                   {hint}
                 </ReactMarkdown>
               </div>
@@ -409,8 +457,51 @@ export function StreamHintModal({
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {hintContent ? (
-          <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground/90">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <div className="text-muted-foreground leading-relaxed">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex, rehypeHighlight]}
+              components={{
+                h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mt-3 mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-base font-medium text-foreground mt-2 mb-1">{children}</h3>,
+                p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+                blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
+                strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                code({ className, children, ...props }) {
+                  const isInline = !className
+                  if (isInline) {
+                    return (
+                      <code className="bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                        {children}
+                      </code>
+                    )
+                  }
+                  return <code className={className} {...props}>{children}</code>
+                },
+pre({ children }) {
+                   return (
+                     <pre
+                       className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3"
+                       style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' }}
+                     >
+                       {children}
+                     </pre>
+                   )
+                 },
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-3">
+                    <table className="min-w-full border-collapse border border-border">{children}</table>
+                  </div>
+                ),
+                thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+                th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-foreground border border-border">{children}</th>,
+                td: ({ children }) => <td className="px-3 py-2 text-sm text-muted-foreground border border-border">{children}</td>,
+              }}
+            >
               {hintContent}
             </ReactMarkdown>
           </div>

@@ -5,6 +5,9 @@ import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+import rehypeKatex from "rehype-katex"
+import "katex/dist/katex.min.css"
 import { useAIContext, type KnowledgePointContext } from "@/contexts/AIContext"
 import { cn } from "@/lib/utils"
 import { createNoteFromQuestion } from "@/lib/api/notes"
@@ -167,7 +170,8 @@ function MessageBubble({ role, content, courseId, chapterId, sectionId, exercise
         ) : (
           <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
               components={{
                 p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
                 code: ({ children }) => (
@@ -762,12 +766,19 @@ ${kp.title}${optsStr}
             transition: isDraggingOrb ? "none" : "background 0.2s, box-shadow 0.2s",
           }}
         >
-          {/* Cute face with book icon */}
-          <div style={{ position: "relative", width: 36, height: 36 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(14, 165, 233, 0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", top: 9, left: 9 }}>
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-            </svg>
+          {/* AI label */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: "rgba(3, 105, 161, 0.9)",
+                letterSpacing: "0.5px",
+                userSelect: "none",
+              }}
+            >
+              AI
+            </span>
           </div>
         </div>,
         document.body
@@ -932,7 +943,8 @@ ${kp.title}${optsStr}
                   {streamingText ? (
                     <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
                         components={{
                           p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
                           code: ({ children }) => (

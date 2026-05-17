@@ -63,12 +63,12 @@ export async function register(
 }
 
 export async function login(
-  email: string,
+  username: string,
   password: string,
   rememberMe: boolean = false
 ): Promise<Token> {
   const data = await postPublic<Token>('/api/auth/login', {
-    email,
+    username,
     password,
     remember_me: rememberMe,
   } as UserLogin)

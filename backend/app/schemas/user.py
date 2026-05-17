@@ -6,12 +6,25 @@ import re
 class UserBase(BaseModel):
     """Base user schema with common fields"""
     email: EmailStr
-    username: str = Field(..., min_length=2, max_length=100)
+    username: str
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        if not v or v.strip() == "":
+            raise ValueError("用户名不能为空")
+        if len(v) < 2:
+            raise ValueError("用户名至少需要2个字符")
+        if len(v) > 100:
+            raise ValueError("用户名不能超过100个字符")
+        if not re.match(r"^[一-龥a-zA-Z0-9_]+$", v):
+            raise ValueError("用户名只能包含字母、数字、下划线和中文")
+        return v
 
 
 class UserCreate(UserBase):
     """Schema for user registration"""
-    password: str = Field(..., min_length=8, max_length=100)
+    password: str
 
     @field_validator("password")
     @classmethod
@@ -39,7 +52,7 @@ class UserCreate(UserBase):
 
 class UserLogin(BaseModel):
     """Schema for user login"""
-    email: EmailStr
+    username: str
     password: str
     remember_me: bool = False
 

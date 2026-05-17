@@ -48,8 +48,10 @@ import {
   type MasteryExerciseProgressItem,
 } from "@/lib/api/learning-path";
 import { collectWrongQuestion } from "@/lib/api/wrong-question";
+import { getCourse } from "@/lib/api/courses";
 import type {
   MasteryOverviewResponse,
+  CourseDetailResponse,
   MasteryLevel,
   BaseQuestionResponse,
   BaseAnswersSubmitResponse,
@@ -88,6 +90,9 @@ export default function MasteryPathPage() {
 
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<MasteryOverviewResponse | null>(
+    null,
+  );
+  const [courseDetail, setCourseDetail] = useState<CourseDetailResponse | null>(
     null,
   );
 
@@ -160,21 +165,27 @@ export default function MasteryPathPage() {
 
   const fetchOverview = useCallback(async () => {
     const token = getStoredToken();
-    if (!token) {
-      logout();
-      router.push("/login");
-      return;
+
+    if (token) {
+      // 已登录：获取掌握度数据
+      try {
+        const data = await getMasteryOverview(courseId, token);
+        setOverview(data);
+      } catch (error) {
+        console.error("Failed to fetch mastery overview:", error);
+      }
     }
 
+    // 未登录也获取课程详情（公开接口）用于展示章节列表
     try {
-      const data = await getMasteryOverview(courseId, token);
-      setOverview(data);
+      const detail = await getCourse(courseId);
+      setCourseDetail(detail);
     } catch (error) {
-      console.error("Failed to fetch mastery overview:", error);
+      console.error("Failed to fetch course detail:", error);
     } finally {
       setLoading(false);
     }
-  }, [courseId, router]);
+  }, [courseId]);
 
   useEffect(() => {
     fetchOverview();
@@ -516,7 +527,10 @@ export default function MasteryPathPage() {
     chapterTitle: string,
   ) => {
     const token = getStoredToken();
-    if (!token) return;
+    if (!token) {
+      router.push('/login');
+      return;
+    }
 
     // Store chapter info for section page
     try {
@@ -2195,7 +2209,7 @@ export default function MasteryPathPage() {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link
-            href="/dashboard"
+            href={getStoredToken() ? "/dashboard" : "/"}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -2216,19 +2230,31 @@ export default function MasteryPathPage() {
             选择章节开始学习
           </h3>
 
-          {overview?.chapters && overview.chapters.length > 0 ? (
+          {/* 优先使用 overview（登录后有掌握度），否则使用 courseDetail（未登录） */}
+          {(overview?.chapters && overview.chapters.length > 0) ||
+          (courseDetail?.course?.chapters && courseDetail.course.chapters.length > 0) ? (
             <div className="space-y-3">
-              {overview.chapters.map((chapter) => {
-                const masteryPercent = chapter.mastery_score ?? 0;
-                const masteryLevel = chapter.mastery_level as MasteryLevel;
-                // 所有章节直接解锁
-                const isUnlocked = true;
+              {(overview?.chapters || courseDetail?.course?.chapters || []).map((chapter) => {
+                // 登录状态：从 overview 获取，有掌握度数据
+                // 未登录状态：从 courseDetail 获取，只有基础信息
+                const isLoggedInChapter = 'chapter_id' in chapter;
+                const chapterId = isLoggedInChapter
+                  ? (chapter as { chapter_id: number }).chapter_id
+                  : (chapter as { id: number }).id;
+                const orderIndex = (chapter as { order_index: number }).order_index;
+                const title = chapter.title;
+                const masteryPercent = isLoggedInChapter
+                  ? ((chapter as { mastery_score?: number }).mastery_score ?? 0)
+                  : 0;
+                const masteryLevel = isLoggedInChapter
+                  ? ((chapter as { mastery_level?: string }).mastery_level as MasteryLevel)
+                  : null;
 
                 return (
                   <button type="button"
-                    key={chapter.chapter_id}
+                    key={chapterId}
                     onClick={() =>
-                      handleSelectChapter(chapter.chapter_id, chapter.title)
+                      handleSelectChapter(chapterId, title)
                     }
                     className="w-full p-4 rounded-xl border text-left transition-all border-border hover:border-amber-500/50 hover:bg-amber-500/5"
                   >
@@ -2236,36 +2262,40 @@ export default function MasteryPathPage() {
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center font-medium bg-amber-500/20 text-amber-600"
                         >
-                          {chapter.order_index}
+                          {orderIndex}
                         </div>
                         <div>
                           <p className="font-medium text-foreground">
-                            {chapter.title}
+                            {title}
                           </p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <span
-                              className={
-                                MASTERY_LEVEL_COLORS[masteryLevel] ||
-                                "text-muted-foreground"
-                              }
-                            >
-                              {masteryLevel}
-                            </span>
-                            <span>•</span>
-                            <span>掌握度 {masteryPercent.toFixed(0)}%</span>
-                          </div>
+                          {masteryLevel && (
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              <span
+                                className={
+                                  MASTERY_LEVEL_COLORS[masteryLevel] ||
+                                  "text-muted-foreground"
+                                }
+                              >
+                                {masteryLevel}
+                              </span>
+                              <span>•</span>
+                              <span>掌握度 {masteryPercent.toFixed(0)}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </div>
 
-                    {/* Progress bar */}
-                    <div className="mt-3 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
-                        style={{ width: `${masteryPercent}%` }}
-                      />
-                    </div>
+                    {/* Progress bar - 仅登录时显示 */}
+                    {masteryLevel && (
+                      <div className="mt-3 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
+                          style={{ width: `${masteryPercent}%` }}
+                        />
+                      </div>
+                    )}
                   </button>
                 );
               })}

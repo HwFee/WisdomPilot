@@ -35,9 +35,9 @@ class AuthService:
 
         if existing_user:
             if existing_user.email == user_data.email:
-                raise ValueError("Email already registered")
+                raise ValueError("该邮箱已被注册")
             else:
-                raise ValueError("Username already taken")
+                raise ValueError("该用户名已被使用")
 
         # Create new user
         hashed_password = get_password_hash(user_data.password)
@@ -65,12 +65,14 @@ class AuthService:
     async def login(self, login_data: UserLogin) -> tuple[User, Token]:
         """Authenticate user and return user + token"""
         result = await self.db.execute(
-            select(User).where(User.email == login_data.email)
+            select(User).where(
+                or_(User.email == login_data.username, User.username == login_data.username)
+            )
         )
         user = result.scalar_one_or_none()
 
         if not user or not verify_password(login_data.password, user.hashed_password):
-            raise ValueError("Invalid email or password")
+            raise ValueError("用户名或密码错误")
 
         if not user.is_active:
             raise ValueError("Account is inactive")

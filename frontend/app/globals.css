@@ -1821,7 +1821,7 @@ body {
 pre code {
   background: transparent !important;
   padding: 0 !important;
-  color: #e5e7eb !important; /* 浅灰色文字 */
+  color: #e2e8f0 !important;
 }
 
 /* hljs 语法高亮颜色 - 深色背景适配 */

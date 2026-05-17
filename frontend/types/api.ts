@@ -24,7 +24,7 @@ export interface Token {
 }
 
 export interface UserLogin {
-  email: string
+  username: string
   password: string
   remember_me?: boolean
 }
