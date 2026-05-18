@@ -59,7 +59,7 @@ export function CustomTestInput({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-[#F5F7FA] border-b border-[#E4E7ED]">
         <span className="text-sm font-medium text-[#606266]">
-          {t('自定义测试', 'Custom Test')}
+          {t('测试', 'Test')}
         </span>
         <div className="flex items-center gap-2">
           <button type="button"

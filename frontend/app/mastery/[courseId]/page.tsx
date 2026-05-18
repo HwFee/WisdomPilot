@@ -750,14 +750,27 @@ export default function MasteryPathPage() {
       correct =
         answer.toUpperCase() === currentQuestion.correct_answer?.toUpperCase();
     } else if (questionType === "fill_blank") {
-      // Fill blank: compare answer content (trim whitespace, case-insensitive for simplicity)
-      const userAnswer = answer.trim();
+      // Fill blank: trim + case-insensitive, with two relaxations:
+      //   1) `|` separates equivalent answers (any one matches)
+      //   2) `;` within an answer indicates multi-blank — user just needs to
+      //      include every part somewhere in their answer (any order, any separator)
+      const userAnswer = answer.trim().toLowerCase();
       const correctAnswer = currentQuestion.correct_answer?.trim() || "";
-      // For fill blank, do case-insensitive comparison and allow multiple correct answers separated by |
-      const correctOptions = correctAnswer
+      const acceptedForms = correctAnswer
         .split("|")
-        .map((s) => s.trim().toLowerCase());
-      correct = correctOptions.includes(userAnswer.toLowerCase());
+        .map((s) => s.trim())
+        .filter(Boolean);
+      correct = acceptedForms.some((form) => {
+        const lower = form.toLowerCase();
+        if (lower.includes(";")) {
+          const parts = lower
+            .split(";")
+            .map((p) => p.trim())
+            .filter(Boolean);
+          return parts.every((p) => userAnswer.includes(p));
+        }
+        return userAnswer === lower;
+      });
     } else if (questionType === "programming") {
       // Programming: for now, always mark as submitted (needs server evaluation)
       correct = false;

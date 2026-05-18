@@ -34,6 +34,16 @@ export const LANGUAGE_CONFIG: Record<number, { label: string; monacoLanguage: st
   54: { label: 'C++', monacoLanguage: 'cpp' },
 }
 
+// Map string language name (from KnowledgePointDetail.code_language) to Judge0 language_id
+export const CODE_LANGUAGE_TO_ID: Record<string, number> = {
+  python: 71,
+  javascript: 63,
+  typescript: 74,
+  c: 50,
+  cpp: 54,
+  'c++': 54,
+}
+
 async function fetchWithAuth(url: string, token: string, options: RequestInit = {}): Promise<Response> {
   const response = await fetch(url, {
     ...options,

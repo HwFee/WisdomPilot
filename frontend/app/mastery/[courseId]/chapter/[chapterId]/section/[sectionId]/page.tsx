@@ -1,17 +1,72 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Children } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight, Lightbulb, AlertTriangle, Code, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight, Lightbulb, AlertTriangle, Code, ChevronDown, ChevronUp, Terminal } from 'lucide-react'
+import { CodeRunner } from '@/components/mastery/CodeRunner'
+import { CODE_LANGUAGE_TO_ID } from '@/lib/code-api'
 import { getSection, saveSectionProgress, type SectionDetail, type KnowledgePointDetail } from '@/lib/api/sections'
 import { getStoredToken } from '@/lib/api'
 import { startLearningSession, endLearningSessionKeepalive } from '@/lib/api/stats'
 import { KnowledgeOrb } from '@/components/ui/knowledge-orb'
+import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
+import mermaid from 'mermaid'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import rehypeHighlight from 'rehype-highlight'
+
+// Mermaid diagram renderer for knowledge point content
+function MermaidBlock({ code }: { code: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [svg, setSvg] = useState<string>('')
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      securityLevel: 'strict',
+    })
+    const render = async () => {
+      try {
+        const id = `mermaid-${Math.random().toString(36).slice(2)}`
+        const { svg } = await mermaid.render(id, code)
+        if (!cancelled) {
+          setSvg(svg)
+          setErr(null)
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setErr(e instanceof Error ? e.message : 'Mermaid 渲染失败')
+        }
+      }
+    }
+    render()
+    return () => { cancelled = true }
+  }, [code])
+
+  if (err) {
+    return (
+      <div className="bg-red-950/30 border border-red-700/50 rounded-lg p-3 my-3">
+        <p className="text-red-400 text-xs mb-1">流程图渲染失败</p>
+        <pre className="text-red-300 text-xs whitespace-pre-wrap">{code}</pre>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      ref={ref}
+      className="mermaid-diagram my-3 flex justify-center bg-gray-800/50 rounded-lg p-4 overflow-x-auto"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  )
+}
+(MermaidBlock as any).isMermaid = true
 
 export default function SectionLearningPage() {
   const params = useParams()
@@ -26,6 +81,10 @@ export default function SectionLearningPage() {
   const [error, setError] = useState<string | null>(null)
   const [expandedKp, setExpandedKp] = useState<number | null>(null) // 展开的知识点ID
   const contentRef = useRef<HTMLDivElement>(null)
+
+  // Code runner state
+  const [activeRunnerKpId, setActiveRunnerKpId] = useState<number | null>(null)
+  const [kpEditorStates, setKpEditorStates] = useState<Map<number, { code: string; languageId: number }>>(new Map())
 
   // 学习时长统计
   const sessionStartedAtRef = useRef<number | null>(null)
@@ -175,6 +234,12 @@ export default function SectionLearningPage() {
     setExpandedKp(expandedKp === kpId ? null : kpId)
   }
 
+  // Map string language name to Judge0 language_id
+  const getLanguageId = (lang: string): number => {
+    const normalized = lang?.toLowerCase().trim() || 'python'
+    return CODE_LANGUAGE_TO_ID[normalized] || 71
+  }
+
   // 渲染知识点卡片
   const renderKnowledgePoint = (kp: KnowledgePointDetail, index: number) => {
     const isExpanded = expandedKp === kp.id
@@ -256,6 +321,11 @@ export default function SectionLearningPage() {
                             </code>
                           )
                         }
+                        // 检测 mermaid 流程图
+                        if (className?.includes('language-mermaid')) {
+                          const codeText = String(children).replace(/\n$/, '')
+                          return <MermaidBlock code={codeText} />
+                        }
                         // 代码块内的 code - 继承 pre 的样式，不要额外背景
                         return (
                           <code className={`${className || ''} bg-transparent p-0`} {...props}>
@@ -264,6 +334,11 @@ export default function SectionLearningPage() {
                         )
                       },
                       pre({ children }) {
+                        const childArr = Children.toArray(children)
+                        const isMermaid = childArr.some((c: any) => c?.type?.isMermaid)
+                        if (isMermaid) {
+                          return <>{children}</>
+                        }
                         return (
                           <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose">
                             {children}
@@ -330,6 +405,32 @@ export default function SectionLearningPage() {
                 {kp.code_explanation && (
                   <p className="text-sm text-muted-foreground mt-2 pl-6">{kp.code_explanation}</p>
                 )}
+                {/* 在线运行按钮 */}
+                <div className="mt-3 pl-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const langId = getLanguageId(kp.code_language)
+                      // Save current editor state before switching
+                      if (activeRunnerKpId !== null) {
+                        // Will be handled by CodeRunner's onClose/onCodeChange
+                      }
+                      setActiveRunnerKpId(kp.id)
+                      // Initialize state if not exists
+                      if (!kpEditorStates.has(kp.id)) {
+                        setKpEditorStates(prev => {
+                          const next = new Map(prev)
+                          next.set(kp.id, { code: kp.code_example || '', languageId: langId })
+                          return next
+                        })
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg hover:bg-primary/20 transition-colors border border-primary/20"
+                  >
+                    <Terminal className="w-3.5 h-3.5" />
+                    在线运行
+                  </button>
+                </div>
               </div>
             )}
 
@@ -396,10 +497,13 @@ export default function SectionLearningPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen bg-background", activeRunnerKpId !== null && "h-screen flex flex-col overflow-hidden")}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <header className={cn("sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b", activeRunnerKpId !== null && "flex-shrink-0")}>
+        <div className={cn(
+          "px-4 py-4",
+          activeRunnerKpId !== null ? "w-full" : "max-w-4xl mx-auto"
+        )}>
           <div className="flex items-center gap-4">
             <button type="button"
               onClick={handleBack}
@@ -429,7 +533,13 @@ export default function SectionLearningPage() {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-32">
+      <div className={cn(activeRunnerKpId !== null && "flex flex-1 overflow-hidden")}>
+        <main className={cn(
+          "transition-all duration-300 ease-in-out",
+          activeRunnerKpId !== null
+            ? "w-2/5 overflow-y-auto px-4 py-4"
+            : "max-w-4xl mx-auto px-4 py-6 pb-32"
+        )}>
         {/* Learning Objectives */}
         {section.learning_objectives && section.learning_objectives.length > 0 && (
           <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 mb-6">
@@ -500,26 +610,81 @@ export default function SectionLearningPage() {
         )}
       </main>
 
-      {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <button type="button"
-            onClick={handleStartQuiz}
-            disabled={saving}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/80 text-white hover:shadow-lg transition-all disabled:opacity-70"
+      {/* Right: Code Runner */}
+      <AnimatePresence mode="wait">
+        {activeRunnerKpId !== null && section?.knowledge_points && (
+          <motion.div
+            key="runner-panel"
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 100, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="w-3/5 p-4 flex flex-col"
           >
-            {saving ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <Play className="w-5 h-5" />
-                小节测试
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        </div>
+            {(() => {
+              const kp = section.knowledge_points.find((k) => k.id === activeRunnerKpId)
+              if (!kp) return null
+              const state = kpEditorStates.get(activeRunnerKpId)
+              const initialCode = state?.code ?? (kp.code_example || '')
+              const initialLangId = state?.languageId ?? getLanguageId(kp.code_language)
+              return (
+                <CodeRunner
+                  key={activeRunnerKpId}
+                  initialCode={initialCode}
+                  initialLanguageId={initialLangId}
+                  onClose={() => setActiveRunnerKpId(null)}
+                  onCodeChange={(newCode) => {
+                    setKpEditorStates((prev) => {
+                      const next = new Map(prev)
+                      const existing = next.get(activeRunnerKpId)
+                      next.set(activeRunnerKpId, {
+                        code: newCode,
+                        languageId: existing?.languageId ?? initialLangId,
+                      })
+                      return next
+                    })
+                  }}
+                  onLanguageChange={(newLangId) => {
+                    setKpEditorStates((prev) => {
+                      const next = new Map(prev)
+                      const existing = next.get(activeRunnerKpId)
+                      next.set(activeRunnerKpId, {
+                        code: existing?.code ?? initialCode,
+                        languageId: newLangId,
+                      })
+                      return next
+                    })
+                  }}
+                />
+              )
+            })()}
+          </motion.div>
+        )}
+      </AnimatePresence>
       </div>
+
+      {/* Bottom Action Bar */}
+      {activeRunnerKpId === null && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <button type="button"
+              onClick={handleStartQuiz}
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/80 text-white hover:shadow-lg transition-all disabled:opacity-70"
+            >
+              {saving ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Play className="w-5 h-5" />
+                  小节测试
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* AI Knowledge Assistant Orb */}
       <KnowledgeOrb

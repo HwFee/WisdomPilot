@@ -341,12 +341,30 @@ class ChallengePathService:
         if len(all_exercises) < count:
             raise ValueError(f"Not enough verified exercises available (found {len(all_exercises)}, need {count})")
 
-        selected = random.sample(list(all_exercises), count)
+        exercise_pool = list(all_exercises)
+
+        # Try to find a hello-world exercise and place it first
+        hello_world_ex = None
+        for ex in exercise_pool:
+            title = (ex.content or {}).get("title", "")
+            text = (ex.content or {}).get("text", "")
+            desc = (ex.content or {}).get("description", "")
+            combined = f"{title} {text} {desc}".lower()
+            if "hello world" in combined or "helloworld" in combined:
+                hello_world_ex = ex
+                break
+
+        if hello_world_ex:
+            exercise_pool.remove(hello_world_ex)
+            selected = [hello_world_ex]
+            if count > 1:
+                selected += random.sample(exercise_pool, min(count - 1, len(exercise_pool)))
+        else:
+            selected = random.sample(exercise_pool, count)
 
         for i, ex in enumerate(selected):
             progress = ArenaExerciseProgress(
                 user_id=user_id,
-                
                 exercise_id=ex.id,
                 exercise_index=i,
                 is_unlocked=(i == 0),

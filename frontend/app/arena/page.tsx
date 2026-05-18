@@ -20,6 +20,7 @@ import {
   Frown,
   Lock,
   Trophy,
+  AlertTriangle,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -547,12 +548,16 @@ function ArenaContent() {
   const [coreBalance, setCoreBalance] = useState<number | undefined>(undefined);
 
   // Exercise content loading state (lite mode: content loaded on demand)
-  const [contentLoading, setContentLoading] = useState(false);
+  const [contentLoadingMap, setContentLoadingMap] = useState<Record<number, boolean>>({});
+  const [contentErrorMap, setContentErrorMap] = useState<Record<number, string>>({});
   const loadedContentRef = useRef<Set<number>>(new Set()); // tracks which exercises have full content
+  const loadingContentRef = useRef<Set<number>>(new Set()); // tracks in-flight loads to prevent duplicates
 
   // Refs
   const codeRef = useRef(code);
   codeRef.current = code;
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
   const mountedRef = useRef(true);
   const isMountedRef = useRef(false);
   const sessionStartedAtRef = useRef<number | null>(null);
@@ -649,9 +654,18 @@ function ArenaContent() {
         setCoreBalance(balanceData.balance);
       }
 
+      // 先确定语言：优先用 localStorage 中保存的偏好，否则默认 python
+      // 必须在 processProgressData 之前，否则 savedCodes 初始化会用错误的 language key
+      const savedLanguage = localStorage.getItem("preferred_language");
+      const effectiveLanguage =
+        savedLanguage && LANGUAGE_MAP[savedLanguage] ? savedLanguage : "python";
+      if (effectiveLanguage !== language) {
+        setLanguage(effectiveLanguage);
+      }
+
       // 处理挑战进度
       if (progressData && progressData.exercises && progressData.exercises.length > 0) {
-        processProgressData(progressData, difficulty);
+        processProgressData(progressData, difficulty, effectiveLanguage);
       } else {
         // 没有练习题，初始化挑战之路
         const sessionData = await startInfiniteSession(
@@ -685,18 +699,12 @@ function ArenaContent() {
             current_index: 0,
             session_id: sessionData.session_id,
           };
-          processProgressData(builtProgress, difficulty);
+          processProgressData(builtProgress, difficulty, effectiveLanguage);
         } else {
           const newProgressData = await getChallengeProgress(token);
           if (!mountedRef.current) return;
-          processProgressData(newProgressData, difficulty);
+          processProgressData(newProgressData, difficulty, effectiveLanguage);
         }
-      }
-
-      // 设置语言
-      const savedLanguage = localStorage.getItem("preferred_language");
-      if (savedLanguage && LANGUAGE_MAP[savedLanguage]) {
-        setLanguage(savedLanguage);
       }
     } catch (error) {
       if (mountedRef.current) {
@@ -711,7 +719,11 @@ function ArenaContent() {
   }, [router, difficultyFromDashboard]);
 
   // 处理进度数据的辅助函数
-  const processProgressData = (progressData: ChallengeProgressResponse, difficulty: number) => {
+  const processProgressData = (
+    progressData: ChallengeProgressResponse,
+    difficulty: number,
+    effectiveLanguage: string = language,
+  ) => {
     setCurrentIndex(progressData.current_index || 0);
     // 保存 session_id 用于收藏
     if (progressData.session_id) {
@@ -735,7 +747,7 @@ function ArenaContent() {
         content: isLite ? {
           title: ex.title,
           description: "",
-          code_template: getTemplate("python"),
+          code_template: getTemplate(effectiveLanguage),
           sample_input: "",
           sample_output: "",
           samples: [],
@@ -743,7 +755,7 @@ function ArenaContent() {
           text: ex.content?.text || ex.title,
           title: ex.title,
           description: ex.content?.description || ex.content?.text || ex.title,
-          code_template: ex.content?.code_template || getTemplate("python"),
+          code_template: ex.content?.code_template || getTemplate(effectiveLanguage),
           sample_input: sampleInput,
           sample_output: sampleOutput,
           samples: samples.map((s: { input?: string; output?: string }) => ({
@@ -777,12 +789,12 @@ function ArenaContent() {
     );
     setExerciseProgress(initialProgress);
 
-    // 初始化保存的代码
+    // 初始化保存的代码：用当前语言作为 key（之前硬编码为 "python" 导致切换语言后取不到）
     const initialCodes: Record<number, Record<string, string>> = {};
     progressData.exercises.forEach((ex: ProgressExercise) => {
       initialCodes[ex.exercise_id] = {
-        python:
-          ex.saved_code || ex.content?.code_template || getTemplate("python"),
+        [effectiveLanguage]:
+          ex.saved_code || ex.content?.code_template || getTemplate(effectiveLanguage),
       };
     });
     setSavedCodes(initialCodes);
@@ -799,9 +811,9 @@ function ArenaContent() {
     if (exerciseList.length > 0) {
       setCurrentIndex(validIndex);
       const savedCode =
-        initialCodes[exerciseList[validIndex].id]?.[language] ||
+        initialCodes[exerciseList[validIndex].id]?.[effectiveLanguage] ||
         exerciseList[validIndex].content.code_template ||
-        getTemplate(language);
+        getTemplate(effectiveLanguage);
       setCode(savedCode);
 
       // Lite 模式下：立即按需加载当前题目的完整内容
@@ -813,12 +825,21 @@ function ArenaContent() {
 
   // 按需加载单个题目的完整内容（lite 模式优化）
   const loadExerciseContent = async (exerciseId: number, index: number) => {
+    // Prevent duplicate in-flight requests
+    if (loadingContentRef.current.has(exerciseId)) return;
     if (loadedContentRef.current.has(exerciseId)) return;
 
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    setContentLoading(true);
+    loadingContentRef.current.add(exerciseId);
+    setContentLoadingMap((prev) => ({ ...prev, [exerciseId]: true }));
+    setContentErrorMap((prev) => {
+      const next = { ...prev };
+      delete next[exerciseId];
+      return next;
+    });
+
     try {
       const data = await getChallengeExerciseContent(exerciseId, token);
       loadedContentRef.current.add(exerciseId);
@@ -858,8 +879,8 @@ function ArenaContent() {
         return updated;
       });
 
-      // 如果当前正在查看这道题，更新代码模板
-      if (index === currentIndex) {
+      // Use ref to check current index (avoids stale closure)
+      if (index === currentIndexRef.current) {
         setSavedCodes((prev) => {
           const updated = { ...prev };
           const existingCode = updated[exerciseId]?.[language];
@@ -876,9 +897,18 @@ function ArenaContent() {
       }
     } catch (error) {
       console.error("[挑战之路] 加载题目内容失败:", error);
+      const errorMsg = error instanceof Error ? error.message : "加载失败";
+      setContentErrorMap((prev) => ({ ...prev, [exerciseId]: errorMsg }));
+      // Remove from loaded set so retry can happen
+      loadedContentRef.current.delete(exerciseId);
     } finally {
+      loadingContentRef.current.delete(exerciseId);
       if (mountedRef.current) {
-        setContentLoading(false);
+        setContentLoadingMap((prev) => {
+          const next = { ...prev };
+          delete next[exerciseId];
+          return next;
+        });
       }
     }
   };
@@ -1289,7 +1319,7 @@ function ArenaContent() {
       }
 
       // 按需加载目标题目的完整内容（如果是 lite 模式还没加载过的）
-      if (!loadedContentRef.current.has(targetExercise.id)) {
+      if (!loadedContentRef.current.has(targetExercise.id) && !loadingContentRef.current.has(targetExercise.id)) {
         loadExerciseContent(targetExercise.id, index);
       }
 
@@ -1519,7 +1549,29 @@ function ArenaContent() {
                 />
               </div>
 
-              {currentExercise.content.description && (
+              {contentLoadingMap[currentExercise.id] ? (
+                <div className="mb-6 p-4 bg-[#F5F7FA] rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-[#909399]">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    正在加载题面...
+                  </div>
+                </div>
+              ) : contentErrorMap[currentExercise.id] ? (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-red-600 mb-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    题面加载失败
+                  </div>
+                  <p className="text-xs text-red-500 mb-3">{contentErrorMap[currentExercise.id]}</p>
+                  <button
+                    type="button"
+                    onClick={() => loadExerciseContent(currentExercise.id, currentIndex)}
+                    className="px-3 py-1.5 bg-white border border-red-300 text-red-600 text-xs rounded-md hover:bg-red-50 transition-colors"
+                  >
+                    重试
+                  </button>
+                </div>
+              ) : currentExercise.content.description ? (
                 <div className="text-[#606266] leading-relaxed mb-6">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
@@ -1565,7 +1617,7 @@ function ArenaContent() {
                     {currentExercise.content.description}
                   </ReactMarkdown>
                 </div>
-              )}
+              ) : null}
 
               {/* Sample I/O */}
               {currentExercise.content.samples &&
@@ -1659,17 +1711,10 @@ function ArenaContent() {
             <div className="flex">
               <button type="button"
                 onClick={() => setRightPanelTab("code")}
-                className={`panel-tab ${rightPanelTab === "code" ? "active" : ""}`}
+                className={`panel-tab ${rightPanelTab !== "output" ? "active" : ""}`}
               >
                 <Code2 className="w-4 h-4 inline mr-1.5" />
                 代码
-              </button>
-              <button type="button"
-                onClick={() => setRightPanelTab("test")}
-                className={`panel-tab ${rightPanelTab === "test" ? "active" : ""}`}
-              >
-                <Terminal className="w-4 h-4 inline mr-1.5" />
-                测试
               </button>
               {testResults.length > 0 && (
                 <button type="button"
@@ -1696,38 +1741,9 @@ function ArenaContent() {
             </div>
           </div>
 
-          {/* Tab content */}
+          {/* Content: code + test stacked, or output tab */}
           <div className="flex-1 overflow-hidden">
-            {rightPanelTab === "code" && (
-              <CodeEditorPanel
-                value={code}
-                onChange={setCode}
-                language={LANGUAGE_MAP[language]?.monaco || "python"}
-              />
-            )}
-
-            {rightPanelTab === "test" && (
-              <div className="h-full overflow-y-auto p-4 bg-[#FAFBFC]">
-                <CustomTestInput
-                  onRun={(input) => handleCustomRun(input, false)}
-                  isRunning={isCustomRunning}
-                  defaultInput={customTestInput}
-                />
-                {customTestOutput && (
-                  <div className="mt-4">
-                    <TestOutputDisplay
-                      output={customTestOutput.output}
-                      expected={customTestOutput.expected}
-                      passed={customTestOutput.passed}
-                      isRunning={isCustomRunning}
-                      error={customTestOutput.error}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {rightPanelTab === "output" && (
+            {rightPanelTab === "output" && testResults.length > 0 ? (
               <div className="h-full overflow-y-auto p-4 bg-[#FAFBFC]">
                 <LuoguTestCaseTable
                   results={testResults}
@@ -1735,6 +1751,36 @@ function ArenaContent() {
                   totalCount={testResults.length}
                   isRunning={isSubmitting}
                 />
+              </div>
+            ) : (
+              <div className="h-full flex flex-col">
+                {/* Code editor - upper part */}
+                <div className="flex-1 min-h-0">
+                  <CodeEditorPanel
+                    value={code}
+                    onChange={setCode}
+                    language={LANGUAGE_MAP[language]?.monaco || "python"}
+                  />
+                </div>
+                {/* Test panel - below code */}
+                <div className="h-[220px] flex-shrink-0 border-t border-[#E4E7ED] bg-[#FAFBFC] overflow-y-auto">
+                  <CustomTestInput
+                    onRun={(input) => handleCustomRun(input, false)}
+                    isRunning={isCustomRunning}
+                    defaultInput={customTestInput}
+                  />
+                  {customTestOutput && (
+                    <div className="px-4 pb-4">
+                      <TestOutputDisplay
+                        output={customTestOutput.output}
+                        expected={customTestOutput.expected}
+                        passed={customTestOutput.passed}
+                        isRunning={isCustomRunning}
+                        error={customTestOutput.error}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

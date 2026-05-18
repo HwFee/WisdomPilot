@@ -168,82 +168,73 @@ async def get_mastery_overview(
     for ch in chapters:
         ch_kp_count = chapter_kp_counts.get(ch.id, 0)
 
-        if ch_kp_count > 0:
-            # 计算章节加权掌握度 = Σ(小节掌握度 × 小节知识点数) / 章节总知识点数
-            ch_weighted_sum = 0.0
-            ch_started_sections = 0
-            ch_total_sections = 0
+        # Skip chapters with no knowledge points / sections
+        if ch_kp_count == 0:
+            continue
 
-            # 获取该章节的所有小节
-            ch_sections = [s for s in sections if s.chapter_id == ch.id]
+        # 计算章节加权掌握度 = Σ(小节掌握度 × 小节知识点数) / 章节总知识点数
+        ch_weighted_sum = 0.0
+        ch_started_sections = 0
+        ch_total_sections = 0
 
-            for s in ch_sections:
-                s_kp_count = section_kp_counts.get(s.id, 0)
-                if s_kp_count == 0:
-                    continue
+        # 获取该章节的所有小节
+        ch_sections = [s for s in sections if s.chapter_id == ch.id]
 
-                ch_total_sections += 1
-                sm = section_mastery_map.get(s.id)
+        for s in ch_sections:
+            s_kp_count = section_kp_counts.get(s.id, 0)
+            if s_kp_count == 0:
+                continue
 
-                if sm and sm.first_attempt_at:
-                    # 小节已开始测试，使用实际掌握度
-                    section_p_l = sm.bkt_aggregated_p_l
-                    ch_started_sections += 1
-                else:
-                    # 小节未开始，掌握度为 0
-                    section_p_l = 0.0
+            ch_total_sections += 1
+            sm = section_mastery_map.get(s.id)
 
-                ch_weighted_sum += section_p_l * s_kp_count
-
-            # 章节平均掌握度
-            ch_avg_p_l = ch_weighted_sum / ch_kp_count
-            mastery_score = ch_avg_p_l * 100
-
-            # 判断是否完成：所有小节都开始且掌握
-            is_mastered = ch_started_sections == ch_total_sections and ch_avg_p_l >= 0.95
-
-            # 章节等级
-            if mastery_score >= 95:
-                mastery_level = "精通"
-            elif mastery_score >= 85:
-                mastery_level = "熟练"
-            elif mastery_score >= 70:
-                mastery_level = "练习"
-            elif mastery_score >= 50:
-                mastery_level = "学习"
+            if sm and sm.first_attempt_at:
+                # 小节已开始测试，使用实际掌握度
+                section_p_l = sm.bkt_aggregated_p_l
+                ch_started_sections += 1
             else:
-                mastery_level = "入门"
+                # 小节未开始，掌握度为 0
+                section_p_l = 0.0
 
-            total_mastery_points += mastery_score
-            total_kp_count += ch_kp_count
-            weighted_mastery_sum += ch_kp_count * mastery_score
-            if is_mastered:
-                mastered_count += 1
+            ch_weighted_sum += section_p_l * s_kp_count
 
-            # 找到第一个未完成的章节
-            if current_chapter is None and not is_mastered:
-                current_chapter = ch.order_index
+        # 章节平均掌握度
+        ch_avg_p_l = ch_weighted_sum / ch_kp_count
+        mastery_score = ch_avg_p_l * 100
 
-            chapter_list.append({
-                "chapter_id": ch.id,
-                "order_index": ch.order_index,
-                "title": ch.title,
-                "mastery_score": round(mastery_score, 2),
-                "mastery_level": mastery_level,
-                "can_advance": mastery_score >= 75,
-            })
+        # 判断是否完成：所有小节都开始且掌握
+        is_mastered = ch_started_sections == ch_total_sections and ch_avg_p_l >= 0.95
+
+        # 章节等级
+        if mastery_score >= 95:
+            mastery_level = "精通"
+        elif mastery_score >= 85:
+            mastery_level = "熟练"
+        elif mastery_score >= 70:
+            mastery_level = "练习"
+        elif mastery_score >= 50:
+            mastery_level = "学习"
         else:
-            # 没有知识点数据的章节
-            if current_chapter is None:
-                current_chapter = ch.order_index
-            chapter_list.append({
-                "chapter_id": ch.id,
-                "order_index": ch.order_index,
-                "title": ch.title,
-                "mastery_score": 0,
-                "mastery_level": "入门",
-                "can_advance": False,
-            })
+            mastery_level = "入门"
+
+        total_mastery_points += mastery_score
+        total_kp_count += ch_kp_count
+        weighted_mastery_sum += ch_kp_count * mastery_score
+        if is_mastered:
+            mastered_count += 1
+
+        # 找到第一个未完成的章节
+        if current_chapter is None and not is_mastered:
+            current_chapter = ch.order_index
+
+        chapter_list.append({
+            "chapter_id": ch.id,
+            "order_index": ch.order_index,
+            "title": ch.title,
+            "mastery_score": round(mastery_score, 2),
+            "mastery_level": mastery_level,
+            "can_advance": mastery_score >= 75,
+        })
 
     # 计算平均掌握度（按知识点数量加权）
     avg_mastery = weighted_mastery_sum / total_kp_count if total_kp_count > 0 else 0
