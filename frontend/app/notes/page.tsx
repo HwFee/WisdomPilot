@@ -220,7 +220,7 @@ export default function NotesPage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <aside className="lg:w-72 shrink-0 gap-y-6">
+          <aside className="lg:w-72 shrink-0 flex flex-col gap-y-6">
             {/* Search */}
             <NoteSearch
               onResults={handleSearchResults}
@@ -264,7 +264,7 @@ export default function NotesPage() {
                 )}
               </div>
             ) : (
-              <div className="gap-y-4">
+              <div className="flex flex-col gap-y-4">
                 {filteredNotes.map((note) => (
                   <NoteCard
                     key={note.id}

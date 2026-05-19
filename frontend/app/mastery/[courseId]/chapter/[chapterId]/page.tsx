@@ -137,7 +137,7 @@ export default function ChapterSectionsPage() {
         </div>
 
         {/* Section List */}
-        <div className="gap-y-3">
+        <div className="flex flex-col gap-y-3">
           {sections.map((section, index) => (
             <button type="button"
               key={section.id}

@@ -46,7 +46,7 @@ export function ActivityFeed({ activities, lang, isLoading }: ActivityFeedProps)
 
   if (isLoading) {
     return (
-      <div className="gap-y-4">
+      <div className="flex flex-col gap-y-4">
         {[1, 2, 3, 4, 5].map((n) => (
           <div key={`feed-skeleton-${n}`} className="flex gap-3 animate-pulse">
             <div className="size-2 bg-muted rounded-full mt-2" />
@@ -71,7 +71,7 @@ export function ActivityFeed({ activities, lang, isLoading }: ActivityFeedProps)
   }
 
   return (
-    <div className="gap-y-4">
+    <div className="flex flex-col gap-y-4">
       {activities.map((activity, index) => {
         const Icon = activityIcons[activity.activity_type] || BookOpen
         const colorClass = activityColors[activity.activity_type] || 'bg-muted text-muted-foreground'

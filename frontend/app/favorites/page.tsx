@@ -279,7 +279,7 @@ export default function FavoritesPage() {
             <p className="text-sm text-muted-foreground mt-1">在练习中点击收藏按钮可以添加收藏</p>
           </div>
         ) : (
-          <div className="gap-y-3">
+          <div className="flex flex-col gap-y-3">
             {favorites.map((fav) => {
               // 通过 exercise_key 推断来源类型 - 统一 mastery- 前缀
               const sourceType = getSourceType(fav.exercise_key)

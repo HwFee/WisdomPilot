@@ -290,7 +290,7 @@ export function CurrentLearningPanel({
                 {recentExercises.length > 0 && (
                   <div className="flex-1 min-w-0 pl-3 border-l border-blue-500/20">
                     <p className="text-xs text-muted-foreground mb-1">{t('最近练习', 'Recent')}</p>
-                    <div className="gap-y-1">
+                    <div className="flex flex-col gap-y-1">
                       {recentExercises.slice(0, 2).map((ex) => (
                         <div key={`${ex.stageName}-${ex.time || ''}`} className="flex items-center gap-1.5 text-xs">
                           {ex.isCorrect ? (
@@ -377,7 +377,7 @@ export function CurrentLearningPanel({
             <h3 className="text-lg font-semibold text-foreground mb-4 text-center">
               {t('选择难度', 'Select Difficulty')}
             </h3>
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               {[1, 2, 3, 4, 5].map((level) => (
                 <m.button
                   key={level}

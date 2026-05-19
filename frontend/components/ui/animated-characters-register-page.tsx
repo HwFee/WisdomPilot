@@ -211,14 +211,14 @@ function RegisterPage() {
           </div>
 
           {/* Register Form */}
-          <form onSubmit={handleSubmit} className="gap-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-y-4">
             {error && (
               <div className="p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg">
                 {error}
               </div>
             )}
 
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               <Label htmlFor="username" className="text-sm font-medium">{t('Username', '用户名')}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -248,7 +248,7 @@ function RegisterPage() {
               )}
             </div>
 
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               <Label htmlFor="email" className="text-sm font-medium">{t('Email', '邮箱地址')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -278,7 +278,7 @@ function RegisterPage() {
               )}
             </div>
 
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               <Label htmlFor="password" className="text-sm font-medium">{t('Password', '密码')}</Label>
               <div className="relative">
                 <Input
@@ -315,7 +315,7 @@ function RegisterPage() {
               )}
             </div>
 
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               <Label htmlFor="confirmPassword" className="text-sm font-medium">{t('Confirm Password', '确认密码')}</Label>
               <div className="relative">
                 <Input
@@ -352,7 +352,7 @@ function RegisterPage() {
               )}
             </div>
 
-            <div className="flex items-center">
+            <div className="flex items-center my-5">
               <Checkbox
                 id="terms"
                 checked={agreedToTerms}

@@ -140,7 +140,7 @@ export function LeaderboardTabs({
             <p className="text-muted-foreground">暂无排名数据</p>
           </div>
         ) : (
-          <div className="gap-y-2">
+          <div className="flex flex-col gap-y-2">
             {entries.map((entry) => (
               <div
                 key={entry.user_id}
@@ -292,7 +292,7 @@ export function LeaderboardPreview({
   }
 
   return (
-    <div className="gap-y-2">
+    <div className="flex flex-col gap-y-2">
       {entries.slice(0, 3).map((entry) => (
         <div
           key={entry.user_id}

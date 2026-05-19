@@ -192,7 +192,7 @@ export function QuickTools({
                 </p>
               )}
               {nextTierInfo && (
-                <div className="gap-y-1 mt-2">
+                <div className="flex flex-col gap-y-1 mt-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Trophy className="size-3 text-amber-500" />
@@ -260,7 +260,7 @@ export function QuickTools({
 
             {/* 成就进度 */}
             {nextTierInfo && (
-              <div className="gap-y-1 mt-3">
+              <div className="flex flex-col gap-y-1 mt-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Trophy className="size-3 text-amber-500" />

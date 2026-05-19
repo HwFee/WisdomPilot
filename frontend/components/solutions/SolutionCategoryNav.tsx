@@ -25,7 +25,7 @@ export function SolutionCategoryNav({ activeCategory, onCategoryChange, lang = '
       <h2 className="text-sm font-medium text-muted-foreground mb-3 px-3">
         {t('分类', 'Categories')}
       </h2>
-      <div className="gap-y-1">
+      <div className="flex flex-col gap-y-1">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon
           const isActive = activeCategory === cat.key

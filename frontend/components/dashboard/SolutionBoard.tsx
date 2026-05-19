@@ -234,7 +234,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
             <p className="text-sm">{t('暂无内容', 'No content yet')}</p>
           </div>
         ) : (
-          <div className="gap-y-3">
+          <div className="flex flex-col gap-y-3">
             {getSortedSolutions().map(renderSolutionItem)}
           </div>
         )}

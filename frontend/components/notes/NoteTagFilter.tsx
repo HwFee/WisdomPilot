@@ -88,7 +88,7 @@ export function NoteTagFilter({
   }, [selectedTags, onTagsChange])
 
   return (
-    <div className="gap-y-4">
+    <div className="flex flex-col gap-y-4">
       {/* Selected tags */}
       {selectedTags.length > 0 && (
         <div className="flex flex-wrap gap-2">

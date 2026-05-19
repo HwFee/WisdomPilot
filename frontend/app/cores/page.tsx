@@ -285,7 +285,7 @@ export default function CoresPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 gap-y-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-y-6">
         {/* Balance Card */}
         <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-2xl border border-purple-500/30 p-6">
           <div className="text-sm text-purple-400 mb-1">当前余额</div>

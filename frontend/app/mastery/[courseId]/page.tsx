@@ -1413,7 +1413,7 @@ function MasteryPathContent() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-card rounded-xl p-4 mb-6 gap-y-3"
+                className="bg-card rounded-xl p-4 mb-6 flex flex-col gap-y-3"
               >
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">获得经验值</span>
@@ -1437,7 +1437,7 @@ function MasteryPathContent() {
                   className="bg-muted/50 rounded-xl p-4 text-left text-sm"
                 >
                   <p className="font-medium text-foreground mb-2">学习建议</p>
-                  <ul className="text-muted-foreground gap-y-1">
+                  <ul className="text-muted-foreground space-y-1">
                     {finalResult.recommendations.map((rec, i) => (
                       <li key={rec}>• {rec}</li>
                     ))}
@@ -1686,7 +1686,7 @@ function MasteryPathContent() {
 
             {/* Options */}
             {currentQuestion.options && (
-              <div className="gap-y-3">
+              <div className="flex flex-col gap-y-3">
                 {currentQuestion.options.map((opt, i) => {
                   const optLabel = String.fromCharCode(65 + i);
                   const isSelected = enhancedAnswers.get(currentQuestion.id) === optLabel;
@@ -1966,7 +1966,7 @@ function MasteryPathContent() {
             {getQuestionType(currentQuestion) === "choice" &&
               currentQuestion.options &&
               currentQuestion.options.length > 0 && (
-                <div className="gap-y-3">
+                <div className="flex flex-col gap-y-3">
                   {currentQuestion.options.map((opt, i) => {
                     const optLabel = String.fromCharCode(65 + i);
                     const isSelected =
@@ -2031,7 +2031,7 @@ function MasteryPathContent() {
 
             {/* Fill Blank Input */}
             {getQuestionType(currentQuestion) === "fill_blank" && (
-              <div className="gap-y-4">
+              <div className="flex flex-col gap-y-4">
                 <div className="bg-card rounded-xl border border-border p-4">
                   <label htmlFor="fill-blank-answer" className="block text-sm font-medium text-foreground mb-2">
                     请输入答案：
@@ -2088,7 +2088,7 @@ function MasteryPathContent() {
 
             {/* Programming Question */}
             {getQuestionType(currentQuestion) === "programming" && (
-              <div className="gap-y-4">
+              <div className="flex flex-col gap-y-4">
                 <div className="bg-card rounded-xl border border-border p-4">
                   <label htmlFor="programming-answer" className="block text-sm font-medium text-foreground mb-2">
                     请编写代码：
@@ -2273,7 +2273,7 @@ function MasteryPathContent() {
           {/* 优先使用 overview（登录后有掌握度），否则使用 courseDetail（未登录） */}
           {(overview?.chapters && overview.chapters.length > 0) ||
           (courseDetail?.course?.chapters && courseDetail.course.chapters.length > 0) ? (
-            <div className="gap-y-3">
+            <div className="flex flex-col gap-y-3">
               {(overview?.chapters || courseDetail?.course?.chapters || []).map((chapter) => {
                 // 登录状态：从 overview 获取，有掌握度数据
                 // 未登录状态：从 courseDetail 获取，只有基础信息

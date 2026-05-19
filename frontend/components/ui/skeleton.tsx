@@ -51,7 +51,7 @@ function TextSkeleton({
   }
 
   return (
-    <div className={cn("gap-y-2", className)}>
+    <div className={cn("flex flex-col gap-y-2", className)}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={`skeleton-${i}`}
@@ -261,7 +261,7 @@ function CodeEditorSkeleton({ className }: CodeEditorSkeletonProps) {
         <Skeleton className="size-3 rounded-full" />
         <Skeleton className="w-32 h-4 ml-4" />
       </div>
-      <div className="p-4 gap-y-2">
+      <div className="p-4 flex flex-col gap-y-2">
         {Array.from({ length: 10 }).map((_, i) => (
           <div key={`skeleton-${i}`} className="flex gap-4">
             <Skeleton className="w-6 h-4" />

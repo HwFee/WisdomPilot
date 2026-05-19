@@ -117,8 +117,8 @@ function MessageBubble({ role, content }: { role: "user:v1" | "ai"; content: str
                   {children}
                 </pre>
               ),
-              ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ol>,
+              ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
               li: ({ children }) => <li className="leading-snug">{children}</li>,
               strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
               em: ({ children }) => <em>{children}</em>,
@@ -723,8 +723,8 @@ export function MorphPanel() {
                               {children}
                             </pre>
                           ),
-                          ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ol>,
+                          ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
                           li: ({ children }) => <li className="leading-snug">{children}</li>,
                           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                           em: ({ children }) => <em>{children}</em>,

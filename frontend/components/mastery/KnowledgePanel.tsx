@@ -43,7 +43,7 @@ export function KnowledgePanel({
         <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm p-8 mx-4">
           {/* 顶部光效 */}
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <div className="animate-pulse gap-y-4">
+          <div className="animate-pulse flex flex-col gap-y-4">
             <div className="h-8 bg-muted rounded w-1/2" />
             <div className="h-4 bg-muted rounded w-3/4" />
             <div className="h-4 bg-muted rounded w-2/3" />
@@ -123,7 +123,7 @@ export function KnowledgePanel({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="gap-y-4">
+          <div className="flex flex-col gap-y-4">
             {content.knowledge_points.map((point, index) => (
               <KnowledgePointCard
                 key={point.id}
@@ -217,7 +217,7 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 gap-y-3">
+            <div className="px-4 pb-4 flex flex-col gap-y-3">
               {/* Content - Markdown rendered */}
               <div className="text-muted-foreground leading-relaxed">
                 <ReactMarkdown
@@ -255,8 +255,8 @@ pre({ children }) {
                     h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-base font-medium text-foreground mb-1 mt-2">{children}</h3>,
                     // 列表样式
-                    ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
+                    ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
                     li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
                     // 段落
                     p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
@@ -281,9 +281,9 @@ pre({ children }) {
 
               {/* Code Examples */}
               {point.examples && point.examples.length > 0 && (
-                <div className="gap-y-2">
+                <div className="flex flex-col gap-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">示例代码</p>
-                  <div className="gap-y-1">
+                  <div className="flex flex-col gap-y-1">
                     {point.examples.map((example) => (
                       <pre
                         key={`example-${example.slice(0, 30)}`}

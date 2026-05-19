@@ -18,57 +18,55 @@ function LoginLeftPanel({ t, isLookingAway, lang }: { t: (en: string, zh: string
   return (
     <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary/90 via-primary to-primary/80 p-12 text-primary-foreground overflow-hidden">
       <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
-      <LazyMotion features={domAnimation}>
-        <m.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="absolute top-1/4 right-1/4 size-64 bg-primary-foreground/10 rounded-full blur-3xl"
-        />
-        <m.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="absolute bottom-1/4 left-1/4 size-96 bg-primary-foreground/5 rounded-full blur-3xl"
-        />
-        <m.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative z-20"
-        >
-          <div className="flex items-center gap-2 text-lg font-semibold">
-            <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-              <Sparkles className="size-4" />
-            </div>
-            <span>{t('ZhiMa LingHang', '智码领航')}</span>
+      <m.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8 }}
+        className="absolute top-1/4 right-1/4 size-64 bg-primary-foreground/10 rounded-full blur-3xl"
+      />
+      <m.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        className="absolute bottom-1/4 left-1/4 size-96 bg-primary-foreground/5 rounded-full blur-3xl"
+      />
+      <m.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-20"
+      >
+        <div className="flex items-center gap-2 text-lg font-semibold">
+          <div className="size-8 rounded-lg bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
+            <Sparkles className="size-4" />
           </div>
-        </m.div>
-        <m.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="relative z-20 flex items-end justify-center h-[500px]"
-        >
-          <CharacterGroup isLookingAway={isLookingAway} lang={lang} />
-        </m.div>
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60"
-        >
-          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
-            {t('Privacy Policy', '隐私政策')}
-          </button>
-          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
-            {t('Terms of Service', '服务条款')}
-          </button>
-          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
-            {t('Contact', '联系我们')}
-          </button>
-        </m.div>
-      </LazyMotion>
+          <span>{t('ZhiMa LingHang', '智码领航')}</span>
+        </div>
+      </m.div>
+      <m.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="relative z-20 flex items-end justify-center h-[500px]"
+      >
+        <CharacterGroup isLookingAway={isLookingAway} lang={lang} />
+      </m.div>
+      <m.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60"
+      >
+        <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
+          {t('Privacy Policy', '隐私政策')}
+        </button>
+        <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
+          {t('Terms of Service', '服务条款')}
+        </button>
+        <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
+          {t('Contact', '联系我们')}
+        </button>
+      </m.div>
     </div>
   );
 }
@@ -123,11 +121,12 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      <LoginLeftPanel t={t} isLookingAway={isLookingAway} lang={lang} />
+    <LazyMotion features={domAnimation}>
+      <div className="min-h-screen grid lg:grid-cols-2">
+        <LoginLeftPanel t={t} isLookingAway={isLookingAway} lang={lang} />
 
-      {/* Right Login Section */}
-      <div className="flex items-center justify-center p-8 bg-background relative overflow-hidden">
+        {/* Right Login Section */}
+        <div className="flex items-center justify-center p-8 bg-background relative overflow-hidden">
         {/* 背景装饰 */}
         <div className="absolute inset-0 gradient-mesh opacity-50" />
 
@@ -199,7 +198,7 @@ function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="gap-y-5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-y-5">
             {formState.error && (
               <m.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -215,7 +214,7 @@ function LoginPage() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
-              className="gap-y-2"
+              className="flex flex-col gap-y-2"
             >
               <Label htmlFor="username" required>{t('Username', '用户名')}</Label>
               <Input
@@ -236,7 +235,7 @@ function LoginPage() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.4 }}
-              className="gap-y-2"
+              className="flex flex-col gap-y-2"
             >
               <Label htmlFor="password" required>{t('Password', '密码')}</Label>
               <Input
@@ -312,6 +311,7 @@ function LoginPage() {
         </m.div>
       </div>
     </div>
+    </LazyMotion>
   );
 }
 

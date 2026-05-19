@@ -676,7 +676,7 @@ function DualLeaderboardPreview({
             {t('暂无排名数据', 'No ranking data')}
           </div>
         ) : (
-          <div className="gap-y-1.5">
+          <div className="flex flex-col gap-y-1.5">
             {entries.slice(0, 5).map((entry) => (
               <div
                 key={entry.user_id}

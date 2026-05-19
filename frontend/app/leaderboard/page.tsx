@@ -301,7 +301,7 @@ function LeaderboardContent() {
               <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
             </div>
           ) : leaderboard.length > 0 && (
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               {leaderboard.map((entry) => (
                 <div
                   key={entry.user_id}

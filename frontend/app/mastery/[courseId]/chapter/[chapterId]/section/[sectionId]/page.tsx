@@ -351,8 +351,8 @@ export default function SectionLearningPage() {
                       h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
                       h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3">{children}</h2>,
                       h3: ({ children }) => <h3 className="text-base font-medium text-foreground mb-1 mt-2">{children}</h3>,
-                      ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
+                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
                       li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
                       p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
                       blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/30 pl-4 italic my-2">{children}</blockquote>,
@@ -444,7 +444,7 @@ export default function SectionLearningPage() {
                   <Lightbulb className="size-4 text-amber-500" />
                   <span className="font-medium text-foreground">学习提示</span>
                 </div>
-                <ul className="gap-y-1 pl-6">
+                <ul className="space-y-1 pl-6">
                   {kp.tips.map((tip) => (
                     <li key={`tip-${kp.id}-${tip}`} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-amber-500 mt-1">•</span>
@@ -462,7 +462,7 @@ export default function SectionLearningPage() {
                   <AlertTriangle className="size-4 text-red-500" />
                   <span className="font-medium text-foreground">常见错误</span>
                 </div>
-                <ul className="gap-y-1 pl-6">
+                <ul className="space-y-1 pl-6">
                   {kp.common_mistakes.map((mistake) => (
                     <li key={`mistake-${kp.id}-${mistake}`} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-red-500 mt-1">•</span>
@@ -550,7 +550,7 @@ export default function SectionLearningPage() {
               <BookOpen className="size-4 text-primary" />
               学习目标
             </h2>
-            <ul className="gap-y-2">
+            <ul className="space-y-2">
               {section.learning_objectives.map((objective) => (
                 <li key={`obj-${section.id}-${objective}`} className="flex items-start gap-2 text-sm">
                   <CheckCircle className="size-4 text-primary flex-shrink-0 mt-0.5" />
@@ -570,7 +570,7 @@ export default function SectionLearningPage() {
 
         {/* Knowledge Points Section */}
         {section.knowledge_points && section.knowledge_points.length > 0 ? (
-          <div className="gap-y-4">
+          <div className="flex flex-col gap-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-foreground flex items-center gap-2">
                 <BookOpen className="size-5 text-primary" />
@@ -581,7 +581,7 @@ export default function SectionLearningPage() {
                 拖拽 AI 助手到知识点上可针对性提问
               </span>
             </div>
-            <div className="gap-y-3">
+            <div className="flex flex-col gap-y-3">
               {section.knowledge_points.map((kp, index) => renderKnowledgePoint(kp, index))}
             </div>
           </div>

@@ -26,14 +26,14 @@ export function ExerciseSkeleton({ index = 0, showNumber = true }: ExerciseSkele
       </div>
 
       {/* 题目文本 */}
-      <div className="gap-y-2 mb-6">
+      <div className="flex flex-col gap-y-2 mb-6">
         <div className="h-5 bg-muted rounded w-full" />
         <div className="h-5 bg-muted rounded w-4/5" />
         <div className="h-5 bg-muted rounded w-3/5" />
       </div>
 
       {/* 选项骨架 */}
-      <div className="gap-y-3">
+      <div className="flex flex-col gap-y-3">
         {[1, 2, 3, 4].map((n) => (
           <div key={`skeleton-${n}`} className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
             <div className="size-8 bg-muted rounded-lg flex-shrink-0" />
@@ -61,7 +61,7 @@ interface ExerciseSkeletonListProps {
 
 export function ExerciseSkeletonList({ count, startIndex = 0 }: ExerciseSkeletonListProps) {
   return (
-    <div className="gap-y-4">
+    <div className="flex flex-col gap-y-4">
       {Array.from({ length: count }).map((_, i) => (
         <ExerciseSkeleton key={startIndex + i} index={startIndex + i} />
       ))}

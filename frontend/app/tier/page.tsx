@@ -289,7 +289,7 @@ export default function TierPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 gap-y-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-y-6">
         {/* Header Card */}
         <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-2xl border border-amber-500/30 p-6">
           <div className="flex items-center gap-3 mb-4">

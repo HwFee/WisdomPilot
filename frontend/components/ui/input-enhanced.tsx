@@ -429,7 +429,7 @@ interface FormFieldProps {
 
 function FormField({ label, required, hint, error, children, className }: FormFieldProps) {
   return (
-    <div className={cn("gap-y-2", className)}>
+    <div className={cn("flex flex-col gap-y-2", className)}>
       {label && (
         <Label required={required}>
           {label}

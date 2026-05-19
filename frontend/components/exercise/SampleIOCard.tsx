@@ -148,7 +148,7 @@ export function SampleIOList({
   }
 
   return (
-    <div className="gap-y-3">
+    <div className="flex flex-col gap-y-3">
       {samples.map((sample, index) => (
         <div key={`sample-${sample.input.slice(0, 30)}`}>
           <div className="text-xs text-[#909399] mb-1.5 ml-1">

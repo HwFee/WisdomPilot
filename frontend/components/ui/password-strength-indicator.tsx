@@ -36,7 +36,7 @@ export function PasswordStrengthIndicator({
   const strengthConfig = strength ? STRENGTH_CONFIG[strength] : null
 
   return (
-    <div className="gap-y-2 mt-2">
+    <div className="flex flex-col gap-y-2 mt-2">
       {/* Strength bar */}
       {strengthConfig && (
         <div className="flex items-center gap-2">

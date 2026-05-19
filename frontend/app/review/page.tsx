@@ -161,7 +161,7 @@ function ReviewPageContent() {
               <p className="text-sm text-muted-foreground">继续保持，做错的题目会自动记录</p>
             </div>
           ) : (
-            <div className="gap-y-3">
+            <div className="flex flex-col gap-y-3">
               {wrongQuestions.map((wq) => {
                 // 提取题目标题
                 const textContent = wq.exercise_content?.text

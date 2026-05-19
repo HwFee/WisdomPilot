@@ -299,13 +299,13 @@ export default function SandboxPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 gap-y-6">
+      <main className="max-w-4xl mx-auto px-4 py-6 flex flex-col gap-y-6">
         {/* Sandbox Info */}
         <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-3">
           <Shield className="size-5 text-green-500 mt-0.5" />
           <div className="text-sm">
             <div className="font-medium text-green-600 dark:text-green-400 mb-1">沙箱模式说明</div>
-            <ul className="text-muted-foreground gap-y-1">
+            <ul className="text-muted-foreground space-y-1">
               <li>✅ 真实消耗/获得智核</li>
               <li>❌ 不计入今日做题数</li>
               <li>❌ 不影响正确率</li>
@@ -406,7 +406,7 @@ export default function SandboxPage() {
                   提交答案
                 </button>
               </div>
-              <div className="gap-y-2">
+              <div className="flex flex-col gap-y-2">
                 {testState.questions.slice(0, 2).map((q, idx) => (
                   <div key={q.id} className="p-3 bg-muted/30 rounded-lg text-sm">
                     <div className="font-medium mb-1">{idx + 1}. {q.question}</div>
@@ -464,7 +464,7 @@ export default function SandboxPage() {
           {testState.results.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">点击上方按钮开始测试</div>
           ) : (
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               {testState.results.map((r, i) => (
                 <div key={`result-${r.success}-${r.message?.slice(0, 30) || i}`} className={`p-3 rounded-lg ${r.success ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
                   <div className="flex items-start gap-2">

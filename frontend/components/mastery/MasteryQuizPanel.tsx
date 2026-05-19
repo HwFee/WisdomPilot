@@ -139,7 +139,7 @@ export function MasteryQuizPanel({
 
               {/* Options for Choice Questions */}
               {currentQuestion.type === 'choice' && currentQuestion.content.options && (
-                <div className="gap-y-3">
+                <div className="flex flex-col gap-y-3">
                   {currentQuestion.content.options.map((option, index) => {
                     const optionLabel = String.fromCharCode(65 + index) // A, B, C, D
                     const isSelected = selectedOption === optionLabel
@@ -165,7 +165,7 @@ export function MasteryQuizPanel({
 
               {/* Programming Question */}
               {currentQuestion.type === 'programming' && (
-                <div className="gap-y-4">
+                <div className="flex flex-col gap-y-4">
                   <div className="bg-muted rounded-xl p-4 overflow-x-auto border border-border/50">
                     <pre className="text-foreground text-sm font-mono whitespace-pre-wrap">
                       {currentQuestion.content.code_template || '// 请在此编写代码'}
@@ -173,9 +173,9 @@ export function MasteryQuizPanel({
                   </div>
 
                   {currentQuestion.content.test_cases && currentQuestion.content.test_cases.length > 0 && (
-                    <div className="gap-y-2">
+                    <div className="flex flex-col gap-y-2">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">测试用例</p>
-                      <div className="bg-muted/50 rounded-lg p-3 text-sm font-mono gap-y-1 border border-border/50">
+                      <div className="bg-muted/50 rounded-lg p-3 text-sm font-mono flex flex-col gap-y-1 border border-border/50">
                         {currentQuestion.content.test_cases.map((tc) => (
                           <div key={`tc-${tc.input}-${tc.expected}`} className="flex gap-2">
                             <span className="text-muted-foreground">输入:</span>

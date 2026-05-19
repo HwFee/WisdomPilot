@@ -222,7 +222,7 @@ export function LoadingPlaceholder({
             <div className="h-3 bg-muted rounded w-1/4 animate-pulse" />
           </div>
         </div>
-        <div className="gap-y-2">
+        <div className="flex flex-col gap-y-2">
           <div className="h-3 bg-muted rounded w-full animate-pulse" />
           <div className="h-3 bg-muted rounded w-4/5 animate-pulse" />
           <div className="h-3 bg-muted rounded w-3/5 animate-pulse" />
@@ -233,7 +233,7 @@ export function LoadingPlaceholder({
 
   if (type === 'text') {
     return (
-      <div className={cn("gap-y-2", className)}>
+      <div className={cn("flex flex-col gap-y-2", className)}>
         <div className="h-4 bg-muted rounded w-full animate-pulse" />
         <div className="h-4 bg-muted rounded w-4/5 animate-pulse" />
         <div className="h-4 bg-muted rounded w-3/5 animate-pulse" />
@@ -243,7 +243,7 @@ export function LoadingPlaceholder({
 
   if (type === 'list') {
     return (
-      <div className={cn("gap-y-3", className)}>
+      <div className={cn("flex flex-col gap-y-3", className)}>
         {[1, 2, 3].map(n => (
           <div key={`list-skeleton-${n}`} className="flex items-center gap-3">
             <div className="size-10 bg-muted rounded-full animate-pulse" />
@@ -265,7 +265,7 @@ export function LoadingPlaceholder({
           <div className="size-3 bg-muted rounded-full animate-pulse" />
           <div className="size-3 bg-muted rounded-full animate-pulse" />
         </div>
-        <div className="p-4 gap-y-2">
+        <div className="p-4 flex flex-col gap-y-2">
           {[1, 2, 3, 4, 5].map(n => (
             <div key={`code-skeleton-${n}`} className="flex gap-4">
               <div className="w-6 h-4 bg-muted animate-pulse" />

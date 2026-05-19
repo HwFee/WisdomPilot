@@ -463,7 +463,7 @@ export default function AdminAISettingsPage() {
         )}
 
         {activeTab === 'status' && (
-          <div className="gap-y-4">
+          <div className="flex flex-col gap-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">连接状态</h2>
               <button type="button"
@@ -516,7 +516,7 @@ export default function AdminAISettingsPage() {
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="gap-y-1.5">
+    <div className="flex flex-col gap-y-1.5">
       <label className="text-sm font-medium text-foreground">{label}</label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
@@ -556,7 +556,7 @@ function ApiKeyField({
     : ''
 
   return (
-    <div className="gap-y-2">
+    <div className="flex flex-col gap-y-2">
       <div className="flex items-center gap-2">
         {hasKey && !replaceMode ? (
           <>
@@ -669,7 +669,7 @@ function ConfigCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-card rounded-lg shadow p-6 gap-y-5">
+    <div className="bg-card rounded-lg shadow p-6 flex flex-col gap-y-5">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-primary/10 rounded-lg text-primary">{icon}</div>
         <div>
@@ -677,7 +677,7 @@ function ConfigCard({
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
       </div>
-      <div className="gap-y-5">
+      <div className="flex flex-col gap-y-5">
         {children}
 
         {/* Test Connection row */}
@@ -743,7 +743,7 @@ function ProviderCard({ provider }: { provider: ProviderStatus }) {
           {isConnected ? '已连接' : '未连接'}
         </span>
       </div>
-      <div className="gap-y-1 text-xs text-muted-foreground">
+      <div className="flex flex-col gap-y-1 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <span className="font-medium text-foreground">地址:</span>
           <span>{provider.address}</span>

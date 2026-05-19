@@ -1427,7 +1427,7 @@ function ArenaContent() {
               <div className="skeleton h-6 w-16 rounded-lg"></div>
             </div>
             <div className="skeleton h-7 w-3/4 rounded mb-4"></div>
-            <div className="gap-y-3">
+            <div className="flex flex-col gap-y-3">
               <div className="skeleton h-4 w-full rounded"></div>
               <div className="skeleton h-4 w-full rounded"></div>
               <div className="skeleton h-4 w-2/3 rounded"></div>
@@ -1579,8 +1579,8 @@ function ArenaContent() {
                       h2: ({ children }) => <h2 className="text-lg font-semibold text-[#303133] mt-4 mb-2 border-b border-[#E4E7ED] pb-2">{children}</h2>,
                       h3: ({ children }) => <h3 className="text-base font-semibold text-[#303133] mt-3 mb-2">{children}</h3>,
                       p: ({ children }) => <p className="text-[#606266] mb-2 leading-relaxed">{children}</p>,
-                      ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
+                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
                       li: ({ children }) => <li className="text-[#606266]">{children}</li>,
                       blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/20 pl-4 italic my-2 text-[#606266]">{children}</blockquote>,
                       strong: ({ children }) => <strong className="font-semibold text-[#303133]">{children}</strong>,

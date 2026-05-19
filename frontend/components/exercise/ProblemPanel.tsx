@@ -89,7 +89,7 @@ export function ProblemPanel({
 
         {/* Input/Output Format */}
         {(inputFormat || outputFormat) && (
-          <div className="mb-6 gap-y-3">
+          <div className="mb-6 flex flex-col gap-y-3">
             {inputFormat && (
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">{t('输入格式', 'Input')}</h3>
@@ -107,7 +107,7 @@ export function ProblemPanel({
 
         {/* Sample Input/Output */}
         {(sampleInput || sampleOutput) && (
-          <div className="mb-6 gap-y-3">
+          <div className="mb-6 flex flex-col gap-y-3">
             {sampleInput && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <h3 className="text-xs font-medium text-muted-foreground mb-1">{t('样例输入', 'Sample Input')}</h3>

@@ -231,7 +231,7 @@ export function RecentActivity({
             )}
           </div>
         ) : (
-          <div className="gap-y-3">
+          <div className="flex flex-col gap-y-3">
             {activities.slice(0, compact ? 3 : 8).map((activity, index) => {
               const learningPathLabel = getLearningPathLabel(activity);
 

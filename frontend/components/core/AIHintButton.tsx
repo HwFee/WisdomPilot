@@ -129,7 +129,7 @@ export function AIHintPanel({ currentBalance, onHintPurchased, disabled = false,
         </div>
       </div>
 
-      <div className="gap-y-2 text-xs text-muted-foreground mb-3">
+      <div className="flex flex-col gap-y-2 text-xs text-muted-foreground mb-3">
         <p>{t('使用智核获取AI提示，帮助你更好地理解题目', 'Use cores to get AI hints and better understand the problem')}</p>
       </div>
 

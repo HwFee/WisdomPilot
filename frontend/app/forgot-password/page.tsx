@@ -214,7 +214,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="gap-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-y-4">
             {error && (
               <div className="p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg flex items-center gap-2">
                 <AlertCircle className="size-4 flex-shrink-0" />
@@ -222,7 +222,7 @@ export default function ForgotPasswordPage() {
               </div>
             )}
 
-            <div className="gap-y-2">
+            <div className="flex flex-col gap-y-2">
               <label htmlFor="email" className="text-sm font-medium text-foreground">
                 {t('邮箱地址', 'Email Address')}
               </label>

@@ -158,7 +158,7 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
                 {t('暂无记录', 'No records')}
               </div>
             ) : (
-              <div className="gap-y-2">
+              <div className="flex flex-col gap-y-2">
                 {transactions.map((tx) => (
                   <div
                     key={tx.id}
