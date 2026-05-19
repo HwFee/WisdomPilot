@@ -207,14 +207,14 @@ export function RecentActivity({
       className={`bg-card rounded-2xl border border-border p-6 h-full flex flex-col ${compact ? "overflow-hidden" : ""}`}
     >
       <h3 className="font-semibold text-foreground flex items-center gap-2 mb-4 flex-shrink-0">
-        <Clock className="w-5 h-5 text-primary" />
+        <Clock className="size-5 text-primary" />
         {t("最近动态", "Recent Activity")}
       </h3>
 
       <div className="flex-1 overflow-auto max-h-[300px]">
         {activities.length === 0 ? (
           <div className="text-center py-6 h-full flex flex-col items-center justify-center">
-            <Rocket className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+            <Rocket className="size-10 mx-auto mb-3 text-muted-foreground opacity-50" />
             <p className="text-sm text-muted-foreground mb-2">
               {t("暂无学习记录", "No activity yet")}
             </p>
@@ -231,7 +231,7 @@ export function RecentActivity({
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="gap-y-3">
             {activities.slice(0, compact ? 3 : 8).map((activity, index) => {
               const learningPathLabel = getLearningPathLabel(activity);
 
@@ -240,7 +240,7 @@ export function RecentActivity({
                   key={activity.id || index}
                   className="flex items-start gap-3 group"
                 >
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <div className="size-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                       {learningPathLabel && (
@@ -255,7 +255,7 @@ export function RecentActivity({
                       <span className="mr-1 inline-flex">
                         {(() => {
                           const Icon = getActivityIcon(activity);
-                          return <Icon className="w-4 h-4" />;
+                          return <Icon className="size-4" />;
                         })()}
                       </span>
                       {getActivityText(activity)}

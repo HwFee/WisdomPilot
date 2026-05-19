@@ -273,7 +273,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 text-white text-sm rounded hover:bg-gray-700"
             >
               {selectedLanguageLabel}
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="size-4" />
             </button>
             {isLanguageMenuOpen && (
               <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10">
@@ -304,9 +304,9 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
               className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isRunning ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               ) : (
-                <Play className="w-4 h-4" />
+                <Play className="size-4" />
               )}
               运行
             </button>
@@ -314,7 +314,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
               onClick={handleSave}
               className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
             >
-              <Save className="w-4 h-4" />
+              <Save className="size-4" />
               保存
             </button>
             {onClose && (
@@ -322,7 +322,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
                 onClick={onClose}
                 className="flex items-center gap-2 px-3 py-1.5 bg-gray-600 text-white text-sm rounded hover:bg-gray-500"
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
                 关闭
               </button>
             )}

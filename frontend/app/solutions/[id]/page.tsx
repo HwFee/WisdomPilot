@@ -12,7 +12,7 @@ type EditMode = 'view' | 'edit'
 
 export default function SolutionDetailPage() {
   const params = useParams()
-  const router = useRouter()
+  const { push } = useRouter()
   const solutionId = parseInt(params.id as string)
 
   const [solution, setSolution] = useState<SolutionResponse | null>(null)
@@ -29,7 +29,7 @@ export default function SolutionDetailPage() {
     const token = getStoredToken()
 
     if (!token || !user) {
-      router.push('/login')
+      push('/login')
       return
     }
 
@@ -49,7 +49,7 @@ export default function SolutionDetailPage() {
       setSolution(data)
     } catch (error) {
       console.error('Failed to fetch solution:', error)
-      router.push('/solutions')
+      push('/solutions')
     } finally {
       setLoading(false)
     }
@@ -63,7 +63,7 @@ export default function SolutionDetailPage() {
 
     try {
       await deleteSolution(token, solutionId)
-      router.push('/solutions')
+      push('/solutions')
     } catch (error) {
       console.error('Failed to delete:', error)
     }
@@ -105,7 +105,7 @@ export default function SolutionDetailPage() {
                 onClick={() => setEditMode('view')}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="size-5" />
                 <span>{t('取消编辑', 'Cancel Edit')}</span>
               </button>
               <h2 className="text-lg font-semibold">{t('编辑题解', 'Edit Solution')}</h2>
@@ -113,7 +113,7 @@ export default function SolutionDetailPage() {
             </div>
           </div>
         </header>
-        <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 sm:p-6">
           <SolutionEditor
             initialTitle={solution.title}
             initialContent={solution.content}
@@ -138,17 +138,17 @@ export default function SolutionDetailPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button type="button"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => push('/dashboard')}
                 className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                 title={t('返回首页', 'Go to Dashboard')}
               >
-                <Home className="w-5 h-5" />
+                <Home className="size-5" />
               </button>
               <button type="button"
-                onClick={() => router.push('/solutions')}
+                onClick={() => push('/solutions')}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="size-5" />
                 <span>{t('返回列表', 'Back')}</span>
               </button>
             </div>
@@ -159,14 +159,14 @@ export default function SolutionDetailPage() {
                   onClick={() => setEditMode('edit')}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors"
                 >
-                  <Edit3 className="w-4 h-4" />
+                  <Edit3 className="size-4" />
                   {t('编辑', 'Edit')}
                 </button>
                 <button type="button"
                   onClick={handleDelete}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 bg-red-500/10 rounded-lg hover:bg-red-500/20 transition-colors"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="size-4" />
                   {t('删除', 'Delete')}
                 </button>
               </div>
@@ -181,22 +181,22 @@ export default function SolutionDetailPage() {
           {/* Title & Meta */}
           <header className="mb-8">
             <div className="flex items-start gap-3 mb-4">
-              {solution.is_pinned && <Pin className="w-5 h-5 text-primary flex-shrink-0 mt-1" />}
-              {solution.is_announcement && <Megaphone className="w-5 h-5 text-amber-500 flex-shrink-0 mt-1" />}
-              <h1 className={`text-2xl font-bold ${solution.is_announcement ? 'text-amber-800' : 'text-foreground'}`}>
+              {solution.is_pinned && <Pin className="size-5 text-primary flex-shrink-0 mt-1" />}
+              {solution.is_announcement && <Megaphone className="size-5 text-amber-500 flex-shrink-0 mt-1" />}
+              <h1 className={`text-2xl font-semibold ${solution.is_announcement ? 'text-amber-800' : 'text-foreground'}`}>
                 {solution.title}
               </h1>
             </div>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>{solution.username}</span>
-              <span>{new Date(solution.created_at).toLocaleDateString()}</span>
+              <span suppressHydrationWarning>{new Date(solution.created_at).toLocaleDateString()}</span>
               <span className="flex items-center gap-1">
-                <Eye className="w-4 h-4" />
+                <Eye className="size-4" />
                 {solution.view_count}
               </span>
               <span className="flex items-center gap-1">
-                <Heart className="w-4 h-4" />
+                <Heart className="size-4" />
                 {solution.like_count}
               </span>
             </div>

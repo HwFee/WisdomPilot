@@ -216,14 +216,14 @@ function ResultModal({
         <div className="text-center">
           {isCorrect ? (
             <>
-              <CheckCircle className="w-20 h-20 text-[#52C41A] mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-[#52C41A] mb-2">
+              <CheckCircle className="size-20 text-[#52C41A] mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-[#52C41A] mb-2">
                 太棒了！全部通过
               </h2>
               <p className="text-[#606266] mb-2">
                 {firstTimeCorrect && starsEarned > 0 ? (
                   <span className="text-yellow-500 font-medium flex items-center justify-center gap-1">
-                    <Star className="w-5 h-5 fill-yellow-500" />
+                    <Star className="size-5 fill-yellow-500" />
                     +{starsEarned}
                   </span>
                 ) : (
@@ -232,7 +232,7 @@ function ResultModal({
               </p>
               {promoted && (
                 <p className="text-[#E6A23C] font-bold mb-4 flex items-center justify-center gap-1">
-                  <PartyPopper className="w-5 h-5" />
+                  <PartyPopper className="size-5" />
                   恭喜晋级！
                 </p>
               )}
@@ -244,22 +244,22 @@ function ResultModal({
             </>
           ) : (
             <>
-              <XCircle className="w-20 h-20 text-[#E74C3C] mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-[#E74C3C] mb-2">
+              <XCircle className="size-20 text-[#E74C3C] mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-[#E74C3C] mb-2">
                 答案错误
               </h2>
               <p className="text-[#606266] mb-6">
                 通过 {passedCount}/{totalCount} 个测试点
                 {firstTimeWrong && starsEarned < 0 && (
                   <span className="text-red-500 ml-2 flex items-center">
-                    <Star className="w-4 h-4 text-red-400" />
+                    <Star className="size-4 text-red-400" />
                     {starsEarned}
                   </span>
                 )}
               </p>
               {demoted && (
                 <p className="text-[#E74C3C] font-bold mb-4 flex items-center justify-center gap-1">
-                  <Frown className="w-5 h-5" />
+                  <Frown className="size-5" />
                   段位下降...
                 </p>
               )}
@@ -279,7 +279,7 @@ function ResultModal({
                 className="px-6 py-3 bg-gradient-to-r from-[#3498DB] to-[#2980B9] text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center gap-2"
               >
                 下一题
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="size-4" />
               </button>
             )}
           </div>
@@ -341,14 +341,14 @@ function ExerciseNavigation({
             title={`第 ${globalIndex + 1} 题: ${ex.title || "未命名"}`}
             className={`rounded-lg text-xs font-bold transition-all duration-300 ease-out ${
               isCurrent
-                ? "w-10 h-10 bg-[#3498DB] text-white scale-110 shadow-lg z-10"
+                ? "size-10 bg-[#3498DB] text-white scale-110 shadow-lg z-10"
                 : ex.is_correct
-                  ? "w-8 h-8 bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]"
+                  ? "size-8 bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]"
                   : ex.is_completed
-                    ? "w-8 h-8 bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]"
+                    ? "size-8 bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]"
                     : ex.is_unlocked
-                      ? "w-8 h-8 bg-white text-[#606266] border border-[#E4E7ED] hover:border-[#3498DB]"
-                      : "w-8 h-8 bg-[#F5F7FA] text-[#C0C4CC] border border-[#E4E7ED] cursor-not-allowed"
+                      ? "size-8 bg-white text-[#606266] border border-[#E4E7ED] hover:border-[#3498DB]"
+                      : "size-8 bg-[#F5F7FA] text-[#C0C4CC] border border-[#E4E7ED] cursor-not-allowed"
             }`}
           >
             {globalIndex + 1}
@@ -397,16 +397,16 @@ function ExerciseListModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-[#303133]">题目列表</h3>
+          <h3 className="text-lg font-semibold text-[#303133]">题目列表</h3>
           <button type="button"
             onClick={onClose}
             className="text-[#909399] hover:text-[#606266]"
           >
-            <X className="w-5 h-5" />
+            <X className="size-5" />
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 space-y-2">
+        <div className="overflow-y-auto flex-1 gap-y-2">
           {exercises.map((ex, index) => (
             <button type="button"
               key={ex.exercise_id}
@@ -421,7 +421,7 @@ function ExerciseListModal({
               }`}
             >
               <span
-                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                className={`size-8 rounded-lg flex items-center justify-center text-xs font-bold ${
                   index === currentIndex
                     ? "bg-[#3498DB] text-white"
                     : ex.is_correct
@@ -452,7 +452,7 @@ function ExerciseListModal({
               </div>
               {!ex.is_unlocked && (
                 <span className="text-xs text-[#C0C4CC] flex items-center gap-1">
-                  <Lock className="w-3 h-3" />
+                  <Lock className="size-3" />
                   未解锁
                 </span>
               )}
@@ -485,7 +485,7 @@ const DIFFICULTY_NAMES: Record<number, string> = {
 
 // 内部组件 - 使用 useSearchParams
 function ArenaContent() {
-  const router = useRouter();
+  const { push } = useRouter();
   const searchParams = useSearchParams();
   const difficultyFromDashboard = searchParams.get("difficulty");
   const exerciseIndexFromReview = searchParams.get("exerciseIndex"); // 从错题本跳转时的题目索引
@@ -571,7 +571,7 @@ function ArenaContent() {
       return;
     }
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token:v1");
     const startedAt = sessionStartedAtRef.current;
 
 
@@ -596,9 +596,9 @@ function ArenaContent() {
   // ========================================
 
   const initChallenge = useCallback(async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token:v1");
     if (!token) {
-      router.push("/login");
+      push("/login");
       return;
     }
 
@@ -709,14 +709,14 @@ function ArenaContent() {
     } catch (error) {
       if (mountedRef.current) {
         console.error("Failed to initialize challenge:", error);
-        router.push("/dashboard");
+        push("/dashboard");
       }
     } finally {
       if (mountedRef.current) {
         setLoading(false);
       }
     }
-  }, [router, difficultyFromDashboard]);
+  }, [push, difficultyFromDashboard]);
 
   // 处理进度数据的辅助函数
   const processProgressData = (
@@ -829,7 +829,7 @@ function ArenaContent() {
     if (loadingContentRef.current.has(exerciseId)) return;
     if (loadedContentRef.current.has(exerciseId)) return;
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token:v1");
     if (!token) return;
 
     loadingContentRef.current.add(exerciseId);
@@ -951,7 +951,7 @@ function ArenaContent() {
     }
 
     // Save to backend (无 session 概念，独立于课程)
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token:v1");
     if (token) {
       saveChallengeCode(
         {
@@ -981,7 +981,7 @@ function ArenaContent() {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token:v1");
       if (!token) return;
 
       const result = await executeCode(
@@ -1017,7 +1017,7 @@ function ArenaContent() {
     setRightPanelTab("test");
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token:v1");
       if (!token) return;
 
       const result = await executeCode(
@@ -1061,9 +1061,9 @@ function ArenaContent() {
     setRightPanelTab("output");
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token:v1");
       if (!token) {
-        router.push("/login");
+        push("/login");
         return;
       }
 
@@ -1135,10 +1135,10 @@ function ArenaContent() {
         });
       } else if (submitResult.new_stars !== undefined && tierInfo) {
         // Always update stars count (includes case when re-submitting)
-        setTierInfo({
-          ...tierInfo,
+        setTierInfo(prev => prev ? ({
+          ...prev,
           stars: submitResult.new_stars,
-        });
+        }) : prev);
       }
 
       // Update progress
@@ -1356,7 +1356,7 @@ function ArenaContent() {
   // ========================================
 
   const handleExitSave = useCallback(async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token:v1");
     const currentExercise = exercises[currentIndex];
 
     if (token && currentExercise) {
@@ -1403,7 +1403,7 @@ function ArenaContent() {
   const handleExit = async () => {
     await handleExitSave();
     endTrackedSession();
-    router.push("/dashboard");
+    push("/dashboard");
   };
 
   // ========================================
@@ -1429,7 +1429,7 @@ function ArenaContent() {
               <div className="skeleton h-6 w-16 rounded-lg"></div>
             </div>
             <div className="skeleton h-7 w-3/4 rounded mb-4"></div>
-            <div className="space-y-3">
+            <div className="gap-y-3">
               <div className="skeleton h-4 w-full rounded"></div>
               <div className="skeleton h-4 w-full rounded"></div>
               <div className="skeleton h-4 w-2/3 rounded"></div>
@@ -1447,7 +1447,7 @@ function ArenaContent() {
         </main>
         <div className="h-[72px] bg-white border-t border-[#E4E7ED] flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
-            <div className="skeleton h-8 w-8 rounded-lg"></div>
+            <div className="skeleton size-8 rounded-lg"></div>
             <div className="skeleton h-4 w-32 rounded"></div>
           </div>
           <div className="flex gap-2">
@@ -1481,7 +1481,7 @@ function ArenaContent() {
       <header className="fixed top-0 left-0 right-0 z-50 h-[50px] ide-header">
         <div className="h-full px-4 flex items-center justify-between">
           <button type="button" onClick={handleExit} className="ide-header-back">
-            <X className="w-4 h-4" />
+            <X className="size-4" />
             <span className="text-sm">退出挑战</span>
           </button>
 
@@ -1552,14 +1552,14 @@ function ArenaContent() {
               {contentLoadingMap[currentExercise.id] ? (
                 <div className="mb-6 p-4 bg-[#F5F7FA] rounded-lg">
                   <div className="flex items-center gap-2 text-sm text-[#909399]">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="size-4 animate-spin" />
                     正在加载题面...
                   </div>
                 </div>
               ) : contentErrorMap[currentExercise.id] ? (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-center gap-2 text-sm text-red-600 mb-2">
-                    <AlertTriangle className="w-4 h-4" />
+                    <AlertTriangle className="size-4" />
                     题面加载失败
                   </div>
                   <p className="text-xs text-red-500 mb-3">{contentErrorMap[currentExercise.id]}</p>
@@ -1577,12 +1577,12 @@ function ArenaContent() {
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeKatex]}
                     components={{
-                      h1: ({ children }) => <h1 className="text-xl font-bold text-[#303133] mb-2 mt-4">{children}</h1>,
+                      h1: ({ children }) => <h1 className="text-xl font-semibold text-[#303133] mb-2 mt-4">{children}</h1>,
                       h2: ({ children }) => <h2 className="text-lg font-semibold text-[#303133] mt-4 mb-2 border-b border-[#E4E7ED] pb-2">{children}</h2>,
                       h3: ({ children }) => <h3 className="text-base font-semibold text-[#303133] mt-3 mb-2">{children}</h3>,
                       p: ({ children }) => <p className="text-[#606266] mb-2 leading-relaxed">{children}</p>,
-                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                      ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                       li: ({ children }) => <li className="text-[#606266]">{children}</li>,
                       blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-[#606266]">{children}</blockquote>,
                       strong: ({ children }) => <strong className="font-semibold text-[#303133]">{children}</strong>,
@@ -1656,7 +1656,7 @@ function ArenaContent() {
                 <div className="flex flex-wrap gap-2">
                   {currentExercise.knowledge_points.map((kp, i) => (
                     <span
-                      key={i}
+                      key={`arena-${i}`}
                       className="knowledge-tag px-3 py-1.5 text-[#3498DB] text-xs rounded-lg font-medium"
                     >
                       {kp}
@@ -1678,10 +1678,10 @@ function ArenaContent() {
                     sample_input: currentExercise.content.sample_input,
                     sample_output: currentExercise.content.sample_output,
                   }}
-                  token={localStorage.getItem("token") || ""}
+                  token={localStorage.getItem("token:v1") || ""}
                   onBalanceChange={async () => {
                     // 刷新智核余额
-                    const token = localStorage.getItem("token");
+                    const token = localStorage.getItem("token:v1");
                     if (token) {
                       try {
                         const { getCoreBalance } = await import("@/lib/api/core");
@@ -1713,7 +1713,7 @@ function ArenaContent() {
                 onClick={() => setRightPanelTab("code")}
                 className={`panel-tab ${rightPanelTab !== "output" ? "active" : ""}`}
               >
-                <Code2 className="w-4 h-4 inline mr-1.5" />
+                <Code2 className="size-4 inline mr-1.5" />
                 代码
               </button>
               {testResults.length > 0 && (
@@ -1721,7 +1721,7 @@ function ArenaContent() {
                   onClick={() => setRightPanelTab("output")}
                   className={`panel-tab ${rightPanelTab === "output" ? "active" : ""}`}
                 >
-                  <CheckCircle className="w-4 h-4 inline mr-1.5" />
+                  <CheckCircle className="size-4 inline mr-1.5" />
                   结果
                 </button>
               )}
@@ -1802,8 +1802,8 @@ function ArenaContent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#3498DB]/10 rounded-lg flex items-center justify-center border border-[#3498DB]/20">
-                    <Zap className="w-5 h-5 text-[#F39C11]" />
+                  <div className="size-10 bg-[#3498DB]/10 rounded-lg flex items-center justify-center border border-[#3498DB]/20">
+                    <Zap className="size-5 text-[#F39C11]" />
                   </div>
                   <div>
                     <p className="text-sm text-[#303133] font-medium">
@@ -1816,7 +1816,7 @@ function ArenaContent() {
                           <span className="font-medium" style={{ color: TIER_COLORS[tierInfo.tier as keyof typeof TIER_COLORS] || '#CD7F32' }}>
                             {tierInfo.full_name}
                           </span>
-                          {" "}<span className="text-yellow-500 flex items-center inline-flex"><Star className="w-3.5 h-3.5 fill-yellow-500" />{tierInfo.stars}</span>
+                          {" "}<span className="text-yellow-500 flex items-center inline-flex"><Star className="size-3.5 fill-yellow-500" />{tierInfo.stars}</span>
                         </>
                       ) : (
                         "加载中..."
@@ -1844,12 +1844,12 @@ function ArenaContent() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="size-4 animate-spin" />
                       提交中...
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" />
+                      <Send className="size-4" />
                       提交
                     </>
                   )}
@@ -1859,8 +1859,8 @@ function ArenaContent() {
           ) : feedbackState === "correct" ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#52C41A]/10 rounded-lg flex items-center justify-center border border-[#52C41A]/20 success-pulse">
-                  <CheckCircle className="w-6 h-6 text-[#52C41A]" />
+                <div className="size-10 bg-[#52C41A]/10 rounded-lg flex items-center justify-center border border-[#52C41A]/20 success-pulse">
+                  <CheckCircle className="size-6 text-[#52C41A]" />
                 </div>
                 <div>
                   <p className="font-semibold text-[#52C41A]">
@@ -1871,7 +1871,7 @@ function ArenaContent() {
               </div>
               <div className="action-buttons-group">
                 <button type="button" onClick={handleRetry} className="btn-action btn-reset">
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="size-4" />
                   重新作答
                 </button>
                 {canGoNext && (
@@ -1880,7 +1880,7 @@ function ArenaContent() {
                     className="btn-action btn-success"
                   >
                     下一题
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="size-5" />
                   </button>
                 )}
               </div>
@@ -1888,8 +1888,8 @@ function ArenaContent() {
           ) : (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#E74C3C]/10 rounded-lg flex items-center justify-center border border-[#E74C3C]/20 error-shake">
-                  <XCircle className="w-6 h-6 text-[#E74C3C]" />
+                <div className="size-10 bg-[#E74C3C]/10 rounded-lg flex items-center justify-center border border-[#E74C3C]/20 error-shake">
+                  <XCircle className="size-6 text-[#E74C3C]" />
                 </div>
                 <div>
                   <p className="font-semibold text-[#E74C3C]">答案错误</p>
@@ -1903,7 +1903,7 @@ function ArenaContent() {
               </div>
               <div className="action-buttons-group">
                 <button type="button" onClick={handleRetry} className="btn-action btn-reset">
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="size-4" />
                   重新作答
                 </button>
                 {testResults.length > 0 && (
@@ -1920,7 +1920,7 @@ function ArenaContent() {
                     className="btn-action btn-success"
                   >
                     下一题
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="size-5" />
                   </button>
                 )}
               </div>
@@ -1963,7 +1963,7 @@ export default function ArenaPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     }>
       <ArenaContent />

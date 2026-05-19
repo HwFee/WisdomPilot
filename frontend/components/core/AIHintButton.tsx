@@ -83,13 +83,13 @@ export function AIHintButton({
         `}
       >
         {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="size-4 animate-spin" />
         ) : (
-          <Icon className="w-4 h-4" />
+          <Icon className="size-4" />
         )}
         <span>{t(config.label.zh, config.label.en)}</span>
         <div className="flex items-center gap-0.5 ml-1 px-2 py-0.5 bg-purple-500/20 rounded-full">
-          <Gem className="w-3 h-3" />
+          <Gem className="size-3" />
           <span className="text-xs">{cost}</span>
         </div>
       </button>
@@ -123,15 +123,15 @@ export function AIHintPanel({ currentBalance, onHintPurchased, disabled = false,
   return (
     <div className="bg-card rounded-xl border border-border p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Gem className="w-5 h-5 text-purple-500" />
+        <Gem className="size-5 text-purple-500" />
         <h3 className="font-medium text-foreground">{t('AI 提示', 'AI Hints')}</h3>
         <div className="ml-auto flex items-center gap-1 text-sm text-muted-foreground">
-          <Gem className="w-3 h-3 text-purple-500" />
+          <Gem className="size-3 text-purple-500" />
           <span>{currentBalance}</span>
         </div>
       </div>
 
-      <div className="space-y-2 text-xs text-muted-foreground mb-3">
+      <div className="gap-y-2 text-xs text-muted-foreground mb-3">
         <p>{t('使用智核获取AI提示，帮助你更好地理解题目', 'Use cores to get AI hints and better understand the problem')}</p>
       </div>
 

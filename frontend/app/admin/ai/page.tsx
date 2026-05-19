@@ -39,7 +39,7 @@ const TABS: { id: TabId; label: string }[] = [
 ]
 
 export default function AdminAISettingsPage() {
-  const router = useRouter()
+  const { push } = useRouter()
   const [activeTab, setActiveTab] = useState<TabId>('deepseek')
   const [config, setConfig] = useState<AIConfigResponse | null>(null)
   const [status, setStatus] = useState<AIStatusResponse | null>(null)
@@ -72,14 +72,14 @@ export default function AdminAISettingsPage() {
 
   const [localFirst, setLocalFirst] = useState(false)
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token:v1') : null
   const currentUser = typeof window !== 'undefined'
-    ? JSON.parse(localStorage.getItem('user') || 'null')
+    ? JSON.parse(localStorage.getItem('user:v1') || 'null')
     : null
 
   useEffect(() => {
     if (!token || !currentUser?.is_admin) {
-      router.push('/login')
+      push('/login')
       return
     }
     fetchConfig()
@@ -239,7 +239,7 @@ export default function AdminAISettingsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -248,13 +248,13 @@ export default function AdminAISettingsPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Settings className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-bold text-foreground">AI 配置管理</h1>
+            <Settings className="size-6 text-primary" />
+            <h1 className="text-xl font-semibold text-foreground">AI 配置管理</h1>
           </div>
           <button type="button"
-            onClick={() => router.push('/admin')}
+            onClick={() => push('/admin')}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             返回管理后台
@@ -269,7 +269,7 @@ export default function AdminAISettingsPage() {
             'mb-4 p-4 rounded-lg flex items-center gap-2',
             message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
           )}>
-            {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+            {message.type === 'success' ? <CheckCircle className="size-5" /> : <AlertCircle className="size-5" />}
             <span>{message.text}</span>
           </div>
         )}
@@ -277,7 +277,7 @@ export default function AdminAISettingsPage() {
         {/* Current Status Banner */}
         {config && (
           <div className="mb-6 flex items-center gap-3 p-4 bg-muted rounded-lg">
-            <Bot className="w-5 h-5 text-primary" />
+            <Bot className="size-5 text-primary" />
             <span className="text-sm font-medium">
               当前: <span className="text-primary">{config.provider}</span>
               {' / '}
@@ -315,7 +315,7 @@ export default function AdminAISettingsPage() {
           <ConfigCard
             title="DeepSeek"
             description="使用 DeepSeek GPT 系列模型"
-            icon={<Cloud className="w-5 h-5" />}
+            icon={<Cloud className="size-5" />}
             isSaving={isSaving}
             isTesting={isTesting}
             testResult={testResult}
@@ -389,7 +389,7 @@ export default function AdminAISettingsPage() {
           <ConfigCard
             title="MiniMax"
             description="使用 MiniMax-M2.7 模型（Anthropic Claude 兼容格式）"
-            icon={<Bot className="w-5 h-5" />}
+            icon={<Bot className="size-5" />}
             isSaving={isSaving}
             isTesting={isTesting}
             testResult={testResult}
@@ -463,7 +463,7 @@ export default function AdminAISettingsPage() {
         )}
 
         {activeTab === 'status' && (
-          <div className="space-y-4">
+          <div className="gap-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">连接状态</h2>
               <button type="button"
@@ -471,13 +471,13 @@ export default function AdminAISettingsPage() {
                 disabled={isRefreshing}
                 className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
               >
-                <ChevronRight className={cn('w-4 h-4', isRefreshing && 'animate-spin')} />
+                <ChevronRight className={cn('size-4', isRefreshing && 'animate-spin')} />
                 刷新
               </button>
             </div>
             {isRefreshing && !status ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <Loader2 className="size-6 animate-spin text-primary" />
               </div>
             ) : status ? (
               <>
@@ -516,7 +516,7 @@ export default function AdminAISettingsPage() {
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
+    <div className="gap-y-1.5">
       <label className="text-sm font-medium text-foreground">{label}</label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
@@ -556,7 +556,7 @@ function ApiKeyField({
     : ''
 
   return (
-    <div className="space-y-2">
+    <div className="gap-y-2">
       <div className="flex items-center gap-2">
         {hasKey && !replaceMode ? (
           <>
@@ -570,7 +570,7 @@ function ApiKeyField({
               onClick={onEnterReplace}
               className="flex items-center gap-1 px-3 py-2 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors shrink-0"
             >
-              <Pencil className="w-3.5 h-3.5" />
+              <Pencil className="size-3.5" />
               替换
             </button>
             {/* 删除按钮 */}
@@ -579,7 +579,7 @@ function ApiKeyField({
               onClick={onDelete}
               className="flex items-center gap-1 px-3 py-2 text-sm border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition-colors shrink-0"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="size-3.5" />
             </button>
           </>
         ) : !replaceMode ? (
@@ -639,7 +639,7 @@ function LocalFirstToggle({ checked, onChange }: { checked: boolean; onChange: (
         )}
       >
         <span className={cn(
-          'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform',
+          'absolute top-1 left-1 size-4 bg-white rounded-full transition-transform',
           checked && 'translate-x-5'
         )} />
       </button>
@@ -669,7 +669,7 @@ function ConfigCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-card rounded-lg shadow p-6 space-y-5">
+    <div className="bg-card rounded-lg shadow p-6 gap-y-5">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-primary/10 rounded-lg text-primary">{icon}</div>
         <div>
@@ -677,7 +677,7 @@ function ConfigCard({
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
       </div>
-      <div className="space-y-5">
+      <div className="gap-y-5">
         {children}
 
         {/* Test Connection row */}
@@ -688,9 +688,9 @@ function ConfigCard({
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 disabled:opacity-50 transition-colors"
           >
             {isTesting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Zap className="w-4 h-4" />
+              <Zap className="size-4" />
             )}
             {isTesting ? '测试中...' : '测试连接'}
           </button>
@@ -700,9 +700,9 @@ function ConfigCard({
               testResult.success ? 'text-emerald-600' : 'text-red-500'
             )}>
               {testResult.success ? (
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="size-4" />
               ) : (
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="size-4" />
               )}
               <span>{testResult.message}</span>
               {testResult.latency_ms !== undefined && (
@@ -717,7 +717,7 @@ function ConfigCard({
         disabled={isSaving}
         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
       >
-        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
         {isSaving ? '保存中...' : '保存配置'}
       </button>
     </div>
@@ -733,7 +733,7 @@ function ProviderCard({ provider }: { provider: ProviderStatus }) {
     <div className="bg-card rounded-lg shadow p-4 border">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Icon className={cn('w-4 h-4', iconColor)} />
+          <Icon className={cn('size-4', iconColor)} />
           <span className="font-medium capitalize">{provider.type === 'lmstudio' ? 'LM Studio' : provider.type}</span>
         </div>
         <span className={cn(
@@ -743,7 +743,7 @@ function ProviderCard({ provider }: { provider: ProviderStatus }) {
           {isConnected ? '已连接' : '未连接'}
         </span>
       </div>
-      <div className="space-y-1 text-xs text-muted-foreground">
+      <div className="gap-y-1 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <span className="font-medium text-foreground">地址:</span>
           <span>{provider.address}</span>

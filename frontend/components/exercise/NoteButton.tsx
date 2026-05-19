@@ -108,15 +108,15 @@ export function NoteButton({
   }, [existingNote, onClick])
 
   const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8',
-    lg: 'w-10 h-10',
+    sm: 'size-6',
+    md: 'size-8',
+    lg: 'size-10',
   }
 
   const iconSizes = {
-    sm: 'w-3.5 h-3.5',
-    md: 'w-4 h-4',
-    lg: 'w-5 h-5',
+    sm: 'size-3.5',
+    md: 'size-4',
+    lg: 'size-5',
   }
 
   return (

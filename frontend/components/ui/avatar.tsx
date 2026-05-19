@@ -19,12 +19,12 @@ const avatarVariants = cva(
   {
     variants: {
       size: {
-        xs: 'w-6 h-6',
-        sm: 'w-8 h-8',
-        md: 'w-10 h-10',
-        lg: 'w-12 h-12',
-        xl: 'w-16 h-16',
-        '2xl': 'w-20 h-20',
+        xs: 'size-6',
+        sm: 'size-8',
+        md: 'size-10',
+        lg: 'size-12',
+        xl: 'size-16',
+        '2xl': 'size-20',
       },
     },
     defaultVariants: {
@@ -89,12 +89,12 @@ const statusIndicatorVariants = cva(
         away: 'bg-blue-500',
       },
       size: {
-        xs: 'w-1.5 h-1.5',
-        sm: 'w-2 h-2',
-        md: 'w-2.5 h-2.5',
-        lg: 'w-3 h-3',
-        xl: 'w-4 h-4',
-        '2xl': 'w-5 h-5',
+        xs: 'size-1.5',
+        sm: 'size-2',
+        md: 'size-2.5',
+        lg: 'size-3',
+        xl: 'size-4',
+        '2xl': 'size-5',
       },
     },
     defaultVariants: {
@@ -203,10 +203,10 @@ function AvatarGroup({
   const remainingCount = childArray.length - visibleCount
 
   return (
-    <div className={cn("flex -space-x-2", className)} {...props}>
+    <div className={cn("flex -gap-x-2", className)} {...props}>
       {childArray.slice(0, visibleCount).map((child, index) => (
         <div
-          key={index}
+          key={`avatar-${index}`}
           className="relative ring-2 ring-background rounded-full"
           style={{ zIndex: visibleCount - index }}
         >

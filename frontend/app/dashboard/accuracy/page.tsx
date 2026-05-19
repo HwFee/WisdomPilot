@@ -7,7 +7,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, CheckCircle } from "lucide-react";
 import type { DailyAccuracyTrendPoint } from "@/types/api";
 
 export default function AccuracyDetailPage() {
-  const router = useRouter();
+  const { push, back } = useRouter();
   const [trends, setTrends] = useState<DailyAccuracyTrendPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const hasFetched = useRef(false);
@@ -28,12 +28,12 @@ export default function AccuracyDetailPage() {
     const token = getStoredToken();
     if (!token) {
       logout();
-      router.push("/login");
+      push("/login");
       return;
     }
     hasFetched.current = true;
     fetchData(token);
-  }, [router, fetchData]);
+  }, [push, back, fetchData]);
 
   const todayAccuracy = trends[0]?.accuracy || 0;
   const yesterdayAccuracy = trends[1]?.accuracy || 0;
@@ -61,10 +61,10 @@ export default function AccuracyDetailPage() {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
           <button type="button"
-            onClick={() => router.back()}
+            onClick={() => back()}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
           </button>
           <h1 className="text-lg font-semibold">正确率详情（挑战之路）</h1>
         </div>
@@ -101,9 +101,9 @@ export default function AccuracyDetailPage() {
               className={`flex items-center gap-1 text-sm ${trendPercent >= 0 ? "text-emerald-500" : "text-red-500"}`}
             >
               {trendPercent >= 0 ? (
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="size-4" />
               ) : (
-                <TrendingDown className="w-4 h-4" />
+                <TrendingDown className="size-4" />
               )}
               <span>
                 {trendPercent >= 0 ? "+" : ""}
@@ -119,7 +119,7 @@ export default function AccuracyDetailPage() {
               .reverse()
               .map((t, i) => (
                 <div
-                  key={i}
+                  key={`accuracy-${i}`}
                   className="flex-1 flex flex-col items-center gap-2"
                 >
                   <div
@@ -129,7 +129,7 @@ export default function AccuracyDetailPage() {
                       minHeight: t.accuracy > 0 ? "4px" : "0",
                     }}
                   />
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                     {new Date(t.date).toLocaleDateString("zh-CN", {
                       weekday: "short",
                     })}
@@ -146,15 +146,15 @@ export default function AccuracyDetailPage() {
           </div>
           <div className="divide-y divide-border">
             {trends.map((t, i) => (
-              <div key={i} className="flex items-center justify-between p-4">
+              <div key={`accuracy-${i}`} className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${i === 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"}`}
+                    className={`size-10 rounded-full flex items-center justify-center ${i === 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"}`}
                   >
-                    <CheckCircle className="w-5 h-5" />
+                    <CheckCircle className="size-5" />
                   </div>
                   <div>
-                    <p className="font-medium">
+                    <p className="font-medium" suppressHydrationWarning>
                       {i === 0
                         ? "今天"
                         : i === 1

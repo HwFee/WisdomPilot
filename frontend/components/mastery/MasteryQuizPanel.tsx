@@ -27,7 +27,7 @@ export function MasteryQuizPanel({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Map<string, string>>(new Map())
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  const [startTime] = useState(Date.now())
+  const [startTime] = useState(() => Date.now())
 
   const currentQuestion = questions[currentIndex]
   const isLastQuestion = currentIndex === questions.length - 1
@@ -88,7 +88,7 @@ export function MasteryQuizPanel({
         <div className="p-6 border-b border-border/50 flex-shrink-0 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-foreground">精进之路测试</h2>
+              <h2 className="text-xl font-semibold text-foreground">精进之路测试</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 第 {currentIndex + 1} / {questions.length} 题
               </p>
@@ -98,7 +98,7 @@ export function MasteryQuizPanel({
               className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
               aria-label="关闭"
             >
-              <svg className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -140,14 +140,14 @@ export function MasteryQuizPanel({
 
               {/* Options for Choice Questions */}
               {currentQuestion.type === 'choice' && currentQuestion.content.options && (
-                <div className="space-y-3">
+                <div className="gap-y-3">
                   {currentQuestion.content.options.map((option, index) => {
                     const optionLabel = String.fromCharCode(65 + index) // A, B, C, D
                     const isSelected = selectedOption === optionLabel
 
                     return (
                       <button type="button"
-                        key={index}
+                        key={`item-${index}`}
                         onClick={() => handleSelectOption(optionLabel)}
                         className={`w-full p-4 text-left rounded-xl border-2 transition-all ${
                           isSelected
@@ -166,7 +166,7 @@ export function MasteryQuizPanel({
 
               {/* Programming Question */}
               {currentQuestion.type === 'programming' && (
-                <div className="space-y-4">
+                <div className="gap-y-4">
                   <div className="bg-muted rounded-xl p-4 overflow-x-auto border border-border/50">
                     <pre className="text-foreground text-sm font-mono whitespace-pre-wrap">
                       {currentQuestion.content.code_template || '// 请在此编写代码'}
@@ -174,9 +174,9 @@ export function MasteryQuizPanel({
                   </div>
 
                   {currentQuestion.content.test_cases && currentQuestion.content.test_cases.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="gap-y-2">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">测试用例</p>
-                      <div className="bg-muted/50 rounded-lg p-3 text-sm font-mono space-y-1 border border-border/50">
+                      <div className="bg-muted/50 rounded-lg p-3 text-sm font-mono gap-y-1 border border-border/50">
                         {currentQuestion.content.test_cases.map((tc, idx) => (
                           <div key={idx} className="flex gap-2">
                             <span className="text-muted-foreground">输入:</span>
@@ -201,7 +201,7 @@ export function MasteryQuizPanel({
                       }}
                       className="px-6 py-3 bg-gradient-to-r from-primary to-primary-600 text-primary-foreground rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                       </svg>
                       打开编辑器

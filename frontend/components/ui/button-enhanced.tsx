@@ -73,9 +73,9 @@ const buttonVariants = cva(
         default: 'h-10 px-4 text-sm rounded-xl',
         lg: 'h-11 px-6 text-base rounded-xl',
         xl: 'h-12 px-8 text-base rounded-2xl',
-        icon: 'h-10 w-10 rounded-xl',
-        'icon-sm': 'h-8 w-8 rounded-lg',
-        'icon-lg': 'h-12 w-12 rounded-2xl',
+        icon: 'size-10 rounded-xl',
+        'icon-sm': 'size-8 rounded-lg',
+        'icon-lg': 'size-12 rounded-2xl',
       },
       fullWidth: {
         true: 'w-full',
@@ -121,7 +121,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="size-4 animate-spin" />
         ) : (
           <>
             {leftIcon && <span className="mr-2 -ml-1">{leftIcon}</span>}

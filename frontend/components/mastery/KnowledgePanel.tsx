@@ -43,7 +43,7 @@ export function KnowledgePanel({
         <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm p-8 mx-4">
           {/* 顶部光效 */}
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <div className="animate-pulse space-y-4">
+          <div className="animate-pulse gap-y-4">
             <div className="h-8 bg-muted rounded w-1/2" />
             <div className="h-4 bg-muted rounded w-3/4" />
             <div className="h-4 bg-muted rounded w-2/3" />
@@ -89,7 +89,7 @@ export function KnowledgePanel({
         <div className="p-6 border-b border-border/50 flex-shrink-0 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-foreground">{content.chapter_title}</h2>
+              <h2 className="text-2xl font-semibold text-foreground">{content.chapter_title}</h2>
               <p className="text-sm text-muted-foreground mt-1">知识点讲解</p>
             </div>
             <button type="button"
@@ -97,7 +97,7 @@ export function KnowledgePanel({
               className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
               aria-label="关闭"
             >
-              <svg className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -106,13 +106,13 @@ export function KnowledgePanel({
           {/* Stats */}
           <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
               {content.total_points} 个知识点
             </span>
             <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               预计学习时间 {content.estimated_time} 分钟
@@ -122,7 +122,7 @@ export function KnowledgePanel({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-4">
+          <div className="gap-y-4">
             {content.knowledge_points.map((point, index) => (
               <KnowledgePointCard
                 key={point.id}
@@ -141,7 +141,7 @@ export function KnowledgePanel({
             onClick={onStartQuiz}
             className="w-full py-3 bg-gradient-to-r from-primary to-primary-600 text-primary-foreground rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
             小节测试
@@ -184,14 +184,14 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
         onClick={onToggle}
         className="w-full p-4 text-left flex items-start gap-3 hover:bg-muted/50 transition-colors"
       >
-        <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-medium">
+        <span className="flex-shrink-0 size-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-medium">
           {index + 1}
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-foreground">{point.title}</h3>
             <svg
-              className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              className={`size-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -215,7 +215,7 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-3">
+            <div className="px-4 pb-4 gap-y-3">
               {/* Content - Markdown rendered */}
               <div className="text-muted-foreground leading-relaxed">
                 <ReactMarkdown
@@ -249,12 +249,12 @@ pre({ children }) {
                        )
                      },
                     // 标题样式
-                    h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                    h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-base font-medium text-foreground mb-1 mt-2">{children}</h3>,
                     // 列表样式
-                    ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                    ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                     li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
                     // 段落
                     p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
@@ -279,12 +279,12 @@ pre({ children }) {
 
               {/* Code Examples */}
               {point.examples && point.examples.length > 0 && (
-                <div className="space-y-2">
+                <div className="gap-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">示例代码</p>
-                  <div className="space-y-1">
+                  <div className="gap-y-1">
                     {point.examples.map((example, i) => (
                       <pre
-                        key={i}
+                        key={`item-${i}`}
                         className="bg-muted rounded-lg p-3 font-mono text-sm overflow-x-auto border border-border/50"
                       >
                         <code>{example}</code>

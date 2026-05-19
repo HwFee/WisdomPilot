@@ -123,23 +123,23 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
         title={`${config.label}: ${config.description} (-${config.cost}智核)`}
       >
         {loading ? (
-          <Loader2 className={`w-5 h-5 ${config.color} animate-spin`} />
+          <Loader2 className={`size-5 ${config.color} animate-spin`} />
         ) : (
-          <Icon className={`w-5 h-5 ${config.color}`} />
+          <Icon className={`size-5 ${config.color}`} />
         )}
         <span className={`text-xs font-medium ${config.color}`}>
           {config.label}
         </span>
         <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-          <Gem className="w-3 h-3" />
+          <Gem className="size-3" />
           {config.cost}
         </span>
       </button>
 
       {/* Insufficient balance indicator */}
       {!canAfford && (
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-          <AlertCircle className="w-2 h-2 text-white" />
+        <div className="absolute -top-1 -right-1 size-3 bg-red-500 rounded-full flex items-center justify-center">
+          <AlertCircle className="size-2 text-white" />
         </div>
       )}
 
@@ -156,9 +156,9 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${config.bgColor}`}>
-                  <Icon className={`w-5 h-5 ${config.color}`} />
+                  <Icon className={`size-5 ${config.color}`} />
                 </div>
-                <h3 className="text-lg font-bold text-foreground">
+                <h3 className="text-lg font-semibold text-foreground">
                   {config.label}
                 </h3>
               </div>
@@ -166,7 +166,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
                 onClick={handleClose}
                 className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
               >
-                <X className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <X className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
             </div>
 
@@ -177,12 +177,12 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex, rehypeHighlight]}
                   components={{
-                    h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                    h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mt-3 mb-2">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-base font-medium text-foreground mt-2 mb-1">{children}</h3>,
                     p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
-                    ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                    ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                     li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
                     blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
                     strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
@@ -225,7 +225,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
             {/* Footer */}
             <div className="px-6 py-4 border-t border-border/50 bg-muted/30 flex items-center justify-between">
               <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <Gem className="w-3 h-3 text-purple-500" />
+                <Gem className="size-3 text-purple-500" />
                 消耗 {config.cost} 智核
               </span>
               <button type="button"
@@ -242,10 +242,10 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
       {/* Error toast */}
       {error && (
         <div className="fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-          <AlertCircle className="w-4 h-4" />
+          <AlertCircle className="size-4" />
           {error}
           <button type="button" onClick={() => setError(null)} className="ml-2">
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
       )}
@@ -262,12 +262,12 @@ export function AIHintPanel({ onGetHint, currentBalance, disabled }: AIHintPanel
     <div className="bg-card rounded-xl border p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-500" />
+          <Sparkles className="size-4 text-purple-500" />
           AI 提示
         </h3>
         {currentBalance !== undefined && (
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Gem className="w-3 h-3 text-purple-500" />
+            <Gem className="size-3 text-purple-500" />
             {currentBalance}
           </span>
         )}
@@ -329,7 +329,7 @@ export function StreamHintModal({
 
   // 从 localStorage 加载保存的位置
   useEffect(() => {
-    const saved = localStorage.getItem('aiHintModalPosition');
+    const saved = localStorage.getItem('aiHintModalPosition:v1');
     if (saved) {
       try {
         setPosition(JSON.parse(saved));
@@ -341,7 +341,7 @@ export function StreamHintModal({
 
   // 保存位置到 localStorage
   const savePosition = useCallback((pos: { x: number; y: number }) => {
-    localStorage.setItem('aiHintModalPosition', JSON.stringify(pos));
+    localStorage.setItem('aiHintModalPosition:v1', JSON.stringify(pos));
   }, []);
 
   // 拖动开始
@@ -423,10 +423,10 @@ export function StreamHintModal({
       >
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${config.bgColor}`}>
-            <Icon className={`w-5 h-5 ${config.color}`} />
+            <Icon className={`size-5 ${config.color}`} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
               {config.label}
               {isCached && (
                 <span className="text-xs font-normal text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
@@ -437,19 +437,19 @@ export function StreamHintModal({
             <p className="text-xs text-muted-foreground">{config.description}</p>
           </div>
           {isStreaming && !isCached && (
-            <Loader2 className={`w-4 h-4 ${config.color} animate-spin ml-2`} />
+            <Loader2 className={`size-4 ${config.color} animate-spin ml-2`} />
           )}
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <GripVertical className="w-4 h-4" />
+            <GripVertical className="size-4" />
             <span>拖动</span>
           </div>
           <button type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
           >
-            <X className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <X className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </button>
         </div>
       </div>
@@ -462,12 +462,12 @@ export function StreamHintModal({
               remarkPlugins={[remarkGfm, remarkMath]}
               rehypePlugins={[rehypeKatex, rehypeHighlight]}
               components={{
-                h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
                 h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mt-3 mb-2">{children}</h2>,
                 h3: ({ children }) => <h3 className="text-base font-medium text-foreground mt-2 mb-1">{children}</h3>,
                 p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
-                ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                 li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
                 blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
                 strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
@@ -508,11 +508,11 @@ pre({ children }) {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-purple-500" />
+              <div className="size-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <Sparkles className="size-6 text-purple-500" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card flex items-center justify-center shadow border border-border/50">
-                <Loader2 className="w-3 h-3 text-purple-500 animate-spin" />
+              <div className="absolute -bottom-1 -right-1 size-5 rounded-full bg-card flex items-center justify-center shadow border border-border/50">
+                <Loader2 className="size-3 text-purple-500 animate-spin" />
               </div>
             </div>
             <p className="mt-4 text-sm">AI 正在思考...</p>
@@ -527,7 +527,7 @@ pre({ children }) {
             {isCached ? (
               <span className="text-green-600">免费查看（已购买）</span>
             ) : (
-              <>消耗 <Gem className="w-4 h-4 text-purple-500" /> {cost} 智核</>
+              <>消耗 <Gem className="size-4 text-purple-500" /> {cost} 智核</>
             )}
           </span>
           <button type="button"
@@ -652,20 +652,20 @@ export function StreamHintButton({
           `}
           title={`${config.label}: ${config.description} (-${config.cost}智核)`}
         >
-          <Icon className={`w-5 h-5 ${config.color}`} />
+          <Icon className={`size-5 ${config.color}`} />
           <span className={`text-xs font-medium ${config.color}`}>
             {config.label}
           </span>
           <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-            <Gem className="w-3 h-3" />
+            <Gem className="size-3" />
             {config.cost}
           </span>
         </button>
 
         {/* Insufficient balance indicator */}
         {!canAfford && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-            <AlertCircle className="w-2 h-2 text-white" />
+          <div className="absolute -top-1 -right-1 size-3 bg-red-500 rounded-full flex items-center justify-center">
+            <AlertCircle className="size-2 text-white" />
           </div>
         )}
       </div>
@@ -684,10 +684,10 @@ export function StreamHintButton({
       {/* Error toast */}
       {error && (
         <div className="fixed bottom-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-          <AlertCircle className="w-4 h-4" />
+          <AlertCircle className="size-4" />
           {error}
           <button type="button" onClick={() => setError(null)} className="ml-2">
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
       )}
@@ -718,12 +718,12 @@ export function StreamHintPanel({
     <div className="bg-card rounded-xl border p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-500" />
+          <Sparkles className="size-4 text-purple-500" />
           AI 提示
         </h3>
         {currentBalance !== undefined && (
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Gem className="w-3 h-3 text-purple-500" />
+            <Gem className="size-3 text-purple-500" />
             {currentBalance}
           </span>
         )}

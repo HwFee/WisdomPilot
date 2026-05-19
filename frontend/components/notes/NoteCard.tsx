@@ -23,7 +23,7 @@ export function NoteCard({
   onDelete,
   lang = 'zh',
 }: NoteCardProps) {
-  const router = useRouter()
+  const { push } = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleted, setDeleted] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
@@ -96,21 +96,21 @@ export function NoteCard({
 
     // 挑战之路笔记（无 course_id/chapter_id）
     if (!note.course_id && !note.chapter_id) {
-      router.push('/arena')
+      push('/arena')
       return
     }
 
     if (note.chapter_id && note.course_id && note.section_id) {
       // 完整参数：跳转到具体小节和题目
-      router.push(`/mastery/${note.course_id}?chapter=${note.chapter_id}&section=${note.section_id}&exercise=${note.exercise_id}&skip=1`)
+      push(`/mastery/${note.course_id}?chapter=${note.chapter_id}&section=${note.section_id}&exercise=${note.exercise_id}&skip=1`)
     } else if (note.chapter_id && note.course_id) {
       // 缺少 section_id：跳转到章节和题目
-      router.push(`/mastery/${note.course_id}?chapter=${note.chapter_id}&exercise=${note.exercise_id}&skip=1`)
+      push(`/mastery/${note.course_id}?chapter=${note.chapter_id}&exercise=${note.exercise_id}&skip=1`)
     } else if (note.course_id) {
       // 只有课程：跳转到精进之路
-      router.push(`/mastery/${note.course_id}`)
+      push(`/mastery/${note.course_id}`)
     }
-  }, [note.exercise_id, note.chapter_id, note.course_id, note.section_id, router])
+  }, [note.exercise_id, note.chapter_id, note.course_id, note.section_id, push])
 
   const sourceLabel = {
     manual: t('手动', 'Manual'),
@@ -129,7 +129,7 @@ export function NoteCard({
             </h3>
             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4" />
+                <Calendar className="size-4" />
                 {formatDate(note.updated_at)}
               </span>
               <span className="px-2 py-0.5 bg-muted rounded-md text-xs font-medium">
@@ -142,7 +142,7 @@ export function NoteCard({
                   className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs font-medium hover:bg-primary/20 transition-colors"
                   title={t('跳转到关联题目', 'Go to related exercise')}
                 >
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="size-3" />
                   {t('题目 #', 'Exercise #')}{note.exercise_id}
                 </button>
               )}
@@ -154,7 +154,7 @@ export function NoteCard({
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={t('预览', 'Preview')}
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="size-4" />
               <span>{t('预览', 'Preview')}</span>
             </button>
             <button type="button"
@@ -162,7 +162,7 @@ export function NoteCard({
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={t('编辑', 'Edit')}
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="size-4" />
               <span>{t('编辑', 'Edit')}</span>
             </button>
             <button type="button"
@@ -170,7 +170,7 @@ export function NoteCard({
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={t('导出', 'Export')}
             >
-              <Download className="w-4 h-4" />
+              <Download className="size-4" />
               <span>{t('导出', 'Export')}</span>
             </button>
             <button type="button"
@@ -179,7 +179,7 @@ export function NoteCard({
               className="flex items-center gap-1.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
               title={t('删除', 'Delete')}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="size-4" />
               <span>{t('删除', 'Delete')}</span>
             </button>
           </div>
@@ -198,7 +198,7 @@ export function NoteCard({
         {/* Processing indicator */}
         {isProcessing && (
           <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4">
-            <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+            <Loader2 className="size-4 animate-spin text-amber-500" />
             <span className="text-sm text-amber-600 dark:text-amber-400">
               {t('这条笔记正在处理中...', 'This note is being processed...')}
             </span>
@@ -213,7 +213,7 @@ export function NoteCard({
                 key={tag}
                 className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-1.5"
               >
-                <Tag className="w-3.5 h-3.5" />
+                <Tag className="size-3.5" />
                 {tag}
               </span>
             ))}
@@ -247,13 +247,13 @@ export function NoteCard({
                     onClick={handleGoToExercise}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
                   >
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="size-3" />
                     {t('跳转到题目', 'Go to exercise')}
                   </button>
                 )}
                 {isProcessing && (
                   <span className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-500/10 text-amber-600 rounded-md">
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="size-3 animate-spin" />
                     {t('处理中', 'Processing')}
                   </span>
                 )}
@@ -275,7 +275,7 @@ export function NoteCard({
             </div>
             {isProcessing && (
               <div className="p-4 border-t bg-amber-500/5 flex items-center justify-center gap-2 text-amber-600">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 <span className="text-sm">{t('笔记正在处理中，请稍后刷新查看...', 'Note is being processed, please refresh later...')}</span>
               </div>
             )}

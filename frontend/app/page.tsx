@@ -55,7 +55,7 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true)
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token:v1')
     setIsLoggedIn(!!token)
 
     // 从 API 获取真实课程数据（未登录也能访问）
@@ -74,7 +74,7 @@ export default function Home() {
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full size-8 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -88,7 +88,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <Logo className="text-blue-500" />
               <div>
-                <h1 className="text-lg font-bold text-foreground">智码领航</h1>
+                <h1 className="text-lg font-semibold text-foreground">智码领航</h1>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -128,11 +128,11 @@ export default function Home() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-sm text-primary mb-8">
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="size-4" />
               <span>基于生成式 AI 的程序设计实践教学系统</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-foreground mb-6 tracking-tight">
               开启你的
               <span className="text-gradient">编程学习之旅</span>
             </h1>
@@ -150,14 +150,14 @@ export default function Home() {
                   className="group inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-medium text-primary-foreground bg-primary rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary/25 hover-lift"
                 >
                   免费开始学习
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               )}
               <Link
                 href="/courses"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-medium text-foreground bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-muted transition-all"
               >
-                <BookOpen className="w-5 h-5 text-primary" />
+                <BookOpen className="size-5 text-primary" />
                 浏览课程
               </Link>
             </div>
@@ -169,7 +169,7 @@ export default function Home() {
       <section className="py-20 border-y border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">平台功能</h2>
+            <h2 className="text-3xl sm:text-4xl font-semibold text-foreground mb-4">平台功能</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               结合 AI 技术打造的编程学习工具集
             </p>
@@ -178,12 +178,12 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {FEATURES.map((feature, index) => (
               <div
-                key={index}
+                key={`item-${index}`}
                 className="group p-6 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all card-interactive"
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg`}
+                <div className={`size-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg`}
                 >
-                  <feature.icon className="w-7 h-7 text-white" />
+                  <feature.icon className="size-7 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
@@ -197,7 +197,7 @@ export default function Home() {
       <section className="py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">课程</h2>
+            <h2 className="text-3xl sm:text-4xl font-semibold text-foreground mb-4">课程</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               从入门到进阶，覆盖主流编程语言
             </p>
@@ -205,7 +205,7 @@ export default function Home() {
 
           {coursesLoading ? (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full size-8 border-b-2 border-primary"></div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
@@ -220,9 +220,9 @@ export default function Home() {
                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config?.gradient || 'from-primary to-primary-600'}`} />
 
                     <div className="flex items-center gap-4 mb-4 mt-2">
-                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${config?.gradient || 'from-primary to-primary-600'} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}
+                      <div className={`size-14 rounded-xl bg-gradient-to-br ${config?.gradient || 'from-primary to-primary-600'} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}
                       >
-                        <div className="w-7 h-7 text-white">{config?.icon}</div>
+                        <div className="size-7 text-white">{config?.icon}</div>
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -230,7 +230,7 @@ export default function Home() {
                         </h3>
                         <div className="flex gap-1 mt-1">
                           {[...Array(4)].map((_, i) => (
-                            <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
+                            <div key={`item-${i}`} className={`size-1.5 rounded-full ${i < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
                           ))}
                         </div>
                       </div>
@@ -246,7 +246,7 @@ export default function Home() {
                       </span>
                       <span className="flex items-center gap-1 text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                         开始学习
-                        <ChevronRight className="w-3 h-3" />
+                        <ChevronRight className="size-3" />
                       </span>
                     </div>
                   </Link>
@@ -261,7 +261,7 @@ export default function Home() {
       <section className="py-20 bg-card/30 border-y border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">学习工具</h2>
+            <h2 className="text-3xl sm:text-4xl font-semibold text-foreground mb-4">学习工具</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               多种工具辅助你的编程学习
             </p>
@@ -279,7 +279,7 @@ export default function Home() {
                 href={isLoggedIn ? tool.href : '/register'}
                 className="group p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-all text-center"
               >
-                <tool.icon className="w-8 h-8 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <tool.icon className="size-8 text-primary mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <div className="font-medium text-foreground text-sm">{tool.label}</div>
                 <div className="text-xs text-muted-foreground mt-1">{tool.desc}</div>
               </Link>
@@ -294,7 +294,7 @@ export default function Home() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl"></div>
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground mb-6">
             准备好开始了吗？
           </h2>
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
@@ -309,7 +309,7 @@ export default function Home() {
               className="group inline-flex items-center gap-3 px-10 py-5 text-lg font-medium text-primary-foreground bg-primary rounded-2xl hover:bg-primary-600 transition-all shadow-2xl shadow-primary/30 hover-lift"
             >
               立即免费注册
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           )}
         </div>

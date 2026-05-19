@@ -36,7 +36,7 @@ export function PasswordStrengthIndicator({
   const strengthConfig = strength ? STRENGTH_CONFIG[strength] : null
 
   return (
-    <div className="space-y-2 mt-2">
+    <div className="gap-y-2 mt-2">
       {/* Strength bar */}
       {strengthConfig && (
         <div className="flex items-center gap-2">
@@ -91,9 +91,9 @@ function RequirementItem({ met, text, optional }: RequirementItemProps) {
       met ? 'text-green-600 dark:text-green-400' : optional ? 'text-gray-400' : 'text-gray-500'
     )}>
       {met ? (
-        <Check className="w-3 h-3 flex-shrink-0" />
+        <Check className="size-3 flex-shrink-0" />
       ) : (
-        <X className={cn('w-3 h-3 flex-shrink-0', optional && 'opacity-50')} />
+        <X className={cn('size-3 flex-shrink-0', optional && 'opacity-50')} />
       )}
       <span className={cn(optional && !met && 'opacity-50')}>{text}</span>
     </div>

@@ -44,9 +44,9 @@ export function SampleIOCard({
           {t('样例', 'Sample')}
         </span>
         {expanded ? (
-          <ChevronUp className="w-4 h-4 text-[#909399]" />
+          <ChevronUp className="size-4 text-[#909399]" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-[#909399]" />
+          <ChevronDown className="size-4 text-[#909399]" />
         )}
       </button>
 
@@ -65,9 +65,9 @@ export function SampleIOCard({
                   title={t('复制', 'Copy')}
                 >
                   {copied === 'input' ? (
-                    <Check className="w-3.5 h-3.5 text-[#52C41A]" />
+                    <Check className="size-3.5 text-[#52C41A]" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="size-3.5" />
                   )}
                   {copied === 'input' ? t('已复制', 'Copied') : t('复制', 'Copy')}
                 </button>
@@ -77,7 +77,7 @@ export function SampleIOCard({
                     disabled={isRunning}
                     className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-[#52C41A] hover:bg-[#27AE60] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Play className="w-3.5 h-3.5" />
+                    <Play className="size-3.5" />
                     {isRunning ? t('运行中...', 'Running...') : t('运行', 'Run')}
                   </button>
                 )}
@@ -100,9 +100,9 @@ export function SampleIOCard({
                 title={t('复制', 'Copy')}
               >
                 {copied === 'output' ? (
-                  <Check className="w-3.5 h-3.5 text-[#52C41A]" />
+                  <Check className="size-3.5 text-[#52C41A]" />
                 ) : (
-                  <Copy className="w-3.5 h-3.5" />
+                  <Copy className="size-3.5" />
                 )}
                 {copied === 'output' ? t('已复制', 'Copied') : t('复制', 'Copy')}
               </button>
@@ -148,9 +148,9 @@ export function SampleIOList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="gap-y-3">
       {samples.map((sample, index) => (
-        <div key={index}>
+        <div key={`sample-${index}`}>
           <div className="text-xs text-[#909399] mb-1.5 ml-1">
             {t('样例', 'Sample')} {index + 1}
           </div>

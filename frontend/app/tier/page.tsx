@@ -72,7 +72,7 @@ const getTierDisplay = (tier: string, subTier: number) => {
 };
 
 export default function TierPage() {
-  const router = useRouter();
+  const { push, back } = useRouter();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<TierTransaction[]>([]);
   const [page, setPage] = useState(0);
@@ -85,7 +85,7 @@ export default function TierPage() {
   const fetchData = async (pageNum: number = 0, append: boolean = false) => {
     const token = getStoredToken();
     if (!token) {
-      router.push("/login");
+      push("/login");
       return;
     }
 
@@ -122,7 +122,7 @@ export default function TierPage() {
 
   useEffect(() => {
     fetchData(0);
-  }, [router]);
+  }, [push, back]);
 
   const loadMore = () => {
     if (!loadingMore && transactions.length < total) {
@@ -132,9 +132,9 @@ export default function TierPage() {
 
   const handleGoBack = () => {
     if (window.history.length > 1 && document.referrer) {
-      router.back();
+      back();
     } else {
-      router.push("/dashboard");
+      push("/dashboard");
     }
   };
 
@@ -205,7 +205,7 @@ export default function TierPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <Loader2 className="size-8 text-primary animate-spin" />
       </div>
     );
   }
@@ -219,7 +219,7 @@ export default function TierPage() {
             onClick={handleGoBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
             <span className="font-medium">段位明细</span>
           </button>
           <button type="button"
@@ -227,16 +227,16 @@ export default function TierPage() {
             disabled={loading}
             className="p-2 text-muted-foreground hover:text-foreground"
           >
-            <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`size-5 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 gap-y-6">
         {/* Header Card */}
         <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-2xl border border-amber-500/30 p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Crown className="w-8 h-8 text-amber-500" />
+            <Crown className="size-8 text-amber-500" />
             <div>
               <div className="text-sm text-amber-400 mb-1">段位变化记录</div>
               <div className="text-lg font-bold text-foreground">
@@ -270,7 +270,7 @@ export default function TierPage() {
         <div className="bg-card rounded-xl border">
           <div className="p-4 border-b flex items-center justify-between">
             <h2 className="font-semibold flex items-center gap-2">
-              <History className="w-5 h-5 text-muted-foreground" />
+              <History className="size-5 text-muted-foreground" />
               变化记录
             </h2>
             <span className="text-sm text-muted-foreground">共 {total} 条</span>
@@ -288,19 +288,19 @@ export default function TierPage() {
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {tx.promoted && (
                           <span className="px-2 py-0.5 rounded text-xs font-medium text-green-600 bg-green-100 flex items-center gap-1">
-                            <PartyPopper className="w-3 h-3" />
+                            <PartyPopper className="size-3" />
                             晋级
                           </span>
                         )}
                         {tx.demoted && (
                           <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100 flex items-center gap-1">
-                            <TrendingDown className="w-3 h-3" />
+                            <TrendingDown className="size-3" />
                             降级
                           </span>
                         )}
                         {tx.used_protection && (
                           <span className="px-2 py-0.5 rounded text-xs font-medium text-blue-600 bg-blue-100 flex items-center gap-1">
-                            <Shield className="w-3 h-3" />
+                            <Shield className="size-3" />
                             段位保护
                           </span>
                         )}
@@ -314,11 +314,11 @@ export default function TierPage() {
                       {/* 段位变化 */}
                       <div className="flex items-center gap-2 text-sm">
                         <span className={`${TIER_COLORS[tx.tier_before] || "text-gray-600"} flex items-center gap-0.5`}>
-                          {getTierDisplay(tx.tier_before, tx.sub_tier_before)} <Star className="w-3.5 h-3.5 fill-current" />{tx.stars_before}
+                          {getTierDisplay(tx.tier_before, tx.sub_tier_before)} <Star className="size-3.5 fill-current" />{tx.stars_before}
                         </span>
                         <span className="text-muted-foreground">→</span>
                         <span className={`${TIER_COLORS[tx.tier_after] || "text-gray-600"} flex items-center gap-0.5`}>
-                          {getTierDisplay(tx.tier_after, tx.sub_tier_after)} <Star className="w-3.5 h-3.5 fill-current" />{tx.stars_after}
+                          {getTierDisplay(tx.tier_after, tx.sub_tier_after)} <Star className="size-3.5 fill-current" />{tx.stars_after}
                         </span>
                       </div>
 
@@ -329,7 +329,7 @@ export default function TierPage() {
 
                       {/* 时间 */}
                       <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="size-3" />
                         {formatDate(tx.created_at)}
                       </div>
                     </div>
@@ -343,16 +343,16 @@ export default function TierPage() {
                       >
                         {tx.stars_change > 0 ? (
                           <>
-                            <TrendingUp className="w-4 h-4" />
+                            <TrendingUp className="size-4" />
                             +{tx.stars_change}
                           </>
                         ) : (
                           <>
-                            <TrendingDown className="w-4 h-4" />
+                            <TrendingDown className="size-4" />
                             {tx.stars_change}
                           </>
                         )}
-                        <Star className="w-4 h-4 fill-current" />
+                        <Star className="size-4 fill-current" />
                       </div>
                     </div>
                   </div>
@@ -368,7 +368,7 @@ export default function TierPage() {
                     className="px-6 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
                   >
                     {loadingMore ? (
-                      <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                      <Loader2 className="size-4 animate-spin inline mr-2" />
                     ) : null}
                     加载更多
                   </button>

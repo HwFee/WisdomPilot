@@ -109,7 +109,7 @@ function Modal({
                 onClick={onClose}
                 className="absolute top-4 right-4 z-10 p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
               >
-                <X className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <X className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
             )}
             {children}

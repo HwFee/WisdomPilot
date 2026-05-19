@@ -69,7 +69,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function CoresPage() {
-  const router = useRouter();
+  const { push, back } = useRouter();
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState<CoreBalance | null>(null);
   const [transactions, setTransactions] = useState<CoreTransaction[]>([]);
@@ -83,7 +83,7 @@ export default function CoresPage() {
   const fetchData = async (pageNum: number = 0, append: boolean = false) => {
     const token = getStoredToken();
     if (!token) {
-      router.push("/login");
+      push("/login");
       return;
     }
 
@@ -129,7 +129,7 @@ export default function CoresPage() {
 
   useEffect(() => {
     fetchData(0);
-  }, [router]);
+  }, [push, back]);
 
   const loadMore = () => {
     if (!loadingMore && transactions.length < total) {
@@ -140,10 +140,10 @@ export default function CoresPage() {
   const handleGoBack = () => {
     // 检查是否有历史记录可以返回
     if (window.history.length > 1 && document.referrer) {
-      router.back()
+      back()
     } else {
       // 如果没有历史记录，默认返回仪表盘
-      router.push("/dashboard")
+      push("/dashboard")
     }
   }
 
@@ -236,7 +236,7 @@ export default function CoresPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <Loader2 className="size-8 text-primary animate-spin" />
       </div>
     );
   }
@@ -250,7 +250,7 @@ export default function CoresPage() {
             onClick={handleGoBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
             <span className="font-medium">智核明细</span>
           </button>
           <button type="button"
@@ -258,30 +258,30 @@ export default function CoresPage() {
             disabled={loading}
             className="p-2 text-muted-foreground hover:text-foreground"
           >
-            <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`size-5 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 gap-y-6">
         {/* Balance Card */}
         <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-2xl border border-purple-500/30 p-6">
           <div className="text-sm text-purple-400 mb-1">当前余额</div>
           <div className="text-4xl font-bold text-foreground flex items-center gap-3">
-            <Gem className="w-8 h-8 text-purple-500" />
+            <Gem className="size-8 text-purple-500" />
             {balance?.balance ?? 0}
           </div>
           <div className="flex gap-8 mt-4">
             <div>
               <div className="flex items-center gap-1 text-green-500 text-lg font-semibold">
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="size-4" />
                 +{balance?.total_earned ?? 0}
               </div>
               <div className="text-xs text-muted-foreground">累计获得</div>
             </div>
             <div>
               <div className="flex items-center gap-1 text-red-500 text-lg font-semibold">
-                <TrendingDown className="w-4 h-4" />
+                <TrendingDown className="size-4" />
                 -{balance?.total_spent ?? 0}
               </div>
               <div className="text-xs text-muted-foreground">累计消耗</div>
@@ -305,7 +305,7 @@ export default function CoresPage() {
         <div className="bg-card rounded-xl border">
           <div className="p-4 border-b flex items-center justify-between">
             <h2 className="font-semibold flex items-center gap-2">
-              <History className="w-5 h-5 text-muted-foreground" />
+              <History className="size-5 text-muted-foreground" />
               交易记录
             </h2>
             <span className="text-sm text-muted-foreground">共 {total} 条</span>
@@ -336,7 +336,7 @@ export default function CoresPage() {
                         </p>
                       )}
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="size-3" />
                         {formatDate(tx.created_at)}
                       </div>
                     </div>
@@ -366,7 +366,7 @@ export default function CoresPage() {
                     className="px-6 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
                   >
                     {loadingMore ? (
-                      <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                      <Loader2 className="size-4 animate-spin inline mr-2" />
                     ) : null}
                     加载更多
                   </button>

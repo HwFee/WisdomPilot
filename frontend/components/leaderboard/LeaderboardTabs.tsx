@@ -29,7 +29,7 @@ export function LeaderboardTabs({
 
   useEffect(() => {
     // Get current user from token
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token:v1')
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
@@ -42,7 +42,7 @@ export function LeaderboardTabs({
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token:v1')
       if (!token) return
 
       try {
@@ -80,11 +80,11 @@ export function LeaderboardTabs({
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Crown className="w-5 h-5 text-yellow-500" />
+        return <Crown className="size-5 text-yellow-500" />
       case 2:
-        return <Medal className="w-5 h-5 text-gray-400" />
+        return <Medal className="size-5 text-gray-400" />
       case 3:
-        return <Medal className="w-5 h-5 text-amber-600" />
+        return <Medal className="size-5 text-amber-600" />
       default:
         return <span className="text-sm font-bold text-muted-foreground">{rank}</span>
     }
@@ -102,7 +102,7 @@ export function LeaderboardTabs({
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
-          <Trophy className="w-4 h-4" />
+          <Trophy className="size-4" />
           精进榜
         </button>
         <button type="button"
@@ -113,7 +113,7 @@ export function LeaderboardTabs({
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
-          <Swords className="w-4 h-4" />
+          <Swords className="size-4" />
           竞技榜
         </button>
       </div>
@@ -122,14 +122,14 @@ export function LeaderboardTabs({
       <div className="p-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+            <div className="animate-spin rounded-full size-6 border-2 border-primary border-t-transparent"></div>
           </div>
         ) : entries.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">暂无排名数据</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="gap-y-2">
             {entries.map((entry) => (
               <div
                 key={entry.user_id}
@@ -141,12 +141,12 @@ export function LeaderboardTabs({
               >
                 <div className="flex items-center gap-3">
                   {/* Rank */}
-                  <div className="w-8 h-8 flex items-center justify-center">
+                  <div className="size-8 flex items-center justify-center">
                     {getRankIcon(entry.rank)}
                   </div>
 
                   {/* Avatar */}
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-medium text-sm ${
+                  <div className={`size-9 rounded-full flex items-center justify-center text-white font-medium text-sm ${
                     activeTab === 'mastery'
                       ? 'bg-gradient-to-br from-amber-500 to-amber-600'
                       : 'bg-gradient-to-br from-blue-500 to-blue-600'
@@ -168,12 +168,12 @@ export function LeaderboardTabs({
                       </p>
                     ) : (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="w-4 h-4 flex items-center justify-center">
+                        <span className="size-4 flex items-center justify-center">
                           {getTierConfig(entry.tier as Tier)?.icon}
                         </span>
                         <span>{TIER_NAMES[entry.tier as Tier]}</span>
                         <span className="flex items-center gap-0.5">
-                          <Flame className="w-3 h-3 text-orange-500" />
+                          <Flame className="size-3 text-orange-500" />
                           {entry.wins}胜
                         </span>
                       </div>
@@ -193,7 +193,7 @@ export function LeaderboardTabs({
                   ) : (
                     <>
                       <p className="font-bold text-blue-500 flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                        <Star className="size-4 text-yellow-500 fill-yellow-500" />
                         {entry.stars ?? 0}
                       </p>
                       <p className="text-xs text-muted-foreground">星星</p>
@@ -221,7 +221,7 @@ export function LeaderboardTabs({
             className="w-full mt-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center justify-center gap-1"
           >
             查看完整榜单
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="size-4" />
           </button>
         )}
       </div>
@@ -244,7 +244,7 @@ export function LeaderboardPreview({
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token:v1')
       if (!token) return
 
       try {
@@ -267,7 +267,7 @@ export function LeaderboardPreview({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-6">
-        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"></div>
+        <div className="animate-spin rounded-full size-5 border-2 border-primary border-t-transparent"></div>
       </div>
     )
   }
@@ -279,13 +279,13 @@ export function LeaderboardPreview({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="gap-y-2">
       {entries.slice(0, 3).map((entry) => (
         <div
           key={entry.user_id}
           className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
         >
-          <span className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
+          <span className={`size-5 flex items-center justify-center text-xs font-bold ${
             entry.rank === 1 ? 'text-yellow-500' :
             entry.rank === 2 ? 'text-gray-400' :
             entry.rank === 3 ? 'text-amber-600' :
@@ -293,7 +293,7 @@ export function LeaderboardPreview({
           }`}>
             {entry.rank}
           </span>
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-primary-foreground text-xs font-medium">
+          <div className="size-6 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-primary-foreground text-xs font-medium">
             {entry.username.charAt(0)}
           </div>
           <span className="flex-1 text-sm text-foreground truncate">{entry.username}</span>

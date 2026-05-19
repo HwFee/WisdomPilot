@@ -30,7 +30,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
   bronze: {
     id: 'bronze',
     name: '青铜',
-    icon: <Medal className="w-5 h-5 text-amber-600" />,
+    icon: <Medal className="size-5 text-amber-600" />,
     color: 'text-amber-600',
     bgColor: 'bg-amber-600/10',
     gradient: 'from-amber-600 to-amber-700',
@@ -41,7 +41,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
   silver: {
     id: 'silver',
     name: '白银',
-    icon: <Medal className="w-5 h-5 text-gray-400" />,
+    icon: <Medal className="size-5 text-gray-400" />,
     color: 'text-gray-400',
     bgColor: 'bg-gray-400/10',
     gradient: 'from-gray-400 to-gray-500',
@@ -52,7 +52,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
   gold: {
     id: 'gold',
     name: '黄金',
-    icon: <Medal className="w-5 h-5 text-yellow-500 fill-yellow-500/20" />,
+    icon: <Medal className="size-5 text-yellow-500 fill-yellow-500/20" />,
     color: 'text-yellow-500',
     bgColor: 'bg-yellow-500/10',
     gradient: 'from-yellow-500 to-yellow-600',
@@ -63,7 +63,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
   platinum: {
     id: 'platinum',
     name: '铂金',
-    icon: <Gem className="w-5 h-5 text-cyan-400" />,
+    icon: <Gem className="size-5 text-cyan-400" />,
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-400/10',
     gradient: 'from-cyan-400 to-cyan-500',
@@ -74,7 +74,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
   diamond: {
     id: 'diamond',
     name: '钻石',
-    icon: <Gem className="w-5 h-5 text-blue-400 fill-blue-400/30" />,
+    icon: <Gem className="size-5 text-blue-400 fill-blue-400/30" />,
     color: 'text-blue-400',
     bgColor: 'bg-blue-400/10',
     gradient: 'from-blue-400 to-blue-500',
@@ -85,7 +85,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
   master: {
     id: 'master',
     name: '大师',
-    icon: <Crown className="w-5 h-5 text-purple-500" />,
+    icon: <Crown className="size-5 text-purple-500" />,
     color: 'text-purple-400',
     bgColor: 'bg-purple-400/10',
     gradient: 'from-purple-400 to-purple-500',
@@ -96,7 +96,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
   king: {
     id: 'king',
     name: '王者',
-    icon: <Swords className="w-5 h-5 text-red-500" />,
+    icon: <Swords className="size-5 text-red-500" />,
     color: 'text-red-400',
     bgColor: 'bg-red-400/10',
     gradient: 'from-red-400 to-red-500',

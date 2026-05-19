@@ -16,7 +16,7 @@ interface ChapterInfo {
 
 export default function ChapterSectionsPage() {
   const params = useParams()
-  const router = useRouter()
+  const { push } = useRouter()
   const courseId = parseInt(params.courseId as string)
   const chapterId = parseInt(params.chapterId as string)
 
@@ -32,7 +32,7 @@ export default function ChapterSectionsPage() {
   const loadSections = async () => {
     const token = getStoredToken()
     if (!token) {
-      router.push('/login')
+      push('/login')
       return
     }
 
@@ -48,7 +48,7 @@ export default function ChapterSectionsPage() {
       // 从第一个section获取章节信息（如果有的话）
       // 或者调用单独的API获取章节信息
       // 这里暂时从localStorage获取
-      const stored = localStorage.getItem('current_chapter_info')
+      const stored = localStorage.getItem('current_chapter_info:v1')
       if (stored) {
         setChapterInfo(JSON.parse(stored))
       }
@@ -61,11 +61,11 @@ export default function ChapterSectionsPage() {
 
   const handleSelectSection = (section: SectionSummary) => {
     // 跳转到小节学习页面（带章节信息）
-    router.push(`/mastery/${courseId}/chapter/${chapterId}/section/${section.id}`)
+    push(`/mastery/${courseId}/chapter/${chapterId}/section/${section.id}`)
   }
 
   const handleBack = () => {
-    router.push(`/mastery/${courseId}`)
+    push(`/mastery/${courseId}`)
   }
 
   const completedCount = sections.filter(s => s.is_completed).length
@@ -74,7 +74,7 @@ export default function ChapterSectionsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -96,13 +96,13 @@ export default function ChapterSectionsPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto p-4">
           <div className="flex items-center gap-4">
             <button type="button"
               onClick={handleBack}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="size-5" />
             </button>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-semibold text-foreground truncate">
@@ -121,7 +121,7 @@ export default function ChapterSectionsPage() {
         <div className="bg-card rounded-xl border p-4 mb-6">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
+              <BookOpen className="size-5 text-primary" />
               <span className="font-medium">学习进度</span>
             </div>
             <span className="text-sm text-muted-foreground">
@@ -137,7 +137,7 @@ export default function ChapterSectionsPage() {
         </div>
 
         {/* Section List */}
-        <div className="space-y-3">
+        <div className="gap-y-3">
           {sections.map((section, index) => (
             <button type="button"
               key={section.id}
@@ -146,13 +146,13 @@ export default function ChapterSectionsPage() {
             >
               <div className="flex items-start gap-4">
                 {/* Order indicator */}
-                <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-sm font-medium ${
+                <div className={`flex-shrink-0 size-10 rounded-lg flex items-center justify-center text-sm font-medium ${
                   section.is_completed
                     ? 'bg-green-500/20 text-green-600 dark:text-green-400'
                     : 'bg-primary/10 text-primary'
                 }`}>
                   {section.is_completed ? (
-                    <CheckCircle className="w-5 h-5" />
+                    <CheckCircle className="size-5" />
                   ) : (
                     index + 1
                   )}
@@ -171,13 +171,13 @@ export default function ChapterSectionsPage() {
                         </p>
                       )}
                     </div>
-                    <Play className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
+                    <Play className="size-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
                   </div>
 
                   {/* Meta info */}
                   <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
+                      <Clock className="size-3.5" />
                       {section.estimated_minutes} 分钟
                     </span>
                     {section.is_completed && (
@@ -203,7 +203,7 @@ export default function ChapterSectionsPage() {
 
         {sections.length === 0 && (
           <div className="text-center py-12">
-            <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+            <BookOpen className="size-12 mx-auto text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground">该章节暂无小节内容</p>
           </div>
         )}

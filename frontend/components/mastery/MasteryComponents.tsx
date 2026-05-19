@@ -148,13 +148,13 @@ export function SectionMasteryCard({
         </div>
         <div className="flex-shrink-0 ml-2">
           {isCompleted ? (
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="size-8 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="size-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
           ) : (
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+            <div className="size-8 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-xs font-medium text-blue-600">{masteryScore.toFixed(0)}%</span>
             </div>
           )}
@@ -252,7 +252,7 @@ export function CourseMasteryOverview({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">{courseName}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{courseName}</h2>
           <p className="text-sm text-gray-600 mt-1">整体学习进度</p>
         </div>
         <div className="text-right">

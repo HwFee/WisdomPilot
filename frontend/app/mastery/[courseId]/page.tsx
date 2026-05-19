@@ -84,7 +84,7 @@ const DIFFICULTY_COLORS: Record<number, string> = {
 
 export default function MasteryPathPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const searchParams = useSearchParams();
   const courseId = Number(params.courseId);
 
@@ -236,7 +236,7 @@ export default function MasteryPathPage() {
     const continueSession = searchParams.get("continueSession") === "1";
     if (continueSession) {
       try {
-        const savedSession = localStorage.getItem('masterySession');
+        const savedSession = localStorage.getItem('masterySession:v1');
         if (savedSession) {
           const sessionData = JSON.parse(savedSession);
           activeSessionChapterIdRef.current = sessionData.chapterId;
@@ -244,7 +244,7 @@ export default function MasteryPathPage() {
           sessionInitializedRef.current = true;
           sessionEndedRef.current = false;
           // 清除 localStorage 中的会话数据
-          localStorage.removeItem('masterySession');
+          localStorage.removeItem('masterySession:v1');
           return;
         }
       } catch (e) {
@@ -528,13 +528,13 @@ export default function MasteryPathPage() {
   ) => {
     const token = getStoredToken();
     if (!token) {
-      router.push('/login');
+      push('/login');
       return;
     }
 
     // Store chapter info for section page
     try {
-      localStorage.setItem('current_chapter_info', JSON.stringify({
+      localStorage.setItem('current_chapter_info:v1', JSON.stringify({
         id: chapterId,
         title: chapterTitle,
         course_id: courseId,
@@ -545,7 +545,7 @@ export default function MasteryPathPage() {
     }
 
     // Navigate to section selection page
-    router.push(`/mastery/${courseId}/chapter/${chapterId}`);
+    push(`/mastery/${courseId}/chapter/${chapterId}`);
   };
 
   // Start base quiz after viewing knowledge
@@ -1285,10 +1285,10 @@ export default function MasteryPathPage() {
 
     if (fromSection && chapterParam) {
       // Came from section learning page, return to the section learning page
-      router.replace(`/mastery/${courseId}/chapter/${chapterParam}/section/${fromSection}`, { scroll: false });
+      replace(`/mastery/${courseId}/chapter/${chapterParam}/section/${fromSection}`, { scroll: false });
     } else if (searchParams.get("chapter") || searchParams.get("exercise") || searchParams.get("skip")) {
       // Came from wrong question book or favorites, return to chapter selection
-      router.replace(`/mastery/${courseId}`, { scroll: false });
+      replace(`/mastery/${courseId}`, { scroll: false });
     }
 
     fetchOverview();
@@ -1306,7 +1306,7 @@ export default function MasteryPathPage() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
+            className="size-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
           />
           <p className="text-muted-foreground">加载中...</p>
         </motion.div>
@@ -1327,11 +1327,11 @@ export default function MasteryPathPage() {
               href="/dashboard"
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="size-4" />
               <span className="text-sm">返回</span>
             </Link>
             <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
+              <Trophy className="size-5 text-amber-500" />
               <span className="font-semibold">测试结果</span>
             </div>
             <div className="w-20"></div>
@@ -1356,9 +1356,9 @@ export default function MasteryPathPage() {
                 transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
               >
                 {passed ? (
-                  <CheckCircle className="w-20 h-20 text-emerald-500 mx-auto mb-4" />
+                  <CheckCircle className="size-20 text-emerald-500 mx-auto mb-4" />
                 ) : (
-                  <XCircle className="w-20 h-20 text-orange-400 mx-auto mb-4" />
+                  <XCircle className="size-20 text-orange-400 mx-auto mb-4" />
                 )}
               </motion.div>
 
@@ -1389,7 +1389,7 @@ export default function MasteryPathPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-card rounded-xl p-4 mb-6 space-y-3"
+                className="bg-card rounded-xl p-4 mb-6 gap-y-3"
               >
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">获得经验值</span>
@@ -1413,9 +1413,9 @@ export default function MasteryPathPage() {
                   className="bg-muted/50 rounded-xl p-4 text-left text-sm"
                 >
                   <p className="font-medium text-foreground mb-2">学习建议</p>
-                  <ul className="text-muted-foreground space-y-1">
+                  <ul className="text-muted-foreground gap-y-1">
                     {finalResult.recommendations.map((rec, i) => (
-                      <li key={i}>• {rec}</li>
+                      <li key={`rec-${i}`}>• {rec}</li>
                     ))}
                   </ul>
                 </motion.div>
@@ -1468,11 +1468,11 @@ export default function MasteryPathPage() {
               onClick={handleViewQuestions}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="size-4" />
               <span className="text-sm">查看题目</span>
             </button>
             <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-amber-500" />
+              <Target className="size-5 text-amber-500" />
               <span className="font-semibold">学习分析</span>
             </div>
             <button type="button"
@@ -1515,7 +1515,7 @@ export default function MasteryPathPage() {
             {baseResult.weak_points.length > 0 && (
               <div className="bg-orange-500/10 rounded-2xl border border-orange-500/20 p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  <AlertTriangle className="size-5 text-orange-500" />
                   <span className="font-medium text-foreground">
                     需要强化的知识点
                   </span>
@@ -1523,7 +1523,7 @@ export default function MasteryPathPage() {
                 <div className="flex flex-wrap gap-2">
                   {baseResult.weak_points.map((point, i) => (
                     <span
-                      key={i}
+                      key={`rec-${i}`}
                       className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm"
                     >
                       {point}
@@ -1537,7 +1537,7 @@ export default function MasteryPathPage() {
             {baseResult.strong_points.length > 0 && (
               <div className="bg-emerald-500/10 rounded-2xl border border-emerald-500/20 p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle className="w-5 h-5 text-emerald-500" />
+                  <CheckCircle className="size-5 text-emerald-500" />
                   <span className="font-medium text-foreground">
                     已掌握的知识点
                   </span>
@@ -1545,7 +1545,7 @@ export default function MasteryPathPage() {
                 <div className="flex flex-wrap gap-2">
                   {baseResult.strong_points.map((point, i) => (
                     <span
-                      key={i}
+                      key={`rec-${i}`}
                       className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm"
                     >
                       {point}
@@ -1563,12 +1563,12 @@ export default function MasteryPathPage() {
             >
               {enhancedLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="size-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   生成强化测试...
                 </>
               ) : (
                 <>
-                  <Zap className="w-5 h-5" />
+                  <Zap className="size-5" />
                   开始强化测试
                 </>
               )}
@@ -1600,18 +1600,18 @@ export default function MasteryPathPage() {
               onClick={handleBackToChapters}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="size-4" />
               <span className="text-sm">退出</span>
             </button>
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" />
+              <Zap className="size-5 text-amber-500" />
               <span className="font-semibold">强化测试</span>
             </div>
             <div className="flex items-center gap-1">
               {enhancedQuestions.map((_, i) => (
                 <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-colors ${
+                  key={`rec-${i}`}
+                  className={`size-2 rounded-full transition-colors ${
                     i < currentQuestionIndex
                       ? "bg-emerald-400"
                       : i === currentQuestionIndex
@@ -1641,7 +1641,7 @@ export default function MasteryPathPage() {
 
             {/* Question */}
             <div className="bg-card rounded-2xl border border-border p-6 mb-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">
+              <h2 className="text-xl font-semibold text-foreground mb-4">
                 {currentQuestion.text}
               </h2>
 
@@ -1649,7 +1649,7 @@ export default function MasteryPathPage() {
                 <div className="flex flex-wrap gap-2 mb-4">
                   {currentQuestion.knowledge_points.map((kp, i) => (
                     <span
-                      key={i}
+                      key={`rec-${i}`}
                       className="px-2 py-1 bg-orange-500/10 text-orange-400 text-xs rounded-full"
                     >
                       {kp}
@@ -1661,7 +1661,7 @@ export default function MasteryPathPage() {
 
             {/* Options */}
             {currentQuestion.options && (
-              <div className="space-y-3">
+              <div className="gap-y-3">
                 {currentQuestion.options.map((opt, i) => {
                   const optLabel = String.fromCharCode(65 + i);
                   const isSelected = enhancedAnswers.get(currentQuestion.id) === optLabel;
@@ -1693,7 +1693,7 @@ export default function MasteryPathPage() {
                     >
                       <div className="flex items-center gap-3">
                         <span
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
+                          className={`size-8 rounded-lg flex items-center justify-center text-sm font-medium ${
                             submitted
                               ? isSelected && isCorrect
                                 ? "bg-emerald-500 text-white"
@@ -1708,7 +1708,7 @@ export default function MasteryPathPage() {
                           }`}
                         >
                           {submitted && isCorrectOption ? (
-                            <CheckCircle className="w-4 h-4" />
+                            <CheckCircle className="size-4" />
                           ) : (
                             optLabel
                           )}
@@ -1725,7 +1725,7 @@ export default function MasteryPathPage() {
 
         {/* Bottom action bar */}
         <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-          <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="max-w-2xl mx-auto p-4">
             <button type="button"
               onClick={
                 submitted
@@ -1739,7 +1739,7 @@ export default function MasteryPathPage() {
             >
               {enhancedLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="size-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   提交中...
                 </span>
               ) : submitted ? (
@@ -1748,7 +1748,7 @@ export default function MasteryPathPage() {
                     "完成测试"
                   ) : (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       正在生成更多题目...
                     </span>
                   )
@@ -1778,11 +1778,11 @@ export default function MasteryPathPage() {
               onClick={handleBackToChapters}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="size-4" />
               <span className="text-sm">退出</span>
             </button>
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-amber-500" />
+              <BookOpen className="size-5 text-amber-500" />
               <span className="font-semibold">{selectedChapterTitle}</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -1831,14 +1831,14 @@ export default function MasteryPathPage() {
                       title={`第 ${globalIndex + 1} 题`}
                       className={`rounded-lg text-xs font-bold transition-all ${
                         isCurrent
-                          ? "w-10 h-10 bg-primary text-primary-foreground scale-110 shadow-lg z-10"
+                          ? "size-10 bg-primary text-primary-foreground scale-110 shadow-lg z-10"
                           : isCompleted
                             ? wasCorrect
-                              ? "w-8 h-8 bg-emerald-100 text-emerald-700 border-2 border-emerald-400"
-                              : "w-8 h-8 bg-red-100 text-red-700 border-2 border-red-400"
+                              ? "size-8 bg-emerald-100 text-emerald-700 border-2 border-emerald-400"
+                              : "size-8 bg-red-100 text-red-700 border-2 border-red-400"
                             : globalIndex <= currentQuestionIndex
-                              ? "w-8 h-8 bg-muted text-muted-foreground border border-border hover:border-primary"
-                              : "w-8 h-8 bg-muted/50 text-muted-foreground/50 border border-border cursor-not-allowed"
+                              ? "size-8 bg-muted text-muted-foreground border border-border hover:border-primary"
+                              : "size-8 bg-muted/50 text-muted-foreground/50 border border-border cursor-not-allowed"
                       }`}
                     >
                       {globalIndex + 1}
@@ -1919,7 +1919,7 @@ export default function MasteryPathPage() {
               data-question-options={JSON.stringify(currentQuestion.options || [])}
               data-question-answer-status={submitted ? (isCorrect ? "correct" : "wrong") : "unanswered"}
             >
-              <h2 className="text-xl font-bold text-foreground mb-4">
+              <h2 className="text-xl font-semibold text-foreground mb-4">
                 {currentQuestion.text}
               </h2>
 
@@ -1927,7 +1927,7 @@ export default function MasteryPathPage() {
                 <div className="flex flex-wrap gap-2">
                   {currentQuestion.knowledge_points.map((kp, i) => (
                     <span
-                      key={i}
+                      key={`rec-${i}`}
                       className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
                     >
                       {kp}
@@ -1941,7 +1941,7 @@ export default function MasteryPathPage() {
             {getQuestionType(currentQuestion) === "choice" &&
               currentQuestion.options &&
               currentQuestion.options.length > 0 && (
-                <div className="space-y-3">
+                <div className="gap-y-3">
                   {currentQuestion.options.map((opt, i) => {
                     const optLabel = String.fromCharCode(65 + i);
                     const isSelected =
@@ -1976,7 +1976,7 @@ export default function MasteryPathPage() {
                       >
                         <div className="flex items-center gap-3">
                           <span
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
+                            className={`size-8 rounded-lg flex items-center justify-center text-sm font-medium ${
                               submitted
                                 ? isSelected && isCorrect
                                   ? "bg-emerald-500 text-white"
@@ -1991,7 +1991,7 @@ export default function MasteryPathPage() {
                             }`}
                           >
                             {submitted && isCorrectOption ? (
-                              <CheckCircle className="w-4 h-4" />
+                              <CheckCircle className="size-4" />
                             ) : (
                               optLabel
                             )}
@@ -2006,7 +2006,7 @@ export default function MasteryPathPage() {
 
             {/* Fill Blank Input */}
             {getQuestionType(currentQuestion) === "fill_blank" && (
-              <div className="space-y-4">
+              <div className="gap-y-4">
                 <div className="bg-card rounded-xl border border-border p-4">
                   <label className="block text-sm font-medium text-foreground mb-2">
                     请输入答案：
@@ -2039,12 +2039,12 @@ export default function MasteryPathPage() {
                     <p className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
                       {isCorrect ? (
                         <>
-                          <CheckCircle className="w-4 h-4 text-emerald-500" />
+                          <CheckCircle className="size-4 text-emerald-500" />
                           正确！
                         </>
                       ) : (
                         <>
-                          <XCircle className="w-4 h-4 text-red-500" />
+                          <XCircle className="size-4 text-red-500" />
                           错误
                         </>
                       )}
@@ -2062,7 +2062,7 @@ export default function MasteryPathPage() {
 
             {/* Programming Question */}
             {getQuestionType(currentQuestion) === "programming" && (
-              <div className="space-y-4">
+              <div className="gap-y-4">
                 <div className="bg-card rounded-xl border border-border p-4">
                   <label className="block text-sm font-medium text-foreground mb-2">
                     请编写代码：
@@ -2125,12 +2125,12 @@ export default function MasteryPathPage() {
               : "bg-card border-border"
           }`}
         >
-          <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="max-w-2xl mx-auto p-4">
             {/* 进度提示 */}
             <div className="text-center text-sm text-muted-foreground mb-3">
               {isLastQuestion ? (
                 <span className="text-amber-500 font-medium flex items-center justify-center gap-1">
-                  <PartyPopper className="w-4 h-4" />
+                  <PartyPopper className="size-4" />
                   完成本题即可获得经验奖励！
                 </span>
               ) : (
@@ -2142,14 +2142,14 @@ export default function MasteryPathPage() {
                 <div className="flex items-center gap-3">
                   {isCorrect ? (
                     <>
-                      <CheckCircle className="w-6 h-6 text-emerald-500" />
+                      <CheckCircle className="size-6 text-emerald-500" />
                       <span className="font-medium text-emerald-500">
                         正确！
                       </span>
                     </>
                   ) : (
                     <>
-                      <XCircle className="w-6 h-6 text-red-400" />
+                      <XCircle className="size-6 text-red-400" />
                       <span className="font-medium text-red-400">错误</span>
                     </>
                   )}
@@ -2160,11 +2160,11 @@ export default function MasteryPathPage() {
                   className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
                 >
                   {baseQuestionLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <>
                       {isLastQuestion ? "查看结果" : "下一题"}
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="size-4" />
                     </>
                   )}
                 </button>
@@ -2225,11 +2225,11 @@ export default function MasteryPathPage() {
             href={getStoredToken() ? "/dashboard" : "/"}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="size-4" />
             <span className="text-sm">返回</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-500" />
+            <Trophy className="size-5 text-amber-500" />
             <span className="font-semibold">精进之路</span>
           </div>
           <div className="w-20"></div>
@@ -2246,7 +2246,7 @@ export default function MasteryPathPage() {
           {/* 优先使用 overview（登录后有掌握度），否则使用 courseDetail（未登录） */}
           {(overview?.chapters && overview.chapters.length > 0) ||
           (courseDetail?.course?.chapters && courseDetail.course.chapters.length > 0) ? (
-            <div className="space-y-3">
+            <div className="gap-y-3">
               {(overview?.chapters || courseDetail?.course?.chapters || []).map((chapter) => {
                 // 登录状态：从 overview 获取，有掌握度数据
                 // 未登录状态：从 courseDetail 获取，只有基础信息
@@ -2273,7 +2273,7 @@ export default function MasteryPathPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center font-medium bg-amber-500/20 text-amber-600"
+                        <div className="size-10 rounded-lg flex items-center justify-center font-medium bg-amber-500/20 text-amber-600"
                         >
                           {orderIndex}
                         </div>
@@ -2297,7 +2297,7 @@ export default function MasteryPathPage() {
                           )}
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      <ChevronRight className="size-5 text-muted-foreground" />
                     </div>
 
                     {/* Progress bar - 仅登录时显示 */}
@@ -2315,8 +2315,8 @@ export default function MasteryPathPage() {
             </div>
           ) : (
             <div className="text-center py-16 bg-card rounded-2xl border border-border">
-              <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-8 h-8 text-muted-foreground" />
+              <div className="size-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="size-8 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground">暂无章节内容</p>
             </div>

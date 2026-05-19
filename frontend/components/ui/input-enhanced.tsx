@@ -121,7 +121,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             ) : rightIcon ? (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
@@ -129,11 +129,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               </div>
             ) : detectedState === 'error' ? (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="size-4" />
               </div>
             ) : detectedState === 'success' ? (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="size-4" />
               </div>
             ) : null}
           </div>
@@ -149,13 +149,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {/* 提示信息 */}
         {errorMessage && (
           <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" />
+            <AlertCircle className="size-3" />
             {errorMessage}
           </p>
         )}
         {successMessage && (
           <p className="mt-1.5 text-xs text-emerald-500 flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" />
+            <CheckCircle className="size-3" />
             {successMessage}
           </p>
         )}
@@ -275,7 +275,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           />
 
           {/* 字符计数 */}
-          {showCount && (
+          {!!showCount && (
             <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
               {charCount}{maxLength && ` / ${maxLength}`}
             </div>
@@ -361,7 +361,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         <input
           type="checkbox"
           className={cn(
-            `w-4 h-4 mt-0.5 rounded border border-input bg-background
+            `size-4 mt-0.5 rounded border border-input bg-background
              checked:bg-primary checked:border-primary
              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
              disabled:cursor-not-allowed disabled:opacity-50
@@ -401,7 +401,7 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
         <input
           type="radio"
           className={cn(
-            `w-4 h-4 mt-0.5 border border-input bg-background rounded-full
+            `size-4 mt-0.5 border border-input bg-background rounded-full
              checked:border-primary checked:bg-primary
              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
              disabled:cursor-not-allowed disabled:opacity-50
@@ -440,7 +440,7 @@ interface FormFieldProps {
 
 function FormField({ label, required, hint, error, children, className }: FormFieldProps) {
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("gap-y-2", className)}>
       {label && (
         <Label required={required}>
           {label}

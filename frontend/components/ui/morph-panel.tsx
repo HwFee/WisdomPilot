@@ -84,8 +84,8 @@ function PanelOrb({ size = 22 }: { size?: number }) {
 }
 
 // ── Message bubble with Markdown ─────────────────────────
-function MessageBubble({ role, content }: { role: "user" | "ai"; content: string }) {
-  const isUser = role === "user"
+function MessageBubble({ role, content }: { role: "user:v1" | "ai"; content: string }) {
+  const isUser = role === "user:v1"
   return (
     <div
       className="rounded-2xl px-3 py-2 leading-relaxed"
@@ -114,8 +114,8 @@ function MessageBubble({ role, content }: { role: "user" | "ai"; content: string
                   {children}
                 </pre>
               ),
-              ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
+              ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ol>,
               li: ({ children }) => <li className="leading-snug">{children}</li>,
               strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
               em: ({ children }) => <em>{children}</em>,
@@ -131,12 +131,12 @@ function MessageBubble({ role, content }: { role: "user" | "ai"; content: string
 
 // ── Main MorphPanel ───────────────────────────────────────
 interface ChatMessage {
-  role: "user" | "ai"
+  role: "user:v1" | "ai"
   content: string
 }
 
 export function MorphPanel() {
-  const router = useRouter()
+  const { push } = useRouter()
   const { activeQuestion, isPanelOpen, panelSpawnPos, openPanel, closePanel } = useAIContext()
 
   // Orb state
@@ -398,7 +398,7 @@ export function MorphPanel() {
 
     const userMessage = text
     setInputValue("")
-    setMessages(prev => [...prev, { role: "user", content: userMessage }])
+    setMessages(prev => [...prev, { role: "user:v1", content: userMessage }])
     setIsStreaming(true)
     setStreamingText("")
 
@@ -414,7 +414,7 @@ export function MorphPanel() {
       : `你是一位耐心的编程老师。问题：\n\n${userMessage}\n\n请给出简洁、有帮助的回答。`
 
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token:v1")
       if (!token) return
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -433,9 +433,9 @@ export function MorphPanel() {
       if (!response.ok) {
         const text = await response.text()
         if (response.status === 401) {
-          localStorage.removeItem("token")
-          localStorage.removeItem("user")
-          router.push("/login")
+          localStorage.removeItem("token:v1")
+          localStorage.removeItem("user:v1")
+          push("/login")
           return
         }
         throw new Error(`请求失败: ${response.status} — ${text}`)
@@ -595,7 +595,7 @@ export function MorphPanel() {
             </div>
             <button type="button"
               onClick={handleClose}
-              className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
+              className="size-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
               style={{ color: "hsl(var(--muted-foreground))" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -694,9 +694,9 @@ export function MorphPanel() {
             )}
             {messages.map((msg, i) => (
               <div
-                key={i}
+                key={`panel-${i}`}
                 className="flex"
-                style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
+                style={{ justifyContent: msg.role === "user:v1" ? "flex-end" : "flex-start" }}
               >
                 <MessageBubble role={msg.role} content={msg.content} />
               </div>
@@ -724,8 +724,8 @@ export function MorphPanel() {
                               {children}
                             </pre>
                           ),
-                          ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
+                          ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ol>,
                           li: ({ children }) => <li className="leading-snug">{children}</li>,
                           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                           em: ({ children }) => <em>{children}</em>,
@@ -739,9 +739,9 @@ export function MorphPanel() {
                     <div className="flex items-center gap-1 py-1">
                       {[0, 1, 2].map(i => (
                         <span
-                          key={i}
+                          key={`panel-${i}`}
                           className={cn(
-                            "block w-1.5 h-1.5 rounded-full animate-bounce-dot",
+                            "block size-1.5 rounded-full animate-bounce-dot",
                             i === 0 ? "animate-bounce-dot-0" : i === 1 ? "animate-bounce-dot-1" : "animate-bounce-dot-2"
                           )}
                           style={{ background: "hsl(var(--muted-foreground))" }}
@@ -781,7 +781,7 @@ export function MorphPanel() {
               <button
                 type="submit"
                 disabled={!inputValue.trim() || isStreaming}
-                className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="size-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

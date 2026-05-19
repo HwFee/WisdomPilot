@@ -20,7 +20,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   // 按掌握度排序（从高到低）
-  const sortedPoints = [...knowledgePoints].sort((a, b) => b.mastery - a.mastery)
+  const sortedPoints = knowledgePoints.toSorted((a, b) => b.mastery - a.mastery)
 
   // 统一的主色渐变进度条
   const getProgressGradient = (mastery: number) => {
@@ -34,7 +34,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
   return (
     <div className={`bg-card rounded-2xl border border-border p-6 h-full flex flex-col ${compact ? 'overflow-hidden' : ''}`}>
       <h3 className="font-semibold text-foreground flex items-center gap-2 mb-4 flex-shrink-0">
-        <Brain className="w-5 h-5 text-primary" />
+        <Brain className="size-5 text-primary" />
         {t('知识掌握度', 'Knowledge Mastery')}
         <span className="text-sm text-muted-foreground font-normal">- {courseName}</span>
       </h3>
@@ -42,7 +42,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
       <div className="flex-1 overflow-auto">
         {sortedPoints.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground h-full flex flex-col items-center justify-center">
-            <TrendingUp className="w-10 h-10 mb-2 opacity-50" />
+            <TrendingUp className="size-10 mb-2 opacity-50" />
             <p className="text-sm">{t('开始学习后查看知识掌握度', 'Start learning to see mastery')}</p>
             {onLearnClick && (
               <button type="button"
@@ -54,9 +54,9 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="gap-y-4">
             {sortedPoints.map((kp, index) => (
-              <div key={index} className="group">
+              <div key={`item-${index}`} className="group">
                 <div className="flex justify-between text-sm mb-1.5">
                   <span className="text-foreground font-medium">{kp.name}</span>
                   <div className="flex items-center gap-2">
@@ -67,7 +67,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
                         className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline flex items-center gap-0.5"
                       >
                         {t('去学习', 'Learn')}
-                        <ArrowRight className="w-3 h-3" />
+                        <ArrowRight className="size-3" />
                       </button>
                     )}
                   </div>

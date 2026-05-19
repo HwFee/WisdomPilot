@@ -15,7 +15,7 @@ import type { CourseProgress } from '@/lib/api/courses'
 type LeaderboardType = 'mastery' | 'arena'
 
 function LeaderboardContent() {
-  const router = useRouter()
+  const { push } = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<LeaderboardType>(
     (searchParams.get('tab') as LeaderboardType) || 'mastery'
@@ -76,7 +76,7 @@ function LeaderboardContent() {
     const token = getStoredToken()
     if (!token) {
       logout()
-      router.push('/login')
+      push('/login')
       return
     }
 
@@ -106,7 +106,7 @@ function LeaderboardContent() {
         setCourseLoading(false)
         hasFetchedCourses.current = true
       })
-  }, [router])
+  }, [push])
 
   // Fetch leaderboard data when course is loaded
   useEffect(() => {
@@ -128,7 +128,7 @@ function LeaderboardContent() {
     if (token) {
       fetchData(token, tab, 0)
     }
-    router.push(`/leaderboard?tab=${tab}`)
+    push(`/leaderboard?tab=${tab}`)
   }
 
   const handleLoadMore = () => {
@@ -143,11 +143,11 @@ function LeaderboardContent() {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Crown className="w-6 h-6 text-yellow-500" />
+        return <Crown className="size-6 text-yellow-500" />
       case 2:
-        return <Medal className="w-6 h-6 text-gray-400" />
+        return <Medal className="size-6 text-gray-400" />
       case 3:
-        return <Medal className="w-6 h-6 text-amber-600" />
+        return <Medal className="size-6 text-amber-600" />
       default:
         return <span className="text-lg font-bold text-muted-foreground">{rank}</span>
     }
@@ -160,18 +160,18 @@ function LeaderboardContent() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group">
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
               <span className="text-sm">返回</span>
             </Link>
             <div className="flex items-center gap-2">
               {activeTab === 'mastery' ? (
                 <>
-                  <Trophy className="w-5 h-5 text-amber-500" />
+                  <Trophy className="size-5 text-amber-500" />
                   <span className="font-semibold text-foreground">精进榜</span>
                 </>
               ) : (
                 <>
-                  <Swords className="w-5 h-5 text-blue-500" />
+                  <Swords className="size-5 text-blue-500" />
                   <span className="font-semibold text-foreground">竞技榜</span>
                 </>
               )}
@@ -194,7 +194,7 @@ function LeaderboardContent() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Trophy className="w-4 h-4" />
+                <Trophy className="size-4" />
                 <span>精进榜</span>
               </button>
               <button type="button"
@@ -205,7 +205,7 @@ function LeaderboardContent() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Swords className="w-4 h-4" />
+                <Swords className="size-4" />
                 <span>竞技榜</span>
               </button>
             </div>
@@ -221,7 +221,7 @@ function LeaderboardContent() {
               }`}>
                 <div className="flex items-center gap-4">
                   {/* Rank Badge */}
-                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg ${
+                  <div className={`size-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg ${
                     activeTab === 'mastery'
                       ? 'bg-amber-500 text-white shadow-amber-500/25'
                       : 'bg-blue-500 text-white shadow-blue-500/25'
@@ -241,7 +241,7 @@ function LeaderboardContent() {
                       <div className="flex items-center gap-3">
                         {currentUserData?.tier ? (
                           <>
-                            <span className="w-5 h-5 flex items-center justify-center">
+                            <span className="size-5 flex items-center justify-center">
                               {getTierConfig(currentUserData.tier)?.icon}
                             </span>
                             <span className="font-medium text-foreground">{TIER_NAMES[currentUserData.tier as Tier]}</span>
@@ -253,7 +253,7 @@ function LeaderboardContent() {
                           <span className="text-muted-foreground">未定级</span>
                         )}
                         <span className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-yellow-500" />
+                          <Star className="size-4 text-yellow-500" />
                           <span className="font-medium">{currentUserData?.stars ?? 0}</span>
                         </span>
                       </div>
@@ -267,13 +267,13 @@ function LeaderboardContent() {
           {/* No Data State */}
           {!loading && leaderboard.length === 0 && (
             <div className="text-center py-12">
-              <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
+              <div className={`size-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
                 activeTab === 'mastery' ? 'bg-amber-500/10' : 'bg-blue-500/10'
               }`}>
                 {activeTab === 'mastery' ? (
-                  <Trophy className="w-8 h-8 text-amber-500" />
+                  <Trophy className="size-8 text-amber-500" />
                 ) : (
-                  <Swords className="w-8 h-8 text-blue-500" />
+                  <Swords className="size-8 text-blue-500" />
                 )}
               </div>
               {enrolledCourses.length === 0 ? (
@@ -302,10 +302,10 @@ function LeaderboardContent() {
           {/* Leaderboard List */}
           {loading && offset === 0 ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+              <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
             </div>
           ) : leaderboard.length > 0 && (
-            <div className="space-y-2">
+            <div className="gap-y-2">
               {leaderboard.map((entry) => (
                 <div
                   key={entry.user_id}
@@ -314,10 +314,10 @@ function LeaderboardContent() {
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center">
+                    <div className="size-10 bg-muted rounded-xl flex items-center justify-center">
                       {getRankIcon(entry.rank)}
                     </div>
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-600 rounded-full flex items-center justify-center text-primary-foreground font-medium shadow-md">
+                    <div className="size-10 bg-gradient-to-br from-primary to-primary-600 rounded-full flex items-center justify-center text-primary-foreground font-medium shadow-md">
                       {entry.username.charAt(0)}
                     </div>
                     <div>
@@ -333,7 +333,7 @@ function LeaderboardContent() {
                   <div className="text-right">
                     {activeTab === 'mastery' ? (
                       <div className="flex items-center gap-2 justify-end">
-                        <Trophy className="w-4 h-4 text-amber-500" />
+                        <Trophy className="size-4 text-amber-500" />
                         <span className="font-bold text-foreground text-lg">{entry.mastery_xp ?? 0}</span>
                         <span className="text-xs text-muted-foreground">经验值</span>
                       </div>
@@ -341,7 +341,7 @@ function LeaderboardContent() {
                       <div className="flex items-center gap-2 justify-end">
                         {entry.tier ? (
                           <>
-                            <span className="w-4 h-4 flex items-center justify-center">
+                            <span className="size-4 flex items-center justify-center">
                               {getTierConfig(entry.tier)?.icon}
                             </span>
                             <span className="font-medium text-foreground">{TIER_NAMES[entry.tier as Tier]}</span>
@@ -353,7 +353,7 @@ function LeaderboardContent() {
                           <span className="text-muted-foreground">未定级</span>
                         )}
                         <span className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-yellow-500" />
+                          <Star className="size-4 text-yellow-500" />
                           <span className="font-bold">{entry.stars ?? 0}</span>
                         </span>
                       </div>
@@ -394,7 +394,7 @@ export default function LeaderboardPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+        <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
       </div>
     }>
       <LeaderboardContent />

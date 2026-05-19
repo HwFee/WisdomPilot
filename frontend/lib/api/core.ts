@@ -67,7 +67,7 @@ export interface SpendResult {
  * Get user's current core balance
  */
 export async function getCoreBalance(): Promise<CoreBalance> {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token:v1');
   if (!token) {
     throw new Error('Not authenticated');
   }
@@ -82,7 +82,7 @@ export async function getCoreBalance(): Promise<CoreBalance> {
  * Spend cores for AI hints
  */
 export async function spendCores(request: SpendRequest): Promise<SpendResult> {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token:v1');
   if (!token) {
     throw new Error('Not authenticated');
   }
@@ -109,7 +109,7 @@ export async function getCoreTransactions(
   limit: number = 20,
   offset: number = 0
 ): Promise<CoreTransactionList> {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token:v1');
   if (!token) {
     throw new Error('Not authenticated');
   }
@@ -129,7 +129,7 @@ export async function getCoreTransactions(
  * Get daily core summary including pending rewards
  */
 export async function getDailyCoreSummary(): Promise<DailyCoreSummary> {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token:v1');
   if (!token) {
     throw new Error('Not authenticated');
   }

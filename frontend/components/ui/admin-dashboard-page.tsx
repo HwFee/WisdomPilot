@@ -17,21 +17,21 @@ interface User {
 }
 
 export default function AdminDashboardPage() {
-  const router = useRouter()
+  const { push } = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [onlineUsers, setOnlineUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token:v1') : null
   const currentUser = typeof window !== 'undefined'
-    ? JSON.parse(localStorage.getItem('user') || 'null')
+    ? JSON.parse(localStorage.getItem('user:v1') || 'null')
     : null
 
   useEffect(() => {
     if (!token || !currentUser?.is_admin) {
-      router.push('/login')
+      push('/login')
       return
     }
     fetchUsers()
@@ -81,16 +81,16 @@ export default function AdminDashboardPage() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    router.push('/login')
+    localStorage.removeItem('token:v1')
+    localStorage.removeItem('user:v1')
+    push('/login')
   }
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+          <RefreshCw className="size-8 animate-spin text-blue-600 mx-auto" />
           <p className="mt-2 text-gray-600">加载中...</p>
         </div>
       </div>
@@ -101,15 +101,15 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">管理后台</h1>
+            <Shield className="size-8 text-blue-600" />
+            <h1 className="text-2xl font-semibold text-gray-900">管理后台</h1>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">管理员: {currentUser?.username}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="size-4 mr-2" />
               退出登录
             </Button>
           </div>
@@ -128,7 +128,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-100 rounded-full">
-                <Users className="w-6 h-6 text-blue-600" />
+                <Users className="size-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">总用户数</p>
@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-100 rounded-full">
-                <UserCheck className="w-6 h-6 text-green-600" />
+                <UserCheck className="size-6 text-green-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">在线用户</p>
@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-red-100 rounded-full">
-                <UserCheck className="w-6 h-6 text-red-600" />
+                <UserCheck className="size-6 text-red-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">活跃用户</p>
@@ -176,7 +176,7 @@ export default function AdminDashboardPage() {
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">用户列表</h2>
             <Button variant="outline" size="sm" onClick={fetchUsers}>
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <RefreshCw className="size-4 mr-2" />
               刷新
             </Button>
           </div>
@@ -219,7 +219,7 @@ export default function AdminDashboardPage() {
                       {user.is_active ? '活跃' : '禁用'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" suppressHydrationWarning>
                     {new Date(user.created_at).toLocaleDateString('zh-CN')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -248,7 +248,7 @@ export default function AdminDashboardPage() {
                         onClick={() => setDeleteConfirm(user.id)}
                         className="text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     )}
                   </td>

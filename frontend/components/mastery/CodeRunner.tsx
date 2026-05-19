@@ -118,7 +118,7 @@ export function CodeRunner({
             className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 text-gray-200 text-sm rounded hover:bg-gray-600 transition-colors"
           >
             {selectedLabel}
-            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', isLangMenuOpen && 'rotate-180')} />
+            <ChevronDown className={cn('size-3.5 transition-transform', isLangMenuOpen && 'rotate-180')} />
           </button>
           {isLangMenuOpen && (
             <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-20 min-w-[140px]">
@@ -148,9 +148,9 @@ export function CodeRunner({
             className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isRunning ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="size-3.5 animate-spin" />
             ) : (
-              <Play className="w-3.5 h-3.5" />
+              <Play className="size-3.5" />
             )}
             运行
           </button>
@@ -160,7 +160,7 @@ export function CodeRunner({
             className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors"
             title="收起运行器"
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
       </div>
@@ -187,7 +187,7 @@ export function CodeRunner({
       {/* Stdin input */}
       <div className="border-t border-gray-700 bg-gray-900/50 flex-shrink-0">
         <div className="px-3 py-1.5 border-b border-gray-700/50 flex items-center gap-2">
-          <Terminal className="w-3 h-3 text-gray-500" />
+          <Terminal className="size-3 text-gray-500" />
           <span className="text-xs font-medium text-gray-400">标准输入 (stdin)</span>
           <span className="text-[10px] text-gray-600 ml-1">程序中 input() / scanf() 会从这里读取</span>
         </div>

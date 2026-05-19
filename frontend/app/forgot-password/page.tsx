@@ -102,10 +102,10 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+              <div className="size-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="size-8 text-green-600 dark:text-green-400" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">
+              <h1 className="text-2xl font-semibold text-foreground mb-2">
                 {t('邮件已发送', 'Email Sent')}
               </h1>
               <p className="text-muted-foreground mb-6">
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
                 href="/login"
                 className="inline-flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ArrowLeft className="size-4 mr-2" />
                 {t('返回登录', 'Back to Login')}
               </Link>
             </div>
@@ -203,12 +203,12 @@ export default function ForgotPasswordPage() {
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">{t('找回密码', 'Forgot Password')}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight mb-2">{t('找回密码', 'Forgot Password')}</h1>
             <p className="text-muted-foreground text-sm">{t('输入您注册的邮箱，我们会发送重置密码的链接', 'Enter your registered email and we\'ll send you a reset link')}</p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="gap-y-4">
             {error && (
               <div className="p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg flex items-center gap-2">
                 <AlertCircle className="size-4 flex-shrink-0" />
@@ -216,7 +216,7 @@ export default function ForgotPasswordPage() {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="gap-y-2">
               <label htmlFor="email" className="text-sm font-medium text-foreground">
                 {t('邮箱地址', 'Email Address')}
               </label>
@@ -264,7 +264,7 @@ export default function ForgotPasswordPage() {
                 href="/login"
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 mr-1" />
+                <ArrowLeft className="size-4 mr-1" />
                 {t('返回登录', 'Back to Login')}
               </Link>
             </div>

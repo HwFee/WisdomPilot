@@ -19,7 +19,7 @@ import { NoteTagFilter } from '@/components/notes/NoteTagFilter'
 import { Button } from '@/components/ui/button'
 
 export default function NotesPage() {
-  const router = useRouter()
+  const { push, back } = useRouter()
   const [notes, setNotes] = useState<NoteResponse[]>([])
   const [filteredNotes, setFilteredNotes] = useState<NoteResponse[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -74,12 +74,12 @@ export default function NotesPage() {
     const token = getStoredToken()
     if (!token) {
       logout()
-      router.push('/login')
+      push('/login')
       return
     }
     hasFetched.current = true
     fetchData(token)
-  }, [router, fetchData])
+  }, [push, back, fetchData])
 
   // Filter notes when tags or search changes
   useEffect(() => {
@@ -187,7 +187,7 @@ export default function NotesPage() {
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
           <button type="button"
-            onClick={() => router.back()}
+            onClick={() => back()}
             className="p-2.5 hover:bg-muted rounded-lg transition-colors"
           >
             ←
@@ -200,11 +200,11 @@ export default function NotesPage() {
             className="flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
             title="导出全部"
           >
-            <Download className="w-5 h-5" />
+            <Download className="size-5" />
             <span className="text-sm">导出</span>
           </button>
           <Button onClick={handleCreate} size="lg" className="gap-2">
-            <Plus className="w-5 h-5" />
+            <Plus className="size-5" />
             新建笔记
           </Button>
         </div>
@@ -213,7 +213,7 @@ export default function NotesPage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <aside className="lg:w-72 shrink-0 space-y-6">
+          <aside className="lg:w-72 shrink-0 gap-y-6">
             {/* Search */}
             <NoteSearch
               onResults={handleSearchResults}
@@ -234,7 +234,7 @@ export default function NotesPage() {
           <div className="flex-1">
             {filteredNotes.length === 0 ? (
               <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
-                <div className="w-20 h-20 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-6">
+                <div className="size-20 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-6">
                   <span className="text-4xl">📝</span>
                 </div>
                 <p className="text-lg text-muted-foreground mb-2">
@@ -257,7 +257,7 @@ export default function NotesPage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="gap-y-4">
                 {filteredNotes.map((note) => (
                   <NoteCard
                     key={note.id}

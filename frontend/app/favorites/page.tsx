@@ -57,7 +57,7 @@ function getQuestionTitle(fav: FavoriteResponse): string {
 }
 
 export default function FavoritesPage() {
-  const router = useRouter()
+  const { push, back } = useRouter()
   const [favorites, setFavorites] = useState<FavoriteResponse[]>([])
   const [folders, setFolders] = useState<FavoriteFolderResponse[]>([])
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
@@ -86,12 +86,12 @@ export default function FavoritesPage() {
     const token = getStoredToken()
     if (!token) {
       logout()
-      router.push('/login')
+      push('/login')
       return
     }
     hasFetched.current = true
     fetchData(token)
-  }, [router, fetchData])
+  }, [push, back, fetchData])
 
   const handleFolderChange = async (folder: string | null) => {
     const token = getStoredToken()
@@ -183,10 +183,10 @@ export default function FavoritesPage() {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
           <button type="button"
-            onClick={() => router.back()}
+            onClick={() => back()}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
           </button>
           <h1 className="text-lg font-semibold">收藏夹</h1>
           <span className="ml-auto text-sm text-muted-foreground">{favorites.length} 题</span>
@@ -198,7 +198,7 @@ export default function FavoritesPage() {
               }}
               className={`p-2 rounded-lg transition-colors ${isSelectMode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
             >
-              <CheckSquare className="w-5 h-5" />
+              <CheckSquare className="size-5" />
             </button>
           )}
         </div>
@@ -265,14 +265,14 @@ export default function FavoritesPage() {
 
         {favorites.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
-              <Star className="w-8 h-8 text-yellow-500" />
+            <div className="size-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
+              <Star className="size-8 text-yellow-500" />
             </div>
             <p className="text-muted-foreground">暂无收藏</p>
             <p className="text-sm text-muted-foreground mt-1">在练习中点击收藏按钮可以添加收藏</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="gap-y-3">
             {favorites.map((fav) => {
               // 通过 exercise_key 推断来源类型 - 统一 mastery- 前缀
               const sourceType = getSourceType(fav.exercise_key)
@@ -303,7 +303,7 @@ export default function FavoritesPage() {
                     <div className="flex-1 min-w-0">
                       {/* 标题行 */}
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Star className="w-4 h-4 text-yellow-500 flex-shrink-0 fill-yellow-500" />
+                        <Star className="size-4 text-yellow-500 flex-shrink-0 fill-yellow-500" />
                         <span className="font-medium text-foreground truncate">{questionTitle}</span>
                       </div>
 
@@ -328,14 +328,14 @@ export default function FavoritesPage() {
 
                       {/* 收藏时间 */}
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                        <span>收藏于 {new Date(fav.created_at).toLocaleDateString()}</span>
+                        <span suppressHydrationWarning>收藏于 {new Date(fav.created_at).toLocaleDateString()}</span>
                       </div>
 
                       {/* 知识点 */}
                       {fav.knowledge_points && fav.knowledge_points.length > 0 && (
                         <div className="flex gap-1 flex-wrap">
                           {fav.knowledge_points.slice(0, 3).map((kp, i) => (
-                            <span key={i} className="text-xs px-2 py-0.5 bg-primary/5 text-primary rounded-full">
+                            <span key={`fav-${i}`} className="text-xs px-2 py-0.5 bg-primary/5 text-primary rounded-full">
                               {kp}
                             </span>
                           ))}
@@ -354,9 +354,9 @@ export default function FavoritesPage() {
                           className="mt-2 p-1"
                         >
                           {selectedIds.has(fav.id) ? (
-                            <CheckSquare className="w-5 h-5 text-primary" />
+                            <CheckSquare className="size-5 text-primary" />
                           ) : (
-                            <Square className="w-5 h-5 text-muted-foreground" />
+                            <Square className="size-5 text-muted-foreground" />
                           )}
                         </button>
                       )}
@@ -366,19 +366,19 @@ export default function FavoritesPage() {
                       {/* 复习按钮 */}
                       <button type="button"
                         onClick={async () => {
-                          const token = localStorage.getItem('token')
+                          const token = localStorage.getItem('token:v1')
                           // 根据来源类型跳转到不同页面
                           if (sourceType === 'arena' && token) {
                             // 挑战之路: 直接跳转到挑战之路页面（独立于课程）
-                            router.push('/arena')
+                            push('/arena')
                           } else if (sourceType === 'mastery' && fav.course_id) {
                             // 精进之路: 直接用收藏记录里的 chapter_id 和 section_id
                             const chapterParam = fav.chapter_id || ''
                             const questionParam = questionIdFromKey || ''
                             const sectionParam = fav.section_id || ''
-                            router.push(`/mastery/${fav.course_id}?chapter=${chapterParam}&section=${sectionParam}&exercise=${questionParam}&skip=1`)
+                            push(`/mastery/${fav.course_id}?chapter=${chapterParam}&section=${sectionParam}&exercise=${questionParam}&skip=1`)
                           } else if (fav.course_id) {
-                            router.push(`/mastery/${fav.course_id}`)
+                            push(`/mastery/${fav.course_id}`)
                           }
                         }}
                         className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-all flex-shrink-0"
@@ -392,7 +392,7 @@ export default function FavoritesPage() {
                           onClick={() => handleRemove(fav.id)}
                           className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="size-5" />
                         </button>
                       )}
                     </div>

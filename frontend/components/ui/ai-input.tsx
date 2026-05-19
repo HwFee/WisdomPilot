@@ -76,7 +76,7 @@ interface AIChatPanelProps {
 }
 
 interface ChatMessage {
-  role: "user" | "ai"
+  role: "user:v1" | "ai"
   content: string
 }
 
@@ -193,7 +193,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
 
     const userMessage = text
     setInputValue("")
-    setMessages(prev => [...prev, { role: "user", content: userMessage }])
+    setMessages(prev => [...prev, { role: "user:v1", content: userMessage }])
     setIsStreaming(true)
     setStreamingText("")
 
@@ -202,7 +202,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
       : `你是一位耐心的编程老师。学生的问题是：\n\n${userMessage}\n\n请给出简洁、有帮助的回答。`
 
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token:v1")
       if (!token) return
 
       const response = await fetch(
@@ -514,7 +514,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
               {/* Messages — scrollable */}
               <div
                 ref={messagesRef}
-                className="flex-1 overflow-y-auto px-3 space-y-2 min-h-0"
+                className="flex-1 overflow-y-auto px-3 gap-y-2 min-h-0"
               >
                 {messages.length === 0 && !activeQuestion && (
                   <div className="h-full flex items-center justify-center">
@@ -527,10 +527,10 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                 )}
                 {messages.map((msg, i) => (
                   <div
-                    key={i}
+                    key={`input-${i}`}
                     className={cx(
                       "rounded-2xl px-4 py-2.5 max-w-[88%] text-sm",
-                      msg.role === "user"
+                      msg.role === "user:v1"
                         ? "bg-primary text-primary-foreground ml-auto rounded-br-sm"
                         : "bg-muted text-foreground mr-auto rounded-bl-sm"
                     )}
@@ -567,7 +567,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                     type="submit"
                     size="sm"
                     disabled={!inputValue.trim() || isStreaming}
-                    className="shrink-0 h-9 w-9 p-0 flex items-center justify-center"
+                    className="shrink-0 size-9 p-0 flex items-center justify-center"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="22" y1="2" x2="11" y2="13" />

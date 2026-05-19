@@ -7,7 +7,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import type { DailyTimeTrendPoint } from "@/types/api";
 
 export default function TimeDetailPage() {
-  const router = useRouter();
+  const { push, back } = useRouter();
   const [trends, setTrends] = useState<DailyTimeTrendPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const hasFetched = useRef(false);
@@ -28,12 +28,12 @@ export default function TimeDetailPage() {
     const token = getStoredToken();
     if (!token) {
       logout();
-      router.push("/login");
+      push("/login");
       return;
     }
     hasFetched.current = true;
     fetchData(token);
-  }, [router, fetchData]);
+  }, [push, back, fetchData]);
 
   const todayMinutes = trends[0]?.minutes || 0;
   const yesterdayMinutes = trends[1]?.minutes || 0;
@@ -66,10 +66,10 @@ export default function TimeDetailPage() {
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
           <button type="button"
-            onClick={() => router.back()}
+            onClick={() => back()}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
           </button>
           <h1 className="text-lg font-semibold">
             学习时长详情（精进之路 + 挑战之路）
@@ -110,9 +110,9 @@ export default function TimeDetailPage() {
               className={`flex items-center gap-1 text-sm ${trendPercent >= 0 ? "text-emerald-500" : "text-red-500"}`}
             >
               {trendPercent >= 0 ? (
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="size-4" />
               ) : (
-                <TrendingDown className="w-4 h-4" />
+                <TrendingDown className="size-4" />
               )}
               <span>
                 {trendPercent >= 0 ? "+" : ""}
@@ -128,7 +128,7 @@ export default function TimeDetailPage() {
               .reverse()
               .map((t, i) => (
                 <div
-                  key={i}
+                  key={`time-${i}`}
                   className="flex-1 flex flex-col items-center gap-2"
                 >
                   <div
@@ -138,7 +138,7 @@ export default function TimeDetailPage() {
                       minHeight: t.minutes > 0 ? "4px" : "0",
                     }}
                   />
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                     {new Date(t.date).toLocaleDateString("zh-CN", {
                       weekday: "short",
                     })}
@@ -155,15 +155,15 @@ export default function TimeDetailPage() {
           </div>
           <div className="divide-y divide-border">
             {trends.map((t, i) => (
-              <div key={i} className="flex items-center justify-between p-4">
+              <div key={`time-${i}`} className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${i === 0 ? "bg-purple-500/10 text-purple-500" : "bg-muted text-muted-foreground"}`}
+                    className={`size-10 rounded-full flex items-center justify-center ${i === 0 ? "bg-purple-500/10 text-purple-500" : "bg-muted text-muted-foreground"}`}
                   >
-                    <Clock className="w-5 h-5" />
+                    <Clock className="size-5" />
                   </div>
                   <div>
-                    <p className="font-medium">
+                    <p className="font-medium" suppressHydrationWarning>
                       {i === 0
                         ? "今天"
                         : i === 1

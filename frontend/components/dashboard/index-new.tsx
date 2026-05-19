@@ -68,7 +68,7 @@ interface RecentLearning {
 const DASHBOARD_REFRESH_EVENT = 'dashboard:refresh'
 
 export default function DashboardPage() {
-  const router = useRouter()
+  const { push } = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfileResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -296,12 +296,12 @@ export default function DashboardPage() {
     const storedUser = getStoredUser()
     let savedLang = 'zh'
     try { savedLang = localStorage.getItem('language') || 'zh' } catch { /* ignore */ }
-    if (!token || !storedUser) { router.push('/login'); return }
+    if (!token || !storedUser) { push('/login'); return }
     setUser(storedUser)
     setLang(savedLang as 'zh' | 'en')
     hasFetched.current = true
     fetchData(token)
-  }, [router, fetchData])
+  }, [push, fetchData])
 
   // 监听仪表盘刷新事件
   useEffect(() => {
@@ -342,7 +342,7 @@ export default function DashboardPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [fetchData, currentCourseId, fetchLeaderboards, fetchKnowledgePoints, fetchRecentArenaExercises])
 
-  const handleLogout = () => { logout(); router.push('/login') }
+  const handleLogout = () => { logout(); push('/login') }
 
   const toggleLanguage = () => {
     const newLang = lang === 'zh' ? 'en' : 'zh'
@@ -358,9 +358,9 @@ export default function DashboardPage() {
   // Handle continue learning
   const handleContinueLearning = () => {
     if (currentCourseId) {
-      router.push(`/courses/${currentCourseId}`)
+      push(`/courses/${currentCourseId}`)
     } else {
-      router.push('/courses')
+      push('/courses')
     }
   }
 
@@ -384,17 +384,17 @@ export default function DashboardPage() {
 
       // Update streak days on profile
       if (profile) {
-        setProfile({ ...profile, streak_days: result.streak_days })
+        setProfile(prev => prev ? ({ ...prev, streak_days: result.streak_days }) : prev)
       }
 
       // Update checkin details so the progress bar and stats refresh immediately
       if (checkinDetails) {
-        setCheckinDetails({
-          ...checkinDetails,
+        setCheckinDetails(prev => prev ? ({
+          ...prev,
           streak_days: result.streak_days,
           total_checkin_days: result.total_checkin_days,
           checked_in_today: true,
-        })
+        }) : prev)
       }
 
       // Update checkin stats (next tier days etc.)
@@ -410,14 +410,14 @@ export default function DashboardPage() {
         } else if (result.streak_days < 100) {
           next_tier = 100 - result.streak_days
         }
-        setCheckinStats({
-          ...checkinStats,
+        setCheckinStats(prev => prev ? ({
+          ...prev,
           streak_days: result.streak_days,
           total_checkin_days: result.total_checkin_days,
           streak_multiplier: result.streak_multiplier,
           checked_in_today: true,
           next_tier_days: next_tier,
-        })
+        }) : prev)
       }
     } catch (error) {
       console.error('Check-in failed:', error)
@@ -429,8 +429,8 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <Sparkles className="w-8 h-8 text-primary" />
+          <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Sparkles className="size-8 text-primary" />
           </div>
           <p className="text-muted-foreground">{t('加载中...', 'Loading...')}</p>
         </div>
@@ -447,7 +447,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <Logo className="text-blue-500" />
               <div>
-                <h1 className="text-base font-bold text-foreground">智码领航</h1>
+                <h1 className="text-base font-semibold text-foreground">智码领航</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">{t('基于生成式AI的实践教学系统', 'AI-Powered Learning')}</p>
               </div>
             </div>
@@ -455,7 +455,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 rounded-full">
-                  <Gem className="w-3.5 h-3.5 text-purple-500" />
+                  <Gem className="size-3.5 text-purple-500" />
                   <span className="text-xs font-medium text-purple-600 dark:text-purple-400">{profile?.cores ?? 100}</span>
                 </div>
               </div>
@@ -474,25 +474,25 @@ export default function DashboardPage() {
               {/* Flow Icons - 智核流水、段位流水、经验流水 */}
               <div className="flex items-center gap-1 pl-2 border-l border-border">
                 <button type="button"
-                  onClick={() => router.push('/cores')}
+                  onClick={() => push('/cores')}
                   className="p-2 text-purple-500 hover:text-purple-600 hover:bg-purple-500/10 rounded-lg transition-all"
                   title={t('智核流水', 'Core Transactions')}
                 >
-                  <Gem className="w-4 h-4" />
+                  <Gem className="size-4" />
                 </button>
                 <button type="button"
-                  onClick={() => router.push('/tier')}
+                  onClick={() => push('/tier')}
                   className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-lg transition-all"
                   title={t('段位流水', 'Tier Transactions')}
                 >
-                  <Trophy className="w-4 h-4" />
+                  <Trophy className="size-4" />
                 </button>
                 <button type="button"
-                  onClick={() => router.push('/xp')}
+                  onClick={() => push('/xp')}
                   className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
                   title={t('经验流水', 'XP Transactions')}
                 >
-                  <Zap className="w-4 h-4" />
+                  <Zap className="size-4" />
                 </button>
                 <span className="text-xs text-muted-foreground hidden lg:block ml-2">{user?.username}</span>
                 <button type="button" onClick={handleLogout}
@@ -525,9 +525,9 @@ export default function DashboardPage() {
             streakDays={profile?.streak_days ?? 0}
             totalCheckinDays={checkinDetails?.total_checkin_days ?? 0}
             isCheckedIn={isCheckedIn}
-            onWrongClick={() => router.push('/review?type=wrong')}
-            onFavoritesClick={() => router.push('/favorites')}
-            onNotesClick={() => router.push('/notes')}
+            onWrongClick={() => push('/review?type=wrong')}
+            onFavoritesClick={() => push('/favorites')}
+            onNotesClick={() => push('/notes')}
             onCheckIn={handleCheckIn}
             lang={lang}
             lunarStr={checkinDetails?.lunar_str}
@@ -549,9 +549,9 @@ export default function DashboardPage() {
             }}
             trend={trend}
             lang={lang}
-            onExercisesClick={() => router.push('/dashboard/exercises')}
-            onAccuracyClick={() => router.push('/dashboard/accuracy')}
-            onTimeClick={() => router.push('/dashboard/time')}
+            onExercisesClick={() => push('/dashboard/exercises')}
+            onAccuracyClick={() => push('/dashboard/accuracy')}
+            onTimeClick={() => push('/dashboard/time')}
           />
         </section>
 
@@ -578,7 +578,7 @@ export default function DashboardPage() {
                   userMasteryRank={userMasteryRank}
                   userArenaRank={userArenaRank}
                   currentUserId={user?.id}
-                  onViewAll={() => router.push('/leaderboard')}
+                  onViewAll={() => push('/leaderboard')}
                   lang={lang}
                 />
               </div>
@@ -597,7 +597,7 @@ export default function DashboardPage() {
               <div>
                 <RecentActivity
                   activities={activities}
-                  onStartLearning={() => router.push('/courses')}
+                  onStartLearning={() => push('/courses')}
                   lang={lang}
                   compact
                 />
@@ -653,7 +653,7 @@ function DualLeaderboardPreview({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Trophy className="w-3.5 h-3.5" />
+          <Trophy className="size-3.5" />
           {t('精进榜', 'Mastery')}
         </button>
         <button type="button"
@@ -664,7 +664,7 @@ function DualLeaderboardPreview({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Swords className="w-3.5 h-3.5" />
+          <Swords className="size-3.5" />
           {t('竞技榜', 'Arena')}
         </button>
       </div>
@@ -676,7 +676,7 @@ function DualLeaderboardPreview({
             {t('暂无排名数据', 'No ranking data')}
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="gap-y-1.5">
             {entries.slice(0, 5).map((entry) => (
               <div
                 key={entry.user_id}
@@ -686,10 +686,10 @@ function DualLeaderboardPreview({
                     : 'hover:bg-muted/50'
                 }`}
               >
-                <span className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${getRankStyle(entry.rank)}`}>
+                <span className={`size-5 flex items-center justify-center text-xs font-bold ${getRankStyle(entry.rank)}`}>
                   {entry.rank}
                 </span>
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                <div className="size-6 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-primary-foreground text-xs font-medium">
                   {entry.username.charAt(0)}
                 </div>
                 <span className="flex-1 text-sm text-foreground truncate">
@@ -704,7 +704,7 @@ function DualLeaderboardPreview({
                   </span>
                 ) : (
                   <div className="flex items-center gap-1 text-sm flex-shrink-0">
-                    <span className="w-4 h-4 flex items-center justify-center">
+                    <span className="size-4 flex items-center justify-center">
                       {getTierConfig(entry.tier as string)?.icon}
                     </span>
                     <span className="font-medium">{TIER_NAMES[entry.tier as Tier] || entry.tier}</span>
@@ -712,7 +712,7 @@ function DualLeaderboardPreview({
                       <span>{['I','II','III','IV','V'][entry.sub_tier - 1]}</span>
                     )}
                     <span className="ml-1 flex items-center gap-0.5">
-                      <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      <Star className="size-3 text-amber-500 fill-amber-500" />
                       {entry.stars ?? 0}
                     </span>
                   </div>

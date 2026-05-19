@@ -87,7 +87,7 @@ export function NoteTagFilter({
   }, [selectedTags, onTagsChange])
 
   return (
-    <div className="space-y-4">
+    <div className="gap-y-4">
       {/* Selected tags */}
       {selectedTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -104,7 +104,7 @@ export function NoteTagFilter({
                   onClick={() => toggleTag(tagName)}
                   className="hover:text-primary/70"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="size-4" />
                 </button>
               </span>
             )
@@ -132,7 +132,7 @@ export function NoteTagFilter({
                 onClick={() => toggleTag(tag.name)}
                 className="flex items-center gap-1"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="size-4" />
                 {tag.name}
               </button>
               <button type="button"
@@ -140,7 +140,7 @@ export function NoteTagFilter({
                 className="ml-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
                 title={t('删除标签', 'Delete tag')}
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             </span>
           ))}

@@ -104,7 +104,7 @@ export default function CoursesPage() {
   if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full size-8 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -124,10 +124,10 @@ export default function CoursesPage() {
               href={getStoredToken() ? "/dashboard" : "/"}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
               <span className="text-sm">返回</span>
             </Link>
-            <h1 className="text-lg font-bold text-foreground">选择课程</h1>
+            <h1 className="text-lg font-semibold text-foreground">选择课程</h1>
             <div className="w-20"></div>
           </div>
         </div>
@@ -143,7 +143,7 @@ export default function CoursesPage() {
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl font-semibold text-foreground mb-4">
               选择你的学习课程
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -184,13 +184,13 @@ export default function CoursesPage() {
                         <motion.div
                           whileHover={{ scale: 1.08 }}
                           className={cn(
-                            "w-14 h-14 rounded-xl flex items-center justify-center shadow-lg",
+                            "size-14 rounded-xl flex items-center justify-center shadow-lg",
                             courseConfig
                               ? `bg-gradient-to-br ${courseConfig.gradient}`
                               : "bg-gradient-to-br from-primary to-primary-600"
                           )}
                         >
-                          <div className="w-7 h-7 text-white">
+                          <div className="size-7 text-white">
                             {courseConfig?.icon}
                           </div>
                         </motion.div>
@@ -200,7 +200,7 @@ export default function CoursesPage() {
                           </h3>
                           <div className="flex gap-1 mt-1">
                             {[...Array(4)].map((_, i) => (
-                              <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
+                              <div key={`dot-${i}`} className={`size-1.5 rounded-full ${i < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
                             ))}
                           </div>
                         </div>
@@ -214,12 +214,12 @@ export default function CoursesPage() {
                       {/* Bottom info */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/50">
                         <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" />
+                          <Users className="size-3.5" />
                           {course.learners} 学习者
                         </span>
                         <span className="flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition-opacity font-medium">
                           进入学习
-                          <ArrowRight className="w-3 h-3" />
+                          <ArrowRight className="size-3" />
                         </span>
                       </div>
                     </Card>

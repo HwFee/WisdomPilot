@@ -75,7 +75,7 @@ export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
       className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br border border-border/50"
     >
       {/* 背景装饰 */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute top-0 right-0 size-48 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
       <div className="relative z-10 flex items-center gap-4">
         {/* 问候语和用户名 */}
@@ -100,7 +100,7 @@ export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
                 transition={{ duration: 0.5 }}
                 className="text-xs text-muted-foreground/70 mt-1 italic truncate max-w-lg"
               >
-                "{quote.content}" — {quote.author}
+                "{quote.content}" : {quote.author}
               </motion.p>
             )}
           </AnimatePresence>
@@ -108,8 +108,8 @@ export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
 
         {/* 右侧图标 */}
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary" />
+          <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+            <Sparkles className="size-5 text-primary" />
           </div>
         </div>
       </div>

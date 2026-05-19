@@ -98,7 +98,10 @@ export function SolutionArticleList({
           return (
             <article
               key={solution.id}
+              role="link"
+              tabIndex={0}
               onClick={() => onArticleClick(solution.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onArticleClick(solution.id) } }}
               className={`p-5 hover:bg-muted/50 transition-colors cursor-pointer ${
                 isAnnouncementItem ? 'bg-amber-50/50' : ''
               }`}
@@ -113,10 +116,10 @@ export function SolutionArticleList({
               {/* Title row */}
               <div className="flex items-start gap-2 mb-2">
                 {solution.is_pinned && (
-                  <Pin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <Pin className="size-4 text-primary flex-shrink-0 mt-0.5" />
                 )}
                 {isAnnouncementItem && (
-                  <Megaphone className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <Megaphone className="size-4 text-amber-500 flex-shrink-0 mt-0.5" />
                 )}
                 <h3 className={`font-medium flex-1 ${isAnnouncementItem ? 'text-amber-800' : 'text-foreground'}`}>
                   {solution.title}
@@ -137,18 +140,18 @@ export function SolutionArticleList({
                       }}
                       className="flex items-center gap-1 hover:text-red-500 transition-colors"
                     >
-                      <Heart className="w-4 h-4" />
+                      <Heart className="size-4" />
                       {solution.like_count}
                     </button>
                   )}
                   {!onLike && (
                     <span className="flex items-center gap-1">
-                      <Heart className="w-4 h-4" />
+                      <Heart className="size-4" />
                       {solution.like_count}
                     </span>
                   )}
                   <span className="flex items-center gap-1">
-                    <Eye className="w-4 h-4" />
+                    <Eye className="size-4" />
                     {solution.view_count}
                   </span>
                   <span>{formatTime(solution.created_at)}</span>
@@ -160,7 +163,7 @@ export function SolutionArticleList({
                       }}
                       className="flex items-center gap-1 hover:text-red-500 transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="size-4" />
                     </button>
                   )}
                 </div>

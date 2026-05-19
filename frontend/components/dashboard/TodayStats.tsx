@@ -70,7 +70,7 @@ function StatCard({
       {/* 背景渐变装饰 */}
       {gradient && (
         <div className={cn(
-          "absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+          "absolute top-0 right-0 size-32 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500",
           gradient
         )} />
       )}
@@ -81,7 +81,7 @@ function StatCard({
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3, delay: delay + 0.1 }}
           className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center shadow-sm",
+            "size-12 rounded-xl flex items-center justify-center shadow-sm",
             color
           )}
         >
@@ -101,9 +101,9 @@ function StatCard({
             )}
           >
             {trend > 0 ? (
-              <TrendingUp className="w-3.5 h-3.5" />
+              <TrendingUp className="size-3.5" />
             ) : (
-              <TrendingDown className="w-3.5 h-3.5" />
+              <TrendingDown className="size-3.5" />
             )}
             <span>{trend > 0 ? "+" : ""}{trend}%</span>
           </motion.div>
@@ -154,7 +154,7 @@ export function TodayStats({
 
   const statCards = [
     {
-      icon: <Target className="w-5 h-5 text-blue-500" />,
+      icon: <Target className="size-5 text-blue-500" />,
       value: stats.exercisesToday,
       label: t("今日做题", "Exercises"),
       guide: stats.exercisesToday === 0 ? t("目标：10题 →", "Goal: 10") : undefined,
@@ -164,7 +164,7 @@ export function TodayStats({
       onClick: onExercisesClick,
     },
     {
-      icon: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+      icon: <CheckCircle className="size-5 text-emerald-500" />,
       value: `${stats.accuracy}%`,
       label: t("正确率", "Accuracy"),
       guide: stats.accuracy === 0 ? t("保持专注 →", "Stay focused!") : undefined,
@@ -174,7 +174,7 @@ export function TodayStats({
       onClick: onAccuracyClick,
     },
     {
-      icon: <Clock className="w-5 h-5 text-purple-500" />,
+      icon: <Clock className="size-5 text-purple-500" />,
       value: t(`${stats.learningMinutes}分钟`, `${stats.learningMinutes}min`),
       label: t("学习时长", "Time"),
       guide: stats.learningMinutes === 0 ? t("目标：30分钟 →", "Goal: 30min") : undefined,
@@ -184,7 +184,7 @@ export function TodayStats({
       onClick: onTimeClick,
     },
     {
-      icon: <Flame className="w-5 h-5 text-orange-500" />,
+      icon: <Flame className="size-5 text-orange-500" />,
       value: stats.streakDays ?? 0,
       label: t("连续打卡", "Streak"),
       color: "bg-orange-500/10",
@@ -197,7 +197,7 @@ export function TodayStats({
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
       {statCards.map((card, index) => (
         <StatCard
-          key={index}
+          key={`item-${index}`}
           {...card}
           delay={index * 0.1}
         />

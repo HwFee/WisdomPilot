@@ -49,12 +49,12 @@ export function CheckInCard({
       {/* Header with date */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-orange-500" />
+          <Calendar className="size-4 text-orange-500" />
           <span className="text-sm text-muted-foreground">{dateStr}</span>
         </div>
         {multiplierBadge && (
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${multiplierBadge.color}`}>
-            <Sparkles className="w-3 h-3" />
+            <Sparkles className="size-3" />
             {multiplierBadge.text}
           </div>
         )}
@@ -65,7 +65,7 @@ export function CheckInCard({
         <div className="flex flex-wrap items-center gap-2 mb-3 text-xs text-muted-foreground">
           {lunarStr && (
             <div className="flex items-center gap-1">
-              <Moon className="w-3 h-3" />
+              <Moon className="size-3" />
               <span>{lunarStr}</span>
             </div>
           )}
@@ -87,7 +87,7 @@ export function CheckInCard({
         <div className="flex items-center gap-4">
           {/* Streak */}
           <div className="flex items-center gap-2">
-            <Flame className={`w-5 h-5 ${streakDays > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+            <Flame className={`size-5 ${streakDays > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
             <span className="text-2xl font-bold text-foreground">{streakDays}</span>
             <span className="text-sm text-muted-foreground">{t('天连续', 'streak')}</span>
           </div>
@@ -103,7 +103,7 @@ export function CheckInCard({
 
         {isCheckedIn ? (
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 text-emerald-600 rounded-full text-sm font-medium">
-            <Check className="w-4 h-4" />
+            <Check className="size-4" />
             {t('已打卡', 'Done')}
           </div>
         ) : (

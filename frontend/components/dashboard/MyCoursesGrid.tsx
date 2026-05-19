@@ -17,6 +17,8 @@ interface RecommendedCourse {
   description?: string
 }
 
+const EMPTY_COURSE_ARRAY: RecommendedCourse[] = []
+
 interface MyCoursesGridProps {
   courses: Course[]
   recommendedCourses?: RecommendedCourse[]
@@ -25,7 +27,7 @@ interface MyCoursesGridProps {
   compact?: boolean
 }
 
-export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse, lang = 'zh', compact = false }: MyCoursesGridProps) {
+export function MyCoursesGrid({ courses, recommendedCourses = EMPTY_COURSE_ARRAY, onSelectCourse, lang = 'zh', compact = false }: MyCoursesGridProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   // 空状态 + 推荐课程
@@ -34,7 +36,7 @@ export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse
       <div className="bg-card rounded-2xl border border-border p-6 h-full flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-primary" />
+            <BookOpen className="size-5 text-primary" />
             {t('正在学习', 'Learning')}
           </h3>
           <Link href="/courses" className="text-sm text-primary hover:text-primary/80 transition-colors">
@@ -56,10 +58,10 @@ export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        className="size-8 rounded-lg flex items-center justify-center"
                         style={{ backgroundColor: `${course.color}20` }}
                       >
-                        <Code2 className="w-4 h-4" style={{ color: course.color }} />
+                        <Code2 className="size-4" style={{ color: course.color }} />
                       </div>
                       <span className="font-medium text-foreground text-sm group-hover:text-primary transition-colors truncate">
                         {course.name}
@@ -74,12 +76,12 @@ export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse
             </>
           ) : (
             <div className="text-center py-6">
-              <BookOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+              <BookOpen className="size-12 mx-auto mb-3 text-muted-foreground opacity-50" />
               <p className="text-muted-foreground">{t('暂无课程', 'No courses yet')}</p>
               <p className="text-sm text-muted-foreground">{t('选择一门课程开始学习吧', 'Select a course to start')}</p>
               <Link href="/courses" className="inline-flex items-center gap-1 mt-3 text-primary hover:underline">
                 {t('浏览全部课程', 'Browse All Courses')}
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="size-4" />
               </Link>
             </div>
           )}
@@ -92,7 +94,7 @@ export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse
     <div className={`bg-card rounded-2xl border border-border p-6 h-full flex flex-col ${compact ? 'overflow-hidden' : ''}`}>
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-primary" />
+          <BookOpen className="size-5 text-primary" />
           {t('正在学习', 'Learning')}
           <span className="text-muted-foreground">({courses.length})</span>
         </h3>
@@ -106,15 +108,18 @@ export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse
           {courses.map((course) => (
             <div
               key={course.id}
+              role="button"
+              tabIndex={0}
               onClick={() => onSelectCourse(course.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectCourse(course.id) } }}
               className="group p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-primary/30 cursor-pointer transition-all"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  className="size-10 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: `${course.color}20` }}
                 >
-                  <Code2 className="w-5 h-5" style={{ color: course.color }} />
+                  <Code2 className="size-5" style={{ color: course.color }} />
                 </div>
                 <h4 className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
                   {course.name}
@@ -138,7 +143,7 @@ export function MyCoursesGrid({ courses, recommendedCourses = [], onSelectCourse
               <div className="flex items-center justify-end">
                 <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                   {t('继续', 'Continue')}
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="size-3" />
                 </span>
               </div>
             </div>

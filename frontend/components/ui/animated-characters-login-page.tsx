@@ -14,7 +14,7 @@ import { CharacterGroup } from "@/components/ui/animated-characters";
 import { fadeIn, slideUp } from "@/lib/animations";
 
 function LoginPage() {
-  const router = useRouter();
+  const { push } = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -56,15 +56,15 @@ function LoginPage() {
     try {
       await login(username.trim(), password, rememberMe);
       // Check if user is admin and redirect accordingly
-      const storedUser = localStorage.getItem('user');
+      const storedUser = localStorage.getItem('user:v1');
       if (storedUser) {
         const user = JSON.parse(storedUser);
         if (user.is_admin) {
-          router.push("/admin");
+          push("/admin");
           return;
         }
       }
-      router.push("/dashboard");
+      push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Invalid username or password", "用户名或密码错误"));
     } finally {
@@ -210,7 +210,7 @@ function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="gap-y-5">
             {error && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -226,7 +226,7 @@ function LoginPage() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
-              className="space-y-2"
+              className="gap-y-2"
             >
               <Label htmlFor="username" required>{t('Username', '用户名')}</Label>
               <Input
@@ -247,7 +247,7 @@ function LoginPage() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.4 }}
-              className="space-y-2"
+              className="gap-y-2"
             >
               <Label htmlFor="password" required>{t('Password', '密码')}</Label>
               <Input
@@ -269,7 +269,7 @@ function LoginPage() {
               transition={{ duration: 0.3, delay: 0.5 }}
               className="flex items-center justify-between"
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-x-2">
                 <Checkbox
                   id="remember"
                   checked={rememberMe}

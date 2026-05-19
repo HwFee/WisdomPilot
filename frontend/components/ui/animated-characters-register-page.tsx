@@ -19,7 +19,7 @@ import { PasswordStrengthIndicator } from "./password-strength-indicator";
 import { CharacterGroup } from "@/components/ui/animated-characters";
 
 function RegisterPage() {
-  const router = useRouter();
+  const { push } = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -129,7 +129,7 @@ function RegisterPage() {
 
     try {
       await register(email, username, password);
-      router.push("/login");
+      push("/login");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Registration failed. Please try again.", "注册失败，请重试。"));
     } finally {
@@ -210,19 +210,19 @@ function RegisterPage() {
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">{t('Create your account', '创建账号')}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight mb-2">{t('Create your account', '创建账号')}</h1>
             <p className="text-muted-foreground text-sm">{t('Join our learning platform', '加入我们的学习平台')}</p>
           </div>
 
           {/* Register Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="gap-y-4">
             {error && (
               <div className="p-3 text-sm text-red-400 bg-red-950/20 border border-red-900/30 rounded-lg">
                 {error}
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="gap-y-2">
               <Label htmlFor="username" className="text-sm font-medium">{t('Username', '用户名')}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -252,7 +252,7 @@ function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="gap-y-2">
               <Label htmlFor="email" className="text-sm font-medium">{t('Email', '邮箱地址')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -282,7 +282,7 @@ function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="gap-y-2">
               <Label htmlFor="password" className="text-sm font-medium">{t('Password', '密码')}</Label>
               <div className="relative">
                 <Input
@@ -319,7 +319,7 @@ function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="gap-y-2">
               <Label htmlFor="confirmPassword" className="text-sm font-medium">{t('Confirm Password', '确认密码')}</Label>
               <div className="relative">
                 <Input

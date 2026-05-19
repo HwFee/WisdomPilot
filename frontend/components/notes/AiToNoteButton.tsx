@@ -5,6 +5,8 @@ import { getStoredToken } from '@/lib/api'
 import { createNoteFromQuestion } from '@/lib/api/notes'
 import type { NoteResponse } from '@/types/api'
 
+const EMPTY_STRING_ARRAY: string[] = []
+
 interface AiToNoteButtonProps {
   aiAnswerContent: string
   questionContent?: string
@@ -20,7 +22,7 @@ export function AiToNoteButton({
   questionContent,
   exerciseId,
   chapterId,
-  knowledgePoints = [],
+  knowledgePoints = EMPTY_STRING_ARRAY,
   onCreated,
   lang = 'zh',
 }: AiToNoteButtonProps) {
@@ -53,7 +55,7 @@ export function AiToNoteButton({
       className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
       title={t('将AI回答保存为笔记', 'Save AI answer as note')}
     >
-      <FileText className="w-4 h-4" />
+      <FileText className="size-4" />
       {t('记为笔记', 'Save as Note')}
     </button>
   )

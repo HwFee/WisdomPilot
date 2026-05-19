@@ -69,9 +69,9 @@ export function CustomTestInput({
             title={t('复制', 'Copy')}
           >
             {copied ? (
-              <Check className="w-4 h-4 text-[#52C41A]" />
+              <Check className="size-4 text-[#52C41A]" />
             ) : (
-              <Copy className="w-4 h-4" />
+              <Copy className="size-4" />
             )}
           </button>
           <button type="button"
@@ -80,7 +80,7 @@ export function CustomTestInput({
             className="p-1.5 text-[#909399] hover:text-[#E74C3C] hover:bg-[#EBEEF5] rounded transition-colors disabled:opacity-30"
             title={t('清空', 'Clear')}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
       </div>
@@ -106,12 +106,12 @@ export function CustomTestInput({
           >
             {isRunning ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 {t('运行中...', 'Running...')}
               </>
             ) : (
               <>
-                <Play className="w-4 h-4" />
+                <Play className="size-4" />
                 {t('运行', 'Run')}
               </>
             )}
@@ -146,7 +146,7 @@ export function TestOutputDisplay({
     return (
       <div className="test-output-display running">
         <div className="flex items-center justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-[#3498DB]" />
+          <Loader2 className="size-5 animate-spin text-[#3498DB]" />
           <span className="ml-2 text-sm text-[#606266]">{t('运行中...', 'Running...')}</span>
         </div>
       </div>

@@ -70,8 +70,8 @@ describe('API Client', () => {
     it('removes token and user from localStorage', async () => {
       const { logout } = await import('@/lib/api')
       logout()
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('token')
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user')
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('token:v1')
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user:v1')
     })
   })
 

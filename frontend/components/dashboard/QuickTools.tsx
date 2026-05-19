@@ -80,10 +80,10 @@ export function QuickTools({
   // Calculate next tier info - 使用图标组件替代emoji
   const getNextTierInfo = () => {
     if (streakDays >= 100) return null
-    if (streakDays >= 30) return { days: 100 - streakDays, tier: '100天成就', iconComponent: <CrownIcon className="w-3 h-3" />, targetDays: 100 }
-    if (streakDays >= 14) return { days: 30 - streakDays, tier: '30天成就', iconComponent: <Trophy className="w-3 h-3" />, targetDays: 30 }
-    if (streakDays >= 7) return { days: 14 - streakDays, tier: '14天成就', iconComponent: <Sparkles className="w-3 h-3" />, targetDays: 14 }
-    return { days: 7 - streakDays, tier: '7天成就', iconComponent: <Flame className="w-3 h-3" />, targetDays: 7 }
+    if (streakDays >= 30) return { days: 100 - streakDays, tier: '100天成就', iconComponent: <CrownIcon className="size-3" />, targetDays: 100 }
+    if (streakDays >= 14) return { days: 30 - streakDays, tier: '30天成就', iconComponent: <Trophy className="size-3" />, targetDays: 30 }
+    if (streakDays >= 7) return { days: 14 - streakDays, tier: '14天成就', iconComponent: <Sparkles className="size-3" />, targetDays: 14 }
+    return { days: 7 - streakDays, tier: '7天成就', iconComponent: <Flame className="size-3" />, targetDays: 7 }
   }
 
   const nextTierInfo = getNextTierInfo()
@@ -134,8 +134,8 @@ export function QuickTools({
             onClick={tool.onClick}
             className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 hover:shadow-md transition-all text-left group"
           >
-            <div className={`w-10 h-10 rounded-lg ${tool.bgColor} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
-              <Icon className={`w-5 h-5 ${tool.color}`} />
+            <div className={`size-10 rounded-lg ${tool.bgColor} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
+              <Icon className={`size-5 ${tool.color}`} />
             </div>
             <p className="text-sm font-medium text-foreground truncate">{tool.label}</p>
             {tool.count !== undefined && tool.count > 0 && (
@@ -156,7 +156,7 @@ export function QuickTools({
           <div className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-orange-500" />
+                <Calendar className="size-4 text-orange-500" />
                 <span className="text-xs text-muted-foreground">{dateStr}</span>
               </div>
               {(lunarStr || solarTerm || holiday) && (
@@ -191,10 +191,10 @@ export function QuickTools({
                 </p>
               )}
               {nextTierInfo && (
-                <div className="space-y-1 mt-2">
+                <div className="gap-y-1 mt-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <Trophy className="w-3 h-3 text-amber-500" />
+                      <Trophy className="size-3 text-amber-500" />
                       <span>{t('距离', 'Next')}{nextTierInfo.tier}</span>
                     </div>
                     <span className="font-medium text-foreground">{nextTierInfo.days}{t('天', 'd')}</span>
@@ -224,11 +224,11 @@ export function QuickTools({
           <div className="p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-orange-500" />
+                <Calendar className="size-4 text-orange-500" />
                 <span className="text-xs text-muted-foreground">{dateStr}</span>
               </div>
               <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 text-emerald-600 rounded-full text-xs font-medium">
-                <Check className="w-3 h-3" />
+                <Check className="size-3" />
                 {t('已打卡', 'Done')}
               </div>
             </div>
@@ -259,10 +259,10 @@ export function QuickTools({
 
             {/* 成就进度 */}
             {nextTierInfo && (
-              <div className="space-y-1 mt-3">
+              <div className="gap-y-1 mt-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <Trophy className="w-3 h-3 text-amber-500" />
+                    <Trophy className="size-3 text-amber-500" />
                     <span>{t('距离', 'Next')}{nextTierInfo.tier}</span>
                   </div>
                   <span className="font-medium text-foreground">{nextTierInfo.days}{t('天', 'd')}</span>

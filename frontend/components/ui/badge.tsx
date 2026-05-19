@@ -186,7 +186,7 @@ function TierBadge({
       )}
       {...props}
     >
-      <Icon className="w-4 h-4" />
+      <Icon className="size-4" />
       <span>{config.label}</span>
     </div>
   )
@@ -251,7 +251,7 @@ function StatusBadge({
       {...props}
     >
       {showDot && (
-        <span className={cn('w-2 h-2 rounded-full', config.dotClass)} />
+        <span className={cn('size-2 rounded-full', config.dotClass)} />
       )}
       <span className="text-muted-foreground">{config.label}</span>
     </div>

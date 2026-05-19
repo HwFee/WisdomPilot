@@ -55,7 +55,7 @@ export function CourseSwitcher({
         >
           {currentCourse && (
             <>
-              <div className={`w-5 h-5 rounded bg-gradient-to-br ${COURSE_GRADIENTS[currentCourse.course_code] || 'from-gray-500 to-gray-600'} flex items-center justify-center`}>
+              <div className={`size-5 rounded bg-gradient-to-br ${COURSE_GRADIENTS[currentCourse.course_code] || 'from-gray-500 to-gray-600'} flex items-center justify-center`}>
                 <span className="text-white text-xs font-bold">
                   {currentCourse.course_code.charAt(0)}
                 </span>
@@ -66,7 +66,7 @@ export function CourseSwitcher({
                   {currentCourse.progress}%
                 </span>
               )}
-              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`size-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </>
           )}
         </button>
@@ -85,7 +85,7 @@ export function CourseSwitcher({
                     isSelected ? 'bg-primary/10' : ''
                   }`}
                 >
-                  <div className={`w-5 h-5 rounded bg-gradient-to-br ${COURSE_GRADIENTS[course.course_code] || 'from-gray-500 to-gray-600'} flex items-center justify-center`}>
+                  <div className={`size-5 rounded bg-gradient-to-br ${COURSE_GRADIENTS[course.course_code] || 'from-gray-500 to-gray-600'} flex items-center justify-center`}>
                     <span className="text-white text-xs font-bold">
                       {course.course_code.charAt(0)}
                     </span>

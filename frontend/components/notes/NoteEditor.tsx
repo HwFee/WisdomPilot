@@ -13,6 +13,8 @@ import { getStoredToken } from '@/lib/api'
 import { createNote, updateNote, createNoteTag, getNoteTags } from '@/lib/api/notes'
 import type { NoteCreate, NoteResponse, NoteTagResponse } from '@/types/api'
 
+const EMPTY_STRING_ARRAY: string[] = []
+
 interface NoteEditorProps {
   note?: NoteResponse | null
   exerciseId?: number
@@ -38,7 +40,7 @@ export function NoteEditor({
   sectionId,
   courseId,
   subsectionIndex = 0,
-  knowledgePoints = [],
+  knowledgePoints = EMPTY_STRING_ARRAY,
   prefillContent,
   prefillTitle,
   source = 'manual',
@@ -156,7 +158,7 @@ export function NoteEditor({
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors text-sm"
               title={t('管理标签', 'Manage Tags')}
             >
-              <Tags className="w-4 h-4" />
+              <Tags className="size-4" />
               <span>{t('标签', 'Tags')}</span>
             </button>
             {onClose && (
@@ -165,7 +167,7 @@ export function NoteEditor({
                 className="p-2 hover:bg-muted rounded-lg transition-colors"
                 title={t('关闭', 'Close')}
               >
-                <Minimize2 className="w-5 h-5" />
+                <Minimize2 className="size-5" />
               </button>
             )}
           </div>
@@ -185,7 +187,7 @@ export function NoteEditor({
                     onClick={() => toggleTag(tag)}
                     className="hover:text-primary/70"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="size-3.5" />
                   </button>
                 </span>
               ))}
@@ -240,7 +242,7 @@ export function NoteEditor({
           <div className="flex-1 flex flex-col min-w-0 border-r">
             <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
               <div className="flex items-center gap-2">
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="size-4" />
                 <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
               </div>
             </div>
@@ -256,7 +258,7 @@ export function NoteEditor({
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
               <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4" />
+                <Eye className="size-4" />
                 <span>{t('实时预览', 'Live Preview')}</span>
               </div>
             </div>
@@ -266,15 +268,15 @@ export function NoteEditor({
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex, rehypeHighlight]}
                   components={{
-                    h1: ({ children }) => <h1 className="text-3xl font-bold mt-6 mb-3">{children}</h1>,
+                    h1: ({ children }) => <h1 className="text-3xl font-semibold mt-6 mb-3">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-2xl font-semibold mt-5 mb-2">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-xl font-semibold mt-4 mb-2">{children}</h3>,
                     h4: ({ children }) => <h4 className="text-lg font-semibold mt-3 mb-1">{children}</h4>,
                     h5: ({ children }) => <h5 className="text-base font-semibold mt-2 mb-1">{children}</h5>,
                     h6: ({ children }) => <h6 className="text-sm font-semibold mt-2 mb-1 text-muted-foreground">{children}</h6>,
                     p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
-                    ul: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>,
+                    ul: ({ children }) => <ul className="list-disc pl-6 mb-3 gap-y-1">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 gap-y-1">{children}</ol>,
                     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                     blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
                     code: ({ className, children, ...props }) => {
@@ -301,7 +303,7 @@ export function NoteEditor({
                 disabled={isSaving || !content.trim()}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
-                <Save className="w-4 h-4" />
+                <Save className="size-4" />
                 {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
               </button>
             </div>
@@ -326,14 +328,14 @@ export function NoteEditor({
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors"
               title={t('管理标签', 'Manage Tags')}
             >
-              <Tags className="w-5 h-5" />
+              <Tags className="size-5" />
               <span className="text-sm">{t('标签', 'Tags')}</span>
             </button>
             <button type="button"
               onClick={onClose}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="size-5" />
             </button>
           </div>
         </div>
@@ -352,7 +354,7 @@ export function NoteEditor({
                     onClick={() => toggleTag(tag)}
                     className="hover:text-primary/70"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="size-4" />
                   </button>
                 </span>
               ))}
@@ -407,7 +409,7 @@ export function NoteEditor({
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Edit3 className="w-4 h-4" />
+                <Edit3 className="size-4" />
                 <span>{t('编辑', 'Edit')}</span>
               </div>
             </div>
@@ -423,7 +425,7 @@ export function NoteEditor({
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4" />
+                <Eye className="size-4" />
                 <span>{t('预览', 'Preview')}</span>
               </div>
             </div>
@@ -457,7 +459,7 @@ export function NoteEditor({
               disabled={isSaving || !content.trim()}
               className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
-              <Save className="w-4 h-4" />
+              <Save className="size-4" />
               {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
             </button>
           </div>

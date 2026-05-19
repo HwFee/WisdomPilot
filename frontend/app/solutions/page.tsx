@@ -13,7 +13,7 @@ type CategoryType = 'hot' | 'new' | 'pinned' | 'announcement'
 type PageMode = 'list' | 'create'
 
 function SolutionsContent() {
-  const router = useRouter()
+  const { push } = useRouter()
   const searchParams = useSearchParams()
 
   const [solutions, setSolutions] = useState<SolutionSummary[]>([])
@@ -49,7 +49,7 @@ function SolutionsContent() {
     const token = getStoredToken()
 
     if (!token || !user) {
-      router.push('/login')
+      push('/login')
       return
     }
 
@@ -75,11 +75,11 @@ function SolutionsContent() {
   }
 
   const handleCategoryChange = (category: CategoryType) => {
-    router.push(`/solutions?tab=${category}`)
+    push(`/solutions?tab=${category}`)
   }
 
   const handleArticleClick = (id: number) => {
-    router.push(`/solutions/${id}`)
+    push(`/solutions/${id}`)
   }
 
   const handleDelete = async (id: number) => {
@@ -130,7 +130,7 @@ function SolutionsContent() {
                   onClick={() => setPageMode('list')}
                   className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="size-5" />
                   <span>{t('取消发布', 'Cancel')}</span>
                 </button>
                 <h2 className="text-lg font-semibold">{t('发布题解', 'New Solution')}</h2>
@@ -140,20 +140,20 @@ function SolutionsContent() {
               <>
                 <div className="flex items-center gap-4">
                   <button type="button"
-                    onClick={() => router.push('/dashboard')}
+                    onClick={() => push('/dashboard')}
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                     title={t('返回首页', 'Go to Dashboard')}
                   >
-                    <Home className="w-5 h-5" />
+                    <Home className="size-5" />
                   </button>
-                  <MessageSquare className="w-6 h-6 text-primary" />
+                  <MessageSquare className="size-6 text-primary" />
                   <h1 className="text-lg font-semibold">{t('讨论区', 'Discussion')}</h1>
                 </div>
                 <button type="button"
                   onClick={() => setPageMode('create')}
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="size-4" />
                   {t('发布', 'Post')}
                 </button>
               </>
@@ -163,7 +163,7 @@ function SolutionsContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-[1400px] mx-auto px-4 sm:p-6">
         {pageMode === 'create' ? (
           <SolutionEditor
             onSave={handleSave}
@@ -187,7 +187,7 @@ function SolutionsContent() {
             <section className="flex-1 min-w-0">
               {/* Search bar */}
               <div className="mb-4 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -233,7 +233,7 @@ export default function SolutionsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+        <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
       </div>
     }>
       <SolutionsContent />

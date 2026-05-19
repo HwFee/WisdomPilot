@@ -104,11 +104,11 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
         }}
         className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 rounded-full transition-all"
       >
-        <Gem className="w-4 h-4 text-purple-500" />
+        <Gem className="size-4 text-purple-500" />
         <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
           {balance.balance}
         </span>
-        {showDetails && <ChevronDown className="w-3 h-3 text-purple-400" />}
+        {showDetails && <ChevronDown className="size-3 text-purple-400" />}
       </button>
 
       {/* Dropdown Panel */}
@@ -122,20 +122,20 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
                 onClick={() => setIsOpen(false)}
                 className="p-1 hover:bg-muted rounded-lg transition-colors"
               >
-                <X className="w-4 h-4 text-muted-foreground" />
+                <X className="size-4 text-muted-foreground" />
               </button>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <Gem className="w-6 h-6 text-purple-500" />
+              <Gem className="size-6 text-purple-500" />
               <span className="text-2xl font-bold text-foreground">{balance.balance}</span>
             </div>
             <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
-                <TrendingUp className="w-3 h-3 text-green-500" />
+                <TrendingUp className="size-3 text-green-500" />
                 <span>+{balance.total_earned}</span>
               </div>
               <div className="flex items-center gap-1">
-                <TrendingDown className="w-3 h-3 text-red-500" />
+                <TrendingDown className="size-3 text-red-500" />
                 <span>-{balance.total_spent}</span>
               </div>
             </div>
@@ -144,7 +144,7 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
           {/* Recent Transactions */}
           <div className="p-3 max-h-64 overflow-y-auto">
             <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-              <History className="w-3 h-3" />
+              <History className="size-3" />
               {t('最近记录', 'Recent')}
             </div>
 
@@ -157,7 +157,7 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
                 {t('暂无记录', 'No records')}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="gap-y-2">
                 {transactions.map((tx) => (
                   <div
                     key={tx.id}
@@ -201,7 +201,7 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
 export function CorePill({ balance }: { balance: number }) {
   return (
     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 rounded-full">
-      <Gem className="w-4 h-4 text-purple-500" />
+      <Gem className="size-4 text-purple-500" />
       <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
         {balance}
       </span>

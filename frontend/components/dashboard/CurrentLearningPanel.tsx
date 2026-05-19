@@ -17,6 +17,8 @@ interface RecentExercise {
   time?: string
 }
 
+const EMPTY_EXERCISE_ARRAY: RecentExercise[] = []
+
 interface CurrentLearningPanelProps {
   courses: CourseProgress[]
   currentCourseId: number | null
@@ -81,10 +83,10 @@ export function CurrentLearningPanel({
   courses,
   currentCourseId,
   onSwitchCourse,
-  recentExercises = [],
+  recentExercises = EMPTY_EXERCISE_ARRAY,
   lang = 'zh'
 }: CurrentLearningPanelProps) {
-  const router = useRouter()
+  const { push } = useRouter()
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   const [isNavigating, setIsNavigating] = useState<'mastery' | 'challenge' | null>(null)
@@ -129,7 +131,7 @@ export function CurrentLearningPanel({
   // 精进之路：直接进入 mastery 页面
   const handleMasteryStart = () => {
     setIsNavigating('mastery')
-    router.push(`/mastery/${currentCourse.course_id}`)
+    push(`/mastery/${currentCourse.course_id}`)
   }
 
   // 挑战之路：显示难度选择
@@ -141,7 +143,7 @@ export function CurrentLearningPanel({
   const handleDifficultySelect = (difficulty: number) => {
     setSelectedDifficulty(difficulty)
     setIsNavigating('challenge')
-    router.push(`/arena?difficulty=${difficulty}`)
+    push(`/arena?difficulty=${difficulty}`)
   }
 
   return (
@@ -175,8 +177,8 @@ export function CurrentLearningPanel({
           className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl border border-amber-500/20 p-4 flex flex-col overflow-hidden"
         >
           <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-amber-500" />
+            <div className="size-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <Trophy className="size-4 text-amber-500" />
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground">{t('精进之路', 'Mastery')}</h4>
@@ -228,11 +230,11 @@ export function CurrentLearningPanel({
             className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-amber-500 to-amber-400 text-white hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-70 flex-shrink-0"
           >
             {isNavigating === 'mastery' ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
               <>
                 {t('开始学习', 'Start')}
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="size-4" />
               </>
             )}
           </button>
@@ -245,8 +247,8 @@ export function CurrentLearningPanel({
           className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 p-4 flex flex-col overflow-hidden"
         >
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-              <Swords className="w-4 h-4 text-blue-500" />
+            <div className="size-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <Swords className="size-4 text-blue-500" />
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground">{t('挑战之路', 'Challenge')}</h4>
@@ -262,7 +264,7 @@ export function CurrentLearningPanel({
                 <div className="flex-shrink-0">
                   <p className="text-xs text-muted-foreground mb-1">{t('当前段位', 'Current Tier')}</p>
                   <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 flex items-center justify-center">
+                    <span className="size-8 flex items-center justify-center">
                       {getTierConfig(currentCourse.arena_tier)?.icon}
                     </span>
                     <div>
@@ -272,7 +274,7 @@ export function CurrentLearningPanel({
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         {currentCourse.arena_stars !== null ? (
                           <>
-                            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                            <Star className="size-3 text-amber-500 fill-amber-500" />
                             <span className="font-medium">{currentCourse.arena_stars}</span> {t('星', 'stars')}
                           </>
                         ) : (
@@ -287,13 +289,13 @@ export function CurrentLearningPanel({
                 {recentExercises.length > 0 && (
                   <div className="flex-1 min-w-0 pl-3 border-l border-blue-500/20">
                     <p className="text-xs text-muted-foreground mb-1">{t('最近练习', 'Recent')}</p>
-                    <div className="space-y-1">
+                    <div className="gap-y-1">
                       {recentExercises.slice(0, 2).map((ex, idx) => (
                         <div key={idx} className="flex items-center gap-1.5 text-xs">
                           {ex.isCorrect ? (
-                            <CheckCircle className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                            <CheckCircle className="size-3 text-emerald-500 flex-shrink-0" />
                           ) : (
-                            <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                            <XCircle className="size-3 text-red-500 flex-shrink-0" />
                           )}
                           <span className="truncate text-foreground">
                             {ex.stageName}
@@ -309,14 +311,14 @@ export function CurrentLearningPanel({
             <>
               {/* 最近练习 - 没有段位时显示 */}
               {recentExercises.length > 0 ? (
-                <div className="flex-1 w-full space-y-1.5">
+                <div className="flex-1 w-full gap-y-1.5">
                   <p className="text-xs text-muted-foreground mb-2">{t('最近练习', 'Recent Exercises')}</p>
                   {recentExercises.slice(0, 3).map((ex, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-xs">
                       {ex.isCorrect ? (
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        <CheckCircle className="size-3.5 text-emerald-500 flex-shrink-0" />
                       ) : (
-                        <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                        <XCircle className="size-3.5 text-red-500 flex-shrink-0" />
                       )}
                       <span className="truncate text-foreground">
                         {ex.stageName}
@@ -344,11 +346,11 @@ export function CurrentLearningPanel({
             className="w-full mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-blue-500 to-blue-400 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-70 flex-shrink-0"
           >
             {isNavigating === 'challenge' ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
               <>
                 {t('开始挑战', 'Start Challenge')}
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="size-4" />
               </>
             )}
           </button>
@@ -374,7 +376,7 @@ export function CurrentLearningPanel({
             <h3 className="text-lg font-semibold text-foreground mb-4 text-center">
               {t('选择难度', 'Select Difficulty')}
             </h3>
-            <div className="space-y-2">
+            <div className="gap-y-2">
               {[1, 2, 3, 4, 5].map((level) => (
                 <motion.button
                   key={level}
@@ -397,7 +399,7 @@ export function CurrentLearningPanel({
                   <span className="flex items-center gap-2">
                     <span className="flex">
                       {Array.from({ length: level }).map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                        <Star key={`learning-${i}`} className="size-3.5 text-amber-500 fill-amber-500" />
                       ))}
                     </span>
                     {t(`${level}星难度`, `${level}-Star Difficulty`)}

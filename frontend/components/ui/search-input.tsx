@@ -51,7 +51,7 @@ export function SearchInput({
         ${className}
       `}
     >
-      <Search className={`w-4 h-4 shrink-0 ${isFocused ? 'text-blue-500' : 'text-gray-400'} transition-colors`} />
+      <Search className={`size-4 shrink-0 ${isFocused ? 'text-blue-500' : 'text-gray-400'} transition-colors`} />
       <input
         ref={inputRef}
         type="text"
@@ -68,7 +68,7 @@ export function SearchInput({
           className="p-0.5 rounded-full hover:bg-gray-200 transition-colors shrink-0"
           aria-label="清除搜索"
         >
-          <X className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+          <X className="size-3.5 text-gray-400 hover:text-gray-600" />
         </button>
       ) : isFocused ? (
         <span className="text-xs text-gray-400 shrink-0 bg-gray-200 px-1.5 py-0.5 rounded">Esc</span>

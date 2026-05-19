@@ -46,10 +46,10 @@ export function ActivityFeed({ activities, lang, isLoading }: ActivityFeedProps)
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="gap-y-4">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex gap-3 animate-pulse">
-            <div className="w-2 h-2 bg-muted rounded-full mt-2" />
+          <div key={`feed-${i}`} className="flex gap-3 animate-pulse">
+            <div className="size-2 bg-muted rounded-full mt-2" />
             <div className="flex-1">
               <div className="h-4 bg-muted rounded w-48 mb-2" />
               <div className="h-3 bg-muted rounded w-20" />
@@ -63,7 +63,7 @@ export function ActivityFeed({ activities, lang, isLoading }: ActivityFeedProps)
   if (activities.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+        <Clock className="size-12 mx-auto mb-3 opacity-50" />
         <p>{t('暂无学习记录', 'No learning records yet')}</p>
         <p className="text-sm">{t('开始学习吧！', 'Start learning!')}</p>
       </div>
@@ -71,7 +71,7 @@ export function ActivityFeed({ activities, lang, isLoading }: ActivityFeedProps)
   }
 
   return (
-    <div className="space-y-4">
+    <div className="gap-y-4">
       {activities.map((activity, index) => {
         const Icon = activityIcons[activity.activity_type] || BookOpen
         const colorClass = activityColors[activity.activity_type] || 'bg-muted text-muted-foreground'
@@ -79,8 +79,8 @@ export function ActivityFeed({ activities, lang, isLoading }: ActivityFeedProps)
         return (
           <div key={activity.id} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div className={`w-6 h-6 rounded-full ${colorClass} flex items-center justify-center`}>
-                <Icon className="w-3 h-3" />
+              <div className={`size-6 rounded-full ${colorClass} flex items-center justify-center`}>
+                <Icon className="size-3" />
               </div>
               {index < activities.length - 1 && (
                 <div className="w-0.5 flex-1 my-1 bg-muted" />

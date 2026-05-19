@@ -22,32 +22,32 @@ export default function ReviewPage() {
 function ReviewLoading() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+      <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
     </div>
   )
 }
 
 function ReviewPageContent() {
-  const router = useRouter()
+  const { push } = useRouter()
   const [wrongQuestions, setWrongQuestions] = useState<WrongQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token:v1')
     if (!token) {
-      router.push('/login')
+      push('/login')
       return
     }
     fetchData()
-  }, [router])
+  }, [push])
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token:v1')
       if (!token) {
-        router.push('/login')
+        push('/login')
         return
       }
 
@@ -73,7 +73,7 @@ function ReviewPageContent() {
     if (!confirm('确定要删除这条错题记录吗？')) return
 
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token:v1')
       if (!token) return
 
       await deleteWrongQuestion(wrongQuestionId, token)
@@ -84,7 +84,7 @@ function ReviewPageContent() {
   }
 
   const handleReview = async (wq: WrongQuestion) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token:v1')
     const sourceType = wq.source_type || (wq.exercise_key?.startsWith('arena-') ? 'arena' : 'mastery')
     const keyParts = wq.exercise_key?.split('-') || []
     let questionIdFromKey = ''
@@ -97,14 +97,14 @@ function ReviewPageContent() {
 
     if (sourceType === 'arena' && token) {
       // 挑战之路: 直接跳转到挑战之路页面（独立于课程）
-      router.push('/arena')
+      push('/arena')
     } else if (sourceType === 'mastery' && wq.course_id) {
       const chapterParam = wq.chapter_id || ''
       const questionParam = questionIdFromKey || ''
       const sectionParam = wq.section_id || ''
-      router.push(`/mastery/${wq.course_id}?chapter=${chapterParam}&section=${sectionParam}&exercise=${questionParam}&skip=1`)
+      push(`/mastery/${wq.course_id}?chapter=${chapterParam}&section=${sectionParam}&exercise=${questionParam}&skip=1`)
     } else if (wq.course_id) {
-      router.push(`/mastery/${wq.course_id}`)
+      push(`/mastery/${wq.course_id}`)
     }
   }
 
@@ -112,7 +112,7 @@ function ReviewPageContent() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center p-8">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="size-12 text-red-500 mx-auto mb-4" />
           <p className="text-muted-foreground mb-4">{error}</p>
           <button type="button"
             onClick={() => { setError(null); fetchData() }}
@@ -132,11 +132,11 @@ function ReviewPageContent() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="size-4" />
               <span className="text-sm">返回</span>
             </Link>
             <div className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-primary" />
+              <Brain className="size-5 text-primary" />
               <span className="font-semibold text-foreground">错题本</span>
             </div>
             <button type="button"
@@ -144,7 +144,7 @@ function ReviewPageContent() {
               className="p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
               title="刷新"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="size-4" />
             </button>
           </div>
         </div>
@@ -155,16 +155,16 @@ function ReviewPageContent() {
           {/* 错题列表 */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+              <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
             </div>
           ) : wrongQuestions.length === 0 ? (
             <div className="text-center py-16 bg-card rounded-2xl border border-border">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">暂无错题</h3>
               <p className="text-sm text-muted-foreground">继续保持，做错的题目会自动记录</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="gap-y-3">
               {wrongQuestions.map((wq) => {
                 // 提取题目标题
                 const textContent = wq.exercise_content?.text
@@ -187,9 +187,9 @@ function ReviewPageContent() {
                         {/* 标题 */}
                         <div className="flex items-center gap-2 mb-2">
                           {wq.is_resolved ? (
-                            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            <CheckCircle className="size-4 text-green-500 flex-shrink-0" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                            <XCircle className="size-4 text-red-500 flex-shrink-0" />
                           )}
                           <span className="font-medium text-foreground truncate">{questionTitle}</span>
                         </div>
@@ -213,14 +213,14 @@ function ReviewPageContent() {
                           className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                           title="删除"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="size-4" />
                         </button>
                         <button type="button"
                           onClick={() => handleReview(wq)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-all"
                         >
                           复习
-                          <ChevronRight className="w-4 h-4" />
+                          <ChevronRight className="size-4" />
                         </button>
                       </div>
                     </div>

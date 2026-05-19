@@ -184,8 +184,8 @@ function MessageBubble({ role, content, courseId, chapterId, sectionId, exercise
                     {children}
                   </pre>
                 ),
-                ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
+                ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ol>,
                 li: ({ children }) => <li className="leading-snug">{children}</li>,
                 strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                 em: ({ children }) => <em>{children}</em>,
@@ -204,7 +204,7 @@ function MessageBubble({ role, content, courseId, chapterId, sectionId, exercise
           className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg transition-colors hover:bg-black/10 disabled:opacity-50 w-fit"
           style={{ color: saved ? "hsl(var(--success))" : "hsl(var(--primary))" }}
         >
-          <FileText className="w-3 h-3" />
+          <FileText className="size-3" />
           {saved ? "已保存" : isSaving ? "保存中..." : "记为笔记"}
         </button>
       )}
@@ -239,7 +239,7 @@ export function KnowledgeOrb({
   exerciseId,
   knowledgePoints
 }: KnowledgeOrbProps) {
-  const router = useRouter()
+  const { push } = useRouter()
   const {
     activeKnowledgeQuestion,
     isKnowledgePanelOpen,
@@ -621,7 +621,7 @@ ${kp.title}${optsStr}
       : `你是一位耐心的编程老师。问题：\n\n${userMessage}\n\n请给出简洁、有帮助的回答。`
 
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token:v1")
       if (!token) return
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -640,9 +640,9 @@ ${kp.title}${optsStr}
       if (!response.ok) {
         const errorText = await response.text()
         if (response.status === 401) {
-          localStorage.removeItem("token")
-          localStorage.removeItem("user")
-          router.push("/login")
+          localStorage.removeItem("token:v1")
+          localStorage.removeItem("user:v1")
+          push("/login")
           return
         }
         throw new Error(`请求失败: ${response.status} — ${errorText}`)
@@ -681,7 +681,7 @@ ${kp.title}${optsStr}
       setIsStreaming(false)
       setStreamingText("")
     }
-  }, [inputValue, isStreaming, activeKnowledgeQuestion, contextMode, buildPrompt, router])
+  }, [inputValue, isStreaming, activeKnowledgeQuestion, contextMode, buildPrompt, push])
 
   const handleQuickPrompt = useCallback((prompt: string) => {
     setInputValue(prompt)
@@ -828,7 +828,7 @@ ${kp.title}${optsStr}
             </div>
             <button type="button"
               onClick={handleClose}
-              className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
+              className="size-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
               style={{ color: "hsl(var(--muted-foreground))" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -918,7 +918,7 @@ ${kp.title}${optsStr}
             )}
             {messages.map((msg, i) => (
               <div
-                key={i}
+                key={`orb-${i}`}
                 className="flex"
                 style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
               >
@@ -957,8 +957,8 @@ ${kp.title}${optsStr}
                               {children}
                             </pre>
                           ),
-                          ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 space-y-0.5">{children}</ol>,
+                          ul: ({ children }) => <ul className="list-disc ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal ml-3 mb-1 last:mb-0 gap-y-0.5">{children}</ol>,
                           li: ({ children }) => <li className="leading-snug">{children}</li>,
                           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                           em: ({ children }) => <em>{children}</em>,
@@ -971,9 +971,9 @@ ${kp.title}${optsStr}
                     <div className="flex items-center gap-1 py-1">
                       {[0, 1, 2].map(i => (
                         <span
-                          key={i}
+                          key={`orb-${i}`}
                           className={cn(
-                            "block w-1.5 h-1.5 rounded-full animate-bounce-dot",
+                            "block size-1.5 rounded-full animate-bounce-dot",
                             i === 0 ? "animate-bounce-dot-0" : i === 1 ? "animate-bounce-dot-1" : "animate-bounce-dot-2"
                           )}
                           style={{ background: "hsl(var(--muted-foreground))" }}
@@ -1013,7 +1013,7 @@ ${kp.title}${optsStr}
               <button
                 type="submit"
                 disabled={!inputValue.trim() || isStreaming}
-                className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="size-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

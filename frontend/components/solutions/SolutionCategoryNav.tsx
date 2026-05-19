@@ -25,7 +25,7 @@ export function SolutionCategoryNav({ activeCategory, onCategoryChange, lang = '
       <h2 className="text-sm font-medium text-muted-foreground mb-3 px-3">
         {t('分类', 'Categories')}
       </h2>
-      <div className="space-y-1">
+      <div className="gap-y-1">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon
           const isActive = activeCategory === cat.key
@@ -40,7 +40,7 @@ export function SolutionCategoryNav({ activeCategory, onCategoryChange, lang = '
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="size-4" />
               <span>{t(cat.zh, cat.en)}</span>
             </button>
           )

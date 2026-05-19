@@ -182,7 +182,7 @@ function FeedbackToast({
             animate={{ scale: 1 }}
             transition={{ delay: 0.1, type: 'spring' }}
           >
-            <Icon className={cn('w-5 h-5', config.iconClass)} />
+            <Icon className={cn('size-5', config.iconClass)} />
           </motion.div>
           <div>
             <p className="font-medium">{message}</p>
@@ -214,13 +214,13 @@ export function LoadingPlaceholder({
     return (
       <div className={cn("bg-card rounded-2xl border border-border p-5", className)}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-muted rounded-xl animate-pulse" />
+          <div className="size-10 bg-muted rounded-xl animate-pulse" />
           <div className="flex-1">
             <div className="h-4 bg-muted rounded w-1/2 mb-2 animate-pulse" />
             <div className="h-3 bg-muted rounded w-1/4 animate-pulse" />
           </div>
         </div>
-        <div className="space-y-2">
+        <div className="gap-y-2">
           <div className="h-3 bg-muted rounded w-full animate-pulse" />
           <div className="h-3 bg-muted rounded w-4/5 animate-pulse" />
           <div className="h-3 bg-muted rounded w-3/5 animate-pulse" />
@@ -231,7 +231,7 @@ export function LoadingPlaceholder({
 
   if (type === 'text') {
     return (
-      <div className={cn("space-y-2", className)}>
+      <div className={cn("gap-y-2", className)}>
         <div className="h-4 bg-muted rounded w-full animate-pulse" />
         <div className="h-4 bg-muted rounded w-4/5 animate-pulse" />
         <div className="h-4 bg-muted rounded w-3/5 animate-pulse" />
@@ -241,10 +241,10 @@ export function LoadingPlaceholder({
 
   if (type === 'list') {
     return (
-      <div className={cn("space-y-3", className)}>
+      <div className={cn("gap-y-3", className)}>
         {[1, 2, 3].map(i => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-muted rounded-full animate-pulse" />
+          <div key={`feedback-${i}`} className="flex items-center gap-3">
+            <div className="size-10 bg-muted rounded-full animate-pulse" />
             <div className="flex-1">
               <div className="h-4 bg-muted rounded w-1/3 mb-2 animate-pulse" />
               <div className="h-3 bg-muted rounded w-1/2 animate-pulse" />
@@ -259,13 +259,13 @@ export function LoadingPlaceholder({
     return (
       <div className={cn("bg-card rounded-xl border border-border overflow-hidden", className)}>
         <div className="flex items-center gap-2 p-3 border-b border-border bg-muted/30">
-          <div className="w-3 h-3 bg-muted rounded-full animate-pulse" />
-          <div className="w-3 h-3 bg-muted rounded-full animate-pulse" />
-          <div className="w-3 h-3 bg-muted rounded-full animate-pulse" />
+          <div className="size-3 bg-muted rounded-full animate-pulse" />
+          <div className="size-3 bg-muted rounded-full animate-pulse" />
+          <div className="size-3 bg-muted rounded-full animate-pulse" />
         </div>
-        <div className="p-4 space-y-2">
+        <div className="p-4 gap-y-2">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="flex gap-4">
+            <div key={`feedback-${i}`} className="flex gap-4">
               <div className="w-6 h-4 bg-muted animate-pulse" />
               <div className={cn(
                 "h-4 bg-muted animate-pulse",
@@ -282,7 +282,7 @@ export function LoadingPlaceholder({
     return (
       <div className={cn("bg-card rounded-2xl border border-border p-5", className)}>
         <div className="flex items-center justify-between mb-3">
-          <div className="w-10 h-10 bg-muted rounded-xl animate-pulse" />
+          <div className="size-10 bg-muted rounded-xl animate-pulse" />
           <div className="w-16 h-5 bg-muted rounded-full animate-pulse" />
         </div>
         <div className="h-8 w-24 bg-muted rounded mb-2 animate-pulse" />
@@ -314,7 +314,7 @@ export function LoadingOverlay({
           className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
         >
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <Loader2 className="size-8 animate-spin text-primary" />
             <p className="text-muted-foreground">{message}</p>
           </div>
         </motion.div>
@@ -360,9 +360,9 @@ export function EmptyState({
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: 'spring' }}
-          className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mb-6"
+          className="size-20 bg-muted rounded-2xl flex items-center justify-center mb-6"
         >
-          <Icon className="w-10 h-10 text-muted-foreground" />
+          <Icon className="size-10 text-muted-foreground" />
         </motion.div>
       )}
 
@@ -397,7 +397,7 @@ export function InlineLoading({
 }) {
   return (
     <div className={cn("flex items-center justify-center gap-2 py-8", className)}>
-      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+      <Loader2 className="size-5 animate-spin text-primary" />
       <span className="text-muted-foreground">{message}</span>
     </div>
   )
@@ -408,6 +408,6 @@ export function InlineLoading({
  */
 export function ButtonLoading({ className }: { className?: string }) {
   return (
-    <Loader2 className={cn("w-4 h-4 animate-spin", className)} />
+    <Loader2 className={cn("size-4 animate-spin", className)} />
   )
 }

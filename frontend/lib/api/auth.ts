@@ -16,7 +16,7 @@ import { postPublic, get, API_BASE_URL } from './client'
 
 export function getStoredUser(): User | null {
   if (typeof window === 'undefined') return null
-  const userStr = localStorage.getItem('user')
+  const userStr = localStorage.getItem('user:v1')
   if (!userStr) return null
   try {
     return JSON.parse(userStr) as User
@@ -27,13 +27,13 @@ export function getStoredUser(): User | null {
 
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('token')
+  return localStorage.getItem('token:v1')
 }
 
 export function logout(): void {
   if (typeof window === 'undefined') return
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+  localStorage.removeItem('token:v1')
+  localStorage.removeItem('user:v1')
 }
 
 export function isAuthenticated(): boolean {
@@ -56,8 +56,8 @@ export async function register(
   } as UserCreate)
 
   // Store token in localStorage
-  localStorage.setItem('token', data.access_token)
-  localStorage.setItem('user', JSON.stringify(data.user))
+  localStorage.setItem('token:v1', data.access_token)
+  localStorage.setItem('user:v1', JSON.stringify(data.user))
 
   return data
 }
@@ -74,8 +74,8 @@ export async function login(
   } as UserLogin)
 
   // Store token in localStorage
-  localStorage.setItem('token', data.access_token)
-  localStorage.setItem('user', JSON.stringify(data.user))
+  localStorage.setItem('token:v1', data.access_token)
+  localStorage.setItem('user:v1', JSON.stringify(data.user))
 
   return data
 }

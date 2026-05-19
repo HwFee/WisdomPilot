@@ -19,24 +19,24 @@ export function ExerciseSkeleton({ index = 0, showNumber = true }: ExerciseSkele
       {/* 题目序号和类型标签 */}
       <div className="flex items-center gap-3 mb-4">
         {showNumber && (
-          <div className="w-8 h-8 bg-muted rounded-lg" />
+          <div className="size-8 bg-muted rounded-lg" />
         )}
         <div className="w-16 h-6 bg-muted rounded-lg" />
         <div className="w-24 h-4 bg-muted rounded-full" />
       </div>
 
       {/* 题目文本 */}
-      <div className="space-y-2 mb-6">
+      <div className="gap-y-2 mb-6">
         <div className="h-5 bg-muted rounded w-full" />
         <div className="h-5 bg-muted rounded w-4/5" />
         <div className="h-5 bg-muted rounded w-3/5" />
       </div>
 
       {/* 选项骨架 */}
-      <div className="space-y-3">
+      <div className="gap-y-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-            <div className="w-8 h-8 bg-muted rounded-lg flex-shrink-0" />
+          <div key={`skeleton-${i}`} className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+            <div className="size-8 bg-muted rounded-lg flex-shrink-0" />
             <div className="flex-1 h-4 bg-muted rounded" />
           </div>
         ))}
@@ -61,7 +61,7 @@ interface ExerciseSkeletonListProps {
 
 export function ExerciseSkeletonList({ count, startIndex = 0 }: ExerciseSkeletonListProps) {
   return (
-    <div className="space-y-4">
+    <div className="gap-y-4">
       {Array.from({ length: count }).map((_, i) => (
         <ExerciseSkeleton key={startIndex + i} index={startIndex + i} />
       ))}
@@ -79,7 +79,7 @@ export function GeneratingIndicator({ progress, total }: { progress: number; tot
       animate={{ opacity: 1, y: 0 }}
       className="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4"
     >
-      <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div className="size-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
       <div className="flex-1">
         <p className="text-sm font-medium text-amber-600">
           题目生成中...

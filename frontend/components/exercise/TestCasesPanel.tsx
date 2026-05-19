@@ -68,14 +68,14 @@ export function TestCasesPanel({
         <div className="flex items-center gap-2">
           {allPassed ? (
             <>
-              <CheckCircle className="w-5 h-5 text-[#52C41A]" />
+              <CheckCircle className="size-5 text-[#52C41A]" />
               <span className="font-bold text-[#52C41A] text-lg">
                 {t('通过', 'Accepted')}
               </span>
             </>
           ) : (
             <>
-              <XCircle className="w-5 h-5 text-[#E74C3C]" />
+              <XCircle className="size-5 text-[#E74C3C]" />
               <span className="font-bold text-[#E74C3C] text-lg">
                 {t('答案错误', 'Wrong Answer')}
               </span>
@@ -93,7 +93,7 @@ export function TestCasesPanel({
           const isExpanded = expandedCases.has(index)
 
           return (
-            <div key={index} className={`test-case-item ${result.passed ? 'passed' : 'failed'}`}>
+            <div key={`case-${index}`} className={`test-case-item ${result.passed ? 'passed' : 'failed'}`}>
               {/* Header */}
               <button type="button"
                 onClick={() => toggleCase(index)}
@@ -101,9 +101,9 @@ export function TestCasesPanel({
               >
                 <div className="flex items-center gap-3">
                   {result.passed ? (
-                    <CheckCircle className="w-4 h-4 text-[#52C41A]" />
+                    <CheckCircle className="size-4 text-[#52C41A]" />
                   ) : (
-                    <XCircle className="w-4 h-4 text-[#E74C3C]" />
+                    <XCircle className="size-4 text-[#E74C3C]" />
                   )}
                   <span className="text-sm font-medium text-[#303133]">
                     {t('测试点', 'Test Case')} {index + 1}
@@ -128,9 +128,9 @@ export function TestCasesPanel({
                     {result.passed ? t('通过', 'Passed') : t('失败', 'Failed')}
                   </span>
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-[#909399]" />
+                    <ChevronUp className="size-4 text-[#909399]" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-[#909399]" />
+                    <ChevronDown className="size-4 text-[#909399]" />
                   )}
                 </div>
               </button>
@@ -150,9 +150,9 @@ export function TestCasesPanel({
                           className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                         >
                           {copied === `input-${index}` ? (
-                            <Check className="w-3.5 h-3.5 text-[#52C41A]" />
+                            <Check className="size-3.5 text-[#52C41A]" />
                           ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="size-3.5" />
                           )}
                         </button>
                         {onRunTestCase && (
@@ -161,7 +161,7 @@ export function TestCasesPanel({
                             className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                             title={t('用此输入运行', 'Run with this input')}
                           >
-                            <Play className="w-3.5 h-3.5" />
+                            <Play className="size-3.5" />
                           </button>
                         )}
                       </div>
@@ -184,9 +184,9 @@ export function TestCasesPanel({
                         className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                       >
                         {copied === `expected-${index}` ? (
-                          <Check className="w-3.5 h-3.5 text-[#52C41A]" />
+                          <Check className="size-3.5 text-[#52C41A]" />
                         ) : (
-                          <Copy className="w-3.5 h-3.5" />
+                          <Copy className="size-3.5" />
                         )}
                       </button>
                     </div>
@@ -209,9 +209,9 @@ export function TestCasesPanel({
                           className="p-1 text-[#909399] hover:text-[#3498DB] transition-colors"
                         >
                           {copied === `actual-${index}` ? (
-                            <Check className="w-3.5 h-3.5 text-[#52C41A]" />
+                            <Check className="size-3.5 text-[#52C41A]" />
                           ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="size-3.5" />
                           )}
                         </button>
                       </div>

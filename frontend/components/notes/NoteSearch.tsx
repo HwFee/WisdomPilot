@@ -53,7 +53,7 @@ export function NoteSearch({
 
   return (
     <div className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
       <input
         type="text"
         value={query}
@@ -66,12 +66,12 @@ export function NoteSearch({
           onClick={() => setQuery('')}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-muted rounded-lg"
         >
-          <X className="w-5 h-5 text-muted-foreground" />
+          <X className="size-5 text-muted-foreground" />
         </button>
       )}
       {isSearching && (
         <div className="absolute right-12 top-1/2 -translate-y-1/2">
-          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="size-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
     </div>

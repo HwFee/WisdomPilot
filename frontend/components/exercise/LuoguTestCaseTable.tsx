@@ -31,7 +31,7 @@ export function LuoguTestCaseTable({
     if (isRunning && index >= results.length) {
       return (
         <span className="status-pending">
-          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+          <Loader2 className="size-3.5 mr-1 animate-spin" />
           评测中
         </span>
       )
@@ -40,7 +40,7 @@ export function LuoguTestCaseTable({
     if (result.passed) {
       return (
         <span className="status-ac">
-          <CheckCircle className="w-3.5 h-3.5 mr-1" />
+          <CheckCircle className="size-3.5 mr-1" />
           AC
         </span>
       )
@@ -60,7 +60,7 @@ export function LuoguTestCaseTable({
 
     return (
       <span className={config.className}>
-        <Icon className="w-3.5 h-3.5 mr-1" />
+        <Icon className="size-3.5 mr-1" />
         {config.label}
       </span>
     )
@@ -85,17 +85,17 @@ export function LuoguTestCaseTable({
         <div className="flex items-center gap-2">
           {isRunning ? (
             <>
-              <Loader2 className="w-5 h-5 text-[#3498DB] animate-spin" />
+              <Loader2 className="size-5 text-[#3498DB] animate-spin" />
               <span className="font-semibold text-[#3498DB]">评测中...</span>
             </>
           ) : allPassed ? (
             <>
-              <CheckCircle className="w-5 h-5 text-[#52C41A]" />
+              <CheckCircle className="size-5 text-[#52C41A]" />
               <span className="font-semibold text-[#52C41A]">通过</span>
             </>
           ) : (
             <>
-              <XCircle className="w-5 h-5 text-[#E74C3C]" />
+              <XCircle className="size-5 text-[#E74C3C]" />
               <span className="font-semibold text-[#E74C3C]">未通过</span>
             </>
           )}
@@ -117,7 +117,7 @@ export function LuoguTestCaseTable({
         </thead>
         <tbody>
           {results.map((result, index) => (
-            <tr key={index} className={result.passed ? 'bg-[rgba(82,196,26,0.02)]' : 'bg-[rgba(231,76,60,0.02)]'}>
+            <tr key={`case-${index}`} className={result.passed ? 'bg-[rgba(82,196,26,0.02)]' : 'bg-[rgba(231,76,60,0.02)]'}>
               <td className="font-medium text-[#303133]">#{index + 1}</td>
               <td>{getStatusBadge(result, index)}</td>
               <td className="text-[#606266] font-mono text-sm">
@@ -146,7 +146,7 @@ export function LuoguTestCasesSummary({ passedCount, totalCount }: TestCasesSumm
   return (
     <div className="flex items-center gap-3 px-3 py-2 bg-[#F5F7FA] rounded-lg">
       <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${passedCount === totalCount ? 'bg-[#52C41A]' : 'bg-[#E74C3C]'}`} />
+        <div className={`size-2 rounded-full ${passedCount === totalCount ? 'bg-[#52C41A]' : 'bg-[#E74C3C]'}`} />
         <span className="text-sm font-medium text-[#606266]">
           {passedCount}/{totalCount}
         </span>

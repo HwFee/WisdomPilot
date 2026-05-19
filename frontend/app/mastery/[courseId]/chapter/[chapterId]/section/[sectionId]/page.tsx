@@ -62,7 +62,7 @@ function MermaidBlock({ code }: { code: string }) {
     <div
       ref={ref}
       className="mermaid-diagram my-3 flex justify-center bg-gray-800/50 rounded-lg p-4 overflow-x-auto"
-      dangerouslySetInnerHTML={{ __html: svg }}
+      dangerouslySetInnerHTML={{ __html: svg }} /* eslint-disable-line react/no-danger */
     />
   )
 }
@@ -70,7 +70,7 @@ function MermaidBlock({ code }: { code: string }) {
 
 export default function SectionLearningPage() {
   const params = useParams()
-  const router = useRouter()
+  const { push } = useRouter()
   const courseId = parseInt(params.courseId as string)
   const chapterId = parseInt(params.chapterId as string)
   const sectionId = parseInt(params.sectionId as string)
@@ -165,7 +165,7 @@ export default function SectionLearningPage() {
   const loadSection = async () => {
     const token = getStoredToken()
     if (!token) {
-      router.push('/login')
+      push('/login')
       return
     }
 
@@ -202,7 +202,7 @@ export default function SectionLearningPage() {
         fromSection: sectionId
       }
       try {
-        localStorage.setItem('masterySession', JSON.stringify(sessionData))
+        localStorage.setItem('masterySession:v1', JSON.stringify(sessionData))
       } catch (e) {
         console.warn('Failed to save session to localStorage:', e)
       }
@@ -217,7 +217,7 @@ export default function SectionLearningPage() {
 
       // 跳转到主页面触发答题状态，带上章节和小节信息
       // 主页面会检测 chapter 参数并自动进入答题状态
-      router.push(`/mastery/${courseId}?chapter=${chapterId}&section=${sectionId}&fromSection=${sectionId}&continueSession=1`)
+      push(`/mastery/${courseId}?chapter=${chapterId}&section=${sectionId}&fromSection=${sectionId}&continueSession=1`)
     } catch {
       // Progress save failed - continue anyway
     } finally {
@@ -227,7 +227,7 @@ export default function SectionLearningPage() {
 
   const handleBack = () => {
     // 返回小节选择页面
-    router.push(`/mastery/${courseId}/chapter/${chapterId}`)
+    push(`/mastery/${courseId}/chapter/${chapterId}`)
   }
 
   const toggleKp = (kpId: number) => {
@@ -271,10 +271,10 @@ export default function SectionLearningPage() {
         {/* 知识点标题栏 - 始终可见 */}
         <button type="button"
           onClick={() => toggleKp(kp.id)}
-          className="w-full px-4 py-4 flex items-center gap-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          className="w-full p-4 flex items-center gap-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
         >
           {/* 序号 */}
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
+          <div className="flex-shrink-0 size-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
             {index + 1}
           </div>
 
@@ -293,7 +293,7 @@ export default function SectionLearningPage() {
 
           {/* 展开/收起图标 */}
           <div className="flex-shrink-0 text-muted-foreground">
-            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            {isExpanded ? <ChevronUp className="size-5" /> : <ChevronDown className="size-5" />}
           </div>
         </button>
 
@@ -304,7 +304,7 @@ export default function SectionLearningPage() {
             {kp.content && (
               <div className="mt-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="w-4 h-4 text-primary" />
+                  <BookOpen className="size-4 text-primary" />
                   <span className="font-medium text-foreground">讲解</span>
                 </div>
                 <div className="text-muted-foreground leading-relaxed pl-6 markdown-content">
@@ -345,11 +345,11 @@ export default function SectionLearningPage() {
                           </pre>
                         )
                       },
-                      h1: ({ children }) => <h1 className="text-xl font-bold text-foreground mb-2 mt-4">{children}</h1>,
+                      h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
                       h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3">{children}</h2>,
                       h3: ({ children }) => <h3 className="text-base font-medium text-foreground mb-1 mt-2">{children}</h3>,
-                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                      ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                       li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
                       p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
                       blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/50 pl-4 italic my-2">{children}</blockquote>,
@@ -376,7 +376,7 @@ export default function SectionLearningPage() {
             {kp.code_example && (
               <div className="mt-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Code className="w-4 h-4 text-primary" />
+                  <Code className="size-4 text-primary" />
                   <span className="font-medium text-foreground">代码示例</span>
                 </div>
                 <div className="pl-6">
@@ -427,7 +427,7 @@ export default function SectionLearningPage() {
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg hover:bg-primary/20 transition-colors border border-primary/20"
                   >
-                    <Terminal className="w-3.5 h-3.5" />
+                    <Terminal className="size-3.5" />
                     在线运行
                   </button>
                 </div>
@@ -438,12 +438,12 @@ export default function SectionLearningPage() {
             {kp.tips && kp.tips.length > 0 && (
               <div className="mt-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Lightbulb className="w-4 h-4 text-amber-500" />
+                  <Lightbulb className="size-4 text-amber-500" />
                   <span className="font-medium text-foreground">学习提示</span>
                 </div>
-                <ul className="space-y-1 pl-6">
+                <ul className="gap-y-1 pl-6">
                   {kp.tips.map((tip, i) => (
-                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                    <li key={`rec-${i}`} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-amber-500 mt-1">•</span>
                       <span>{tip}</span>
                     </li>
@@ -456,12 +456,12 @@ export default function SectionLearningPage() {
             {kp.common_mistakes && kp.common_mistakes.length > 0 && (
               <div className="mt-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <AlertTriangle className="size-4 text-red-500" />
                   <span className="font-medium text-foreground">常见错误</span>
                 </div>
-                <ul className="space-y-1 pl-6">
+                <ul className="gap-y-1 pl-6">
                   {kp.common_mistakes.map((mistake, i) => (
-                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                    <li key={`rec-${i}`} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-red-500 mt-1">•</span>
                       <span>{mistake}</span>
                     </li>
@@ -478,7 +478,7 @@ export default function SectionLearningPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -501,7 +501,7 @@ export default function SectionLearningPage() {
       {/* Header */}
       <header className={cn("sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b", activeRunnerKpId !== null && "flex-shrink-0")}>
         <div className={cn(
-          "px-4 py-4",
+          "p-4",
           activeRunnerKpId !== null ? "w-full" : "max-w-4xl mx-auto"
         )}>
           <div className="flex items-center gap-4">
@@ -509,7 +509,7 @@ export default function SectionLearningPage() {
               onClick={handleBack}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="size-5" />
             </button>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-semibold text-foreground truncate">
@@ -517,12 +517,12 @@ export default function SectionLearningPage() {
               </h1>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className="size-3.5" />
                   {section.estimated_minutes} 分钟
                 </span>
                 {section.is_completed && (
                   <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                    <CheckCircle className="w-3.5 h-3.5" />
+                    <CheckCircle className="size-3.5" />
                     已完成
                   </span>
                 )}
@@ -537,20 +537,20 @@ export default function SectionLearningPage() {
         <main className={cn(
           "transition-all duration-300 ease-in-out",
           activeRunnerKpId !== null
-            ? "w-2/5 overflow-y-auto px-4 py-4"
+            ? "w-2/5 overflow-y-auto p-4"
             : "max-w-4xl mx-auto px-4 py-6 pb-32"
         )}>
         {/* Learning Objectives */}
         {section.learning_objectives && section.learning_objectives.length > 0 && (
           <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 mb-6">
             <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-primary" />
+              <BookOpen className="size-4 text-primary" />
               学习目标
             </h2>
-            <ul className="space-y-2">
+            <ul className="gap-y-2">
               {section.learning_objectives.map((objective, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                <li key={`rec-${index}`} className="flex items-start gap-2 text-sm">
+                  <CheckCircle className="size-4 text-primary flex-shrink-0 mt-0.5" />
                   <span>{objective}</span>
                 </li>
               ))}
@@ -567,10 +567,10 @@ export default function SectionLearningPage() {
 
         {/* Knowledge Points Section */}
         {section.knowledge_points && section.knowledge_points.length > 0 ? (
-          <div className="space-y-4">
+          <div className="gap-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-foreground flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" />
+                <BookOpen className="size-5 text-primary" />
                 知识点 ({section.knowledge_points.length})
               </h2>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -578,7 +578,7 @@ export default function SectionLearningPage() {
                 拖拽 AI 助手到知识点上可针对性提问
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="gap-y-3">
               {section.knowledge_points.map((kp, index) => renderKnowledgePoint(kp, index))}
             </div>
           </div>
@@ -602,7 +602,7 @@ export default function SectionLearningPage() {
               </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
-                <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <BookOpen className="size-12 mx-auto mb-4 opacity-50" />
                 <p>内容正在编写中...</p>
               </div>
             )}
@@ -666,19 +666,19 @@ export default function SectionLearningPage() {
       {/* Bottom Action Bar */}
       {activeRunnerKpId === null && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t">
-          <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="max-w-4xl mx-auto p-4">
             <button type="button"
               onClick={handleStartQuiz}
               disabled={saving}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/80 text-white hover:shadow-lg transition-all disabled:opacity-70"
             >
               {saving ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="size-5 animate-spin" />
               ) : (
                 <>
-                  <Play className="w-5 h-5" />
+                  <Play className="size-5" />
                   小节测试
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="size-4" />
                 </>
               )}
             </button>
