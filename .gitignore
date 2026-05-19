@@ -85,3 +85,7 @@ frontend/package-lock.json
 # SQLite temp files
 *.db-shm
 *.db-wal
+
+# Agent runtime logs
+.agents/
+.run_logs/

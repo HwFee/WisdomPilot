@@ -28,9 +28,7 @@ RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 复制应用代码
 COPY ./app ./app
-COPY init_db.py .
-COPY alembic.ini .
-COPY ./migrations ./migrations
+COPY ./scripts ./scripts
 
 # 创建非 root 用户和数据目录
 RUN addgroup --system --gid 1001 appgroup && \
