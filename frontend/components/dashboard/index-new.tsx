@@ -74,7 +74,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [lang, setLang] = useState<'zh' | 'en'>('zh')
   const hasFetched = useRef(false)
-  const isMounted = useRef(true)
 
   // Course progress state
   const [coursesProgress, setCoursesProgress] = useState<CourseProgress[]>([])
@@ -105,7 +104,7 @@ export default function DashboardPage() {
   })
 
   // Knowledge points - now from real API
-  const [knowledgePoints, setKnowledgePoints] = useState<KnowledgePoint[]>([])
+  const knowledgePointsRef = useRef<KnowledgePoint[]>([])
 
   // 最近学习信息
   const [recentLearning, setRecentLearning] = useState<RecentLearning | null>(null)
@@ -120,16 +119,10 @@ export default function DashboardPage() {
     time: 0,
   })
 
-  useEffect(() => {
-    isMounted.current = true
-    return () => { isMounted.current = false }
-  }, [])
-
   const fetchData = useCallback(async (token: string) => {
     try {
       // Fetch user course progress (new API)
       const courseProgressData = await getUserCourseProgress(token)
-      if (!isMounted.current) return
       setCoursesProgress(courseProgressData.courses)
 
       // Load saved course from localStorage or set default
@@ -155,7 +148,6 @@ export default function DashboardPage() {
 
       // Fetch profile
       const profileResult = await getProfile(token).catch(() => null)
-      if (!isMounted.current) return
       setProfile(profileResult)
 
       // Fetch review stats
@@ -178,7 +170,6 @@ export default function DashboardPage() {
         console.error('[Dashboard] Activities fetch error:', err)
         activitiesResponse = { activities: [] }
       }
-      if (!isMounted.current) return
       setActivities(activitiesResponse.activities || [])
 
       // Check checkin status
@@ -217,12 +208,9 @@ export default function DashboardPage() {
 
     } catch (err) {
       // 记录错误并展示给用户，避免无限 loading
-      if (isMounted.current) {
-        setIsLoading(false)
-      }
+      setIsLoading(false)
       console.error("[Dashboard] fetchData failed:", err)
     } finally {
-      if (!isMounted.current) return
       setIsLoading(false)
     }
   }, [])
@@ -271,14 +259,26 @@ export default function DashboardPage() {
           mastery: ch.mastery_score || 0,
           courseId: courseId,
         }))
-        setKnowledgePoints(kps)
+        knowledgePointsRef.current = kps
       } else {
-        setKnowledgePoints([])
+        knowledgePointsRef.current = []
       }
     } catch {
-      setKnowledgePoints([])
+      knowledgePointsRef.current = []
     }
   }, [])
+
+  // Refs to avoid effect re-subscription
+  const fetchDataRef = useRef(fetchData)
+  fetchDataRef.current = fetchData
+  const fetchLeaderboardsRef = useRef(fetchLeaderboards)
+  fetchLeaderboardsRef.current = fetchLeaderboards
+  const fetchKnowledgePointsRef = useRef(fetchKnowledgePoints)
+  fetchKnowledgePointsRef.current = fetchKnowledgePoints
+  const fetchRecentArenaExercisesRef = useRef(fetchRecentArenaExercises)
+  fetchRecentArenaExercisesRef.current = fetchRecentArenaExercises
+  const currentCourseIdRef = useRef(currentCourseId)
+  currentCourseIdRef.current = currentCourseId
 
   // Fetch leaderboards and knowledge when course changes
   useEffect(() => {
@@ -308,19 +308,19 @@ export default function DashboardPage() {
     const handleRefresh = () => {
       const token = getStoredToken()
       if (token) {
-        fetchData(token)
+        fetchDataRef.current(token)
         // 同时刷新排行榜、知识点和最近练习
-        if (currentCourseId) {
-          fetchLeaderboards(currentCourseId, token)
-          fetchKnowledgePoints(currentCourseId, token)
-          fetchRecentArenaExercises(token)
+        if (currentCourseIdRef.current) {
+          fetchLeaderboardsRef.current(currentCourseIdRef.current, token)
+          fetchKnowledgePointsRef.current(currentCourseIdRef.current, token)
+          fetchRecentArenaExercisesRef.current(token)
         }
       }
     }
 
     window.addEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh)
     return () => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefresh)
-  }, [fetchData, currentCourseId, fetchLeaderboards, fetchKnowledgePoints, fetchRecentArenaExercises])
+  }, [])
 
   // 保底机制：页面可见时刷新数据（用户返回仪表盘时）
   useEffect(() => {
@@ -328,11 +328,11 @@ export default function DashboardPage() {
       if (document.visibilityState === 'visible') {
         const token = getStoredToken()
         if (token) {
-          fetchData(token)
-          if (currentCourseId) {
-            fetchLeaderboards(currentCourseId, token)
-            fetchKnowledgePoints(currentCourseId, token)
-            fetchRecentArenaExercises(token)
+          fetchDataRef.current(token)
+          if (currentCourseIdRef.current) {
+            fetchLeaderboardsRef.current(currentCourseIdRef.current, token)
+            fetchKnowledgePointsRef.current(currentCourseIdRef.current, token)
+            fetchRecentArenaExercisesRef.current(token)
           }
         }
       }
@@ -340,7 +340,7 @@ export default function DashboardPage() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [fetchData, currentCourseId, fetchLeaderboards, fetchKnowledgePoints, fetchRecentArenaExercises])
+  }, [])
 
   const handleLogout = () => { logout(); push('/login') }
 

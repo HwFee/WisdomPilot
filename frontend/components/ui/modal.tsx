@@ -7,7 +7,7 @@
  */
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { X } from "lucide-react"
 
@@ -45,18 +45,24 @@ function Modal({
   overlayClassName,
 }: ModalProps) {
   // ESC 键关闭
+  const onCloseEvent = React.useEffectEvent(() => {
+    onClose()
+  })
+  const openRef = React.useRef(open)
+  openRef.current = open
+
   React.useEffect(() => {
     if (!closeOnEscape) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
-        onClose()
+      if (e.key === 'Escape' && openRef.current) {
+        onCloseEvent()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open, onClose, closeOnEscape])
+  }, [closeOnEscape])
 
   // 禁止背景滚动
   React.useEffect(() => {
@@ -75,7 +81,8 @@ function Modal({
       {open && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           {/* 遮罩层 - 玻璃态效果 */}
-          <motion.div
+          <LazyMotion features={domAnimation}>
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -88,7 +95,7 @@ function Modal({
           />
 
           {/* 模态框内容 - 玻璃态 + 渐变边框 */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -113,7 +120,8 @@ function Modal({
               </button>
             )}
             {children}
-          </motion.div>
+          </m.div>
+          </LazyMotion>
         </div>
       )}
     </AnimatePresence>

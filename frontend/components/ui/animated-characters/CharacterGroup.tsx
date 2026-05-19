@@ -10,10 +10,10 @@ interface CharacterGroupProps {
 }
 
 export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: CharacterGroupProps) {
-  const [mouseX, setMouseX] = useState<number>(0)
-  const [mouseY, setMouseY] = useState<number>(0)
-  const [isPurpleBlinking, setIsPurpleBlinking] = useState(false)
-  const [isBlackBlinking, setIsBlackBlinking] = useState(false)
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [blinkState, setBlinkState] = useState<{ purple: boolean; black: boolean }>({ purple: false, black: false })
+  const mouseX = mousePos.x
+  const mouseY = mousePos.y
 
   const purpleRef = useRef<HTMLDivElement>(null)
   const blackRef = useRef<HTMLDivElement>(null)
@@ -22,52 +22,37 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMouseX(e.clientX)
-      setMouseY(e.clientY)
+      setMousePos({ x: e.clientX, y: e.clientY })
     }
 
     window.addEventListener('mousemove', handleMouseMove)
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [])
 
-  // Blinking effect for purple character
+  // Blinking effect for both characters
   useEffect(() => {
-    const getRandomBlinkInterval = () => Math.random() * 4000 + 3000
+    const timeouts: ReturnType<typeof setTimeout>[] = []
 
-    const scheduleBlink = () => {
-      const blinkTimeout = setTimeout(() => {
-        setIsPurpleBlinking(true)
-        setTimeout(() => {
-          setIsPurpleBlinking(false)
-          scheduleBlink()
-        }, 150)
-      }, getRandomBlinkInterval())
-
-      return blinkTimeout
+    const queueBlink = (char: 'purple' | 'black', on: boolean, delay: number) => {
+      const t = setTimeout(() => {
+        setBlinkState(prev => ({ ...prev, [char]: on }))
+        if (on) {
+          queueBlink(char, false, 150)
+        } else {
+          queueBlink(char, true, Math.random() * 4000 + 3000)
+        }
+      }, delay)
+      timeouts.push(t)
     }
 
-    const timeout = scheduleBlink()
-    return () => clearTimeout(timeout)
-  }, [])
+    queueBlink('purple', true, 3000)
+    queueBlink('black', true, 3500)
 
-  // Blinking effect for black character
-  useEffect(() => {
-    const getRandomBlinkInterval = () => Math.random() * 4000 + 3000
-
-    const scheduleBlink = () => {
-      const blinkTimeout = setTimeout(() => {
-        setIsBlackBlinking(true)
-        setTimeout(() => {
-          setIsBlackBlinking(false)
-          scheduleBlink()
-        }, 150)
-      }, getRandomBlinkInterval())
-
-      return blinkTimeout
+    return () => {
+      for (const id of timeouts) {
+        clearTimeout(id)
+      }
     }
-
-    const timeout = scheduleBlink()
-    return () => clearTimeout(timeout)
   }, [])
 
   const calculatePosition = (ref: React.RefObject<HTMLDivElement | null>) => {
@@ -93,22 +78,15 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
   const orangePos = calculatePosition(orangeRef)
 
   return (
-    <div className="relative" style={{ width: '550px', height: '400px' }}>
+    <div className="relative w-[550px] h-[400px]">
       {/* Purple tall rectangle character - Back layer */}
       <div
         ref={purpleRef}
-        className="absolute bottom-0 transition-all duration-500 ease-out"
+        className="absolute bottom-0 transition-all duration-500 ease-out left-[70px] w-[180px] h-[400px] bg-[#6C3FF5] rounded-t-[10px] z-[1] origin-bottom"
         style={{
-          left: '70px',
-          width: '180px',
-          height: '400px',
-          backgroundColor: '#6C3FF5',
-          borderRadius: '10px 10px 0 0',
-          zIndex: 1,
           transform: isLookingAway
             ? `translateX(-25px)`
             : `skewX(${purplePos.bodySkew || 0}deg)`,
-          transformOrigin: 'bottom center',
         }}
       >
         <div
@@ -124,7 +102,7 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
             maxDistance={5}
             eyeColor="white"
             pupilColor="#2D2D2D"
-            isBlinking={isPurpleBlinking}
+            isBlinking={blinkState.purple}
             forceLookX={isLookingAway ? -8 : undefined}
             forceLookY={isLookingAway ? 2 : undefined}
           />
@@ -134,7 +112,7 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
             maxDistance={5}
             eyeColor="white"
             pupilColor="#2D2D2D"
-            isBlinking={isPurpleBlinking}
+            isBlinking={blinkState.purple}
             forceLookX={isLookingAway ? -8 : undefined}
             forceLookY={isLookingAway ? 2 : undefined}
           />
@@ -144,18 +122,11 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
       {/* Black tall rectangle character - Middle layer */}
       <div
         ref={blackRef}
-        className="absolute bottom-0 transition-all duration-500 ease-out"
+        className="absolute bottom-0 transition-all duration-500 ease-out left-[240px] w-[120px] h-[310px] bg-[#2D2D2D] rounded-t-[8px] z-[2] origin-bottom"
         style={{
-          left: '240px',
-          width: '120px',
-          height: '310px',
-          backgroundColor: '#2D2D2D',
-          borderRadius: '8px 8px 0 0',
-          zIndex: 2,
           transform: isLookingAway
             ? `translateX(-15px)`
             : `skewX(${blackPos.bodySkew || 0}deg)`,
-          transformOrigin: 'bottom center',
         }}
       >
         <div
@@ -171,7 +142,7 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
             maxDistance={4}
             eyeColor="white"
             pupilColor="#2D2D2D"
-            isBlinking={isBlackBlinking}
+            isBlinking={blinkState.black}
             forceLookX={isLookingAway ? -7 : undefined}
             forceLookY={isLookingAway ? 2 : undefined}
           />
@@ -181,7 +152,7 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
             maxDistance={4}
             eyeColor="white"
             pupilColor="#2D2D2D"
-            isBlinking={isBlackBlinking}
+            isBlinking={blinkState.black}
             forceLookX={isLookingAway ? -7 : undefined}
             forceLookY={isLookingAway ? 2 : undefined}
           />
@@ -191,18 +162,11 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
       {/* Orange semi-circle character - Front left */}
       <div
         ref={orangeRef}
-        className="absolute bottom-0 transition-all duration-500 ease-out"
+        className="absolute bottom-0 transition-all duration-500 ease-out left-0 w-[240px] h-[200px] z-[3] bg-[#FF9B6B] rounded-t-[120px] origin-bottom"
         style={{
-          left: '0px',
-          width: '240px',
-          height: '200px',
-          zIndex: 3,
-          backgroundColor: '#FF9B6B',
-          borderRadius: '120px 120px 0 0',
           transform: isLookingAway
             ? `translateX(-10px)`
             : `skewX(${orangePos.bodySkew || 0}deg)`,
-          transformOrigin: 'bottom center',
         }}
       >
         <div
@@ -220,18 +184,11 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
       {/* Yellow tall rectangle character - Front right */}
       <div
         ref={yellowRef}
-        className="absolute bottom-0 transition-all duration-500 ease-out"
+        className="absolute bottom-0 transition-all duration-500 ease-out left-[310px] w-[140px] h-[230px] bg-[#E8D754] rounded-t-[70px] z-[4] origin-bottom"
         style={{
-          left: '310px',
-          width: '140px',
-          height: '230px',
-          backgroundColor: '#E8D754',
-          borderRadius: '70px 70px 0 0',
-          zIndex: 4,
           transform: isLookingAway
             ? `translateX(-20px)`
             : `skewX(${yellowPos.bodySkew || 0}deg)`,
-          transformOrigin: 'bottom center',
         }}
       >
         <div

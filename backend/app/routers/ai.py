@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_db, AsyncSessionLocal
 from app.utils.deps import get_current_active_user, get_current_admin_user
 from app.models.user import User
 from app.schemas.ai import (
@@ -189,124 +189,13 @@ async def test_ai_connection(
     request: TestConnectionRequest,
     current_user: Annotated[User, Depends(get_current_admin_user)],
 ):
-    """测试指定 Provider 的连接是否正常"""
+    """测试指定 Provider 的连接是否正常（仅支持 DeepSeek / SiliconFlow）"""
     import time
     import httpx
-    from app.services.ai import OllamaProvider, LMStudioProvider
 
     start = time.time()
 
-    if request.provider == "ollama":
-        address = request.local_base_url or OllamaProvider.DEFAULT_BASE_URL
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"{address}/v1/models")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    models = [m.get("id", "") for m in data.get("data", [])]
-                    model = models[0] if models else request.model or ""
-                    latency = int((time.time() - start) * 1000)
-                    return TestConnectionResponse(
-                        success=True,
-                        message="连接成功",
-                        model=model,
-                        address=address,
-                        latency_ms=latency,
-                    )
-                else:
-                    latency = int((time.time() - start) * 1000)
-                    return TestConnectionResponse(
-                        success=False,
-                        message=f"HTTP {resp.status_code}",
-                        address=address,
-                        latency_ms=latency,
-                    )
-        except Exception as e:
-            latency = int((time.time() - start) * 1000)
-            return TestConnectionResponse(
-                success=False,
-                message=f"连接失败: {e}",
-                address=address,
-                latency_ms=latency,
-            )
-
-    elif request.provider == "lmstudio":
-        address = request.local_base_url or LMStudioProvider.DEFAULT_BASE_URL
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"{address}/v1/models")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    models = [m.get("id", "") for m in data.get("data", [])]
-                    model = models[0] if models else request.model or ""
-                    latency = int((time.time() - start) * 1000)
-                    return TestConnectionResponse(
-                        success=True,
-                        message="连接成功",
-                        model=model,
-                        address=address,
-                        latency_ms=latency,
-                    )
-                else:
-                    latency = int((time.time() - start) * 1000)
-                    return TestConnectionResponse(
-                        success=False,
-                        message=f"HTTP {resp.status_code}",
-                        address=address,
-                        latency_ms=latency,
-                    )
-        except Exception as e:
-            latency = int((time.time() - start) * 1000)
-            return TestConnectionResponse(
-                success=False,
-                message=f"连接失败: {e}",
-                address=address,
-                latency_ms=latency,
-            )
-
-    elif request.provider == "minimax":
-        address = request.base_url or "https://api.minimaxi.com/anthropic"
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.post(
-                    f"{address}/v1/messages",
-                    headers={
-                        "x-api-key": request.api_key or get_settings().AI_API_KEY,
-                        "anthropic-version": "2023-06-01",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": request.model or "MiniMax-M2.7",
-                        "max_tokens": 1,
-                        "messages": [{"role": "user", "content": "hi"}],
-                    },
-                )
-                latency = int((time.time() - start) * 1000)
-                if resp.status_code == 200:
-                    return TestConnectionResponse(
-                        success=True,
-                        message="连接成功",
-                        model=request.model or "MiniMax-M2.7",
-                        address=address,
-                        latency_ms=latency,
-                    )
-                else:
-                    return TestConnectionResponse(
-                        success=False,
-                        message=f"HTTP {resp.status_code}: {resp.text[:100]}",
-                        address=address,
-                        latency_ms=latency,
-                    )
-        except Exception as e:
-            latency = int((time.time() - start) * 1000)
-            return TestConnectionResponse(
-                success=False,
-                message=f"连接失败: {e}",
-                address=address,
-                latency_ms=latency,
-            )
-
-    elif request.provider in ("deepseek", "siliconflow"):
+    if request.provider in ("deepseek", "siliconflow"):
         address = request.base_url or ("https://api.deepseek.com" if request.provider == "deepseek" else "https://api.siliconflow.cn/v1")
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -487,70 +376,128 @@ async def get_cached_hint(
 
 async def sse_exercise_hint_generator(
     request: ExerciseHintRequest,
-    user: User,
-    db: AsyncSession,
+    user_id: str,
     cost: int,
     exercise_id: str,
 ) -> AsyncGenerator[bytes, None]:
-    """SSE 格式的编程题提示流生成器，包含智核扣除和缓存"""
+    """SSE hint generator using independent short-lived DB sessions.
+
+    DB write locks (core deduction, cache save) are held for milliseconds
+    in separate transactions, NOT during AI streaming. This prevents
+    SQLite 'database is locked' errors when concurrent requests write
+    to the users table.
+    """
     from app.services.core_service import CoreService
     from app.models.ai_hint_cache import AIHintCache
+    from app.database import AsyncSessionLocal
 
+    # --- Step 1: Deduct cores in a short, independent transaction ---
+    category = f"ai_hint_{request.hint_level}"
     try:
-        # 使用 CoreService 扣除智核（会创建交易记录）
-        core_service = CoreService(db)
-        category = f"ai_hint_{request.hint_level}"  # ai_hint_light, ai_hint_medium, ai_hint_deep
-
-        try:
-            await core_service.spend_cores(
-                user_id=user.id,
-                amount=cost,
-                category=category,
-                reference_type="exercise_hint",
-                reference_id=exercise_id,
-                description=f"AI提示 - {request.exercise_title[:50]}",
-            )
-        except ValueError as e:
-            if "Insufficient" in str(e):
-                error_payload = json.dumps({"error": "智核余额不足", "code": "INSUFFICIENT_CORES"}) + "\n"
-                yield f"data: {error_payload}\n\n".encode()
-                return
-            raise
-
-        # 收集完整内容用于缓存
-        full_content = ""
-
-        # 生成提示
-        async for chunk in ai_service.stream_exercise_hint(
-            exercise_title=request.exercise_title,
-            exercise_description=request.exercise_description,
-            difficulty=request.difficulty,
-            knowledge_points=request.knowledge_points,
-            hint_level=request.hint_level,
-            code_template=request.code_template,
-            sample_input=request.sample_input,
-            sample_output=request.sample_output,
-        ):
-            full_content += chunk
-            payload = json.dumps({"content": chunk}) + "\n"
-            yield f"data: {payload}\n\n".encode()
-
-        # 保存缓存
-        if full_content:
-            cache = AIHintCache(
-                user_id=user.id,
-                exercise_id=exercise_id,
-                hint_level=request.hint_level,
-                hint_content=full_content,
-                cost=cost,
-            )
-            db.add(cache)
-            await db.commit()
-
-        yield b"data: [DONE]\n\n"
+        async with AsyncSessionLocal() as deduct_db:
+            core_service = CoreService(deduct_db)
+            try:
+                await core_service.spend_cores(
+                    user_id=user_id,
+                    amount=cost,
+                    category=category,
+                    reference_type="exercise_hint",
+                    reference_id=exercise_id,
+                    description=f"AI提示 - {request.exercise_title[:50]}",
+                )
+                await deduct_db.commit()
+            except ValueError as e:
+                if "Insufficient" in str(e):
+                    error_payload = json.dumps({
+                        "error": "智核余额不足",
+                        "code": "INSUFFICIENT_CORES",
+                    }) + "\n"
+                    yield f"data: {error_payload}\n\n".encode()
+                    return
+                raise
     except Exception as e:
-        error_payload = json.dumps({"error": str(e)}) + "\n"
+        logger.error(f"[AI Hint] Core deduction failed for user {user_id[:8]}...: {e}")
+        error_payload = json.dumps({
+            "error": "服务暂时不可用，请稍后重试",
+            "code": "SERVICE_ERROR",
+        }) + "\n"
         yield f"data: {error_payload}\n\n".encode()
+        return
+
+    # --- Step 2: Stream AI content (NO DB lock held) ---
+    full_content = ""
+    stream_failed = False
+
+    for attempt in range(3):
+        try:
+            async for chunk in ai_service.stream_exercise_hint(
+                exercise_title=request.exercise_title,
+                exercise_description=request.exercise_description,
+                difficulty=request.difficulty,
+                knowledge_points=request.knowledge_points,
+                hint_level=request.hint_level,
+                code_template=request.code_template,
+                sample_input=request.sample_input,
+                sample_output=request.sample_output,
+            ):
+                full_content += chunk
+                payload = json.dumps({"content": chunk}) + "\n"
+                yield f"data: {payload}\n\n".encode()
+            break
+        except Exception as e:
+            if full_content:
+                logger.error(f"[AI Hint] Stream failed after partial content: {e}")
+                stream_failed = True
+                break
+            if attempt < 2:
+                logger.warning(f"[AI Hint] Attempt {attempt + 1} failed, retrying: {e}")
+                continue
+            logger.error(f"[AI Hint] All 3 attempts failed: {e}")
+            stream_failed = True
+
+    # --- Step 3: Save cache in a short, independent transaction ---
+    if full_content:
+        try:
+            async with AsyncSessionLocal() as cache_db:
+                cache = AIHintCache(
+                    user_id=user_id,
+                    exercise_id=exercise_id,
+                    hint_level=request.hint_level,
+                    hint_content=full_content,
+                    cost=cost,
+                )
+                cache_db.add(cache)
+                await cache_db.commit()
+        except Exception as e:
+            logger.warning(f"[AI Hint] Cache save failed (non-fatal): {e}")
+
+    # --- Step 4: Refund if stream completely failed (no content sent) ---
+    if stream_failed and not full_content:
+        try:
+            async with AsyncSessionLocal() as refund_db:
+                core_service = CoreService(refund_db)
+                await core_service.earn_cores(
+                    user_id=user_id,
+                    amount=cost,
+                    category="arena",
+                    reference_type="exercise_hint_refund",
+                    reference_id=exercise_id,
+                    description="AI提示生成失败退款",
+                )
+                await refund_db.commit()
+            logger.info(f"[AI Hint] Refunded {cost} cores to {user_id[:8]}...")
+        except Exception as e:
+            logger.error(f"[AI Hint] Refund failed: {e}")
+
+    # --- Step 5: Termination signal ---
+    if stream_failed and not full_content:
+        error_payload = json.dumps({
+            "error": "AI 服务暂不可用，请稍后重试",
+            "code": "AI_SERVICE_ERROR",
+        }) + "\n"
+        yield f"data: {error_payload}\n\n".encode()
+    else:
+        yield b"data: [DONE]\n\n"
 
 
 @hint_router.post("/exercise-hint/stream")
@@ -561,8 +508,9 @@ async def stream_exercise_hint(
 ):
     """编程题 AI 提示（流式）- 挑战之路使用
 
-    智核会在流式输出开始时扣除，如果余额不足会立即返回错误。
+    智核会在流式输出开始前扣除（独立短事务），如果余额不足会立即返回错误。
     生成后会缓存，下次访问免费。
+    DB 写锁仅在扣费和缓存保存的毫秒级事务中持有，不会在 AI 流式生成期间持有。
     """
     from app.models.ai_hint_cache import AIHintCache
 
@@ -577,7 +525,7 @@ async def stream_exercise_hint(
 
     logger.info(f"[AI Hint] user={current_user.id[:8]}... exercise_id={exercise_id} level={request.hint_level}")
 
-    # 检查是否已缓存
+    # 检查是否已缓存（只读操作，不阻塞）
     result = await db.execute(
         select(AIHintCache).where(
             AIHintCache.user_id == current_user.id,
@@ -591,7 +539,6 @@ async def stream_exercise_hint(
         logger.info("[AI Hint] CACHE HIT! Returning cached content")
         # 直接返回缓存内容（不扣费）
         async def cached_generator(content: str) -> AsyncGenerator[bytes, None]:
-            # 模拟流式输出效果
             chunk_size = 20
             for i in range(0, len(content), chunk_size):
                 chunk = content[i:i + chunk_size]
@@ -609,7 +556,10 @@ async def stream_exercise_hint(
     # 获取消耗
     cost = HINT_COSTS.get(request.hint_level, 1)
 
+    # SSE generator uses independent short-lived DB sessions,
+    # NOT the request's db session, to avoid holding SQLite write locks
+    # during the entire AI streaming duration.
     return StreamingResponse(
-        sse_exercise_hint_generator(request, current_user, db, cost, exercise_id),
+        sse_exercise_hint_generator(request, current_user.id, cost, exercise_id),
         media_type="text/event-stream",
     )

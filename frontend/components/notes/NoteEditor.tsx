@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -49,15 +49,20 @@ export function NoteEditor({
   lang = 'zh',
   isFullPage = false,
 }: NoteEditorProps) {
-  const [title, setTitle] = useState(note?.title || prefillTitle || '')
-  const [content, setContent] = useState(note?.content || prefillContent || '')
-  const [selectedTags, setSelectedTags] = useState<string[]>(note?.tags || [])
+  const [noteState, setNoteState] = useState({
+    title: note?.title || prefillTitle || '',
+    content: note?.content || prefillContent || '',
+    selectedTags: note?.tags || [] as string[],
+  })
   const [availableTags, setAvailableTags] = useState<NoteTagResponse[]>([])
-  const [newTagName, setNewTagName] = useState('')
+  const [tagUi, setTagUi] = useState({ newTagName: '', showTagSelector: false })
+  const { title, content, selectedTags } = noteState
+  const { newTagName, showTagSelector } = tagUi
   const [isSaving, setIsSaving] = useState(false)
-  const [showTagSelector, setShowTagSelector] = useState(false)
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
+
+  const selectedTagSet = useMemo(() => new Set(noteState.selectedTags), [noteState.selectedTags])
 
   // Load available tags
   useEffect(() => {
@@ -85,16 +90,16 @@ export function NoteEditor({
       if (note) {
         // Update existing note
         savedNote = await updateNote(token, note.id, {
-          title: title || undefined,
-          content,
-          tags: selectedTags,
+          title: noteState.title || undefined,
+          content: noteState.content,
+          tags: noteState.selectedTags,
           knowledge_points: knowledgePoints,
         })
       } else {
         // Create new note
         const noteData: NoteCreate = {
-          title: title || `${t('笔记', 'Note')} ${new Date().toLocaleDateString()}`,
-          content,
+          title: noteState.title || `${t('笔记', 'Note')} ${new Date().toLocaleDateString()}`,
+          content: noteState.content,
           course_id: courseId,
           exercise_id: exerciseId,
           chapter_id: chapterId,
@@ -102,7 +107,7 @@ export function NoteEditor({
           subsection_index: subsectionIndex,
           knowledge_points: knowledgePoints,
           source,
-          tags: selectedTags,
+          tags: noteState.selectedTags,
         }
         savedNote = await createNote(token, noteData)
       }
@@ -114,33 +119,34 @@ export function NoteEditor({
     } finally {
       setIsSaving(false)
     }
-  }, [note, title, content, selectedTags, exerciseId, chapterId, sectionId, courseId, subsectionIndex, knowledgePoints, source, t, onSave, onClose])
+  }, [note, noteState.title, noteState.content, noteState.selectedTags, exerciseId, chapterId, sectionId, courseId, subsectionIndex, knowledgePoints, source, t, onSave, onClose])
 
   const handleCreateTag = useCallback(async () => {
-    if (!newTagName.trim()) return
+    if (!tagUi.newTagName.trim()) return
 
     const token = getStoredToken()
     if (!token) return
 
     try {
       const tag = await createNoteTag(token, {
-        name: newTagName.trim(),
+        name: tagUi.newTagName.trim(),
         color: `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`,
       })
       setAvailableTags((prev) => [...prev, tag])
-      setSelectedTags((prev) => [...prev, tag.name])
-      setNewTagName('')
+      setNoteState(prev => ({ ...prev, selectedTags: [...prev.selectedTags, tag.name] }))
+      setTagUi(prev => ({ ...prev, newTagName: '' }))
     } catch (error) {
       console.error('[标签] 创建失败:', error)
     }
-  }, [newTagName])
+  }, [tagUi.newTagName])
 
   const toggleTag = useCallback((tagName: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tagName)
-        ? prev.filter((t) => t !== tagName)
-        : [...prev, tagName]
-    )
+    setNoteState(prev => ({
+      ...prev,
+      selectedTags: prev.selectedTags.includes(tagName)
+        ? prev.selectedTags.filter((t) => t !== tagName)
+        : [...prev.selectedTags, tagName],
+    }))
   }, [])
 
   // ========== 完整页面模式（分屏预览）==========
@@ -154,7 +160,7 @@ export function NoteEditor({
           </h2>
           <div className="flex items-center gap-3">
             <button type="button"
-              onClick={() => setShowTagSelector(!showTagSelector)}
+              onClick={() => setTagUi(prev => ({ ...prev, showTagSelector: !prev.showTagSelector }))}
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors text-sm"
               title={t('管理标签', 'Manage Tags')}
             >
@@ -174,10 +180,10 @@ export function NoteEditor({
         </div>
 
         {/* Tags selector */}
-        {showTagSelector && (
+        {tagUi.showTagSelector && (
           <div className="px-6 py-4 border-b bg-muted/30">
             <div className="flex flex-wrap gap-2 mb-4">
-              {selectedTags.map((tag) => (
+              {noteState.selectedTags.map((tag) => (
                 <span
                   key={tag}
                   className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-2"
@@ -195,8 +201,8 @@ export function NoteEditor({
             <div className="flex gap-3 mb-4">
               <input
                 type="text"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
+                value={tagUi.newTagName}
+                onChange={(e) => setTagUi(prev => ({ ...prev, newTagName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                 placeholder={t('输入新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
@@ -209,18 +215,20 @@ export function NoteEditor({
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {availableTags
-                .filter((tag) => !selectedTags.includes(tag.name))
-                .map((tag) => (
-                  <button type="button"
-                    key={tag.id}
-                    onClick={() => toggleTag(tag.name)}
-                    className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
-                    style={{ borderColor: tag.color }}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
+              {availableTags.flatMap((tag) =>
+                selectedTagSet.has(tag.name)
+                  ? []
+                  : [
+                      <button type="button"
+                        key={tag.id}
+                        onClick={() => toggleTag(tag.name)}
+                        className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
+                        style={{ borderColor: tag.color }}
+                      >
+                        {tag.name}
+                      </button>,
+                    ]
+              )}
             </div>
           </div>
         )}
@@ -229,8 +237,8 @@ export function NoteEditor({
         <div className="px-6 py-4 border-b">
           <input
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={noteState.title}
+            onChange={(e) => setNoteState(prev => ({ ...prev, title: e.target.value }))}
             placeholder={t('笔记标题（可选）', 'Note title (optional)')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
           />
@@ -247,8 +255,8 @@ export function NoteEditor({
               </div>
             </div>
             <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+              value={noteState.content}
+              onChange={(e) => setNoteState(prev => ({ ...prev, content: e.target.value }))}
               placeholder={t('使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
               className="flex-1 w-full p-6 resize-none bg-background font-mono text-base leading-relaxed focus:outline-none"
             />
@@ -278,7 +286,7 @@ export function NoteEditor({
                     ul: ({ children }) => <ul className="list-disc pl-6 mb-3 gap-y-1">{children}</ul>,
                     ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 gap-y-1">{children}</ol>,
                     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
+                    blockquote: ({ children }) => <blockquote className="border-l-2 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
                     code: ({ className, children, ...props }) => {
                       const isInline = !className
                       return isInline
@@ -324,7 +332,7 @@ export function NoteEditor({
           </h2>
           <div className="flex items-center gap-3">
             <button type="button"
-              onClick={() => setShowTagSelector(!showTagSelector)}
+              onClick={() => setTagUi(prev => ({ ...prev, showTagSelector: !prev.showTagSelector }))}
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors"
               title={t('管理标签', 'Manage Tags')}
             >
@@ -341,10 +349,10 @@ export function NoteEditor({
         </div>
 
         {/* Tags selector */}
-        {showTagSelector && (
+        {tagUi.showTagSelector && (
           <div className="px-5 py-4 border-b bg-muted/30">
             <div className="flex flex-wrap gap-2 mb-4">
-              {selectedTags.map((tag) => (
+              {noteState.selectedTags.map((tag) => (
                 <span
                   key={tag}
                   className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-2"
@@ -362,8 +370,8 @@ export function NoteEditor({
             <div className="flex gap-3 mb-4">
               <input
                 type="text"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
+                value={tagUi.newTagName}
+                onChange={(e) => setTagUi(prev => ({ ...prev, newTagName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                 placeholder={t('输入新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
@@ -376,18 +384,23 @@ export function NoteEditor({
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {availableTags
-                .filter((tag) => !selectedTags.includes(tag.name))
-                .map((tag) => (
-                  <button type="button"
-                    key={tag.id}
-                    onClick={() => toggleTag(tag.name)}
-                    className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
-                    style={{ borderColor: tag.color }}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
+              {(() => {
+                const nodes: React.ReactNode[] = []
+                for (const tag of availableTags) {
+                  if (selectedTagSet.has(tag.name)) continue
+                  nodes.push(
+                    <button type="button"
+                      key={tag.id}
+                      onClick={() => toggleTag(tag.name)}
+                      className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
+                      style={{ borderColor: tag.color }}
+                    >
+                      {tag.name}
+                    </button>
+                  )
+                }
+                return nodes
+              })()}
             </div>
           </div>
         )}
@@ -396,8 +409,8 @@ export function NoteEditor({
         <div className="px-5 py-4 border-b">
           <input
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={noteState.title}
+            onChange={(e) => setNoteState(prev => ({ ...prev, title: e.target.value }))}
             placeholder={t('笔记标题（可选）', 'Note title (optional)')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
           />
@@ -414,8 +427,8 @@ export function NoteEditor({
               </div>
             </div>
             <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+              value={noteState.content}
+              onChange={(e) => setNoteState(prev => ({ ...prev, content: e.target.value }))}
               placeholder={t('使用 Markdown 编写...', 'Write in Markdown...')}
               className="flex-1 w-full p-4 resize-none rounded-xl border border-border bg-muted/30 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
             />

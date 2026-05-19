@@ -47,7 +47,7 @@ class TestAuthRegister:
             },
         )
         assert response.status_code == 400
-        assert "Email already registered" in response.json()["detail"]
+        assert "该邮箱已被注册" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_register_duplicate_username(self, client: AsyncClient):
@@ -71,7 +71,7 @@ class TestAuthRegister:
             },
         )
         assert response.status_code == 400
-        assert "Username already taken" in response.json()["detail"]
+        assert "该用户名已被使用" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_register_invalid_email(self, client: AsyncClient):
@@ -151,7 +151,7 @@ class TestAuthLogin:
         response = await client.post(
             "/api/auth/login",
             json={
-                "email": "login@example.com",
+                "username": "login@example.com",
                 "password": "password123",
             },
         )
@@ -177,12 +177,12 @@ class TestAuthLogin:
         response = await client.post(
             "/api/auth/login",
             json={
-                "email": "wrong@example.com",
+                "username": "wrong@example.com",
                 "password": "wrongpassword",
             },
         )
         assert response.status_code == 401
-        assert "Invalid email or password" in response.json()["detail"]
+        assert "用户名或密码错误" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_login_nonexistent_user(self, client: AsyncClient):
@@ -190,12 +190,12 @@ class TestAuthLogin:
         response = await client.post(
             "/api/auth/login",
             json={
-                "email": "nonexistent@example.com",
+                "username": "nonexistent@example.com",
                 "password": "password123",
             },
         )
         assert response.status_code == 401
-        assert "Invalid email or password" in response.json()["detail"]
+        assert "用户名或密码错误" in response.json()["detail"]
 
 
 class TestAuthMe:

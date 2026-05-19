@@ -6,7 +6,15 @@ import { getStoredToken, logout, getTimeTrend } from "@/lib/api";
 import { ArrowLeft, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import type { DailyTimeTrendPoint } from "@/types/api";
 
-export default function TimeDetailPage() {
+function ClientDate({ date, options, className }: { date: string; options: Intl.DateTimeFormatOptions; className?: string }) {
+  const [formatted, setFormatted] = useState('')
+  useEffect(() => {
+    setFormatted(new Date(date).toLocaleDateString('zh-CN', options))
+  }, [date, JSON.stringify(options)])
+  return <span className={className}>{formatted}</span>
+}
+
+export default function TimeDetailPage(){
   const { push, back } = useRouter();
   const [trends, setTrends] = useState<DailyTimeTrendPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -126,9 +134,9 @@ export default function TimeDetailPage() {
             {trends
               .slice()
               .reverse()
-              .map((t, i) => (
+              .map((t) => (
                 <div
-                  key={`time-${i}`}
+                  key={t.date}
                   className="flex-1 flex flex-col items-center gap-2"
                 >
                   <div
@@ -138,11 +146,7 @@ export default function TimeDetailPage() {
                       minHeight: t.minutes > 0 ? "4px" : "0",
                     }}
                   />
-                  <span className="text-xs text-muted-foreground" suppressHydrationWarning>
-                    {new Date(t.date).toLocaleDateString("zh-CN", {
-                      weekday: "short",
-                    })}
-                  </span>
+                  <ClientDate date={t.date} options={{ weekday: "short" }} className="text-xs text-muted-foreground" />
                 </div>
               ))}
           </div>
@@ -155,7 +159,7 @@ export default function TimeDetailPage() {
           </div>
           <div className="divide-y divide-border">
             {trends.map((t, i) => (
-              <div key={`time-${i}`} className="flex items-center justify-between p-4">
+              <div key={t.date} className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <div
                     className={`size-10 rounded-full flex items-center justify-center ${i === 0 ? "bg-purple-500/10 text-purple-500" : "bg-muted text-muted-foreground"}`}
@@ -163,15 +167,8 @@ export default function TimeDetailPage() {
                     <Clock className="size-5" />
                   </div>
                   <div>
-                    <p className="font-medium" suppressHydrationWarning>
-                      {i === 0
-                        ? "今天"
-                        : i === 1
-                          ? "昨天"
-                          : new Date(t.date).toLocaleDateString("zh-CN", {
-                              month: "short",
-                              day: "numeric",
-                            })}
+                    <p className="font-medium">
+                      {i === 0 ? "今天" : i === 1 ? "昨天" : <ClientDate date={t.date} options={{ month: "short", day: "numeric" }} />}
                     </p>
                     <p className="text-sm text-muted-foreground">{t.date}</p>
                   </div>

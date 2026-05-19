@@ -260,28 +260,26 @@ export function useTapAnimation() {
  * 打字机效果
  */
 export function useTypewriter(text: string, speed: number = 50) {
-  const [displayText, setDisplayText] = useState('')
-  const [isComplete, setIsComplete] = useState(false)
+  const [state, setState] = useState<{ text: string; complete: boolean }>({ text: '', complete: false })
 
+  // react-doctor-disable-next-line no-cascading-set-state, react-doctor/no-cascading-set-state
   useEffect(() => {
     let index = 0
-    setDisplayText('')
-    setIsComplete(false)
-
-    const timer = setInterval(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const tick = () => {
       if (index < text.length) {
-        setDisplayText(text.slice(0, index + 1))
+        setState({ text: text.slice(0, index + 1), complete: false })
         index++
+        timer = setTimeout(tick, speed)
       } else {
-        setIsComplete(true)
-        clearInterval(timer)
+        setState({ text, complete: true })
       }
-    }, speed)
-
-    return () => clearInterval(timer)
+    }
+    timer = setTimeout(tick, speed)
+    return () => { if (timer) clearTimeout(timer) }
   }, [text, speed])
 
-  return { displayText, isComplete }
+  return { displayText: state.text, isComplete: state.complete }
 }
 
 /**

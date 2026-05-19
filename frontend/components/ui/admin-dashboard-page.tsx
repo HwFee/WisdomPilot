@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,12 +16,19 @@ interface User {
   updated_at: string
 }
 
+function ClientDate({ dateStr }: { dateStr: string }) {
+  const [formatted, setFormatted] = useState('')
+  useEffect(() => {
+    setFormatted(new Date(dateStr).toLocaleDateString('zh-CN'))
+  }, [dateStr])
+  return <span suppressHydrationWarning>{formatted}</span>
+}
+
 export default function AdminDashboardPage() {
   const { push } = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [onlineUsers, setOnlineUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [status, setStatus] = useState({ isLoading: true, error: '' })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token:v1') : null
@@ -39,7 +46,7 @@ export default function AdminDashboardPage() {
 
   const fetchUsers = async () => {
     try {
-      setIsLoading(true)
+      setStatus(prev => ({ ...prev, isLoading: true }))
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -47,9 +54,9 @@ export default function AdminDashboardPage() {
       const data = await res.json()
       setUsers(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching users')
+      setStatus(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Error fetching users' }))
     } finally {
-      setIsLoading(false)
+      setStatus(prev => ({ ...prev, isLoading: false }))
     }
   }
 
@@ -62,7 +69,7 @@ export default function AdminDashboardPage() {
       const data = await res.json()
       setOnlineUsers(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching online users')
+      setStatus(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Error fetching online users' }))
     }
   }
 
@@ -76,7 +83,7 @@ export default function AdminDashboardPage() {
       setUsers(users.filter(u => u.id !== userId))
       setDeleteConfirm(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error deleting user')
+      setStatus(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Error deleting user' }))
     }
   }
 
@@ -86,7 +93,7 @@ export default function AdminDashboardPage() {
     push('/login')
   }
 
-  if (isLoading) {
+  if (status.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -117,9 +124,9 @@ export default function AdminDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {error && (
+        {status.error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+            {status.error}
           </div>
         )}
 
@@ -219,8 +226,8 @@ export default function AdminDashboardPage() {
                       {user.is_active ? '活跃' : '禁用'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" suppressHydrationWarning>
-                    {new Date(user.created_at).toLocaleDateString('zh-CN')}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <ClientDate dateStr={user.created_at} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {deleteConfirm === user.id ? (

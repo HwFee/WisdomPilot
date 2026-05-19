@@ -47,8 +47,8 @@ export function ActivityFeed({ activities, lang, isLoading }: ActivityFeedProps)
   if (isLoading) {
     return (
       <div className="gap-y-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={`feed-${i}`} className="flex gap-3 animate-pulse">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <div key={`feed-skeleton-${n}`} className="flex gap-3 animate-pulse">
             <div className="size-2 bg-muted rounded-full mt-2" />
             <div className="flex-1">
               <div className="h-4 bg-muted rounded w-48 mb-2" />

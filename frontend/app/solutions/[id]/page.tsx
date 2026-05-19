@@ -17,10 +17,13 @@ export default function SolutionDetailPage() {
 
   const [solution, setSolution] = useState<SolutionResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [userState, setUserState] = useState<{ currentUser: User | null; isAdmin: boolean; lang: 'zh' | 'en' }>({
+    currentUser: null,
+    isAdmin: false,
+    lang: 'zh',
+  })
   const [editMode, setEditMode] = useState<EditMode>('view')
-  const [lang, setLang] = useState<'zh' | 'en'>('zh')
+  const { currentUser, isAdmin, lang } = userState
 
   const t = (zh: string, en: string) => lang === 'zh' ? zh : en
 
@@ -33,12 +36,17 @@ export default function SolutionDetailPage() {
       return
     }
 
-    setCurrentUser(user)
-    setIsAdmin(user.is_admin || false)
-
     const savedLang = localStorage.getItem('language') || 'zh'
-    setLang(savedLang as 'zh' | 'en')
+    setUserState({
+      currentUser: user,
+      isAdmin: user.is_admin || false,
+      lang: savedLang as 'zh' | 'en',
+    })
+  }, [push])
 
+  useEffect(() => {
+    const token = getStoredToken()
+    if (!token) return
     fetchSolution(token)
   }, [solutionId])
 

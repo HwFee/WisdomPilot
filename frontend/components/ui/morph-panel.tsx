@@ -5,9 +5,10 @@ import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import rehypeHighlight from "rehype-highlight"
+import "highlight.js/styles/github-dark.css"
 import { useAIContext } from "@/contexts/AIContext"
 import { getActiveEditorRef } from "@/lib/editor-registry"
-import { cn } from "@/lib/utils"
 
 // ── Dimensions ─────────────────────────────────────────────
 const ORB_SIZE = 52
@@ -54,16 +55,12 @@ function parseQuestion(el: Element): QuestionCtx | null {
 function PanelOrb({ size = 22 }: { size?: number }) {
   return (
     <div
+      className="rounded-full flex items-center justify-center shrink-0"
       style={{
         width: size,
         height: size,
-        borderRadius: "50%",
         background: "radial-gradient(circle at 38% 32%, rgba(186, 230, 253, 0.98), rgba(56, 189, 248, 0.9) 38%, rgba(14, 165, 233, 0.78) 65%, rgba(3, 105, 161, 0.6) 100%)",
         boxShadow: "0 2px 6px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.4)",
-        flexShrink: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       <div style={{ position: "relative", width: size * 0.72, height: size * 0.72 }}>
@@ -102,15 +99,21 @@ function MessageBubble({ role, content }: { role: "user:v1" | "ai"; content: str
         <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight]}
             components={{
               p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
-              code: ({ children }) => (
-                <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>
-                  {children}
-                </code>
-              ),
+              code: ({ className, children, ...props }) => {
+                const isInline = !className
+                return isInline ? (
+                  <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }} {...props}>
+                    {children}
+                  </code>
+                ) : (
+                  <code className={className} {...props}>{children}</code>
+                )
+              },
               pre: ({ children }) => (
-                <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ background: "hsl(var(--muted))" }}>
+                <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ backgroundColor: "#1e293b", color: "#e2e8f0", border: "1px solid #334155" }}>
                   {children}
                 </pre>
               ),
@@ -141,8 +144,7 @@ export function MorphPanel() {
 
   // Orb state
   const orbRef = useRef<HTMLDivElement>(null)
-  const [isHovered, setIsHovered] = useState(false)
-  const [isDraggingOrb, setIsDraggingOrb] = useState(false)
+  const [orbState, setOrbState] = useState({ isHovered: false, isDraggingOrb: false, orbVisible: true })
   const targetedQuestionRef = useRef<QuestionCtx | null>(null)
   const panelOpenedRef = useRef(false)
   const prevHighlightRef = useRef<Element | null>(null)
@@ -150,26 +152,26 @@ export function MorphPanel() {
 
   // Panel state
   const panelRef = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState({ x: 100, y: 100 })
-  const [isDraggingPanel, setIsDraggingPanel] = useState(false)
+  const [panelDragState, setPanelDragState] = useState({ pos: { x: 100, y: 100 }, isDraggingPanel: false })
   const dragOffsetRef = useRef({ x: 0, y: 0 })
 
   // Chat state
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputValue, setInputValue] = useState("")
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [streamingText, setStreamingText] = useState("")
+  const [chatState, setChatState] = useState({ messages: [] as ChatMessage[], inputValue: '' })
+  const [streamState, setStreamState] = useState({ isStreaming: false, streamingText: '' })
+  const { isHovered, isDraggingOrb, orbVisible } = orbState
+  const { pos, isDraggingPanel } = panelDragState
+  const { messages, inputValue } = chatState
+  const { isStreaming, streamingText } = streamState
   const messagesRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const prevPanelSpawnPosRef = useRef<typeof panelSpawnPos>(null)
 
   // ── Orb: hide when panel open, show when panel closed ──
-  const [orbVisible, setOrbVisible] = useState(true)
   useEffect(() => {
     if (isPanelOpen) {
-      setOrbVisible(false)
+      setOrbState(prev => ({ ...prev, orbVisible: false }))
     } else {
-      setOrbVisible(true)
+      setOrbState(prev => ({ ...prev, orbVisible: true }))
       panelOpenedRef.current = false
     }
   }, [isPanelOpen])
@@ -183,7 +185,7 @@ export function MorphPanel() {
     const vh = window.innerHeight
     const x = Math.min(Math.max(panelSpawnPos.x - PANEL_W / 2, 24), vw - PANEL_W - 24)
     const y = Math.min(Math.max(panelSpawnPos.y - 60, 24), vh - PANEL_H - 24)
-    setPos({ x, y })
+    setPanelDragState(prev => ({ ...prev, pos: { x, y } }))
   }, [panelSpawnPos, isPanelOpen, activeQuestion])
 
   // ── Scroll messages ────────────────────────────────────
@@ -191,7 +193,7 @@ export function MorphPanel() {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight
     }
-  }, [messages, streamingText])
+  }, [chatState.messages, streamState.streamingText])
 
   // ── Highlight helpers ──────────────────────────────────
   const clearHighlight = useCallback(() => {
@@ -211,7 +213,7 @@ export function MorphPanel() {
 
   // ── Orb: expand panel on click ─────────────────────────
   const handleOrbClick = useCallback((e: React.MouseEvent) => {
-    if (isDraggingOrb) return
+    if (orbState.isDraggingOrb) return
     e.preventDefault()
     e.stopPropagation()
 
@@ -222,7 +224,7 @@ export function MorphPanel() {
 
     // Expand panel (no question context, just blank panel)
     openPanel({ type: null, chapterId: 0, subsectionIndex: 0, exerciseId: 0, question: "" }, { x: spawnX, y: spawnY })
-  }, [isDraggingOrb, openPanel])
+  }, [orbState.isDraggingOrb, openPanel])
 
   // ── Orb: drag start ────────────────────────────────────
   const handleOrbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -236,7 +238,7 @@ export function MorphPanel() {
     const rect = orbEl.getBoundingClientRect()
     targetedQuestionRef.current = null
     panelOpenedRef.current = false
-    setIsDraggingOrb(true)
+    setOrbState(prev => ({ ...prev, isDraggingOrb: true }))
 
     // Hide orb from hit detection
     hitIntervalRef.current = setInterval(() => {
@@ -261,8 +263,10 @@ export function MorphPanel() {
         const ctx = parseQuestion(q)
         if (ctx) {
           const el = q as HTMLElement
-          el.style.outline = '3px solid rgba(14, 165, 233, 0.9)'
-          el.style.outlineOffset = '4px'
+          Object.assign(el.style, {
+            outline: '3px solid rgba(14, 165, 233, 0.9)',
+            outlineOffset: '4px',
+          })
           prevHighlightRef.current = q
           targetedQuestionRef.current = ctx
         }
@@ -278,18 +282,20 @@ export function MorphPanel() {
     if (!isDraggingOrb) return
     const orbEl = orbRef.current
     if (!orbEl) return
-    orbEl.style.position = "fixed"
-    orbEl.style.left = `${e.clientX - ORB_SIZE / 2}px`
-    orbEl.style.top = `${e.clientY - ORB_SIZE / 2}px`
-    orbEl.style.right = "auto"
-    orbEl.style.bottom = "auto"
-  }, [isDraggingOrb])
+    Object.assign(orbEl.style, {
+      position: "fixed",
+      left: `${e.clientX - ORB_SIZE / 2}px`,
+      top: `${e.clientY - ORB_SIZE / 2}px`,
+      right: "auto",
+      bottom: "auto",
+    })
+  }, [orbState.isDraggingOrb])
 
   const handleOrbPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingOrb) return
     e.preventDefault()
     stopHit()
-    setIsDraggingOrb(false)
+    setOrbState(prev => ({ ...prev, isDraggingOrb: false }))
 
     const q = targetedQuestionRef.current
     if (q && !panelOpenedRef.current) {
@@ -300,7 +306,7 @@ export function MorphPanel() {
       const spawnX = orbRect ? orbRect.left + ORB_SIZE / 2 : e.clientX
       const spawnY = orbRect ? orbRect.top + ORB_SIZE / 2 : e.clientY
 
-      setOrbVisible(false)
+      setOrbState(prev => ({ ...prev, orbVisible: false }))
 
       // For programming questions, get live code from the IDE editor
       let code = q.code
@@ -333,16 +339,18 @@ export function MorphPanel() {
       // Snap orb back to corner
       const orbEl = orbRef.current
       if (orbEl) {
-        orbEl.style.position = "fixed"
-        orbEl.style.left = "auto"
-        orbEl.style.top = "auto"
-        orbEl.style.right = "24px"
-        orbEl.style.bottom = "24px"
+        Object.assign(orbEl.style, {
+          position: "fixed",
+          left: "auto",
+          top: "auto",
+          right: "24px",
+          bottom: "24px",
+        })
       }
     }
 
     targetedQuestionRef.current = null
-  }, [isDraggingOrb, openPanel, stopHit])
+  }, [orbState.isDraggingOrb, openPanel, stopHit])
 
   // ── Panel drag ─────────────────────────────────────────
   const handlePanelDragStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -355,17 +363,17 @@ export function MorphPanel() {
     const rect = panelRef.current?.getBoundingClientRect()
     if (!rect) return
     dragOffsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-    setIsDraggingPanel(true)
+    setPanelDragState(prev => ({ ...prev, isDraggingPanel: true }))
     ;(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId)
   }, [])
 
   const handlePanelDragMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingPanel) return
-    setPos({ x: e.clientX - dragOffsetRef.current.x, y: e.clientY - dragOffsetRef.current.y })
-  }, [isDraggingPanel])
+    if (!panelDragState.isDraggingPanel) return
+    setPanelDragState(prev => ({ ...prev, pos: { x: e.clientX - dragOffsetRef.current.x, y: e.clientY - dragOffsetRef.current.y } }))
+  }, [panelDragState.isDraggingPanel])
 
   const handlePanelDragEnd = useCallback(() => {
-    setIsDraggingPanel(false)
+    setPanelDragState(prev => ({ ...prev, isDraggingPanel: false }))
   }, [])
 
   // ── Chat ───────────────────────────────────────────────
@@ -393,14 +401,13 @@ export function MorphPanel() {
   }, [])
 
   const sendMessage = useCallback(async () => {
-    const text = inputValue.trim()
-    if (!text || isStreaming) return
+    const text = chatState.inputValue.trim()
+    if (!text || streamState.isStreaming) return
 
     const userMessage = text
-    setInputValue("")
-    setMessages(prev => [...prev, { role: "user:v1", content: userMessage }])
-    setIsStreaming(true)
-    setStreamingText("")
+    setChatState(prev => ({ ...prev, inputValue: '' }))
+    setChatState(prev => ({ ...prev, messages: [...prev.messages, { role: "user:v1", content: userMessage }] }))
+    setStreamState({ isStreaming: true, streamingText: '' })
 
     const prompt = activeQuestion?.question
       ? buildPrompt(
@@ -431,13 +438,13 @@ export function MorphPanel() {
       )
 
       if (!response.ok) {
-        const text = await response.text()
         if (response.status === 401) {
           localStorage.removeItem("token:v1")
           localStorage.removeItem("user:v1")
           push("/login")
           return
         }
+        const text = await response.text()
         throw new Error(`请求失败: ${response.status} — ${text}`)
       }
       if (!response.body) throw new Error("无响应体")
@@ -447,6 +454,7 @@ export function MorphPanel() {
       let fullText = ""
 
       while (true) {
+        // react-doctor-disable-next-line async-await-in-loop, react-doctor/async-await-in-loop
         const { done, value } = await reader.read()
         if (done) break
 
@@ -461,24 +469,23 @@ export function MorphPanel() {
               const parsed = JSON.parse(data)
               if (parsed.content) {
                 fullText += parsed.content
-                setStreamingText(fullText)
+                setStreamState(prev => ({ ...prev, streamingText: fullText }))
               }
             } catch { /* skip malformed */ }
           }
         }
       }
       // Streaming done — commit final text as AI message
-      setMessages(prev => [...prev, { role: "ai", content: fullText }])
+      setChatState(prev => ({ ...prev, messages: [...prev.messages, { role: "ai", content: fullText }] }))
     } catch (err) {
-      setMessages(prev => [...prev, { role: "ai", content: `抱歉，AI 服务暂时不可用: ${err instanceof Error ? err.message : String(err)}` }])
+      setChatState(prev => ({ ...prev, messages: [...prev.messages, { role: "ai", content: `抱歉，AI 服务暂时不可用: ${err instanceof Error ? err.message : String(err)}` }] }))
     } finally {
-      setIsStreaming(false)
-      setStreamingText("")
+      setStreamState({ isStreaming: false, streamingText: '' })
     }
-  }, [inputValue, isStreaming, activeQuestion, buildPrompt])
+  }, [chatState.inputValue, streamState.isStreaming, activeQuestion, buildPrompt])
 
   const handleQuickPrompt = useCallback((prompt: string) => {
-    setInputValue(prompt)
+    setChatState(prev => ({ ...prev, inputValue: prompt }))
     setTimeout(() => textareaRef.current?.focus(), 50)
   }, [])
 
@@ -494,7 +501,7 @@ export function MorphPanel() {
 
   const handleClose = useCallback(() => {
     closePanel()
-    setMessages([])
+    setChatState(prev => ({ ...prev, messages: [] }))
   }, [closePanel])
 
   useEffect(() => {
@@ -513,27 +520,24 @@ export function MorphPanel() {
           onPointerUp={handleOrbPointerUp}
           onPointerCancel={handleOrbPointerUp}
           onClick={handleOrbClick}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => !isDraggingOrb && setIsHovered(false)}
-          className="fixed select-none z-[9999] animate-orb-bob"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOrbClick(e as any) } }}
+          onMouseEnter={() => setOrbState(prev => ({ ...prev, isHovered: true }))}
+          onMouseLeave={() => !orbState.isDraggingOrb && setOrbState(prev => ({ ...prev, isHovered: false }))}
+          role="button"
+          tabIndex={0}
+          aria-label="AI 助手"
+          className={"fixed right-6 bottom-6 select-none z-[9999] animate-orb-bob flex items-center justify-center pointer-events-auto transition-colors transition-shadow duration-200 " + (isDraggingOrb ? "transition-none " : "")}
           style={{
-            right: 24,
-            bottom: 24,
             width: ORB_SIZE,
             height: ORB_SIZE,
             borderRadius: ORB_SIZE / 2,
             cursor: isDraggingOrb ? "grabbing" : "grab",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             background: isHovered
               ? "radial-gradient(circle at 38% 32%, rgba(186, 230, 253, 0.98), rgba(56, 189, 248, 0.9) 38%, rgba(14, 165, 233, 0.78) 65%, rgba(3, 105, 161, 0.6) 100%)"
               : "radial-gradient(circle at 38% 32%, rgba(224, 242, 254, 0.96), rgba(125, 211, 252, 0.88) 38%, rgba(56, 189, 248, 0.75) 65%, rgba(14, 165, 233, 0.55) 100%)",
             boxShadow: isHovered
               ? "0 4px 16px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.5)"
               : "0 2px 8px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.4)",
-            pointerEvents: "auto",
-            transition: isDraggingOrb ? "none" : "background 0.2s, box-shadow 0.2s",
           }}
         >
           {/* Cute face */}
@@ -562,19 +566,14 @@ export function MorphPanel() {
           onPointerMove={handlePanelDragMove}
           onPointerUp={handlePanelDragEnd}
           onPointerCancel={handlePanelDragEnd}
-          className="fixed z-[9998] flex flex-col overflow-hidden animate-panel-slide-in"
+          className="fixed z-[9998] flex flex-col overflow-hidden animate-panel-slide-in rounded-2xl backdrop-blur select-none border border-border/70 bg-background/96"
           style={{
             width: PANEL_W,
             height: PANEL_H,
             left: pos.x,
             top: pos.y,
-            background: "hsl(var(--background) / 0.96)",
-            border: "1px solid hsl(var(--border) / 0.7)",
-            borderRadius: 16,
             boxShadow: "0 24px 64px hsl(var(--foreground) / 0.2), 0 0 0 1px hsl(var(--border) / 0.3)",
-            backdropFilter: "blur(16px)",
-            cursor: isDraggingPanel ? "grabbing" : "default",
-            userSelect: "none",
+            cursor: panelDragState.isDraggingPanel ? "grabbing" : "default",
           }}
         >
 
@@ -684,7 +683,7 @@ export function MorphPanel() {
             ref={messagesRef}
             className="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-2 min-h-0"
           >
-            {messages.length === 0 && !isStreaming && (
+            {chatState.messages.length === 0 && !streamState.isStreaming && (
               <div className="h-full flex items-center justify-center">
                 <p className="text-xs text-center leading-relaxed" style={{ color: "hsl(var(--muted-foreground))" }}>
                   选择上方快捷问题
@@ -692,9 +691,9 @@ export function MorphPanel() {
                 </p>
               </div>
             )}
-            {messages.map((msg, i) => (
+            {chatState.messages.map((msg) => (
               <div
-                key={`panel-${i}`}
+                key={`panel-${msg.role}-${msg.content.slice(0, 30)}`}
                 className="flex"
                 style={{ justifyContent: msg.role === "user:v1" ? "flex-end" : "flex-start" }}
               >
@@ -702,13 +701,13 @@ export function MorphPanel() {
               </div>
             ))}
             {/* Streaming bubble — AI on left */}
-            {isStreaming && (
+            {streamState.isStreaming && (
               <div className="flex" style={{ justifyContent: "flex-start" }}>
                 <div
                   className="rounded-2xl rounded-bl-sm px-3 py-2"
                   style={{ background: "hsl(var(--secondary))", maxWidth: "88%", fontSize: "0.75rem" }}
                 >
-                  {streamingText ? (
+                  {streamState.streamingText ? (
                     <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
@@ -731,22 +730,24 @@ export function MorphPanel() {
                           em: ({ children }) => <em>{children}</em>,
                         }}
                       >
-                        {streamingText}
+                        {streamState.streamingText}
                       </ReactMarkdown>
                     </div>
                   ) : (
                     /* Bouncing dots while waiting for first token */
                     <div className="flex items-center gap-1 py-1">
-                      {[0, 1, 2].map(i => (
-                        <span
-                          key={`panel-${i}`}
-                          className={cn(
-                            "block size-1.5 rounded-full animate-bounce-dot",
-                            i === 0 ? "animate-bounce-dot-0" : i === 1 ? "animate-bounce-dot-1" : "animate-bounce-dot-2"
-                          )}
-                          style={{ background: "hsl(var(--muted-foreground))" }}
-                        />
-                      ))}
+                      <span
+                        className="block size-1.5 rounded-full animate-typing-dot animate-typing-dot-0"
+                        style={{ background: "hsl(var(--muted-foreground))" }}
+                      />
+                      <span
+                        className="block size-1.5 rounded-full animate-typing-dot animate-typing-dot-1"
+                        style={{ background: "hsl(var(--muted-foreground))" }}
+                      />
+                      <span
+                        className="block size-1.5 rounded-full animate-typing-dot animate-typing-dot-2"
+                        style={{ background: "hsl(var(--muted-foreground))" }}
+                      />
                     </div>
                   )}
                 </div>
@@ -759,14 +760,13 @@ export function MorphPanel() {
             className="px-3 pb-3 pt-2 shrink-0"
             style={{ borderTop: "1px solid hsl(var(--border) / 0.4)" }}
           >
-            <form
-              onSubmit={e => { e.preventDefault(); sendMessage() }}
+            <div
               className="flex items-end gap-2"
             >
               <textarea
                 ref={textareaRef}
-                value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
+                value={chatState.inputValue}
+                onChange={e => setChatState(prev => ({ ...prev, inputValue: e.target.value }))}
                 onKeyDown={handleKeyDown}
                 placeholder="针对这道题继续提问..."
                 rows={3}
@@ -776,11 +776,12 @@ export function MorphPanel() {
                   borderColor: "hsl(var(--border))",
                   color: "hsl(var(--foreground))",
                 }}
-                disabled={isStreaming}
+                disabled={streamState.isStreaming}
               />
               <button
-                type="submit"
-                disabled={!inputValue.trim() || isStreaming}
+                type="button"
+                disabled={!chatState.inputValue.trim() || streamState.isStreaming}
+                onClick={sendMessage}
                 className="size-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
               >
@@ -788,7 +789,7 @@ export function MorphPanel() {
                   <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
               </button>
-            </form>
+            </div>
           </div>
         </div>,
         document.body

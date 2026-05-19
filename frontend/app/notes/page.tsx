@@ -20,14 +20,20 @@ import { Button } from '@/components/ui/button'
 
 export default function NotesPage() {
   const { push, back } = useRouter()
-  const [notes, setNotes] = useState<NoteResponse[]>([])
-  const [filteredNotes, setFilteredNotes] = useState<NoteResponse[]>([])
+  const [notesState, setNotesState] = useState({
+    notes: [] as NoteResponse[],
+    filteredNotes: [] as NoteResponse[],
+    isLoading: true,
+  })
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [showEditor, setShowEditor] = useState(false)
-  const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
-  const [isFullPageEditor, setIsFullPageEditor] = useState(false)
+  const [editorState, setEditorState] = useState({
+    showEditor: false,
+    editingNote: null as NoteResponse | null,
+    isFullPageEditor: false,
+  })
+  const { notes, filteredNotes, isLoading } = notesState
+  const { showEditor, editingNote, isFullPageEditor } = editorState
   const hasFetched = useRef(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -37,28 +43,30 @@ export default function NotesPage() {
         getNotes(token),
         getNoteTags(token),
       ])
-      setNotes(notesData.notes)
-      setFilteredNotes(notesData.notes)
+      setNotesState(prev => ({ ...prev, notes: notesData.notes, filteredNotes: notesData.notes }))
     } catch {
       // Handle error silently
     } finally {
-      setIsLoading(false)
+      setNotesState(prev => ({ ...prev, isLoading: false }))
     }
   }, [])
 
   // 自动轮询：当有处理中的笔记时，每3秒刷新一次
+  const fetchDataRef = useRef(fetchData)
+  fetchDataRef.current = fetchData
+
   useEffect(() => {
     const hasProcessing = notes.some(
       (n) => n.processing_status === 'pending' || n.processing_status === 'processing'
     )
 
     if (hasProcessing) {
-      const token = getStoredToken()
-      if (token) {
-        pollingRef.current = setInterval(() => {
-          fetchData(token)
-        }, 3000)
-      }
+      pollingRef.current = setInterval(() => {
+        const token = getStoredToken()
+        if (token) {
+          fetchDataRef.current(token)
+        }
+      }, 3000)
     }
 
     return () => {
@@ -67,7 +75,7 @@ export default function NotesPage() {
         pollingRef.current = null
       }
     }
-  }, [notes, fetchData])
+  }, [notes])
 
   useEffect(() => {
     if (hasFetched.current) return
@@ -103,40 +111,39 @@ export default function NotesPage() {
       )
     }
 
-    setFilteredNotes(filtered)
+    setNotesState(prev => ({ ...prev, filteredNotes: filtered }))
   }, [notes, selectedTags, searchQuery])
 
   const handleDelete = useCallback(async (noteId: string) => {
     // NoteCard already calls deleteNote, this just updates the UI
-    setNotes((prev) => prev.filter((n) => n.id !== noteId))
+    setNotesState((prev) => ({ ...prev, notes: prev.notes.filter((n) => n.id !== noteId) }))
   }, [])
 
   const handleEdit = useCallback((note: NoteResponse) => {
-    setEditingNote(note)
-    setIsFullPageEditor(true)
-    setShowEditor(true)
+    setEditorState({ editingNote: note, isFullPageEditor: true, showEditor: true })
   }, [])
 
   const handleCreate = useCallback(() => {
-    setEditingNote(null)
-    setIsFullPageEditor(true)
-    setShowEditor(true)
+    setEditorState({ editingNote: null, isFullPageEditor: true, showEditor: true })
   }, [])
 
   const handleSave = useCallback((savedNote: NoteResponse) => {
-    setNotes((prev) => {
-      const existing = prev.find((n) => n.id === savedNote.id)
+    setNotesState((prev) => {
+      const existing = prev.notes.find((n) => n.id === savedNote.id)
+      let nextNotes: NoteResponse[]
       if (existing) {
-        return prev.map((n) => (n.id === savedNote.id ? savedNote : n))
+        nextNotes = prev.notes.map((n) => (n.id === savedNote.id ? savedNote : n))
+      } else {
+        nextNotes = [savedNote, ...prev.notes]
       }
-      return [savedNote, ...prev]
+      return { ...prev, notes: nextNotes, filteredNotes: nextNotes }
     })
   }, [])
 
   const handleSearchResults = useCallback((results: NoteResponse[], query: string) => {
     if (query) {
       setSearchQuery(query)
-      setFilteredNotes(results)
+      setNotesState(prev => ({ ...prev, filteredNotes: results }))
     } else {
       setSearchQuery('')
       // Re-apply tag filter when clearing search
@@ -146,7 +153,7 @@ export default function NotesPage() {
           selectedTags.every((tag) => note.tags?.includes(tag))
         )
       }
-      setFilteredNotes(filtered)
+      setNotesState(prev => ({ ...prev, filteredNotes: filtered }))
     }
   }, [notes, selectedTags])
 
@@ -279,8 +286,7 @@ export default function NotesPage() {
             note={editingNote}
             onSave={handleSave}
             onClose={() => {
-              setShowEditor(false)
-              setIsFullPageEditor(false)
+              setEditorState(prev => ({ ...prev, showEditor: false, isFullPageEditor: false }))
             }}
             isFullPage
           />

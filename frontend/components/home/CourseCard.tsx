@@ -38,14 +38,10 @@ export function CourseCard({
     >
       {/* Difficulty indicator */}
       <div className="absolute top-4 right-4 flex gap-1">
-        {[...Array(4)].map((_, i) => (
-          <div
-            key={`dot-${i}`}
-            className={`size-1.5 rounded-full ${
-              i < difficulty ? 'bg-primary' : 'bg-muted'
-            }`}
-          />
-        ))}
+        <div className={`size-1.5 rounded-full ${0 < difficulty ? 'bg-primary' : 'bg-muted'}`} />
+        <div className={`size-1.5 rounded-full ${1 < difficulty ? 'bg-primary' : 'bg-muted'}`} />
+        <div className={`size-1.5 rounded-full ${2 < difficulty ? 'bg-primary' : 'bg-muted'}`} />
+        <div className={`size-1.5 rounded-full ${3 < difficulty ? 'bg-primary' : 'bg-muted'}`} />
       </div>
 
       {/* Icon */}

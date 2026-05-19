@@ -5,7 +5,7 @@
  */
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import {
   CheckCircle,
@@ -166,31 +166,33 @@ function FeedbackToast({
   return (
     <AnimatePresence>
       {show && (
-        <motion.div
-          initial={{ opacity: 0, y: position === 'bottom' ? 20 : -20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: position === 'bottom' ? 20 : -20, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
-          className={cn(
-            'fixed z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg',
-            config.className,
-            position === 'bottom' ? 'bottom-6 right-6' : 'top-6 right-6'
-          )}
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.1, type: 'spring' }}
+        <LazyMotion features={domAnimation}>
+          <m.div
+            initial={{ opacity: 0, y: position === 'bottom' ? 20 : -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: position === 'bottom' ? 20 : -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className={cn(
+              'fixed z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg',
+              config.className,
+              position === 'bottom' ? 'bottom-6 right-6' : 'top-6 right-6'
+            )}
           >
-            <Icon className={cn('size-5', config.iconClass)} />
-          </motion.div>
+            <m.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring' }}
+            >
+              <Icon className={cn('size-5', config.iconClass)} />
+            </m.div>
           <div>
             <p className="font-medium">{message}</p>
             {description && (
               <p className="text-sm opacity-90">{description}</p>
             )}
           </div>
-        </motion.div>
+          </m.div>
+        </LazyMotion>
       )}
     </AnimatePresence>
   )
@@ -242,8 +244,8 @@ export function LoadingPlaceholder({
   if (type === 'list') {
     return (
       <div className={cn("gap-y-3", className)}>
-        {[1, 2, 3].map(i => (
-          <div key={`feedback-${i}`} className="flex items-center gap-3">
+        {[1, 2, 3].map(n => (
+          <div key={`list-skeleton-${n}`} className="flex items-center gap-3">
             <div className="size-10 bg-muted rounded-full animate-pulse" />
             <div className="flex-1">
               <div className="h-4 bg-muted rounded w-1/3 mb-2 animate-pulse" />
@@ -264,12 +266,12 @@ export function LoadingPlaceholder({
           <div className="size-3 bg-muted rounded-full animate-pulse" />
         </div>
         <div className="p-4 gap-y-2">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={`feedback-${i}`} className="flex gap-4">
+          {[1, 2, 3, 4, 5].map(n => (
+            <div key={`code-skeleton-${n}`} className="flex gap-4">
               <div className="w-6 h-4 bg-muted animate-pulse" />
               <div className={cn(
                 "h-4 bg-muted animate-pulse",
-                i % 3 === 0 ? "w-3/4" : i % 3 === 1 ? "w-1/2" : "w-2/3"
+                n % 3 === 0 ? "w-3/4" : n % 3 === 1 ? "w-1/2" : "w-2/3"
               )} />
             </div>
           ))}
@@ -305,21 +307,23 @@ export function LoadingOverlay({
   message?: string
 }) {
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-        >
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">{message}</p>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <LazyMotion features={domAnimation}>
+      <AnimatePresence>
+        {show && (
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          >
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">{message}</p>
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </LazyMotion>
   )
 }
 
@@ -347,39 +351,41 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "flex flex-col items-center justify-center py-16 px-4",
-        className
-      )}
-    >
-      {Icon && (
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, type: 'spring' }}
-          className="size-20 bg-muted rounded-2xl flex items-center justify-center mb-6"
-        >
-          <Icon className="size-10 text-muted-foreground" />
-        </motion.div>
-      )}
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+          "flex flex-col items-center justify-center py-16 px-4",
+          className
+        )}
+      >
+        {Icon && (
+          <m.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, type: 'spring' }}
+            className="size-20 bg-muted rounded-2xl flex items-center justify-center mb-6"
+          >
+            <Icon className="size-10 text-muted-foreground" />
+          </m.div>
+        )}
 
-      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
 
-      {description && (
-        <p className="text-muted-foreground text-center max-w-sm mb-6">
-          {description}
-        </p>
-      )}
+        {description && (
+          <p className="text-muted-foreground text-center max-w-sm mb-6">
+            {description}
+          </p>
+        )}
 
-      {action && (
-        <Button onClick={action.onClick} variant="default">
-          {action.label}
-        </Button>
-      )}
-    </motion.div>
+        {action && (
+          <Button onClick={action.onClick} variant="default">
+            {action.label}
+          </Button>
+        )}
+      </m.div>
+    </LazyMotion>
   )
 }
 

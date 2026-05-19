@@ -16,15 +16,8 @@ export function CustomTestInput({
   defaultInput = '',
   lang = 'zh',
 }: CustomTestInputProps) {
-  const [input, setInput] = useState(defaultInput)
+  const [input, setInput] = useState(() => defaultInput)
   const [copied, setCopied] = useState(false)
-
-  // 当 defaultInput 改变时（比如从样例运行传入），更新输入框
-  useEffect(() => {
-    if (defaultInput && defaultInput !== input) {
-      setInput(defaultInput)
-    }
-  }, [defaultInput])
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 

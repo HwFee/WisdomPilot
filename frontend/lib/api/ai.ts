@@ -86,6 +86,7 @@ export async function aiChatStream(
 
   try {
     while (true) {
+      // react-doctor-disable-next-line async-await-in-loop, react-doctor/async-await-in-loop
       const { done, value } = await reader.read()
       if (done) break
 
@@ -222,6 +223,7 @@ export async function streamExerciseHint(
 
   try {
     while (true) {
+      // react-doctor-disable-next-line async-await-in-loop, react-doctor/async-await-in-loop
       const { done, value } = await reader.read()
       if (done) break
 

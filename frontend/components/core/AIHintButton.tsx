@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Gem, Lightbulb, Sparkles, BookOpen, Loader2 } from 'lucide-react'
 import { spendCores, hasEnoughCores, AI_HINT_COSTS, type CoreSpendCategory } from '@/lib/api/core'
 
@@ -37,7 +37,7 @@ export function AIHintButton({
   disabled = false,
   lang = 'zh',
 }: AIHintButtonProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
   const config = HINT_CONFIG[hintType]
@@ -47,33 +47,31 @@ export function AIHintButton({
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
-  const handleClick = async () => {
-    if (!canAfford || isLoading) return
+  const purchaseHint = async () => {
+    if (!canAfford || isPending) return
 
-    setIsLoading(true)
-    setError(null)
+    startTransition(async () => {
+      setError(null)
+      try {
+        const category = `ai_hint_${hintType}` as CoreSpendCategory
+        const result = await spendCores({
+          amount: cost,
+          category,
+          description: config.label[lang as 'zh' | 'en'],
+        })
 
-    try {
-      const category = `ai_hint_${hintType}` as CoreSpendCategory
-      const result = await spendCores({
-        amount: cost,
-        category,
-        description: config.label[lang as 'zh' | 'en'],
-      })
-
-      onHintPurchased({ category, amount: cost })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('消耗失败', 'Failed to spend'))
-    } finally {
-      setIsLoading(false)
-    }
+        onHintPurchased({ category, amount: cost })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('消耗失败', 'Failed to spend'))
+      }
+    })
   }
 
   return (
     <div className="relative">
       <button type="button"
-        onClick={handleClick}
-        disabled={disabled || !canAfford || isLoading}
+        onClick={purchaseHint}
+        disabled={disabled || !canAfford || isPending}
         className={`
           flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
           ${canAfford && !disabled
@@ -82,7 +80,7 @@ export function AIHintButton({
           }
         `}
       >
-        {isLoading ? (
+        {isPending ? (
           <Loader2 className="size-4 animate-spin" />
         ) : (
           <Icon className="size-4" />

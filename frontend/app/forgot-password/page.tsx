@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useTransition } from 'react'
 import Link from 'next/link'
 import { forgotPassword } from '@/lib/api'
 import { validateEmail } from '@/lib/utils/validation'
@@ -8,51 +8,57 @@ import { Sparkles, Mail, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-rea
 import { CharacterGroup } from '@/components/ui/animated-characters'
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [error, setError] = useState('')
-  const [emailTouched, setEmailTouched] = useState(false)
-  const [emailError, setEmailError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const [emailState, setEmailState] = useState({
+    value: '',
+    touched: false,
+    error: null as string | null,
+  })
+  const [formStatus, setFormStatus] = useState({
+    success: false,
+    error: '',
+  })
   const [lang, setLang] = useState<'zh' | 'en'>('zh')
+  const { value: email, touched: emailTouched, error: emailError } = emailState
+  const { success: isSuccess, error } = formStatus
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   const handleEmailChange = (value: string) => {
-    setEmail(value)
     if (emailTouched) {
       const result = validateEmail(value, lang)
-      setEmailError(result.valid ? null : result.error || null)
+      setEmailState({ value, touched: true, error: result.valid ? null : result.error || null })
+    } else {
+      setEmailState(prev => ({ ...prev, value }))
     }
   }
 
   const handleEmailBlur = () => {
-    setEmailTouched(true)
     const result = validateEmail(email, lang)
-    setEmailError(result.valid ? null : result.error || null)
+    setEmailState({ value: email, touched: true, error: result.valid ? null : result.error || null })
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    setError('')
-    setEmailTouched(true)
+    setFormStatus({ success: false, error: '' })
 
     const result = validateEmail(email, lang)
     if (!result.valid) {
-      setEmailError(result.error || null)
+      setEmailState(prev => ({ ...prev, touched: true, error: result.error || null }))
       return
     }
 
-    setIsLoading(true)
-
-    try {
-      await forgotPassword(email)
-      setIsSuccess(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('发送失败，请稍后重试', 'Failed to send, please try again'))
-    } finally {
-      setIsLoading(false)
-    }
+    startTransition(async () => {
+      try {
+        await forgotPassword(email)
+        setFormStatus({ success: true, error: '' })
+      } catch (err) {
+        setFormStatus({
+          success: false,
+          error: err instanceof Error ? err.message : t('发送失败，请稍后重试', 'Failed to send, please try again'),
+        })
+      }
+    })
   }
 
   if (isSuccess) {
@@ -74,15 +80,15 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60">
-            <a href="#" className="hover:text-primary-foreground transition-colors">
+            <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
               {t('隐私政策', 'Privacy Policy')}
-            </a>
-            <a href="#" className="hover:text-primary-foreground transition-colors">
+            </button>
+            <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
               {t('服务条款', 'Terms of Service')}
-            </a>
-            <a href="#" className="hover:text-primary-foreground transition-colors">
+            </button>
+            <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
               {t('联系我们', 'Contact')}
-            </a>
+            </button>
           </div>
 
           <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
@@ -148,15 +154,15 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60">
-          <a href="#" className="hover:text-primary-foreground transition-colors">
+          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
             {t('隐私政策', 'Privacy Policy')}
-          </a>
-          <a href="#" className="hover:text-primary-foreground transition-colors">
+          </button>
+          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
             {t('服务条款', 'Terms of Service')}
-          </a>
-          <a href="#" className="hover:text-primary-foreground transition-colors">
+          </button>
+          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
             {t('联系我们', 'Contact')}
-          </a>
+          </button>
         </div>
 
         <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
@@ -253,10 +259,10 @@ export default function ForgotPasswordPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="w-full h-12 text-base font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? t('发送中...', 'Sending...') : t('发送重置链接', 'Send Reset Link')}
+              {isPending ? t('发送中...', 'Sending...') : t('发送重置链接', 'Send Reset Link')}
             </button>
 
             <div className="text-center">

@@ -1,9 +1,17 @@
 'use client'
 
-import { useRef, useState, useCallback, useEffect, forwardRef as forwardRefReact, useImperativeHandle } from 'react'
+import { useRef, useState, useCallback, useEffect, useImperativeHandle } from 'react'
 import type { RefObject } from 'react'
-import Editor, { OnMount, OnChange } from '@monaco-editor/react'
-import type { editor } from 'monaco-editor'
+import dynamic from 'next/dynamic'
+interface MonacoEditor {
+  getValue(): string
+  setValue(value: string): void
+  focus(): void
+  updateOptions(options: Record<string, unknown>): void
+  getDomNode(): HTMLElement | null
+}
+
+const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 import { cn } from '@/lib/utils'
 import { executeCode, CodeExecutionResponse, LANGUAGE_CONFIG } from '@/lib/code-api'
 import { getStoredToken } from '@/lib/api'
@@ -48,25 +56,22 @@ const LANGUAGES = [
   { id: 54, name: 'C++' },
 ]
 
-const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps>(
-  (
-    {
-      defaultCode = '',
-      defaultLanguage = 71,
-      chapterId,
-      subsectionIndex,
-      exerciseQuestion = '编程题',
-      exerciseOptions,
-      onCodeChange,
-      onClose,
-      onExerciseComplete,
-      onProgrammingResult,
-      onProgrammingAttempt,
-      className,
-    },
-    ref
-  ) => {
-    const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+const CodeEditorPanel = ({
+  defaultCode = '',
+  defaultLanguage = 71,
+  chapterId,
+  subsectionIndex,
+  exerciseQuestion = '编程题',
+  exerciseOptions,
+  onCodeChange,
+  onClose,
+  onExerciseComplete,
+  onProgrammingResult,
+  onProgrammingAttempt,
+  className,
+  ref,
+}: CodeEditorPanelProps & { ref?: React.Ref<CodeEditorPanelRef> }) => {
+    const editorRef = useRef<MonacoEditor | null>(null)
     // Initialize code: try to load from localStorage first, otherwise use defaultCode
     const [code, setCodeState] = useState(() => {
       if (chapterId !== undefined && subsectionIndex !== undefined) {
@@ -75,9 +80,9 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       }
       return defaultCode
     })
-    const [language, setLanguage] = useState(defaultLanguage)
-    const [isRunning, setIsRunning] = useState(false)
-    const [output, setOutput] = useState<CodeExecutionResponse | null>(null)
+    const [language, setLanguage] = useState(() => defaultLanguage)
+    const [runState, setRunState] = useState<{ isRunning: boolean; output: CodeExecutionResponse | null }>({ isRunning: false, output: null })
+    const { isRunning, output } = runState
     const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
 
     // Register this IDE as the active editor for orb drop detection
@@ -128,7 +133,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       },
     }))
 
-    const handleEditorMount: OnMount = (editor, monaco) => {
+    const handleEditorMount = (editor: MonacoEditor, monaco: any) => {
       editorRef.current = editor
       // Configure editor settings
       editor.updateOptions({
@@ -142,7 +147,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       })
     }
 
-    const handleChange: OnChange = (value) => {
+    const onEditorValueChange = (value: string | undefined) => {
       const newCode = value || ''
       setCodeState(newCode)
       onCodeChange?.(newCode)
@@ -152,8 +157,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       const token = getStoredToken()
       if (!token) return
 
-      setIsRunning(true)
-      setOutput(null)
+      setRunState({ isRunning: true, output: null })
 
       try {
         const result = await executeCode(token, {
@@ -161,7 +165,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
           language_id: language,
           stdin: '',
         })
-        setOutput(result)
+        setRunState(prev => ({ ...prev, output: result }))
 
         // Programming exercise uses id 0
         const exerciseId = 0
@@ -186,20 +190,23 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
           onExerciseComplete(completedSubsections, completedCount, totalCount)
         }
       } catch (error) {
-        setOutput({
-          token: '',
-          status: 'error',
-          status_id: -1,
-          stdout: null,
-          stderr: null,
-          compile_output: null,
-          message: error instanceof Error ? error.message : 'Execution failed',
-          time: null,
-          memory: null,
-          exit_code: -1,
+        setRunState({
+          isRunning: false,
+          output: {
+            token: '',
+            status: 'error',
+            status_id: -1,
+            stdout: null,
+            stderr: null,
+            compile_output: null,
+            message: error instanceof Error ? error.message : 'Execution failed',
+            time: null,
+            memory: null,
+            exit_code: -1,
+          },
         })
       } finally {
-        setIsRunning(false)
+        setRunState(prev => ({ ...prev, isRunning: false }))
       }
     }, [code, language, chapterId, subsectionIndex, onExerciseComplete, onProgrammingAttempt])
 
@@ -209,18 +216,21 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       const storageKey = `code_${chapterId}_${subsectionIndex}_${language}`
       localStorage.setItem(storageKey, code)
       // Provide visual feedback
-      setOutput({
-        token: '',
-        status: 'Saved',
-        status_id: 3, // Use same status_id as Accepted for green display
-        stdout: '代码已保存到本地',
-        stderr: null,
-        compile_output: null,
-        message: null,
-        time: null,
-        memory: null,
-        exit_code: 0,
-      })
+      setRunState(prev => ({
+        ...prev,
+        output: {
+          token: '',
+          status: 'Saved',
+          status_id: 3,
+          stdout: '代码已保存到本地',
+          stderr: null,
+          compile_output: null,
+          message: null,
+          time: null,
+          memory: null,
+          exit_code: 0,
+        },
+      }))
     }, [chapterId, subsectionIndex, code, language])
 
     const selectedLanguageLabel = LANGUAGE_CONFIG[language]?.label || 'Python'
@@ -335,7 +345,7 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
             height="100%"
             language={LANGUAGE_CONFIG[language]?.monacoLanguage || 'python'}
             value={code}
-            onChange={handleChange}
+            onChange={onEditorValueChange}
             onMount={handleEditorMount}
             theme="vs-dark"
             options={{
@@ -400,8 +410,9 @@ const CodeEditorPanel = forwardRefReact<CodeEditorPanelRef, CodeEditorPanelProps
       </div>
     )
   }
-)
 
 CodeEditorPanel.displayName = 'CodeEditorPanel'
+
+
 
 export { CodeEditorPanel }

@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { LazyMotion, domAnimation, m } from 'framer-motion'
 import { ArrowLeft, Users, ArrowRight, Loader2 } from 'lucide-react'
 import { getStoredToken } from '@/lib/api'
 import { getCourses } from '@/lib/api/courses'
@@ -51,25 +51,25 @@ const FALLBACK_COURSES: Course[] = [
 
 export default function CoursesPage() {
   const router = useRouter()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [courses, setCourses] = useState<Course[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [pageState, setPageState] = useState({
+    mounted: false,
+    courses: [] as Course[],
+    isLoading: true,
+  })
+  const errorRef = useRef<string | null>(null)
+  const { mounted, courses, isLoading } = pageState
 
   useEffect(() => {
-    setMounted(true)
     const token = getStoredToken()
-    setIsLoggedIn(!!token)
 
     // Fetch real courses from API (公开接口，未登录也能访问)
     const fetchCourses = async () => {
+      let fetchedCourses: Course[] = []
       try {
-        setIsLoading(true)
         const response = await getCourses(token || undefined)
         if (response.courses && response.courses.length > 0) {
           // Transform API data to component format
-          const transformedCourses: Course[] = response.courses.map((course: {
+          fetchedCourses = response.courses.map((course: {
             id: number
             code: string
             name: string
@@ -83,19 +83,21 @@ export default function CoursesPage() {
             description: course.description || `${course.name}课程`,
             learners: '1,000+',
           }))
-          setCourses(transformedCourses)
         } else {
           // Use fallback if no courses returned
-          setCourses(FALLBACK_COURSES)
+          fetchedCourses = FALLBACK_COURSES
         }
       } catch (err) {
         console.error('Failed to fetch courses:', err)
-        setError('获取课程列表失败')
+        errorRef.current = '获取课程列表失败'
         // Use fallback data on error
-        setCourses(FALLBACK_COURSES)
-      } finally {
-        setIsLoading(false)
+        fetchedCourses = FALLBACK_COURSES
       }
+      setPageState({
+        mounted: true,
+        courses: fetchedCourses,
+        isLoading: false,
+      })
     }
 
     fetchCourses()
@@ -110,9 +112,10 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <LazyMotion features={domAnimation}>
+      <div className="min-h-screen bg-background">
       {/* Header */}
-      <motion.header
+      <m.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -131,13 +134,13 @@ export default function CoursesPage() {
             <div className="w-20"></div>
           </div>
         </div>
-      </motion.header>
+      </m.header>
 
       {/* Main content */}
       <main className="pt-24 pb-12 px-6">
         <div className="max-w-6xl mx-auto">
           {/* 标题区域 */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -149,10 +152,10 @@ export default function CoursesPage() {
             <p className="text-muted-foreground max-w-2xl mx-auto">
               从入门到进阶，覆盖主流编程语言和核心计算机科学知识
             </p>
-          </motion.div>
+          </m.div>
 
           {/* Course grid */}
-          <motion.div
+          <m.div
             variants={staggerContainer}
             initial="initial"
             animate="animate"
@@ -162,7 +165,7 @@ export default function CoursesPage() {
               const courseConfig = getCourseConfig(course.code)
 
               return (
-                <motion.div
+                <m.div
                   key={course.id}
                   variants={staggerItem}
                   custom={index}
@@ -181,7 +184,7 @@ export default function CoursesPage() {
 
                       {/* Icon + Name row */}
                       <div className="flex items-center gap-4 mb-4 mt-2">
-                        <motion.div
+                        <m.div
                           whileHover={{ scale: 1.08 }}
                           className={cn(
                             "size-14 rounded-xl flex items-center justify-center shadow-lg",
@@ -193,15 +196,16 @@ export default function CoursesPage() {
                           <div className="size-7 text-white">
                             {courseConfig?.icon}
                           </div>
-                        </motion.div>
+                        </m.div>
                         <div>
                           <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                             {course.name}
                           </h3>
                           <div className="flex gap-1 mt-1">
-                            {[...Array(4)].map((_, i) => (
-                              <div key={`dot-${i}`} className={`size-1.5 rounded-full ${i < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
-                            ))}
+                            <div className={`size-1.5 rounded-full ${0 < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
+                            <div className={`size-1.5 rounded-full ${1 < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
+                            <div className={`size-1.5 rounded-full ${2 < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
+                            <div className={`size-1.5 rounded-full ${3 < course.difficulty ? 'bg-primary' : 'bg-muted'}`} />
                           </div>
                         </div>
                       </div>
@@ -224,13 +228,14 @@ export default function CoursesPage() {
                       </div>
                     </Card>
                   </Link>
-                </motion.div>
+                </m.div>
               )
             })}
-          </motion.div>
+          </m.div>
         </div>
       </main>
     </div>
+    </LazyMotion>
   )
 }
 

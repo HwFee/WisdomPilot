@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Crown,
@@ -16,6 +16,11 @@ import {
   PartyPopper,
 } from "lucide-react";
 import { getStoredToken } from "@/lib/api";
+import {
+  BEIJING_DAY_FORMATTER,
+  BEIJING_TIME_FORMATTER,
+  BEIJING_DATETIME_FORMATTER,
+} from "@/lib/formatters";
 
 interface TierTransaction {
   id: string;
@@ -71,11 +76,73 @@ const getTierDisplay = (tier: string, subTier: number) => {
   return `${TIER_NAMES[tier] || tier} ${ROMAN_NUMERALS[subTier] || subTier}`;
 };
 
+function TierTransactionItem({ tx, formatDate }: { tx: TierTransaction; formatDate: (s: string) => string }) {
+  return (
+    <div className="p-4 hover:bg-muted/30 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            {tx.promoted && (
+              <span className="px-2 py-0.5 rounded text-xs font-medium text-green-600 bg-green-100 flex items-center gap-1">
+                <PartyPopper className="size-3" />
+                晋级
+              </span>
+            )}
+            {tx.demoted && (
+              <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100 flex items-center gap-1">
+                <TrendingDown className="size-3" />
+                降级
+              </span>
+            )}
+            {tx.used_protection && (
+              <span className="px-2 py-0.5 rounded text-xs font-medium text-blue-600 bg-blue-100 flex items-center gap-1">
+                <Shield className="size-3" />
+                段位保护
+              </span>
+            )}
+            {!tx.promoted && !tx.demoted && !tx.used_protection && (
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${TIER_COLORS[tx.tier_after] || "text-gray-600 bg-gray-100"}`}>
+                {getTierDisplay(tx.tier_after, tx.sub_tier_after)}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`${TIER_COLORS[tx.tier_before] || "text-gray-600"} flex items-center gap-0.5`}>
+              {getTierDisplay(tx.tier_before, tx.sub_tier_before)} <Star className="size-3.5 fill-current" />{tx.stars_before}
+            </span>
+            <span className="text-muted-foreground">→</span>
+            <span className={`${TIER_COLORS[tx.tier_after] || "text-gray-600"} flex items-center gap-0.5`}>
+              {getTierDisplay(tx.tier_after, tx.sub_tier_after)} <Star className="size-3.5 fill-current" />{tx.stars_after}
+            </span>
+          </div>
+          {tx.description && (
+            <p className="text-sm text-muted-foreground mt-1">{tx.description}</p>
+          )}
+          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+            <Clock className="size-3" />
+            {formatDate(tx.created_at)}
+          </div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <div className={`text-lg font-bold flex items-center gap-1 ${tx.stars_change > 0 ? "text-green-500" : "text-red-500"}`}>
+            {tx.stars_change > 0 ? (
+              <><TrendingUp className="size-4" />+{tx.stars_change}</>
+            ) : (
+              <><TrendingDown className="size-4" />{tx.stars_change}</>
+            )}
+            <Star className="size-4 fill-current" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TierPage() {
   const { push, back } = useRouter();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<TierTransaction[]>([]);
-  const [page, setPage] = useState(0);
+  const pageRef = useRef(0);
   const [total, setTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -110,7 +177,7 @@ export default function TierPage() {
           setTransactions(data.transactions);
         }
         setTotal(data.total);
-        setPage(pageNum);
+        pageRef.current = pageNum;
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -126,7 +193,7 @@ export default function TierPage() {
 
   const loadMore = () => {
     if (!loadingMore && transactions.length < total) {
-      fetchData(page + 1, true);
+      fetchData(pageRef.current + 1, true);
     }
   };
 
@@ -149,11 +216,8 @@ export default function TierPage() {
     const date = new Date(normalizedDateStr);
     const now = new Date();
 
-    const beijingFormatter = (options: Intl.DateTimeFormatOptions) =>
-      new Intl.DateTimeFormat("zh-CN", { ...options, timeZone: "Asia/Shanghai" });
-
-    const dateBeijingStr = beijingFormatter({ year: "numeric", month: "numeric", day: "numeric" }).format(date);
-    const nowBeijingStr = beijingFormatter({ year: "numeric", month: "numeric", day: "numeric" }).format(now);
+    const dateBeijingStr = BEIJING_DAY_FORMATTER.format(date);
+    const nowBeijingStr = BEIJING_DAY_FORMATTER.format(now);
 
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -167,11 +231,11 @@ export default function TierPage() {
       }
       return `${hours}小时前`;
     } else if (days === 1 || (days === 0 && dateBeijingStr !== nowBeijingStr)) {
-      return "昨天 " + beijingFormatter({ hour: "2-digit", minute: "2-digit" }).format(date);
+      return "昨天 " + BEIJING_TIME_FORMATTER.format(date);
     } else if (days < 7) {
       return `${days}天前`;
     } else {
-      return beijingFormatter({ month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
+      return BEIJING_DATETIME_FORMATTER.format(date);
     }
   };
 
@@ -187,14 +251,7 @@ export default function TierPage() {
     const date = new Date(dateStr);
     const today = new Date();
 
-    const beijingFormatter = new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "Asia/Shanghai",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-    });
-
-    return beijingFormatter.format(date) === beijingFormatter.format(today);
+    return BEIJING_DAY_FORMATTER.format(date) === BEIJING_DAY_FORMATTER.format(today);
   });
 
   const todayStarsGained = todayTransactions.filter((t) => t.stars_change > 0).reduce((sum, t) => sum + t.stars_change, 0);
@@ -281,82 +338,7 @@ export default function TierPage() {
           ) : (
             <div className="divide-y">
               {transactions.map((tx) => (
-                <div key={tx.id} className="p-4 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {/* 状态标签 */}
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        {tx.promoted && (
-                          <span className="px-2 py-0.5 rounded text-xs font-medium text-green-600 bg-green-100 flex items-center gap-1">
-                            <PartyPopper className="size-3" />
-                            晋级
-                          </span>
-                        )}
-                        {tx.demoted && (
-                          <span className="px-2 py-0.5 rounded text-xs font-medium text-red-600 bg-red-100 flex items-center gap-1">
-                            <TrendingDown className="size-3" />
-                            降级
-                          </span>
-                        )}
-                        {tx.used_protection && (
-                          <span className="px-2 py-0.5 rounded text-xs font-medium text-blue-600 bg-blue-100 flex items-center gap-1">
-                            <Shield className="size-3" />
-                            段位保护
-                          </span>
-                        )}
-                        {!tx.promoted && !tx.demoted && !tx.used_protection && (
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${TIER_COLORS[tx.tier_after] || "text-gray-600 bg-gray-100"}`}>
-                            {getTierDisplay(tx.tier_after, tx.sub_tier_after)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* 段位变化 */}
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className={`${TIER_COLORS[tx.tier_before] || "text-gray-600"} flex items-center gap-0.5`}>
-                          {getTierDisplay(tx.tier_before, tx.sub_tier_before)} <Star className="size-3.5 fill-current" />{tx.stars_before}
-                        </span>
-                        <span className="text-muted-foreground">→</span>
-                        <span className={`${TIER_COLORS[tx.tier_after] || "text-gray-600"} flex items-center gap-0.5`}>
-                          {getTierDisplay(tx.tier_after, tx.sub_tier_after)} <Star className="size-3.5 fill-current" />{tx.stars_after}
-                        </span>
-                      </div>
-
-                      {/* 描述 */}
-                      {tx.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{tx.description}</p>
-                      )}
-
-                      {/* 时间 */}
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <Clock className="size-3" />
-                        {formatDate(tx.created_at)}
-                      </div>
-                    </div>
-
-                    {/* 星星变化 */}
-                    <div className="text-right flex-shrink-0">
-                      <div
-                        className={`text-lg font-bold flex items-center gap-1 ${
-                          tx.stars_change > 0 ? "text-green-500" : "text-red-500"
-                        }`}
-                      >
-                        {tx.stars_change > 0 ? (
-                          <>
-                            <TrendingUp className="size-4" />
-                            +{tx.stars_change}
-                          </>
-                        ) : (
-                          <>
-                            <TrendingDown className="size-4" />
-                            {tx.stars_change}
-                          </>
-                        )}
-                        <Star className="size-4 fill-current" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TierTransactionItem key={tx.id} tx={tx} formatDate={formatDate} />
               ))}
 
               {/* Load More Button */}

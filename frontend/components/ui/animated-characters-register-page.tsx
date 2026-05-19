@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import Link from 'next/link'
+import { useState, useEffect, useRef, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,9 +28,9 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [isPasswordField, setIsPasswordField] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const isTypingRef = useRef(false);
+  const isPasswordFieldRef = useRef(false);
   const [isLookingAway, setIsLookingAway] = useState(false);
   const [lang, setLang] = useState<'en' | 'zh'>('zh');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -48,10 +49,7 @@ function RegisterPage() {
 
   const t = (en: string, zh: string) => lang === 'en' ? en : zh;
 
-  // Password privacy - look away
-  useEffect(() => {
-    setIsLookingAway(isPasswordField);
-  }, [isPasswordField]);
+
 
   // Real-time validation
   useEffect(() => {
@@ -125,16 +123,14 @@ function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      await register(email, username, password);
-      push("/login");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("Registration failed. Please try again.", "注册失败，请重试。"));
-    } finally {
-      setIsLoading(false);
-    }
+    startTransition(async () => {
+      try {
+        await register(email, username, password);
+        push("/login");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("Registration failed. Please try again.", "注册失败，请重试。"));
+      }
+    });
   };
 
   return (
@@ -155,15 +151,15 @@ function RegisterPage() {
         </div>
 
         <div className="relative z-20 flex items-center gap-8 text-sm text-primary-foreground/60">
-          <a href="#" className="hover:text-primary-foreground transition-colors">
+          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
             {t('Privacy Policy', '隐私政策')}
-          </a>
-          <a href="#" className="hover:text-primary-foreground transition-colors">
+          </button>
+          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
             {t('Terms of Service', '服务条款')}
-          </a>
-          <a href="#" className="hover:text-primary-foreground transition-colors">
+          </button>
+          <button type="button" className="hover:text-primary-foreground transition-colors bg-transparent border-none cursor-pointer">
             {t('Contact', '联系我们')}
-          </a>
+          </button>
         </div>
 
         <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
@@ -232,8 +228,8 @@ function RegisterPage() {
                   placeholder={t('yourname', 'username')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  onFocus={() => setIsTyping(true)}
-                  onBlur={() => { setIsTyping(false); setUsernameTouched(true); }}
+                  onFocus={() => { isTypingRef.current = true; }}
+                  onBlur={() => { isTypingRef.current = false; setUsernameTouched(true); }}
                   className={cn(
                     "h-12 pl-10 bg-background border-border/60 focus:border-primary",
                     usernameTouched && usernameError && "border-red-500 focus:border-red-500",
@@ -262,8 +258,8 @@ function RegisterPage() {
                   placeholder={t('you@example.com', 'you@example.com')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onFocus={() => setIsTyping(true)}
-                  onBlur={() => { setIsTyping(false); setEmailTouched(true); }}
+                  onFocus={() => { isTypingRef.current = true; }}
+                  onBlur={() => { isTypingRef.current = false; setEmailTouched(true); }}
                   className={cn(
                     "h-12 pl-10 bg-background border-border/60 focus:border-primary",
                     emailTouched && emailError && "border-red-500 focus:border-red-500",
@@ -292,8 +288,8 @@ function RegisterPage() {
                   value={password}
                   maxLength={100}
                   onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => { setIsTyping(true); setIsPasswordField(true); setPasswordTouched(true); }}
-                  onBlur={() => { setIsTyping(false); setIsPasswordField(false); }}
+                  onFocus={() => { isTypingRef.current = true; isPasswordFieldRef.current = true; setIsLookingAway(true); setPasswordTouched(true); }}
+                  onBlur={() => { isTypingRef.current = false; isPasswordFieldRef.current = false; setIsLookingAway(false); }}
                   className={cn(
                     "h-12 pr-10 bg-background border-border/60 focus:border-primary",
                     passwordTouched && passwordResult && !passwordResult.valid && "border-red-500 focus:border-red-500",
@@ -329,8 +325,8 @@ function RegisterPage() {
                   value={confirmPassword}
                   maxLength={100}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  onFocus={() => { setIsTyping(true); setIsPasswordField(true); setConfirmPasswordTouched(true); }}
-                  onBlur={() => { setIsTyping(false); setIsPasswordField(false); }}
+                  onFocus={() => { isTypingRef.current = true; isPasswordFieldRef.current = true; setIsLookingAway(true); setConfirmPasswordTouched(true); }}
+                  onBlur={() => { isTypingRef.current = false; isPasswordFieldRef.current = false; setIsLookingAway(false); }}
                   className={cn(
                     "h-12 pr-10 bg-background border-border/60 focus:border-primary",
                     confirmPasswordTouched && confirmPasswordError && "border-red-500 focus:border-red-500",
@@ -363,7 +359,7 @@ function RegisterPage() {
                 onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
               />
               <Label htmlFor="terms" className="ml-2 text-sm text-muted-foreground cursor-pointer">
-                {t('I agree to the', '我同意')} <a href="#" className="text-primary hover:underline">{t('Terms of Service', '服务条款')}</a> {t('and', '和')} <a href="#" className="text-primary hover:underline">{t('Privacy Policy', '隐私政策')}</a>
+                {t('I agree to the', '我同意')} <button type="button" className="text-primary hover:underline bg-transparent border-none cursor-pointer">{t('Terms of Service', '服务条款')}</button> {t('and', '和')} <button type="button" className="text-primary hover:underline bg-transparent border-none cursor-pointer">{t('Privacy Policy', '隐私政策')}</button>
               </Label>
             </div>
 
@@ -371,18 +367,18 @@ function RegisterPage() {
               type="submit"
               className="w-full h-12 text-base font-medium"
               size="lg"
-              disabled={isLoading}
+              disabled={isPending}
             >
-              {isLoading ? (t('Creating account...', '创建中...')) : (t('Create account', '注册'))}
+              {isPending ? (t('Creating account...', '创建中...')) : (t('Create account', '注册'))}
             </Button>
           </form>
 
           {/* Sign In Link */}
           <div className="text-center text-sm text-muted-foreground mt-8">
             {t('Already have an account?', '已有账号？')}{" "}
-            <a href="/login" className="text-foreground font-medium hover:underline">
+            <Link href="/login" className="text-foreground font-medium hover:underline">
               {t('Sign in', '立即登录')}
-            </a>
+            </Link>
           </div>
         </div>
       </div>

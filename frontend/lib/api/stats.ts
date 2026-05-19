@@ -12,7 +12,7 @@ import {
   EndSessionRequest,
   UpdateSubsectionRequest,
 } from "@/types/api";
-import { get, post, put, API_BASE_URL } from "./client";
+import { get, post, put, API_BASE_URL, postKeepalive } from "./client";
 
 // ========================================
 // Progress API Functions
@@ -85,15 +85,9 @@ export function endLearningSessionKeepalive(
   durationSeconds: number,
   chapterId?: number,
 ): void {
-
-  import("./client").then(({ postKeepalive }) => {
-    postKeepalive("/api/stats/sessions/end", token, {
-      duration_seconds: durationSeconds,
-      chapter_id: chapterId ?? null,
-    }).then(() => {
-    }).catch((err) => {
-      console.error("[学习时长-API] postKeepalive 请求失败:", err);
-    });
+  postKeepalive("/api/stats/sessions/end", token, {
+    duration_seconds: durationSeconds,
+    chapter_id: chapterId ?? null,
   });
 }
 

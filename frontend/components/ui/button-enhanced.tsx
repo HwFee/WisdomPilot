@@ -97,42 +97,41 @@ export interface ButtonProps
   rightIcon?: React.ReactNode
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({
-    className,
-    variant,
-    size,
-    fullWidth,
-    asChild = false,
-    loading = false,
-    leftIcon,
-    rightIcon,
-    children,
-    disabled,
-    ...props
-  }, ref) => {
-    const Comp = asChild ? Slot : "button"
+const Button = ({
+  className,
+  variant,
+  size,
+  fullWidth,
+  asChild = false,
+  loading = false,
+  leftIcon,
+  rightIcon,
+  children,
+  disabled,
+  ref,
+  ...props
+}: ButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const Comp = asChild ? Slot : "button"
 
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, fullWidth, className }))}
-        ref={ref}
-        disabled={disabled || loading}
-        {...props}
-      >
-        {loading ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <>
-            {leftIcon && <span className="mr-2 -ml-1">{leftIcon}</span>}
-            {children}
-            {rightIcon && <span className="ml-2 -mr-1">{rightIcon}</span>}
-          </>
-        )}
-      </Comp>
-    )
-  },
-)
+  return (
+    <Comp
+      className={cn(buttonVariants({ variant, size, fullWidth, className }))}
+      ref={ref}
+      disabled={disabled || loading}
+      {...props}
+    >
+      {loading ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <>
+          {leftIcon && <span className="mr-2 -ml-1">{leftIcon}</span>}
+          {children}
+          {rightIcon && <span className="ml-2 -mr-1">{rightIcon}</span>}
+        </>
+      )}
+    </Comp>
+  )
+}
 Button.displayName = "Button"
 
 export { Button, buttonVariants }

@@ -2,7 +2,7 @@
  * Sections API - 小节相关的API调用
  */
 
-import { getStoredToken } from './index'
+import { getStoredToken } from './auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 

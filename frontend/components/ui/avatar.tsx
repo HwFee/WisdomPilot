@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { User } from "lucide-react"
 
@@ -115,71 +116,72 @@ export interface AvatarProps
   showStatus?: boolean
 }
 
-const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({
-    className,
-    size,
-    src,
-    alt = 'Avatar',
-    fallback,
-    tier,
-    status,
-    showStatus = false,
-    ...props
-  }, ref) => {
-    const [imageError, setImageError] = React.useState(false)
+const Avatar = ({
+  className,
+  size,
+  src,
+  alt = 'Avatar',
+  fallback,
+  tier,
+  status,
+  showStatus = false,
+  ref,
+  ...props
+}: AvatarProps & { ref?: React.Ref<HTMLDivElement> }) => {
+  const [imageError, setImageError] = React.useState(false)
 
-    // 生成首字母作为fallback
-    const initials = React.useMemo(() => {
-      if (fallback) return fallback
-      if (alt) {
-        return alt
-          .split(' ')
-          .map(word => word[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2)
-      }
-      return 'U'
-    }, [fallback, alt])
+  // 生成首字母作为fallback
+  const initials = React.useMemo(() => {
+    if (fallback) return fallback
+    if (alt) {
+      return alt
+        .split(' ')
+        .map(word => word[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    }
+    return 'U'
+  }, [fallback, alt])
 
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          avatarVariants({ size }),
-          tier && 'ring-offset-background',
-          className
-        )}
-        {...props}
-      >
-        {/* 等级边框 */}
-        {tier && (
-          <div className={cn(tierBorderVariants({ tier }))} />
-        )}
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        avatarVariants({ size }),
+        tier && 'ring-offset-background',
+        className
+      )}
+      {...props}
+    >
+      {/* 等级边框 */}
+      {tier && (
+        <div className={cn(tierBorderVariants({ tier }))} />
+      )}
 
-        {/* 头像图片或fallback */}
-        {src && !imageError ? (
-          <img
-            src={src}
-            alt={alt}
-            className={avatarImageVariants()}
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <span className={avatarTextVariants({ size })}>
-            {initials}
-          </span>
-        )}
+      {/* 头像图片或fallback */}
+      {src && !imageError ? (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          className={avatarImageVariants()}
+          onError={() => setImageError(true)}
+          sizes="96px"
+        />
+      ) : (
+        <span className={avatarTextVariants({ size })}>
+          {initials}
+        </span>
+      )}
 
-        {/* 状态指示器 */}
-        {showStatus && status && (
-          <span className={statusIndicatorVariants({ status, size })} />
-        )}
-      </div>
-    )
-  }
-)
+      {/* 状态指示器 */}
+      {showStatus && status && (
+        <span className={statusIndicatorVariants({ status, size })} />
+      )}
+    </div>
+  )
+}
 Avatar.displayName = "Avatar"
 
 /**
@@ -204,11 +206,11 @@ function AvatarGroup({
 
   return (
     <div className={cn("flex -gap-x-2", className)} {...props}>
-      {childArray.slice(0, visibleCount).map((child, index) => (
+      {childArray.slice(0, visibleCount).map((child, i) => (
         <div
-          key={`avatar-${index}`}
+          key={`avatar-${(child as React.ReactElement).key}`}
           className="relative ring-2 ring-background rounded-full"
-          style={{ zIndex: visibleCount - index }}
+          style={{ zIndex: visibleCount - i }}
         >
           {child}
         </div>

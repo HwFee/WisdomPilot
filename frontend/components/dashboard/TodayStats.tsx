@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { LazyMotion, domAnimation, m } from "framer-motion";
 import {
   Target,
   CheckCircle,
@@ -54,7 +54,7 @@ function StatCard({
   delay = 0,
 }: StatCardProps) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
@@ -76,7 +76,7 @@ function StatCard({
       )}
 
       <div className="relative z-10 flex items-center justify-between mb-3">
-        <motion.div
+        <m.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3, delay: delay + 0.1 }}
@@ -86,10 +86,10 @@ function StatCard({
           )}
         >
           {icon}
-        </motion.div>
+        </m.div>
 
         {trend !== undefined && trend !== 0 && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: delay + 0.2 }}
@@ -106,39 +106,39 @@ function StatCard({
               <TrendingDown className="size-3.5" />
             )}
             <span>{trend > 0 ? "+" : ""}{trend}%</span>
-          </motion.div>
+          </m.div>
         )}
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col justify-end">
-        <motion.p
+        <m.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: delay + 0.15 }}
           className="text-3xl font-bold text-foreground tracking-tight"
         >
           {value}
-        </motion.p>
-        <motion.p
+        </m.p>
+        <m.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: delay + 0.2 }}
           className="text-sm text-muted-foreground mt-1"
         >
           {label}
-        </motion.p>
+        </m.p>
         {guide && (
-          <motion.p
+          <m.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: delay + 0.25 }}
             className="text-xs text-primary mt-2 hover:underline font-medium"
           >
             {guide}
-          </motion.p>
+          </m.p>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -194,14 +194,16 @@ export function TodayStats({
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      {statCards.map((card, index) => (
-        <StatCard
-          key={`item-${index}`}
-          {...card}
-          delay={index * 0.1}
-        />
-      ))}
-    </div>
+    <LazyMotion features={domAnimation}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {statCards.map((card, index) => (
+          <StatCard
+            key={card.label}
+            {...card}
+            delay={index * 0.1}
+          />
+        ))}
+      </div>
+    </LazyMotion>
   );
 }

@@ -150,7 +150,7 @@ export function SampleIOList({
   return (
     <div className="gap-y-3">
       {samples.map((sample, index) => (
-        <div key={`sample-${index}`}>
+        <div key={`sample-${sample.input.slice(0, 30)}`}>
           <div className="text-xs text-[#909399] mb-1.5 ml-1">
             {t('样例', 'Sample')} {index + 1}
           </div>

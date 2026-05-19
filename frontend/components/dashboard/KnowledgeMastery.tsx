@@ -56,7 +56,7 @@ export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, la
         ) : (
           <div className="gap-y-4">
             {sortedPoints.map((kp, index) => (
-              <div key={`item-${index}`} className="group">
+              <div key={kp.name} className="group">
                 <div className="flex justify-between text-sm mb-1.5">
                   <span className="text-foreground font-medium">{kp.name}</span>
                   <div className="flex items-center gap-2">

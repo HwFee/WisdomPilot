@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, use, useState, useCallback, type ReactNode } from 'react'
 import { getStoredToken } from '@/lib/api'
 import { getChoiceAnalysis, getCodeFeedback, getChoiceExplanation, type ChoiceAnalysisRequest, type CodeFeedbackRequest, type ChoiceExplanationRequest } from '@/lib/ai-api'
 
@@ -94,7 +94,7 @@ export interface AIContextState {
 const AIContext = createContext<AIContextState | null>(null)
 
 export function useAIContext(): AIContextState {
-  const ctx = useContext(AIContext)
+  const ctx = use(AIContext)
   if (!ctx) {
     throw new Error('useAIContext must be used within AIContextProvider')
   }

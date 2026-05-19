@@ -7,9 +7,10 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
+import rehypeHighlight from "rehype-highlight"
+import "highlight.js/styles/github-dark.css"
 import "katex/dist/katex.min.css"
 import { useAIContext, type KnowledgePointContext } from "@/contexts/AIContext"
-import { cn } from "@/lib/utils"
 import { createNoteFromQuestion } from "@/lib/api/notes"
 import { getStoredToken } from "@/lib/api"
 import { FileText } from "lucide-react"
@@ -80,16 +81,12 @@ function parseQuestion(el: Element): QuestionCtx | null {
 function PanelOrb({ size = 22 }: { size?: number }) {
   return (
     <div
+      className="rounded-full flex items-center justify-center shrink-0"
       style={{
         width: size,
         height: size,
-        borderRadius: "50%",
         background: "radial-gradient(circle at 38% 32%, rgba(186, 230, 253, 0.98), rgba(56, 189, 248, 0.9) 38%, rgba(14, 165, 233, 0.78) 65%, rgba(3, 105, 161, 0.6) 100%)",
         boxShadow: "0 2px 6px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.4)",
-        flexShrink: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       {/* Book icon */}
@@ -171,16 +168,21 @@ function MessageBubble({ role, content, courseId, chapterId, sectionId, exercise
           <div className="prose prose-xs prose-slate max-w-none" style={{ fontSize: "inherit" }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex]}
+              rehypePlugins={[rehypeKatex, rehypeHighlight]}
               components={{
                 p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
-                code: ({ children }) => (
-                  <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>
-                    {children}
-                  </code>
-                ),
+                code: ({ className, children, ...props }) => {
+                  const isInline = !className
+                  return isInline ? (
+                    <code className="bg-[#F5F7FA] px-1.5 py-0.5 rounded text-[0.85em] text-[#E74C3C] font-mono border border-[#E4E7ED]" {...props}>
+                      {children}
+                    </code>
+                  ) : (
+                    <code className={className} {...props}>{children}</code>
+                  )
+                },
                 pre: ({ children }) => (
-                  <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ background: "hsl(var(--muted))" }}>
+                  <pre className="rounded-lg p-2 font-mono text-[0.85em] overflow-x-auto mb-1 last:mb-0" style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' }}>
                     {children}
                   </pre>
                 ),
@@ -290,11 +292,13 @@ export function KnowledgeOrb({
       panelOpenedRef.current = false
       // Reset orb to default position when panel closes
       if (orbRef.current) {
-        orbRef.current.style.position = "fixed"
-        orbRef.current.style.left = ""
-        orbRef.current.style.top = ""
-        orbRef.current.style.right = "24px"
-        orbRef.current.style.bottom = "24px"
+        Object.assign(orbRef.current.style, {
+          position: "fixed",
+          left: "",
+          top: "",
+          right: "24px",
+          bottom: "24px",
+        })
       }
     }
   }, [isKnowledgePanelOpen])
@@ -402,8 +406,10 @@ export function KnowledgeOrb({
         const ctx = parseKnowledgePoint(kp)
         if (ctx) {
           const el = kp as HTMLElement
-          el.style.outline = '3px solid rgba(16, 185, 129, 0.9)'
-          el.style.outlineOffset = '4px'
+          Object.assign(el.style, {
+            outline: '3px solid rgba(16, 185, 129, 0.9)',
+            outlineOffset: '4px',
+          })
           prevHighlightRef.current = kp
           targetedKnowledgeRef.current = ctx
           targetedQuestionRef.current = null
@@ -412,8 +418,10 @@ export function KnowledgeOrb({
         const ctx = parseQuestion(q)
         if (ctx) {
           const el = q as HTMLElement
-          el.style.outline = '3px solid rgba(14, 165, 233, 0.9)'
-          el.style.outlineOffset = '4px'
+          Object.assign(el.style, {
+            outline: '3px solid rgba(14, 165, 233, 0.9)',
+            outlineOffset: '4px',
+          })
           prevHighlightRef.current = q
           targetedQuestionRef.current = ctx
           targetedKnowledgeRef.current = null
@@ -431,12 +439,14 @@ export function KnowledgeOrb({
     if (!isDraggingOrb) return
     const orbEl = orbRef.current
     if (!orbEl) return
-    orbEl.style.position = "fixed"
-    orbEl.style.left = `${e.clientX - ORB_SIZE / 2}px`
-    orbEl.style.top = `${e.clientY - ORB_SIZE / 2}px`
-    orbEl.style.right = "auto"
-    orbEl.style.bottom = "auto"
-    orbEl.style.touchAction = "none"
+    Object.assign(orbEl.style, {
+      position: "fixed",
+      left: `${e.clientX - ORB_SIZE / 2}px`,
+      top: `${e.clientY - ORB_SIZE / 2}px`,
+      right: "auto",
+      bottom: "auto",
+      touchAction: "none",
+    })
   }, [isDraggingOrb])
 
   const handleOrbPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -486,11 +496,13 @@ export function KnowledgeOrb({
         // Snap orb back to default position
         const orbEl = orbRef.current
         if (orbEl) {
-          orbEl.style.position = "fixed"
-          orbEl.style.left = ""
-          orbEl.style.top = ""
-          orbEl.style.right = "24px"
-          orbEl.style.bottom = "24px"
+          Object.assign(orbEl.style, {
+            position: "fixed",
+            left: "",
+            top: "",
+            right: "24px",
+            bottom: "24px",
+          })
         }
       } else {
         panelOpenedRef.current = true
@@ -524,11 +536,13 @@ export function KnowledgeOrb({
       // Snap orb back to default position
       const orbEl = orbRef.current
       if (orbEl) {
-        orbEl.style.position = "fixed"
-        orbEl.style.left = ""
-        orbEl.style.top = ""
-        orbEl.style.right = "24px"
-        orbEl.style.bottom = "24px"
+        Object.assign(orbEl.style, {
+          position: "fixed",
+          left: "",
+          top: "",
+          right: "24px",
+          bottom: "24px",
+        })
       }
     }
 
@@ -638,13 +652,13 @@ ${kp.title}${optsStr}
       )
 
       if (!response.ok) {
-        const errorText = await response.text()
         if (response.status === 401) {
           localStorage.removeItem("token:v1")
           localStorage.removeItem("user:v1")
           push("/login")
           return
         }
+        const errorText = await response.text()
         throw new Error(`请求失败: ${response.status} — ${errorText}`)
       }
       if (!response.body) throw new Error("无响应体")
@@ -654,6 +668,7 @@ ${kp.title}${optsStr}
       let fullText = ""
 
       while (true) {
+        // react-doctor-disable-next-line async-await-in-loop, react-doctor/async-await-in-loop
         const { done, value } = await reader.read()
         if (done) break
 
@@ -742,28 +757,24 @@ ${kp.title}${optsStr}
           onPointerUp={handleOrbPointerUp}
           onPointerCancel={handleOrbPointerUp}
           onClick={handleOrbClick}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOrbClick(e as any) } }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => !isDraggingOrb && setIsHovered(false)}
-          className="fixed select-none z-[9999] animate-orb-bob"
+          role="button"
+          tabIndex={0}
+          aria-label="AI 助手"
+          className={"fixed right-6 bottom-6 select-none z-[9999] animate-orb-bob flex items-center justify-center touch-none pointer-events-auto transition-colors transition-shadow duration-200 " + (isDraggingOrb ? "transition-none " : "")}
           style={{
-            right: 24,
-            bottom: 24,
             width: ORB_SIZE,
             height: ORB_SIZE,
             borderRadius: ORB_SIZE / 2,
             cursor: isDraggingOrb ? "grabbing" : "grab",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            touchAction: "none",
             background: isHovered
               ? "radial-gradient(circle at 38% 32%, rgba(186, 230, 253, 0.98), rgba(56, 189, 248, 0.9) 38%, rgba(14, 165, 233, 0.78) 65%, rgba(3, 105, 161, 0.6) 100%)"
               : "radial-gradient(circle at 38% 32%, rgba(224, 242, 254, 0.96), rgba(125, 211, 252, 0.88) 38%, rgba(56, 189, 248, 0.75) 65%, rgba(14, 165, 233, 0.55) 100%)",
             boxShadow: isHovered
               ? "0 4px 16px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.5)"
               : "0 2px 8px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.4)",
-            pointerEvents: "auto",
-            transition: isDraggingOrb ? "none" : "background 0.2s, box-shadow 0.2s",
           }}
         >
           {/* AI label */}
@@ -792,19 +803,14 @@ ${kp.title}${optsStr}
           onPointerMove={handlePanelDragMove}
           onPointerUp={handlePanelDragEnd}
           onPointerCancel={handlePanelDragEnd}
-          className="fixed z-[9998] flex flex-col overflow-hidden animate-panel-slide-in"
+          className="fixed z-[9998] flex flex-col overflow-hidden animate-panel-slide-in rounded-2xl backdrop-blur select-none border border-border/70 bg-background/96"
           style={{
             width: PANEL_W,
             height: PANEL_H,
             left: pos.x,
             top: pos.y,
-            background: "hsl(var(--background) / 0.96)",
-            border: "1px solid hsl(var(--border) / 0.7)",
-            borderRadius: 16,
             boxShadow: "0 24px 64px hsl(var(--foreground) / 0.2), 0 0 0 1px hsl(var(--border) / 0.3)",
-            backdropFilter: "blur(16px)",
             cursor: isDraggingPanel ? "grabbing" : "default",
-            userSelect: "none",
           }}
         >
           {/* ── Header (drag handle) ── */}
@@ -916,9 +922,9 @@ ${kp.title}${optsStr}
                 </p>
               </div>
             )}
-            {messages.map((msg, i) => (
+            {messages.map((msg) => (
               <div
-                key={`orb-${i}`}
+                key={`orb-${msg.role}-${msg.content.slice(0, 30)}`}
                 className="flex"
                 style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
               >
@@ -947,13 +953,18 @@ ${kp.title}${optsStr}
               rehypePlugins={[rehypeKatex]}
                         components={{
                           p: ({ children }) => <p className="mb-1 last:mb-0 whitespace-pre-wrap">{children}</p>,
-                          code: ({ children }) => (
-                            <code className="px-1 py-0.5 rounded text-[0.85em] font-mono" style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>
-                              {children}
-                            </code>
-                          ),
+                          code: ({ className, children, ...props }) => {
+                            const isInline = !className
+                            return isInline ? (
+                              <code className="bg-[#F5F7FA] px-1.5 py-0.5 rounded text-[0.85em] text-[#E74C3C] font-mono border border-[#E4E7ED]" {...props}>
+                                {children}
+                              </code>
+                            ) : (
+                              <code className={className} {...props}>{children}</code>
+                            )
+                          },
                           pre: ({ children }) => (
-                            <pre className="p-2 rounded-lg overflow-x-auto mb-1 last:mb-0" style={{ background: "hsl(var(--muted))" }}>
+                            <pre className="rounded-lg p-2 font-mono text-[0.85em] overflow-x-auto mb-1 last:mb-0" style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' }}>
                               {children}
                             </pre>
                           ),
@@ -969,16 +980,18 @@ ${kp.title}${optsStr}
                     </div>
                   ) : (
                     <div className="flex items-center gap-1 py-1">
-                      {[0, 1, 2].map(i => (
-                        <span
-                          key={`orb-${i}`}
-                          className={cn(
-                            "block size-1.5 rounded-full animate-bounce-dot",
-                            i === 0 ? "animate-bounce-dot-0" : i === 1 ? "animate-bounce-dot-1" : "animate-bounce-dot-2"
-                          )}
-                          style={{ background: "hsl(var(--muted-foreground))" }}
-                        />
-                      ))}
+                      <span
+                        className="block size-1.5 rounded-full animate-typing-dot animate-typing-dot-0"
+                        style={{ background: "hsl(var(--muted-foreground))" }}
+                      />
+                      <span
+                        className="block size-1.5 rounded-full animate-typing-dot animate-typing-dot-1"
+                        style={{ background: "hsl(var(--muted-foreground))" }}
+                      />
+                      <span
+                        className="block size-1.5 rounded-full animate-typing-dot animate-typing-dot-2"
+                        style={{ background: "hsl(var(--muted-foreground))" }}
+                      />
                     </div>
                   )}
                 </div>
@@ -991,8 +1004,7 @@ ${kp.title}${optsStr}
             className="px-3 pb-3 pt-2 shrink-0"
             style={{ borderTop: "1px solid hsl(var(--border) / 0.4)" }}
           >
-            <form
-              onSubmit={e => { e.preventDefault(); sendMessage() }}
+            <div
               className="flex items-end gap-2"
             >
               <textarea
@@ -1011,8 +1023,9 @@ ${kp.title}${optsStr}
                 disabled={isStreaming}
               />
               <button
-                type="submit"
+                type="button"
                 disabled={!inputValue.trim() || isStreaming}
+                onClick={sendMessage}
                 className="size-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
               >
@@ -1020,7 +1033,7 @@ ${kp.title}${optsStr}
                   <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
               </button>
-            </form>
+            </div>
           </div>
         </div>,
         document.body

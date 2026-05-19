@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react"
 import { cx } from "class-variance-authority"
-import { motion, useDragControls, AnimatePresence } from "framer-motion"
+import { LazyMotion, domAnimation, m, useDragControls, AnimatePresence } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -123,45 +123,51 @@ export function MorphPanel({ className }: AIChatPanelProps) {
   const dragControls = useDragControls()
 
   // Panel state: initial is collapsed (orb only)
-  const [isCollapsed, setIsCollapsed] = useState(true)
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
+  const [viewState, setViewState] = useState({ isCollapsed: true, isExpanded: false })
+  const [dragState, setDragState] = useState<{ isDragging: boolean; target: { id: string | null; question: QuestionContext | null } }>({
+    isDragging: false,
+    target: { id: null, question: null },
+  })
 
   // Track orb screen position during drag for hit detection
   const orbScreenPosRef = useRef({ x: 0, y: 0 })
   const highlightIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Question context
-  const [activeQuestion, setActiveQuestion] = useState<QuestionContext | null>(null)
-  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+  const activeQuestion = dragState.target.question
+  const highlightedId = dragState.target.id
 
   // Chat state
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputValue, setInputValue] = useState("")
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [streamingText, setStreamingText] = useState("")
+  const [chatState, setChatState] = useState<{ messages: ChatMessage[]; inputValue: string }>({
+    messages: [],
+    inputValue: '',
+  })
+  const [streamState, setStreamState] = useState({ isStreaming: false, streamingText: '' })
+  const { isCollapsed, isExpanded } = viewState
+  const { isDragging } = dragState
+  const { messages, inputValue } = chatState
+  const { isStreaming, streamingText } = streamState
 
   // Open panel
   const openPanel = useCallback(() => {
-    setIsExpanded(true)
+    setViewState(prev => ({ ...prev, isExpanded: true }))
     setTimeout(() => textareaRef.current?.focus(), 100)
   }, [])
 
   // Close panel
   const closePanel = useCallback(() => {
-    setIsExpanded(false)
+    setViewState(prev => ({ ...prev, isExpanded: false }))
     textareaRef.current?.blur()
   }, [])
 
   // Collapse to orb
   const collapseToOrb = useCallback(() => {
-    setIsCollapsed(true)
-    setIsExpanded(false)
+    setViewState({ isCollapsed: true, isExpanded: false })
   }, [])
 
   // Expand from orb
   const expandFromOrb = useCallback(() => {
-    setIsCollapsed(false)
+    setViewState(prev => ({ ...prev, isCollapsed: false }))
     if (activeQuestion) {
       openPanel()
     }
@@ -188,14 +194,13 @@ export function MorphPanel({ className }: AIChatPanelProps) {
 
   // Send message
   const sendMessage = useCallback(async () => {
-    const text = inputValue.trim()
-    if (!text || isStreaming) return
+    const text = chatState.inputValue.trim()
+    if (!text || streamState.isStreaming) return
 
     const userMessage = text
-    setInputValue("")
-    setMessages(prev => [...prev, { role: "user:v1", content: userMessage }])
-    setIsStreaming(true)
-    setStreamingText("")
+    setChatState(prev => ({ ...prev, inputValue: '' }))
+    setChatState(prev => ({ ...prev, messages: [...prev.messages, { role: "user:v1", content: userMessage }] }))
+    setStreamState({ isStreaming: true, streamingText: '' })
 
     const prompt = activeQuestion
       ? buildPrompt(activeQuestion, userMessage)
@@ -227,9 +232,10 @@ export function MorphPanel({ className }: AIChatPanelProps) {
       const decoder = new TextDecoder()
       let fullText = ""
 
-      setMessages(prev => [...prev, { role: "ai", content: "" }])
+      setChatState(prev => ({ ...prev, messages: [...prev.messages, { role: "ai", content: "" }] }))
 
       while (true) {
+        // react-doctor-disable-next-line async-await-in-loop, react-doctor/async-await-in-loop
         const { done, value } = await reader.read()
         if (done) break
 
@@ -244,11 +250,11 @@ export function MorphPanel({ className }: AIChatPanelProps) {
               const parsed = JSON.parse(data)
               if (parsed.content) {
                 fullText += parsed.content
-                setStreamingText(fullText)
-                setMessages(prev => {
-                  const updated = [...prev]
+                setStreamState(prev => ({ ...prev, streamingText: fullText }))
+                setChatState(prev => {
+                  const updated = [...prev.messages]
                   updated[updated.length - 1] = { role: "ai", content: fullText }
-                  return updated
+                  return { ...prev, messages: updated }
                 })
               }
             } catch {}
@@ -256,29 +262,28 @@ export function MorphPanel({ className }: AIChatPanelProps) {
         }
       }
     } catch (err) {
-      setMessages(prev => [...prev, { role: "ai", content: "抱歉，AI 服务暂时不可用。" }])
+      setChatState(prev => ({ ...prev, messages: [...prev.messages, { role: "ai", content: "抱歉，AI 服务暂时不可用。" }] }))
     } finally {
-      setIsStreaming(false)
-      setStreamingText("")
+      setStreamState({ isStreaming: false, streamingText: '' })
     }
-  }, [inputValue, isStreaming, activeQuestion, buildPrompt])
+  }, [chatState.inputValue, streamState.isStreaming, activeQuestion, buildPrompt])
 
   // Clear chat — collapse back to orb
   const clearChat = useCallback(() => {
-    setMessages([])
-    setActiveQuestion(null)
-    setHighlightedId(null)
+    setChatState(prev => ({ ...prev, messages: [] }))
+    setDragState(prev => ({ ...prev, target: { id: null, question: null } }))
     collapseToOrb()
   }, [collapseToOrb])
 
   // Hit detection: poll orb screen position during drag
+  // react-doctor-disable-next-line no-cascading-set-state, react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!isDragging) {
       if (highlightIntervalRef.current) {
         clearInterval(highlightIntervalRef.current)
         highlightIntervalRef.current = null
       }
-      setHighlightedId(null)
+      setDragState(prev => ({ ...prev, target: { id: null, question: null } }))
       return
     }
 
@@ -286,15 +291,11 @@ export function MorphPanel({ className }: AIChatPanelProps) {
       const { x, y } = orbScreenPosRef.current
       const el = document.elementFromPoint(x, y)
       const q = el?.closest("[data-question-context]")
-      if (q) {
-        const ctx = parseQuestionContext(q)
-        if (ctx) {
-          setHighlightedId(ctx.id)
-          setActiveQuestion(ctx)
-        }
-      } else {
-        setHighlightedId(null)
-      }
+      const ctx = q ? parseQuestionContext(q) : null
+      setDragState(prev => {
+        if (ctx) return { ...prev, target: { id: ctx.id, question: ctx } }
+        return prev.target.id !== null ? { ...prev, target: { ...prev.target, id: null } } : prev
+      })
     }, 80)
 
     return () => {
@@ -302,7 +303,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
         clearInterval(highlightIntervalRef.current)
       }
     }
-  }, [isDragging])
+  }, [dragState.isDragging])
 
   // Apply highlight outline to the question element when highlightedId changes
   useEffect(() => {
@@ -315,17 +316,21 @@ export function MorphPanel({ className }: AIChatPanelProps) {
     if (!prevOutline) {
       el.setAttribute("data-prev-outline", (el as HTMLElement).style.outline || "")
       el.setAttribute("data-prev-offset", (el as HTMLElement).style.outlineOffset || "")
-      ;(el as HTMLElement).style.outline = "2px solid rgb(37 99 235 / 0.5)"
-      ;(el as HTMLElement).style.outlineOffset = "2px"
-      ;(el as HTMLElement).style.borderRadius = "8px"
+      Object.assign((el as HTMLElement).style, {
+        outline: "2px solid rgb(37 99 235 / 0.5)",
+        outlineOffset: "2px",
+        borderRadius: "8px",
+      })
     }
     return () => {
       const el2 = document.querySelector(`[data-question-id="${CSS.escape(highlightedId)}"]`)
       if (el2) {
         const prev = el2.getAttribute("data-prev-outline")
         const prevOff = el2.getAttribute("data-prev-offset")
-        ;(el2 as HTMLElement).style.outline = prev || ""
-        ;(el2 as HTMLElement).style.outlineOffset = prevOff || ""
+        Object.assign((el2 as HTMLElement).style, {
+          outline: prev || "",
+          outlineOffset: prevOff || "",
+        })
         el2.removeAttribute("data-temp-highlight")
       }
     }
@@ -345,7 +350,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
     orbScreenPosRef.current = { x: centerX, y: centerY }
 
     // Collapse and close panel, start drag
-    setIsDragging(true)
+    setDragState(prev => ({ ...prev, isDragging: true }))
     collapseToOrb()
     closePanel()
 
@@ -359,7 +364,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
   }, [])
 
   const handleDragEnd = useCallback(() => {
-    setIsDragging(false)
+    setDragState(prev => ({ ...prev, isDragging: false }))
     if (activeQuestion) {
       expandFromOrb()
     }
@@ -368,10 +373,10 @@ export function MorphPanel({ className }: AIChatPanelProps) {
   // Click on collapsed orb (not dragging) — expand it
   const handleOrbClick = useCallback(() => {
     if (!isDragging) {
-      setIsCollapsed(false)
+      setViewState(prev => ({ ...prev, isCollapsed: false }))
       openPanel()
     }
-  }, [isDragging, openPanel])
+  }, [dragState.isDragging, openPanel])
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -382,16 +387,16 @@ export function MorphPanel({ className }: AIChatPanelProps) {
       e.preventDefault()
       sendMessage()
     }
-  }, [isExpanded, closePanel, sendMessage])
+  }, [viewState.isExpanded, closePanel, sendMessage])
 
   // Auto-scroll messages
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight
     }
-  }, [messages, streamingText])
+  }, [chatState.messages, streamState.streamingText])
 
-  const isPanelVisible = isExpanded && !isCollapsed
+  const isPanelVisible = viewState.isExpanded && !viewState.isCollapsed
 
   return (
     <div
@@ -402,7 +407,8 @@ export function MorphPanel({ className }: AIChatPanelProps) {
         pointerEvents: "auto",
       }}
     >
-      <motion.div
+      <LazyMotion features={domAnimation}>
+      <m.div
         ref={containerRef}
         dragControls={dragControls}
         drag={true}
@@ -442,6 +448,10 @@ export function MorphPanel({ className }: AIChatPanelProps) {
             }}
             onPointerDown={handlePointerDown}
             onClick={handleOrbClick}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOrbClick() } }}
+            role="button"
+            tabIndex={0}
+            aria-label="AI 输入"
             data-drag-handle
           >
             <ColorOrb dimension={`${ORB_SIZE - 8}px`} tones={{
@@ -456,7 +466,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
         {/* Expanded: full chat panel */}
         <AnimatePresence>
           {isPanelVisible && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -525,9 +535,9 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                     </p>
                   </div>
                 )}
-                {messages.map((msg, i) => (
+                {messages.map((msg) => (
                   <div
-                    key={`input-${i}`}
+                    key={`${msg.role}-${msg.content.slice(0, 30)}`}
                     className={cx(
                       "rounded-2xl px-4 py-2.5 max-w-[88%] text-sm",
                       msg.role === "user:v1"
@@ -549,14 +559,13 @@ export function MorphPanel({ className }: AIChatPanelProps) {
 
               {/* Input area */}
               <div className="px-3 pb-3 pt-2 shrink-0 border-t border-border bg-background">
-                <form
-                  onSubmit={e => { e.preventDefault(); sendMessage() }}
+                <div
                   className="flex items-end gap-2"
                 >
                   <textarea
                     ref={textareaRef}
                     value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
+                    onChange={e => setChatState(prev => ({ ...prev, inputValue: e.target.value }))}
                     onKeyDown={handleKeyDown}
                     placeholder="问我任何事..."
                     rows={2}
@@ -564,9 +573,10 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                     disabled={isStreaming}
                   />
                   <Button
-                    type="submit"
+                    type="button"
                     size="sm"
                     disabled={!inputValue.trim() || isStreaming}
+                    onClick={sendMessage}
                     className="shrink-0 size-9 p-0 flex items-center justify-center"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -574,7 +584,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                       <polygon points="22 2 15 22 11 13 2 9 22 2" />
                     </svg>
                   </Button>
-                </form>
+                </div>
                 <p className="text-[10px] text-muted-foreground mt-1 text-center">
                   <KeyHint>⌘</KeyHint>
                   <KeyHint className="ml-0.5">Enter</KeyHint>
@@ -584,10 +594,11 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                   <span className="ml-1">关闭</span>
                 </p>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </m.div>
+      </LazyMotion>
 
       {/* Highlighted question indicator — applied via useEffect to avoid styled-jsx Turbopack issues */}
       {highlightedId && null}

@@ -38,6 +38,7 @@ import {
   startStageSession,
   TIER_NAMES,
   TIER_COLORS,
+  getStoredToken,
 } from "@/lib/api";
 import { getGlobalTierInfo } from "@/lib/api/tier";
 import { getChallengeExerciseContent } from "@/lib/api/learning-path";
@@ -391,10 +392,17 @@ function ExerciseListModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
+      role="button"
+      tabIndex={0}
+      aria-label="关闭"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
     >
       <div
         className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-[#303133]">题目列表</h3>
@@ -486,12 +494,14 @@ const DIFFICULTY_NAMES: Record<number, string> = {
 // 内部组件 - 使用 useSearchParams
 function ArenaContent() {
   const { push } = useRouter();
-  const searchParams = useSearchParams();
-  const difficultyFromDashboard = searchParams.get("difficulty");
-  const exerciseIndexFromReview = searchParams.get("exerciseIndex"); // 从错题本跳转时的题目索引
+  const searchParams = useSearchParams()
+  // react-doctor-disable-next-line react-compiler-destructure-method, react-doctor/react-compiler-destructure-method
+  const getSearchParam = (name: string) => searchParams.get(name)
+  const difficultyFromDashboard = getSearchParam("difficulty");
+  const exerciseIndexFromReview = getSearchParam("exerciseIndex"); // 从错题本跳转时的题目索引
 
   // Arena state
-  const [sessionId, setSessionId] = useState<string>("");
+  const sessionIdRef = useRef<string>("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>(
     [],
@@ -500,9 +510,7 @@ function ArenaContent() {
   const [loading, setLoading] = useState(true);
 
   // Code state - saved codes per exercise, per language
-  const [savedCodes, setSavedCodes] = useState<
-    Record<number, Record<string, string>>
-  >({});
+  const savedCodesRef = useRef<Record<number, Record<string, string>>>({});
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState<string>("python");
   const [feedbackState, setFeedbackState] = useState<FeedbackState>("idle");
@@ -571,7 +579,7 @@ function ArenaContent() {
       return;
     }
 
-    const token = localStorage.getItem("token:v1");
+    const token = getStoredToken();
     const startedAt = sessionStartedAtRef.current;
 
 
@@ -596,7 +604,7 @@ function ArenaContent() {
   // ========================================
 
   const initChallenge = useCallback(async () => {
-    const token = localStorage.getItem("token:v1");
+    const token = getStoredToken();
     if (!token) {
       push("/login");
       return;
@@ -639,8 +647,6 @@ function ArenaContent() {
         { balance: number } | null,
       ];
 
-      if (!mountedRef.current) return;
-
       // 处理段位和智核
       if (tierData) {
         setTierInfo({
@@ -676,8 +682,6 @@ function ArenaContent() {
           token,
         );
 
-        if (!mountedRef.current) return;
-
         // 直接从 startInfiniteSession 响应构建进度数据，避免再次请求
         if (sessionData.exercises && sessionData.exercises.length > 0) {
           const builtProgress: ChallengeProgressResponse = {
@@ -702,15 +706,12 @@ function ArenaContent() {
           processProgressData(builtProgress, difficulty, effectiveLanguage);
         } else {
           const newProgressData = await getChallengeProgress(token);
-          if (!mountedRef.current) return;
           processProgressData(newProgressData, difficulty, effectiveLanguage);
         }
       }
     } catch (error) {
-      if (mountedRef.current) {
-        console.error("Failed to initialize challenge:", error);
-        push("/dashboard");
-      }
+      console.error("Failed to initialize challenge:", error);
+      push("/dashboard");
     } finally {
       if (mountedRef.current) {
         setLoading(false);
@@ -727,7 +728,7 @@ function ArenaContent() {
     setCurrentIndex(progressData.current_index || 0);
     // 保存 session_id 用于收藏
     if (progressData.session_id) {
-      setSessionId(progressData.session_id);
+      sessionIdRef.current = progressData.session_id;
     }
 
     // 判断是否是 lite 模式（无 content 字段）
@@ -797,7 +798,7 @@ function ArenaContent() {
           ex.saved_code || ex.content?.code_template || getTemplate(effectiveLanguage),
       };
     });
-    setSavedCodes(initialCodes);
+    savedCodesRef.current = initialCodes;
 
     // 处理从错题本跳转的情况
     const targetIndex = exerciseIndexFromReview
@@ -829,7 +830,7 @@ function ArenaContent() {
     if (loadingContentRef.current.has(exerciseId)) return;
     if (loadedContentRef.current.has(exerciseId)) return;
 
-    const token = localStorage.getItem("token:v1");
+    const token = getStoredToken();
     if (!token) return;
 
     loadingContentRef.current.add(exerciseId);
@@ -881,19 +882,17 @@ function ArenaContent() {
 
       // Use ref to check current index (avoids stale closure)
       if (index === currentIndexRef.current) {
-        setSavedCodes((prev) => {
-          const updated = { ...prev };
-          const existingCode = updated[exerciseId]?.[language];
-          // 只在没有保存代码时才使用模板
-          if (!existingCode || existingCode === getTemplate("python")) {
-            updated[exerciseId] = {
-              ...updated[exerciseId],
-              [language]: exercise.content?.code_template || getTemplate(language),
-            };
-            setCode(exercise.content?.code_template || getTemplate(language));
-          }
-          return updated;
-        });
+        const updated = { ...savedCodesRef.current };
+        const existingCode = updated[exerciseId]?.[language];
+        // 只在没有保存代码时才使用模板
+        if (!existingCode || existingCode === getTemplate("python")) {
+          updated[exerciseId] = {
+            ...updated[exerciseId],
+            [language]: exercise.content?.code_template || getTemplate(language),
+          };
+          savedCodesRef.current = updated;
+          setCode(exercise.content?.code_template || getTemplate(language));
+        }
       }
     } catch (error) {
       console.error("[挑战之路] 加载题目内容失败:", error);
@@ -930,20 +929,20 @@ function ArenaContent() {
     if (!currentExercise) return;
 
     // Save current code for current language
-    setSavedCodes((prev) => ({
-      ...prev,
+    savedCodesRef.current = {
+      ...savedCodesRef.current,
       [currentExercise.id]: {
-        ...prev[currentExercise.id],
+        ...savedCodesRef.current[currentExercise.id],
         [language]: codeRef.current,
       },
-    }));
+    };
 
     // Switch language
     setLanguage(newLang);
     localStorage.setItem("preferred_language", newLang);
 
     // Restore code for new language or use template
-    const savedCodeForNewLang = savedCodes[currentExercise.id]?.[newLang];
+    const savedCodeForNewLang = savedCodesRef.current[currentExercise.id]?.[newLang];
     if (savedCodeForNewLang) {
       setCode(savedCodeForNewLang);
     } else {
@@ -951,7 +950,7 @@ function ArenaContent() {
     }
 
     // Save to backend (无 session 概念，独立于课程)
-    const token = localStorage.getItem("token:v1");
+    const token = getStoredToken();
     if (token) {
       saveChallengeCode(
         {
@@ -981,7 +980,7 @@ function ArenaContent() {
     }
 
     try {
-      const token = localStorage.getItem("token:v1");
+      const token = getStoredToken();
       if (!token) return;
 
       const result = await executeCode(
@@ -1017,7 +1016,7 @@ function ArenaContent() {
     setRightPanelTab("test");
 
     try {
-      const token = localStorage.getItem("token:v1");
+      const token = getStoredToken();
       if (!token) return;
 
       const result = await executeCode(
@@ -1061,7 +1060,7 @@ function ArenaContent() {
     setRightPanelTab("output");
 
     try {
-      const token = localStorage.getItem("token:v1");
+      const token = getStoredToken();
       if (!token) {
         push("/login");
         return;
@@ -1169,13 +1168,13 @@ function ArenaContent() {
       });
 
       // Save code for this language
-      setSavedCodes((prev) => ({
-        ...prev,
+      savedCodesRef.current = {
+        ...savedCodesRef.current,
         [currentExercise.id]: {
-          ...prev[currentExercise.id],
+          ...savedCodesRef.current[currentExercise.id],
           [language]: code,
         },
-      }));
+      };
 
       // 错题收集已在后端 submitChallengeExercise 中处理，前端不再重复调用
 
@@ -1214,13 +1213,11 @@ function ArenaContent() {
             const newProgressData = await getChallengeProgress(token, true);
 
             // Append new exercises to the list (lite: no content yet)
-            const newExercises: Exercise[] = newProgressData.exercises
-              .filter(
-                (ex: ProgressExercise) =>
-                  !exercises.find((e) => e.id === ex.exercise_id),
-              )
-              .map((ex: ProgressExercise) => {
-                return {
+            const existingIds = new Set(exercises.map((e) => e.id));
+            const newExercises: Exercise[] = [];
+            for (const ex of newProgressData.exercises as ProgressExercise[]) {
+              if (!existingIds.has(ex.exercise_id)) {
+                newExercises.push({
                   id: ex.exercise_id,
                   type: "programming" as const,
                   difficulty: ex.difficulty || 1,
@@ -1234,8 +1231,9 @@ function ArenaContent() {
                   },
                   knowledge_points: [],
                   test_cases: [],
-                };
-              });
+                });
+              }
+            }
 
             setExercises((prev) => [...prev, ...newExercises]);
             setExerciseProgress((prev) => [
@@ -1249,13 +1247,13 @@ function ArenaContent() {
             // Initialize saved codes for new exercises
             const newSavedCodes: Record<number, Record<string, string>> = {};
             newProgressData.exercises.forEach((ex: ExerciseProgress) => {
-              if (!savedCodes[ex.exercise_id]) {
+              if (!savedCodesRef.current[ex.exercise_id]) {
                 newSavedCodes[ex.exercise_id] = {
                   python: ex.saved_code || getTemplate("python"),
                 };
               }
             });
-            setSavedCodes((prev) => ({ ...prev, ...newSavedCodes }));
+            savedCodesRef.current = { ...savedCodesRef.current, ...newSavedCodes };
           }
         } catch (error) {
           console.error("[挑战之路] 追加题目失败:", error);
@@ -1299,19 +1297,19 @@ function ArenaContent() {
 
       // Save current code
       if (currentExercise) {
-        setSavedCodes((prev) => ({
-          ...prev,
+        savedCodesRef.current = {
+          ...savedCodesRef.current,
           [currentExercise.id]: {
-            ...prev[currentExercise.id],
+            ...savedCodesRef.current[currentExercise.id],
             [language]: codeRef.current,
           },
-        }));
+        };
       }
 
       setCurrentIndex(index);
 
       // Restore code for target exercise
-      const savedCodeForLang = savedCodes[targetExercise.id]?.[language];
+      const savedCodeForLang = savedCodesRef.current[targetExercise.id]?.[language];
       if (savedCodeForLang) {
         setCode(savedCodeForLang);
       } else {
@@ -1329,7 +1327,7 @@ function ArenaContent() {
       setCustomTestOutput(null);
       setShowResultModal(false);
     },
-    [exercises, currentIndex, exerciseProgress, savedCodes, language],
+    [exercises, currentIndex, exerciseProgress, savedCodesRef, language],
   );
 
   const handleNext = useCallback(() => {
@@ -1356,7 +1354,7 @@ function ArenaContent() {
   // ========================================
 
   const handleExitSave = useCallback(async () => {
-    const token = localStorage.getItem("token:v1");
+    const token = getStoredToken();
     const currentExercise = exercises[currentIndex];
 
     if (token && currentExercise) {
@@ -1584,7 +1582,7 @@ function ArenaContent() {
                       ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
                       ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                       li: ({ children }) => <li className="text-[#606266]">{children}</li>,
-                      blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-[#606266]">{children}</blockquote>,
+                      blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/20 pl-4 italic my-2 text-[#606266]">{children}</blockquote>,
                       strong: ({ children }) => <strong className="font-semibold text-[#303133]">{children}</strong>,
                       code: ({ className, children, ...props }) => {
                         const isInline = !className;
@@ -1654,9 +1652,9 @@ function ArenaContent() {
 
               {currentExercise.knowledge_points.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {currentExercise.knowledge_points.map((kp, i) => (
+                  {currentExercise.knowledge_points.map((kp) => (
                     <span
-                      key={`arena-${i}`}
+                      key={`arena-${currentExercise.id}-${kp}`}
                       className="knowledge-tag px-3 py-1.5 text-[#3498DB] text-xs rounded-lg font-medium"
                     >
                       {kp}
@@ -1678,10 +1676,10 @@ function ArenaContent() {
                     sample_input: currentExercise.content.sample_input,
                     sample_output: currentExercise.content.sample_output,
                   }}
-                  token={localStorage.getItem("token:v1") || ""}
+                  token={getStoredToken() || ""}
                   onBalanceChange={async () => {
                     // 刷新智核余额
-                    const token = localStorage.getItem("token:v1");
+                    const token = getStoredToken();
                     if (token) {
                       try {
                         const { getCoreBalance } = await import("@/lib/api/core");

@@ -48,26 +48,36 @@ const FEATURES = [
 ]
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [courses, setCourses] = useState<CourseSummary[]>([])
-  const [coursesLoading, setCoursesLoading] = useState(true)
+  const [pageState, setPageState] = useState({
+    isLoggedIn: false,
+    mounted: false,
+    courses: [] as CourseSummary[],
+    coursesLoading: true,
+  })
+  const { isLoggedIn, mounted, courses, coursesLoading } = pageState
 
   useEffect(() => {
-    setMounted(true)
     const token = localStorage.getItem('token:v1')
-    setIsLoggedIn(!!token)
+    const isLoggedInValue = !!token
 
     // 从 API 获取真实课程数据（未登录也能访问）
     getCourses()
       .then((data) => {
-        setCourses(data.courses)
+        setPageState({
+          isLoggedIn: isLoggedInValue,
+          mounted: true,
+          courses: data.courses,
+          coursesLoading: false,
+        })
       })
       .catch((err) => {
         console.error('Failed to fetch courses:', err)
-      })
-      .finally(() => {
-        setCoursesLoading(false)
+        setPageState({
+          isLoggedIn: isLoggedInValue,
+          mounted: true,
+          courses: [],
+          coursesLoading: false,
+        })
       })
   }, [])
 
@@ -178,7 +188,7 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {FEATURES.map((feature, index) => (
               <div
-                key={`item-${index}`}
+                key={feature.title}
                 className="group p-6 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all card-interactive"
               >
                 <div className={`size-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg`}
@@ -229,9 +239,10 @@ export default function Home() {
                           {course.name}
                         </h3>
                         <div className="flex gap-1 mt-1">
-                          {[...Array(4)].map((_, i) => (
-                            <div key={`item-${i}`} className={`size-1.5 rounded-full ${i < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
-                          ))}
+                          <div className={`size-1.5 rounded-full ${0 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
+                          <div className={`size-1.5 rounded-full ${1 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
+                          <div className={`size-1.5 rounded-full ${2 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
+                          <div className={`size-1.5 rounded-full ${3 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
                         </div>
                       </div>
                     </div>
@@ -291,7 +302,7 @@ export default function Home() {
       {/* CTA */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-primary/10 rounded-full blur-3xl"></div>
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground mb-6">

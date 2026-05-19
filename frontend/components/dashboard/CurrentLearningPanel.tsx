@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Trophy, Swords, ChevronRight, CheckCircle, XCircle, Loader2, Star } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import { CourseSwitcher } from './CourseSwitcher'
 import { useRouter } from 'next/navigation'
 import { getMasteryOverview, type MasteryOverviewResponse } from '@/lib/api/learning-path'
@@ -90,7 +90,7 @@ export function CurrentLearningPanel({
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   const [isNavigating, setIsNavigating] = useState<'mastery' | 'challenge' | null>(null)
-  const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null)
+  const selectedDifficultyRef = useRef<number | null>(null)
   const [showDifficultyModal, setShowDifficultyModal] = useState(false)
   const [masteryOverview, setMasteryOverview] = useState<MasteryOverviewResponse | null>(null)
 
@@ -141,18 +141,19 @@ export function CurrentLearningPanel({
 
   // 选择难度后直接跳转到挑战页面，初始化逻辑由 arena 页面负责
   const handleDifficultySelect = (difficulty: number) => {
-    setSelectedDifficulty(difficulty)
+    selectedDifficultyRef.current = difficulty
     setIsNavigating('challenge')
     push(`/arena?difficulty=${difficulty}`)
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="bg-card rounded-2xl border border-border p-5 h-full flex flex-col overflow-hidden"
-    >
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-card rounded-2xl border border-border p-5 h-full flex flex-col overflow-hidden"
+      >
       {/* Header with course switcher */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <CourseSwitcher
@@ -164,14 +165,14 @@ export function CurrentLearningPanel({
       </div>
 
       {/* Dual Path Cards */}
-      <motion.div
+      <m.div
         variants={staggerContainer}
         initial="initial"
         animate="animate"
         className="flex-1 grid grid-cols-2 gap-4 min-h-0"
       >
         {/* Mastery Path Card */}
-        <motion.div
+        <m.div
           variants={staggerItem}
           whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
           className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-xl border border-amber-500/20 p-4 flex flex-col overflow-hidden"
@@ -238,10 +239,10 @@ export function CurrentLearningPanel({
               </>
             )}
           </button>
-        </motion.div>
+        </m.div>
 
         {/* Challenge Path Card */}
-        <motion.div
+        <m.div
           variants={staggerItem}
           whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
           className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 p-4 flex flex-col overflow-hidden"
@@ -290,8 +291,8 @@ export function CurrentLearningPanel({
                   <div className="flex-1 min-w-0 pl-3 border-l border-blue-500/20">
                     <p className="text-xs text-muted-foreground mb-1">{t('最近练习', 'Recent')}</p>
                     <div className="gap-y-1">
-                      {recentExercises.slice(0, 2).map((ex, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 text-xs">
+                      {recentExercises.slice(0, 2).map((ex) => (
+                        <div key={`${ex.stageName}-${ex.time || ''}`} className="flex items-center gap-1.5 text-xs">
                           {ex.isCorrect ? (
                             <CheckCircle className="size-3 text-emerald-500 flex-shrink-0" />
                           ) : (
@@ -313,8 +314,8 @@ export function CurrentLearningPanel({
               {recentExercises.length > 0 ? (
                 <div className="flex-1 w-full gap-y-1.5">
                   <p className="text-xs text-muted-foreground mb-2">{t('最近练习', 'Recent Exercises')}</p>
-                  {recentExercises.slice(0, 3).map((ex, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs">
+                  {recentExercises.slice(0, 3).map((ex) => (
+                    <div key={`${ex.stageName}-${ex.time || ''}`} className="flex items-center gap-2 text-xs">
                       {ex.isCorrect ? (
                         <CheckCircle className="size-3.5 text-emerald-500 flex-shrink-0" />
                       ) : (
@@ -354,19 +355,19 @@ export function CurrentLearningPanel({
               </>
             )}
           </button>
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
 
       {/* Difficulty Selection Modal */}
       <AnimatePresence>
         {showDifficultyModal && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
           >
-            <motion.div
+            <m.div
               variants={scaleIn}
               initial="initial"
               animate="animate"
@@ -378,7 +379,7 @@ export function CurrentLearningPanel({
             </h3>
             <div className="gap-y-2">
               {[1, 2, 3, 4, 5].map((level) => (
-                <motion.button
+                <m.button
                   key={level}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -407,7 +408,7 @@ export function CurrentLearningPanel({
                   <span className="text-xs opacity-70">
                     {level === 1 ? '+10' : level === 2 ? '+20' : level === 3 ? '+35' : level === 4 ? '+50' : '+70'}
                   </span>
-                </motion.button>
+                </m.button>
               ))}
             </div>
             <button type="button"
@@ -416,10 +417,11 @@ export function CurrentLearningPanel({
             >
               {t('取消', 'Cancel')}
             </button>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
-      </AnimatePresence>
-    </motion.div>
+        </AnimatePresence>
+      </m.div>
+    </LazyMotion>
   )
 }

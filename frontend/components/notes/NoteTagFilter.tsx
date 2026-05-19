@@ -22,6 +22,7 @@ export function NoteTagFilter({
   const [isCreating, setIsCreating] = useState(false)
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
+  const selectedTagSet = new Set(selectedTags)
 
   // Load tags
   const loadTags = useCallback(async () => {
@@ -120,30 +121,32 @@ export function NoteTagFilter({
 
       {/* Available tags */}
       <div className="flex flex-wrap gap-2">
-        {tags
-          .filter((tag) => !selectedTags.includes(tag.name))
-          .map((tag) => (
-            <span
-              key={tag.id}
-              className="group px-3 py-1.5 text-sm border-2 rounded-full flex items-center gap-1 hover:bg-muted transition-colors"
-              style={{ borderColor: tag.color }}
-            >
-              <button type="button"
-                onClick={() => toggleTag(tag.name)}
-                className="flex items-center gap-1"
-              >
-                <Plus className="size-4" />
-                {tag.name}
-              </button>
-              <button type="button"
-                onClick={() => handleDeleteTag(tag.id, tag.name)}
-                className="ml-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                title={t('删除标签', 'Delete tag')}
-              >
-                <X className="size-3.5" />
-              </button>
-            </span>
-          ))}
+        {tags.flatMap((tag) =>
+          selectedTagSet.has(tag.name)
+            ? []
+            : [
+                <span
+                  key={tag.id}
+                  className="group px-3 py-1.5 text-sm border-2 rounded-full flex items-center gap-1 hover:bg-muted transition-colors"
+                  style={{ borderColor: tag.color }}
+                >
+                  <button type="button"
+                    onClick={() => toggleTag(tag.name)}
+                    className="flex items-center gap-1"
+                  >
+                    <Plus className="size-4" />
+                    {tag.name}
+                  </button>
+                  <button type="button"
+                    onClick={() => handleDeleteTag(tag.id, tag.name)}
+                    className="ml-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                    title={t('删除标签', 'Delete tag')}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </span>,
+              ]
+        )}
       </div>
 
       {/* Create new tag */}

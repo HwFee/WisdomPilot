@@ -10,7 +10,7 @@
 
 'use client'
 
-import { motion } from 'framer-motion'
+import { LazyMotion, domAnimation, m } from 'framer-motion'
 
 // ========== 掌握度进度条 ==========
 
@@ -41,22 +41,24 @@ export function MasteryProgressBar({
   }
 
   return (
-    <div className="w-full">
-      <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full ${heightMap[size]} overflow-hidden`}>
-        <motion.div
-          className={`${heightMap[size]} rounded-full ${progressColor}`}
-          initial={animated ? { width: 0 } : { width: `${normalizedScore}%` }}
-          animate={{ width: `${normalizedScore}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </div>
+    <LazyMotion features={domAnimation}>
+      <div className="w-full">
+        <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full ${heightMap[size]} overflow-hidden`}>
+          <m.div
+            className={`${heightMap[size]} rounded-full ${progressColor}`}
+            initial={animated ? { width: 0 } : { width: `${normalizedScore}%` }}
+            animate={{ width: `${normalizedScore}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
       {showLabel && (
         <div className="flex justify-between items-center mt-1">
           <span className={`text-xs font-medium ${textColor}`}>{label}</span>
           <span className="text-xs text-gray-500">{normalizedScore.toFixed(0)}%</span>
         </div>
       )}
-    </div>
+      </div>
+    </LazyMotion>
   )
 }
 
@@ -131,10 +133,11 @@ export function SectionMasteryCard({
   onClick,
 }: SectionMasteryCardProps) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
+    <LazyMotion features={domAnimation}>
+      <m.div
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={onClick}
       className={`bg-white rounded-xl border p-4 cursor-pointer transition-all ${
         isCompleted ? 'border-green-200 bg-green-50/30' : 'border-gray-100 hover:border-blue-200'
       }`}
@@ -163,7 +166,8 @@ export function SectionMasteryCard({
       <div className="mt-3">
         <MasteryProgressBar score={masteryScore} size="sm" showLabel={false} />
       </div>
-    </motion.div>
+      </m.div>
+    </LazyMotion>
   )
 }
 
@@ -190,9 +194,10 @@ export function ChapterMasteryCard({
   const { badgeColor, textColor, label } = getMasteryLevel(masteryScore)
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.01 }}
-      onClick={onClick}
+    <LazyMotion features={domAnimation}>
+      <m.div
+        whileHover={{ scale: 1.01 }}
+        onClick={onClick}
       className={`bg-white dark:bg-gray-800 rounded-xl border p-5 cursor-pointer transition-all ${
         isCompleted ? 'border-green-200 dark:border-green-800' : 'border-gray-100 dark:border-gray-700 hover:border-blue-200'
       }`}
@@ -216,7 +221,8 @@ export function ChapterMasteryCard({
         </span>
         <span className="font-medium text-gray-700 dark:text-gray-300">{masteryScore.toFixed(0)}%</span>
       </div>
-    </motion.div>
+      </m.div>
+    </LazyMotion>
   )
 }
 
@@ -275,10 +281,10 @@ export function CourseMasteryOverview({
         {chapters.map((chapter, index) => {
           const { badgeColor, textColor: chapterTextColor } = getMasteryLevel(chapter.mastery_score)
           return (
-            <motion.div
-              key={chapter.chapter_id}
-              whileHover={{ scale: 1.02 }}
-              onClick={() => onChapterClick?.(chapter.chapter_id)}
+            <LazyMotion key={chapter.chapter_id} features={domAnimation}>
+              <m.div
+                whileHover={{ scale: 1.02 }}
+                onClick={() => onChapterClick?.(chapter.chapter_id)}
               className={`bg-white dark:bg-gray-800 rounded-lg p-3 cursor-pointer border ${
                 chapter.is_completed ? 'border-green-200 dark:border-green-800' : 'border-gray-100 dark:border-gray-700'
               }`}
@@ -292,7 +298,8 @@ export function CourseMasteryOverview({
               <div className="mt-2">
                 <MasteryProgressBar score={chapter.mastery_score} size="sm" showLabel={false} />
               </div>
-            </motion.div>
+              </m.div>
+    </LazyMotion>
           )
         })}
       </div>

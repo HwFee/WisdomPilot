@@ -10,6 +10,24 @@ import { getStoredToken } from '@/lib/api'
 import { deleteNote, exportNote } from '@/lib/api/notes'
 import type { NoteResponse } from '@/types/api'
 
+// Module-level Beijing timezone formatters
+const BEIJING_ZH_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+const BEIJING_EN_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
 interface NoteCardProps {
   note: NoteResponse
   onEdit?: (note: NoteResponse) => void
@@ -79,15 +97,7 @@ export function NoteCard({
   // 北京时间格式化 (UTC+8)
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    // 转换为北京时间显示
-    return new Intl.DateTimeFormat(lang === 'zh' ? 'zh-CN' : 'en-US', {
-      timeZone: 'Asia/Shanghai',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date)
+    return (lang === 'zh' ? BEIJING_ZH_FORMATTER : BEIJING_EN_FORMATTER).format(date)
   }
 
   // 跳转到关联题目

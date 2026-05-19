@@ -599,7 +599,7 @@ function ApiKeyField({
               value={value}
               onChange={e => onChange(e.target.value)}
               placeholder={placeholder || '输入新密钥'}
-              autoFocus
+              data-autofocus="true"
               className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background font-mono focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             <button

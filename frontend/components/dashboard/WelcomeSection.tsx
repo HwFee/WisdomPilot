@@ -1,8 +1,8 @@
 'use client'
 
 import { Sparkles, BookOpen } from 'lucide-react'
-import { useState, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 
 interface User {
   id: string
@@ -29,23 +29,21 @@ const QUOTES = [
 export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
   const [quote, setQuote] = useState<{ content: string; author: string } | null>(null)
-  const [quoteIndex, setQuoteIndex] = useState(0)
+  const quoteIndexRef = useRef(0)
 
   // 随机选择一条名言
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * QUOTES.length)
-    setQuoteIndex(randomIndex)
+    quoteIndexRef.current = randomIndex
     setQuote(QUOTES[randomIndex])
   }, [])
 
   // 每30秒更换名言
   useEffect(() => {
     const interval = setInterval(() => {
-      setQuoteIndex(prev => {
-        const next = (prev + 1) % QUOTES.length
-        setQuote(QUOTES[next])
-        return next
-      })
+      const next = (quoteIndexRef.current + 1) % QUOTES.length
+      quoteIndexRef.current = next
+      setQuote(QUOTES[next])
     }, 30000)
     return () => clearInterval(interval)
   }, [])
@@ -68,51 +66,53 @@ export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
   }, [])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br border border-border/50"
-    >
-      {/* 背景装饰 */}
-      <div className="absolute top-0 right-0 size-48 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br border border-border/50"
+      >
+        {/* 背景装饰 */}
+        <div className="absolute top-0 right-0 size-48 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
-      <div className="relative z-10 flex items-center gap-4">
-        {/* 问候语和用户名 */}
-        <div className="flex-1 min-w-0">
-          <motion.p
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-sm text-muted-foreground"
-          >
-            {getGreeting()}，<span className="font-semibold text-foreground">{user.username}</span>
-          </motion.p>
+        <div className="relative z-10 flex items-center gap-4">
+          {/* 问候语和用户名 */}
+          <div className="flex-1 min-w-0">
+            <m.p
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="text-sm text-muted-foreground"
+            >
+              {getGreeting()}，<span className="font-semibold text-foreground">{user.username}</span>
+            </m.p>
 
-          {/* 名言 - 带渐入动画 */}
-          <AnimatePresence mode="wait">
-            {quote && (
-              <motion.p
-                key={quote.content}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
-                className="text-xs text-muted-foreground/70 mt-1 italic truncate max-w-lg"
-              >
-                "{quote.content}" : {quote.author}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </div>
+            {/* 名言 - 带渐入动画 */}
+            <AnimatePresence mode="wait">
+              {quote && (
+                <m.p
+                  key={quote.content}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-xs text-muted-foreground/70 mt-1 italic truncate max-w-lg"
+                >
+                  "{quote.content}" : {quote.author}
+                </m.p>
+              )}
+            </AnimatePresence>
+          </div>
 
-        {/* 右侧图标 */}
-        <div className="flex-shrink-0">
-          <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-            <Sparkles className="size-5 text-primary" />
+          {/* 右侧图标 */}
+          <div className="flex-shrink-0">
+            <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+              <Sparkles className="size-5 text-primary" />
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </m.div>
+    </LazyMotion>
   )
 }

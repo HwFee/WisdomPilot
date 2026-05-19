@@ -8,7 +8,7 @@
 
 import * as React from "react"
 import { create } from "zustand"
-import { motion, AnimatePresence } from "framer-motion"
+import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import {
   CheckCircle,
@@ -132,7 +132,7 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
   const Icon = config.icon
 
   return (
-    <motion.div
+    <m.div
       layout
       initial={{ opacity: 0, y: 50, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -166,7 +166,7 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
       >
         <X className="size-4" />
       </button>
-    </motion.div>
+    </m.div>
   )
 }
 
@@ -179,12 +179,16 @@ interface ToastProviderProps {
 export function ToastProvider({ position = 'bottom-right' }: ToastProviderProps) {
   const { toasts, setPosition } = useToastStore()
 
-  React.useEffect(() => {
+  const prevPositionRef = React.useRef(position)
+  if (position !== prevPositionRef.current) {
+    prevPositionRef.current = position
     setPosition(position)
-  }, [position, setPosition])
+  }
+
+  const currentPosition = useToastStore((state) => state.position)
 
   return (
-    <div className={cn("fixed z-[100] flex flex-col gap-2", positionClasses[position])}>
+    <div className={cn("fixed z-[100] flex flex-col gap-2", positionClasses[currentPosition])}>
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <ToastItem

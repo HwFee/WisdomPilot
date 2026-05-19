@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect, useEffectEvent } from 'react'
 import { Search, X } from 'lucide-react'
 import { getStoredToken } from '@/lib/api'
 import { searchNotes } from '@/lib/api/notes'
@@ -22,7 +22,7 @@ export function NoteSearch({
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
-  const handleSearch = useCallback(async (searchQuery: string) => {
+  const performSearch = useEffectEvent(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       onResults?.([], '')
       return
@@ -40,16 +40,16 @@ export function NoteSearch({
     } finally {
       setIsSearching(false)
     }
-  }, [onResults])
+  })
 
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      handleSearch(query)
+      performSearch(query)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [query, handleSearch])
+  }, [query])
 
   return (
     <div className="relative">

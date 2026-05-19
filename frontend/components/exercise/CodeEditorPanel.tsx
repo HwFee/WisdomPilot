@@ -1,8 +1,9 @@
 'use client'
 
 import { useRef, useEffect, useCallback, useState } from 'react'
-import Editor, { OnMount } from '@monaco-editor/react'
-import type { editor, languages } from 'monaco-editor'
+import dynamic from 'next/dynamic'
+
+const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
 interface CodeEditorPanelProps {
   value: string
@@ -606,7 +607,7 @@ function extractSymbolsFromCode(code: string, language: string): VariableInfo[] 
 
 const registeredLanguages = new Set<string>()
 
-function getCompletionKind(monaco: typeof import('monaco-editor'), type: string): languages.CompletionItemKind {
+function getCompletionKind(monaco: typeof import('monaco-editor'), type: string) {
   switch (type) {
     case 'function': return monaco.languages.CompletionItemKind.Function
     case 'class': return monaco.languages.CompletionItemKind.Class
@@ -633,7 +634,7 @@ function registerCompletionProviders(monaco: typeof import('monaco-editor')) {
         const code = model.getValue()
         const symbols = extractSymbolsFromCode(code, 'c')
 
-        const suggestions: languages.CompletionItem[] = [
+        const suggestions = [
           // Phase 2: 当前文件的变量和函数
           ...symbols.map(s => ({
             label: s.name,
@@ -697,7 +698,7 @@ function registerCompletionProviders(monaco: typeof import('monaco-editor')) {
         const code = model.getValue()
         const symbols = extractSymbolsFromCode(code, 'cpp')
 
-        const suggestions: languages.CompletionItem[] = [
+        const suggestions = [
           // 当前文件的符号
           ...symbols.map(s => ({
             label: s.name,
@@ -790,7 +791,7 @@ function registerCompletionProviders(monaco: typeof import('monaco-editor')) {
         const code = model.getValue()
         const symbols = extractSymbolsFromCode(code, 'python')
 
-        const suggestions: languages.CompletionItem[] = [
+        const suggestions = [
           // 当前文件的符号
           ...symbols.map(s => ({
             label: s.name,
@@ -873,7 +874,7 @@ function registerCompletionProviders(monaco: typeof import('monaco-editor')) {
         const code = model.getValue()
         const symbols = extractSymbolsFromCode(code, 'java')
 
-        const suggestions: languages.CompletionItem[] = [
+        const suggestions = [
           // 当前文件的符号
           ...symbols.map(s => ({
             label: s.name,
@@ -966,7 +967,7 @@ function registerCompletionProviders(monaco: typeof import('monaco-editor')) {
         const code = model.getValue()
         const symbols = extractSymbolsFromCode(code, 'rust')
 
-        const suggestions: languages.CompletionItem[] = [
+        const suggestions = [
           // 当前文件的符号
           ...symbols.map(s => ({
             label: s.name,
@@ -1025,15 +1026,14 @@ export function CodeEditorPanel({
   readOnly = false,
   height = '100%',
 }: CodeEditorPanelProps) {
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+  const editorRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<typeof import('monaco-editor') | null>(null)
-  const [isReady, setIsReady] = useState(false)
 
-  const handleChange = useCallback((val: string | undefined) => {
+  const handleEditorChange = useCallback((val: string | undefined) => {
     onChange(val || '')
   }, [onChange])
 
-  const handleEditorMount: OnMount = (editor, monaco) => {
+  const handleEditorMount = (editor: import('monaco-editor').editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
     editorRef.current = editor
     monacoRef.current = monaco
 
@@ -1073,7 +1073,6 @@ export function CodeEditorPanel({
 
     editor.updateOptions({ automaticLayout: true })
     editor.focus()
-    setIsReady(true)
   }
 
   useEffect(() => {
@@ -1086,7 +1085,7 @@ export function CodeEditorPanel({
         height={height}
         language={language}
         value={value}
-        onChange={handleChange}
+        onChange={handleEditorChange}
         onMount={handleEditorMount}
         options={{
           readOnly,

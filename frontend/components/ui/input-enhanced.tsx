@@ -56,25 +56,24 @@ export interface InputProps
   hintMessage?: string
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      className,
-      type,
-      variant,
-      inputSize,
-      state,
-      leftIcon,
-      rightIcon,
-      leftAddon,
-      rightAddon,
-      errorMessage,
-      successMessage,
-      hintMessage,
-      ...props
-    },
-    ref
-  ) => {
+const Input = (
+  {
+    className,
+    type,
+    variant,
+    inputSize,
+    state,
+    leftIcon,
+    rightIcon,
+    leftAddon,
+    rightAddon,
+    errorMessage,
+    successMessage,
+    hintMessage,
+    ref,
+    ...props
+  }: InputProps & { ref?: React.Ref<HTMLInputElement> }
+) => {
     const [showPassword, setShowPassword] = React.useState(false)
     const isPassword = type === 'password'
     const inputType = isPassword && showPassword ? 'text' : type
@@ -165,7 +164,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       </div>
     )
   }
-)
 Input.displayName = "Input"
 
 // ── Label 组件 ──
@@ -175,8 +173,7 @@ export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> 
   floating?: boolean
 }
 
-const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
-  ({ className, children, required, floating, ...props }, ref) => {
+const Label = ({ className, children, required, floating, ref, ...props }: LabelProps & { ref?: React.Ref<HTMLLabelElement> }) => {
     return (
       <label
         ref={ref}
@@ -192,7 +189,6 @@ const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
       </label>
     )
   }
-)
 Label.displayName = "Label"
 
 // ── Textarea 组件 ──
@@ -209,21 +205,21 @@ export interface TextareaProps
   maxHeight?: number
 }
 
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({
-    className,
-    errorMessage,
-    successMessage,
-    hintMessage,
-    showCount,
-    maxLength,
-    autoResize,
-    minHeight = 80,
-    maxHeight = 300,
-    value,
-    onChange,
-    ...props
-  }, ref) => {
+const Textarea = ({
+  className,
+  errorMessage,
+  successMessage,
+  hintMessage,
+  showCount,
+  maxLength,
+  autoResize,
+  minHeight = 80,
+  maxHeight = 300,
+  value,
+  onChange,
+  ref,
+  ...props
+}: TextareaProps & { ref?: React.Ref<HTMLTextAreaElement> }) => {
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(ref as any)
     const [charCount, setCharCount] = React.useState(0)
 
@@ -243,7 +239,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     }, [value, showCount])
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       if (maxLength && e.target.value.length > maxLength) {
         return
       }
@@ -269,7 +265,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             )}
             ref={textareaRef}
             value={value}
-            onChange={handleChange}
+            onChange={handleTextareaChange}
             maxLength={maxLength}
             {...props}
           />
@@ -295,7 +291,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       </div>
     )
   }
-)
 Textarea.displayName = "Textarea"
 
 // ── Select 组件 ──
@@ -306,8 +301,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   errorMessage?: string
 }
 
-const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, options, placeholder, errorMessage, ...props }, ref) => {
+const Select = ({ className, options, placeholder, errorMessage, ref, ...props }: SelectProps & { ref?: React.Ref<HTMLSelectElement> }) => {
     return (
       <div className="w-full">
         <select
@@ -344,7 +338,6 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       </div>
     )
   }
-)
 Select.displayName = "Select"
 
 // ── Checkbox 组件 ──
@@ -354,8 +347,7 @@ export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputE
   description?: string
 }
 
-const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, label, description, ...props }, ref) => {
+const Checkbox = ({ className, label, description, ref, ...props }: CheckboxProps & { ref?: React.Ref<HTMLInputElement> }) => {
     return (
       <label className="flex items-start gap-3 cursor-pointer group">
         <input
@@ -384,7 +376,6 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       </label>
     )
   }
-)
 Checkbox.displayName = "Checkbox"
 
 // ── Radio 组件 ──
@@ -394,8 +385,7 @@ export interface RadioProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   description?: string
 }
 
-const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
-  ({ className, label, description, ...props }, ref) => {
+const Radio = ({ className, label, description, ref, ...props }: RadioProps & { ref?: React.Ref<HTMLInputElement> }) => {
     return (
       <label className="flex items-start gap-3 cursor-pointer group">
         <input
@@ -424,7 +414,6 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
       </label>
     )
   }
-)
 Radio.displayName = "Radio"
 
 // ── FormField 包装组件 ──

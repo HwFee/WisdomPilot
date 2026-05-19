@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useTransition } from 'react'
 import { FileText, Loader2 } from 'lucide-react'
 import { getStoredToken } from '@/lib/api'
 import { getNotes, type NoteResponse } from '@/lib/api/notes'
@@ -50,8 +50,8 @@ export function NoteButton({
   refreshKey,
 }: NoteButtonProps) {
   const [hasNote, setHasNote] = useState(false)
-  const [existingNote, setExistingNote] = useState<NoteResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const existingNoteRef = useRef<NoteResponse | null>(null)
+  const [isPending, startTransition] = useTransition()
   const prevRefreshKeyRef = useRef(refreshKey)
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
@@ -60,40 +60,29 @@ export function NoteButton({
   useEffect(() => {
     let cancelled = false
 
-    const checkNote = async () => {
-      const token = getStoredToken()
-      if (!token || !exerciseId) return
+    const token = getStoredToken()
+    if (!token || !exerciseId) return
 
-      setIsLoading(true)
+    startTransition(async () => {
       try {
         // 通过搜索来检查是否存在笔记
         const result = await getNotes(token, { chapterId, limit: 100 })
-        if (cancelled) return
 
         // 查找关联到该题目的笔记
         const note = result.notes.find((n) => n.exercise_id === exerciseId)
         if (note) {
           setHasNote(true)
-          setExistingNote(note)
+          existingNoteRef.current = note
           onNoteChange?.(note)
         } else {
           setHasNote(false)
-          setExistingNote(null)
+          existingNoteRef.current = null
           onNoteChange?.(null)
         }
       } catch (error) {
         console.error('[NoteButton] 检查笔记失败:', error)
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
       }
-    }
-
-    checkNote()
-    return () => {
-      cancelled = true
-    }
+    })
   }, [exerciseId, chapterId, onNoteChange, refreshKey])
 
   // 检测 refreshKey 变化时强制重新检查
@@ -104,8 +93,8 @@ export function NoteButton({
   }, [refreshKey])
 
   const handleClick = useCallback(() => {
-    onClick?.(existingNote)
-  }, [existingNote, onClick])
+    onClick?.(existingNoteRef.current)
+  }, [onClick])
 
   const sizeClasses = {
     sm: 'size-6',
@@ -125,7 +114,7 @@ export function NoteButton({
         e.stopPropagation()
         handleClick()
       }}
-      disabled={isLoading}
+      disabled={isPending}
       className={`
         flex items-center justify-center rounded-lg transition-all duration-200
         ${showLabel ? 'px-2.5 gap-1' : sizeClasses[size]}
@@ -134,11 +123,11 @@ export function NoteButton({
             ? 'bg-primary/20 text-primary hover:bg-primary/30'
             : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary'
         }
-        ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+        ${isPending ? 'opacity-50 cursor-not-allowed' : ''}
       `}
       title={hasNote ? t('查看/编辑笔记', 'View/Edit Note') : t('记笔记', 'Add Note')}
     >
-      {isLoading ? (
+      {isPending ? (
         <Loader2 className={`${iconSizes[size]} animate-spin`} />
       ) : (
         <FileText className={iconSizes[size]} />

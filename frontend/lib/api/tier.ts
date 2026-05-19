@@ -2,7 +2,7 @@
  * Tier API - 段位系统相关API调用
  */
 
-import { getStoredToken } from './index'
+import { getStoredToken } from './auth'
 import { API_BASE_URL } from './client'
 import type { TierConfig, TierInfo, TierRank, UpdateStarsResult } from '@/types/api'
 

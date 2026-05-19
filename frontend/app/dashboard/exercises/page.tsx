@@ -6,16 +6,23 @@ import { getStoredToken, logout, getExercisesTrend } from "@/lib/api";
 import { ArrowLeft, TrendingUp, TrendingDown, Target } from "lucide-react";
 import type { DailyTrendPoint } from "@/types/api";
 
+type EnrichedTrend = DailyTrendPoint & { weekday: string; displayDate: string };
+
 export default function ExercisesDetailPage() {
   const { push, back } = useRouter();
-  const [trends, setTrends] = useState<DailyTrendPoint[]>([]);
+  const [trends, setTrends] = useState<EnrichedTrend[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const hasFetched = useRef(false);
 
   const fetchData = useCallback(async (token: string) => {
     try {
       const data = await getExercisesTrend(token, 7);
-      setTrends(data.trends);
+      const enriched = data.trends.map((t) => ({
+        ...t,
+        weekday: new Date(t.date).toLocaleDateString("zh-CN", { weekday: "short" }),
+        displayDate: new Date(t.date).toLocaleDateString("zh-CN", { month: "short", day: "numeric" }),
+      }));
+      setTrends(enriched);
     } catch {
       // Handle error silently
     } finally {
@@ -122,9 +129,9 @@ export default function ExercisesDetailPage() {
             {trends
               .slice()
               .reverse()
-              .map((t, i) => (
+              .map((t) => (
                 <div
-                  key={`item-${i}`}
+                  key={t.date}
                   className="flex-1 flex flex-col items-center gap-2"
                 >
                   <div
@@ -134,10 +141,8 @@ export default function ExercisesDetailPage() {
                       minHeight: t.count > 0 ? "4px" : "0",
                     }}
                   />
-                  <span className="text-xs text-muted-foreground" suppressHydrationWarning>
-                    {new Date(t.date).toLocaleDateString("zh-CN", {
-                      weekday: "short",
-                    })}
+                  <span className="text-xs text-muted-foreground">
+                    {t.weekday}
                   </span>
                 </div>
               ))}
@@ -151,7 +156,7 @@ export default function ExercisesDetailPage() {
           </div>
           <div className="divide-y divide-border">
             {trends.map((t, i) => (
-              <div key={`item-${i}`} className="flex items-center justify-between p-4">
+              <div key={t.date} className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   <div
                     className={`size-10 rounded-full flex items-center justify-center ${i === 0 ? "bg-blue-500/10 text-blue-500" : "bg-muted text-muted-foreground"}`}
@@ -159,15 +164,12 @@ export default function ExercisesDetailPage() {
                     <Target className="size-5" />
                   </div>
                   <div>
-                    <p className="font-medium" suppressHydrationWarning>
+                    <p className="font-medium">
                       {i === 0
                         ? "今天"
                         : i === 1
                           ? "昨天"
-                          : new Date(t.date).toLocaleDateString("zh-CN", {
-                              month: "short",
-                              day: "numeric",
-                            })}
+                          : t.displayDate}
                     </p>
                     <p className="text-sm text-muted-foreground">{t.date}</p>
                   </div>

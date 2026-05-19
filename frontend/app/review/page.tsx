@@ -32,24 +32,23 @@ function ReviewPageContent() {
   const [wrongQuestions, setWrongQuestions] = useState<WrongQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token:v1') : null
 
   useEffect(() => {
-    const token = localStorage.getItem('token:v1')
     if (!token) {
       push('/login')
       return
     }
     fetchData()
-  }, [push])
+  }, [push, token])
 
   const fetchData = async () => {
+    if (!token) {
+      push('/login')
+      return
+    }
     try {
       setLoading(true)
-      const token = localStorage.getItem('token:v1')
-      if (!token) {
-        push('/login')
-        return
-      }
 
       const wrongData = await getWrongQuestions(token).catch(() => ({ wrong_questions: [], total: 0, unresolved_count: 0 }))
       setWrongQuestions(wrongData.wrong_questions || [])
@@ -71,11 +70,9 @@ function ReviewPageContent() {
 
   const handleDeleteWrongQuestion = async (wrongQuestionId: string) => {
     if (!confirm('确定要删除这条错题记录吗？')) return
+    if (!token) return
 
     try {
-      const token = localStorage.getItem('token:v1')
-      if (!token) return
-
       await deleteWrongQuestion(wrongQuestionId, token)
       setWrongQuestions(prev => prev.filter(wq => wq.id !== wrongQuestionId))
     } catch {
@@ -84,7 +81,7 @@ function ReviewPageContent() {
   }
 
   const handleReview = async (wq: WrongQuestion) => {
-    const token = localStorage.getItem('token:v1')
+    if (!token) return
     const sourceType = wq.source_type || (wq.exercise_key?.startsWith('arena-') ? 'arena' : 'mastery')
     const keyParts = wq.exercise_key?.split('-') || []
     let questionIdFromKey = ''

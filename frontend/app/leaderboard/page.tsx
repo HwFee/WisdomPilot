@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getStoredToken, logout } from '@/lib/api'
@@ -16,40 +16,43 @@ type LeaderboardType = 'mastery' | 'arena'
 
 function LeaderboardContent() {
   const { push } = useRouter()
-  const searchParams = useSearchParams()
-  const [activeTab, setActiveTab] = useState<LeaderboardType>(
-    (searchParams.get('tab') as LeaderboardType) || 'mastery'
-  )
-  const [courseId, setCourseId] = useState<number>(1)
-  const [enrolledCourses, setEnrolledCourses] = useState<CourseProgress[]>([])
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [currentUserRank, setCurrentUserRank] = useState<number | null>(null)
-  const [currentUserData, setCurrentUserData] = useState<LeaderboardEntry | null>(null)
-  const [offset, setOffset] = useState(0)
-  const [courseLoading, setCourseLoading] = useState(true)
+  const { get } = useSearchParams()
+  const [uiState, setUiState] = useState({
+    activeTab: (get('tab') as LeaderboardType) || 'mastery',
+    offset: 0,
+    loading: true,
+  })
+  const courseIdRef = useRef<number>(1)
+  const [dataState, setDataState] = useState({
+    enrolledCourses: [] as CourseProgress[],
+    leaderboard: [] as LeaderboardEntry[],
+  })
+  const currentUserIdRef = useRef<string | null>(null)
+  const [currentUserState, setCurrentUserState] = useState<{ rank: number | null; data: LeaderboardEntry | null }>({ rank: null, data: null })
+  const { activeTab, offset, loading } = uiState
+  const { enrolledCourses, leaderboard } = dataState
+  const { rank: currentUserRank, data: currentUserData } = currentUserState
+  const courseLoadingRef = useRef(true)
   const limit = 20
   const hasFetched = useRef(false)
   const hasFetchedCourses = useRef(false)
 
-  const fetchData = useCallback(async (token: string, tab: LeaderboardType, off: number = 0) => {
+  const fetchData = async (token: string, tab: LeaderboardType, off: number = 0) => {
     try {
-      setLoading(true)
+      setUiState(prev => ({ ...prev, loading: true }))
       const data = tab === 'mastery'
-        ? await getMasteryLeaderboard(courseId, token, limit, off)
-        : await getArenaLeaderboard(courseId, token, limit, off)
-
+        ? await getMasteryLeaderboard(courseIdRef.current, token, limit, off)
+        : await getArenaLeaderboard(courseIdRef.current, token, limit, off)
 
       if (off === 0) {
-        setLeaderboard(data.entries)
+        setDataState(prev => ({ ...prev, leaderboard: data.entries }))
       } else {
-        setLeaderboard(prev => [...prev, ...data.entries])
+        setDataState(prev => ({ ...prev, leaderboard: [...prev.leaderboard, ...data.entries] }))
       }
-      setCurrentUserRank(data.user_rank)
+      setCurrentUserState(prev => ({ ...prev, rank: data.user_rank }))
 
       // Find current user's data in leaderboard
-      const userId = currentUserId || (() => {
+      const userId = currentUserIdRef.current || (() => {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]))
           return payload.sub
@@ -61,15 +64,15 @@ function LeaderboardContent() {
       if (userId && data.entries) {
         const userEntry = data.entries.find((e: LeaderboardEntry) => e.user_id === userId)
         if (userEntry) {
-          setCurrentUserData(userEntry)
+          setCurrentUserState(prev => ({ ...prev, data: userEntry }))
         }
       }
     } catch (error) {
       console.error('[Leaderboard] Error:', error)
     } finally {
-      setLoading(false)
+      setUiState(prev => ({ ...prev, loading: false }))
     }
-  }, [courseId, currentUserId])
+  }
 
   useEffect(() => {
     if (hasFetchedCourses.current) return
@@ -83,7 +86,7 @@ function LeaderboardContent() {
     // Get current user info from token
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))
-      setCurrentUserId(payload.sub)
+      currentUserIdRef.current = payload.sub
     } catch {
       // Ignore parsing errors
     }
@@ -92,38 +95,31 @@ function LeaderboardContent() {
     getUserCourseProgress(token)
       .then((progress) => {
         const courses = progress.courses || []
-        setEnrolledCourses(courses)
+        setDataState(prev => ({ ...prev, enrolledCourses: courses }))
         // Use first enrolled course, or first available course, or default to 1
         if (courses.length > 0) {
           const firstEnrolled = courses.find(c => c.progress !== null && c.progress > 0) || courses[0]
-          setCourseId(firstEnrolled.course_id)
+          courseIdRef.current = firstEnrolled.course_id
+        }
+        // Fetch leaderboard data now that course is determined
+        if (!hasFetched.current) {
+          hasFetched.current = true
+          fetchData(token, uiState.activeTab, 0)
         }
       })
       .catch((err) => {
         console.error('[Leaderboard] Failed to fetch course progress:', err)
       })
       .finally(() => {
-        setCourseLoading(false)
+        courseLoadingRef.current = false
         hasFetchedCourses.current = true
       })
-  }, [push])
-
-  // Fetch leaderboard data when course is loaded
-  useEffect(() => {
-    if (courseLoading) return
-    if (hasFetched.current) return
-    const token = getStoredToken()
-    if (!token) return
-
-    hasFetched.current = true
-    fetchData(token, activeTab, 0)
-  }, [courseLoading, courseId, activeTab, fetchData])
+  }, [push, uiState.activeTab])
 
   // Update URL when tab changes
   const handleTabChange = (tab: LeaderboardType) => {
-    setActiveTab(tab)
-    setOffset(0)
-    setCurrentUserData(null)
+    setUiState(prev => ({ ...prev, activeTab: tab, offset: 0 }))
+    setCurrentUserState(prev => ({ ...prev, data: null }))
     const token = getStoredToken()
     if (token) {
       fetchData(token, tab, 0)
@@ -132,11 +128,11 @@ function LeaderboardContent() {
   }
 
   const handleLoadMore = () => {
-    const newOffset = offset + limit
-    setOffset(newOffset)
+    const newOffset = uiState.offset + limit
+    setUiState(prev => ({ ...prev, offset: newOffset }))
     const token = getStoredToken()
     if (token) {
-      fetchData(token, activeTab, newOffset)
+      fetchData(token, uiState.activeTab, newOffset)
     }
   }
 
@@ -310,7 +306,7 @@ function LeaderboardContent() {
                 <div
                   key={entry.user_id}
                   className={`rounded-xl border p-4 flex items-center justify-between transition-all ${
-                    entry.user_id === currentUserId ? 'ring-2 ring-primary border-primary/30 bg-primary/5' : 'bg-card hover:border-primary/30'
+                    entry.user_id === currentUserIdRef.current ? 'ring-2 ring-primary border-primary/30 bg-primary/5' : 'bg-card hover:border-primary/30'
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -323,7 +319,7 @@ function LeaderboardContent() {
                     <div>
                       <p className="font-medium text-foreground">
                         {entry.username}
-                        {entry.user_id === currentUserId && (
+                        {entry.user_id === currentUserIdRef.current && (
                           <span className="ml-2 text-xs text-primary">(你)</span>
                         )}
                       </p>

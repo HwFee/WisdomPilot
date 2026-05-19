@@ -1,6 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+
+let _cachedToken: string | null | undefined = undefined
+function getCachedToken(): string | null {
+  if (_cachedToken === undefined && typeof window !== 'undefined') {
+    _cachedToken = localStorage.getItem('token:v1')
+  }
+  return _cachedToken ?? null
+}
 import { Trophy, Swords, Crown, Medal, Flame, ChevronRight, Star } from 'lucide-react'
 import { getMasteryLeaderboard, getArenaLeaderboard, TIER_NAMES } from '@/lib/api'
 import { getTierConfig } from '@/lib/icons/tier-icons'
@@ -8,7 +16,7 @@ import type { LeaderboardEntry, Tier } from '@/types/api'
 
 interface LeaderboardTabsProps {
   courseId: number
-  defaultTab?: 'mastery' | 'arena'
+  initialTab?: 'mastery' | 'arena'
   limit?: number
   showViewAll?: boolean
   onViewAll?: (tab: 'mastery' | 'arena') => void
@@ -16,20 +24,24 @@ interface LeaderboardTabsProps {
 
 export function LeaderboardTabs({
   courseId,
-  defaultTab = 'mastery',
+  initialTab = 'mastery',
   limit = 10,
   showViewAll = true,
   onViewAll,
 }: LeaderboardTabsProps) {
-  const [activeTab, setActiveTab] = useState<'mastery' | 'arena'>(defaultTab)
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [userRank, setUserRank] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [leaderboardState, setLeaderboardState] = useState({
+    entries: [] as LeaderboardEntry[],
+    userRank: null as number | null,
+    loading: true,
+  })
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const token = getCachedToken()
+  const initialTabRef = useRef(initialTab)
+  const [activeTab, setActiveTab] = useState<'mastery' | 'arena'>(initialTabRef.current)
+  const { entries, userRank, loading } = leaderboardState
 
   useEffect(() => {
     // Get current user from token
-    const token = localStorage.getItem('token:v1')
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
@@ -38,26 +50,25 @@ export function LeaderboardTabs({
         // Ignore
       }
     }
-  }, [])
+  }, [token])
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem('token:v1')
       if (!token) return
 
       try {
-        setLoading(true)
         const data = activeTab === 'mastery'
           ? await getMasteryLeaderboard(courseId, token, limit)
           : await getArenaLeaderboard(courseId, token, limit)
 
-        setEntries(data.entries)
-        setUserRank(data.user_rank)
+        setLeaderboardState({
+          entries: data.entries,
+          userRank: data.user_rank,
+          loading: false,
+        })
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error)
-        setEntries([])
-      } finally {
-        setLoading(false)
+        setLeaderboardState(prev => ({ ...prev, entries: [], loading: false }))
       }
     }
 
@@ -239,30 +250,32 @@ export function LeaderboardPreview({
   courseId: number
   limit?: number
 }) {
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [leaderboardState, setLeaderboardState] = useState({
+    entries: [] as LeaderboardEntry[],
+    loading: true,
+  })
+
+  const token = getCachedToken()
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem('token:v1')
       if (!token) return
 
       try {
-        setLoading(true)
         const data = type === 'mastery'
           ? await getMasteryLeaderboard(courseId, token, limit)
           : await getArenaLeaderboard(courseId, token, limit)
 
-        setEntries(data.entries)
+        setLeaderboardState({ entries: data.entries, loading: false })
       } catch {
-        setEntries([])
-      } finally {
-        setLoading(false)
+        setLeaderboardState({ entries: [], loading: false })
       }
     }
 
     fetchData()
   }, [courseId, type, limit])
+
+  const { entries, loading } = leaderboardState
 
   if (loading) {
     return (

@@ -93,7 +93,7 @@ export function TestCasesPanel({
           const isExpanded = expandedCases.has(index)
 
           return (
-            <div key={`case-${index}`} className={`test-case-item ${result.passed ? 'passed' : 'failed'}`}>
+            <div key={`case-${result.input.slice(0, 30)}`} className={`test-case-item ${result.passed ? 'passed' : 'failed'}`}>
               {/* Header */}
               <button type="button"
                 onClick={() => toggleCase(index)}

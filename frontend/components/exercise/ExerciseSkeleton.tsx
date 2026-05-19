@@ -6,7 +6,7 @@
  * 用于流式生成模式，在题目生成过程中显示占位动画
  */
 
-import { motion } from "framer-motion";
+import { LazyMotion, domAnimation, m } from "framer-motion";
 
 interface ExerciseSkeletonProps {
   index?: number;
@@ -34,8 +34,8 @@ export function ExerciseSkeleton({ index = 0, showNumber = true }: ExerciseSkele
 
       {/* 选项骨架 */}
       <div className="gap-y-3">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={`skeleton-${i}`} className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+        {[1, 2, 3, 4].map((n) => (
+          <div key={`skeleton-${n}`} className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
             <div className="size-8 bg-muted rounded-lg flex-shrink-0" />
             <div className="flex-1 h-4 bg-muted rounded" />
           </div>
@@ -74,29 +74,31 @@ export function ExerciseSkeletonList({ count, startIndex = 0 }: ExerciseSkeleton
  */
 export function GeneratingIndicator({ progress, total }: { progress: number; total: number }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4"
-    >
-      <div className="size-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-      <div className="flex-1">
-        <p className="text-sm font-medium text-amber-600">
-          题目生成中...
-        </p>
-        <div className="mt-1 h-1.5 bg-amber-200 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-amber-500 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${(progress / total) * 100}%` }}
-            transition={{ duration: 0.3 }}
-          />
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4"
+      >
+        <div className="size-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex-1">
+          <p className="text-sm font-medium text-amber-600">
+            题目生成中...
+          </p>
+          <div className="mt-1 h-1.5 bg-amber-200 rounded-full overflow-hidden">
+            <m.div
+              className="h-full bg-amber-500 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${(progress / total) * 100}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
         </div>
-      </div>
-      <span className="text-sm text-amber-600 font-medium">
-        {progress}/{total}
-      </span>
-    </motion.div>
+        <span className="text-sm text-amber-600 font-medium">
+          {progress}/{total}
+        </span>
+      </m.div>
+    </LazyMotion>
   );
 }
 

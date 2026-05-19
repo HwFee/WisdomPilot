@@ -107,24 +107,11 @@ ${SSH_CMD} "mkdir -p ${REMOTE_DEPLOY_DIR}/data"
 ${SCP_CMD} "${BACKEND_TAR}" "${SSH_USER}@${SERVER_IP}:${REMOTE_DEPLOY_DIR}/"
 ${SCP_CMD} "${FRONTEND_TAR}" "${SSH_USER}@${SERVER_IP}:${REMOTE_DEPLOY_DIR}/"
 
-# 上传数据文件（backend/data.db 才是真正的数据库）
-DB_FILE="${PROJECT_ROOT}/backend/data.db"
-if [ -f "${DB_FILE}" ]; then
-    log_info "删除服务器上旧的数据库文件..."
-    ${SSH_CMD} "rm -f ${REMOTE_DEPLOY_DIR}/data/data.db ${REMOTE_DEPLOY_DIR}/data/data.db-shm ${REMOTE_DEPLOY_DIR}/data/data.db-wal"
-
-    log_info "上传数据库文件 ..."
-    ${SCP_CMD} "${DB_FILE}" "${SSH_USER}@${SERVER_IP}:${REMOTE_DEPLOY_DIR}/data/"
-    # WAL 模式下的附加文件也一并上传，避免数据丢失
-    if [ -f "${DB_FILE}-shm" ]; then
-        ${SCP_CMD} "${DB_FILE}-shm" "${SSH_USER}@${SERVER_IP}:${REMOTE_DEPLOY_DIR}/data/"
-    fi
-    if [ -f "${DB_FILE}-wal" ]; then
-        ${SCP_CMD} "${DB_FILE}-wal" "${SSH_USER}@${SERVER_IP}:${REMOTE_DEPLOY_DIR}/data/"
-    fi
-else
-    log_warn "未找到 ${DB_FILE}，跳过上传数据库"
-fi
+# 数据库文件不再随代码部署上传，避免覆盖服务器上的生产数据。
+# 如需要迁移数据库，请手动处理或使用独立的数据迁移脚本。
+# data 目录仍需要创建，供后端容器挂载使用。
+log_info "确保远程 data 目录存在..."
+${SSH_CMD} "mkdir -p ${REMOTE_DEPLOY_DIR}/data"
 
 # 上传环境变量文件（如果存在）
 if [ -f "${PROJECT_ROOT}/${BACKEND_ENV}" ]; then

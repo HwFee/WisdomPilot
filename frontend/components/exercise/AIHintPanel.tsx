@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useEffectEvent } from "react";
 import { createPortal } from "react-dom";
 import { Lightbulb, Sparkles, BookOpen, Gem, Loader2, X, AlertCircle, GripVertical } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -90,7 +90,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
   const Icon = config.icon;
   const canAfford = currentBalance === undefined || currentBalance >= config.cost;
 
-  const handleClick = async () => {
+  const fetchHint = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -113,7 +113,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
   return (
     <div className="relative">
       <button type="button"
-        onClick={handleClick}
+        onClick={fetchHint}
         disabled={disabled || loading || !canAfford}
         className={`
           flex flex-col items-center gap-1 p-2 rounded-lg border transition-all
@@ -148,6 +148,10 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
           <div className="relative w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm animate-modal-enter"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
           >
             {/* 顶部光效 */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -184,7 +188,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
                     ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
                     ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                     li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
-                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
+                    blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
                     strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
                     code({ className, children, ...props }) {
                       const isInline = !className
@@ -358,6 +362,14 @@ export function StreamHintModal({
   };
 
   // 拖动中
+  const handleDragEnd = useEffectEvent(() => {
+    setIsDragging(false);
+    if (position) {
+      savePosition(position);
+    }
+    dragStartRef.current = null;
+  });
+
   useEffect(() => {
     if (!isDragging) return;
 
@@ -376,11 +388,7 @@ export function StreamHintModal({
     };
 
     const handleMouseUp = () => {
-      setIsDragging(false);
-      if (position) {
-        savePosition(position);
-      }
-      dragStartRef.current = null;
+      handleDragEnd();
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -390,7 +398,7 @@ export function StreamHintModal({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, position, savePosition]);
+  }, [isDragging]);
 
   if (!isOpen) return null;
 
@@ -420,6 +428,9 @@ export function StreamHintModal({
       <div
         className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent rounded-t-2xl cursor-grab active:cursor-grabbing"
         onMouseDown={handleMouseDown}
+        role="button"
+        tabIndex={0}
+        aria-label="拖动"
       >
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${config.bgColor}`}>
@@ -469,7 +480,7 @@ export function StreamHintModal({
                 ul: ({ children }) => <ul className="list-disc list-inside gap-y-1 my-2 ml-2">{children}</ul>,
                 ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                 li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
-                blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
+                blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/30 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
                 strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
                 code({ className, children, ...props }) {
                   const isInline = !className
@@ -568,20 +579,19 @@ export function StreamHintButton({
 }: StreamHintButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [hintContent, setHintContent] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamState, setStreamState] = useState({ streaming: false, cached: false });
+  const { streaming: isStreaming, cached: isCached } = streamState;
   const [error, setError] = useState<string | null>(null);
-  const [isCached, setIsCached] = useState(false);  // 是否为缓存内容
 
   const config = HINT_CONFIG[level];
   const Icon = config.icon;
   const canAfford = currentBalance === undefined || currentBalance >= config.cost;
 
-  const handleClick = async () => {
+  const fetchStreamHint = async () => {
     setIsOpen(true);
     setHintContent("");
-    setIsStreaming(true);
+    setStreamState({ streaming: true, cached: false });
     setError(null);
-    setIsCached(false);
 
     try {
       // 动态导入 API 函数避免循环依赖
@@ -606,7 +616,7 @@ export function StreamHintButton({
           setHintContent((prev) => prev + chunk);
           if (cached) {
             wasCached = true;
-            setIsCached(true);
+            setStreamState(prev => ({ ...prev, cached: true }));
           }
         },
         (errorMsg) => {
@@ -615,10 +625,10 @@ export function StreamHintButton({
             onBalanceChange();
           }
           setError(errorMsg);
-          setIsStreaming(false);
+          setStreamState(prev => ({ ...prev, streaming: false }));
         },
         () => {
-          setIsStreaming(false);
+          setStreamState(prev => ({ ...prev, streaming: false }));
         }
       );
 
@@ -628,14 +638,14 @@ export function StreamHintButton({
       }
     } catch {
       setError("AI 提示请求失败，请重试");
-      setIsStreaming(false);
+      setStreamState(prev => ({ ...prev, streaming: false }));
     }
   };
 
   const handleClose = () => {
     setIsOpen(false);
     setHintContent("");
-    setIsStreaming(false);
+    setStreamState({ streaming: false, cached: false });
     setError(null);
   };
 
@@ -643,7 +653,7 @@ export function StreamHintButton({
     <>
       <div className="relative">
         <button type="button"
-          onClick={handleClick}
+          onClick={fetchStreamHint}
           disabled={disabled || !canAfford}
           className={`
             flex flex-col items-center gap-1 p-2 rounded-lg border transition-all

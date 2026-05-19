@@ -208,25 +208,19 @@ export function postKeepalive(
   endpoint: string,
   token: string,
   body?: unknown,
-): Promise<void> {
+): void {
   const url = `${API_BASE_URL}${endpoint}`;
+  const payload = body ? JSON.stringify(body) : undefined;
 
-  return fetch(url, {
+  fetch(url, {
     method: "POST",
     keepalive: true,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-    .then((response) => {
-      return response.json().then((data) => {
-      });
-    })
-    .catch((err) => {
-      console.error("[学习时长-Keepalive] 请求失败:", err);
-    });
+    body: payload,
+  }).catch(() => {});
 }
 
 export { API_BASE_URL, normalizeApiBaseUrl };

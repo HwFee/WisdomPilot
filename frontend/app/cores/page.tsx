@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Gem,
@@ -14,6 +14,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { getStoredToken } from "@/lib/api";
+import {
+  BEIJING_DAY_FORMATTER,
+  BEIJING_TIME_FORMATTER,
+  BEIJING_DATETIME_FORMATTER,
+} from "@/lib/formatters";
 
 interface CoreBalance {
   balance: number;
@@ -68,14 +73,43 @@ const CATEGORY_COLORS: Record<string, string> = {
   ai_hint_deep: "text-indigo-600 bg-indigo-50",
 };
 
+function CoreTransactionItem({ tx, formatDate, getCategoryColor, getCategoryName }: { tx: CoreTransaction; formatDate: (s: string) => string; getCategoryColor: (c: string) => string; getCategoryName: (c: string) => string }) {
+  return (
+    <div className="p-4 hover:bg-muted/30 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getCategoryColor(tx.category)}`}>
+              {getCategoryName(tx.category)}
+            </span>
+          </div>
+          {tx.description && (
+            <p className="text-sm text-muted-foreground truncate">{tx.description}</p>
+          )}
+          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+            <Clock className="size-3" />
+            {formatDate(tx.created_at)}
+          </div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <div className={`text-lg font-bold ${tx.type === "earn" ? "text-green-500" : "text-red-500"}`}>
+            {tx.type === "earn" ? "+" : "-"}{tx.amount}
+          </div>
+          <div className="text-xs text-muted-foreground">余额: {tx.balance_after}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CoresPage() {
   const { push, back } = useRouter();
-  const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState<CoreBalance | null>(null);
   const [transactions, setTransactions] = useState<CoreTransaction[]>([]);
-  const [page, setPage] = useState(0);
+  const pageRef = useRef(0);
   const [total, setTotal] = useState(0);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingState, setLoadingState] = useState({ main: true, more: false })
+  const { main: loading, more: loadingMore } = loadingState
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const PAGE_SIZE = 20;
@@ -88,9 +122,9 @@ export default function CoresPage() {
     }
 
     if (append) {
-      setLoadingMore(true);
+      setLoadingState(prev => ({ ...prev, more: true }))
     } else {
-      setLoading(true);
+      setLoadingState(prev => ({ ...prev, main: true }))
     }
 
     try {
@@ -117,13 +151,12 @@ export default function CoresPage() {
           setTransactions(data.transactions);
         }
         setTotal(data.total);
-        setPage(pageNum);
+        pageRef.current = pageNum;
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      setLoadingState({ main: false, more: false })
     }
   };
 
@@ -132,8 +165,8 @@ export default function CoresPage() {
   }, [push, back]);
 
   const loadMore = () => {
-    if (!loadingMore && transactions.length < total) {
-      fetchData(page + 1, true);
+    if (!loadingState.more && transactions.length < total) {
+      fetchData(pageRef.current + 1, true);
     }
   };
 
@@ -162,13 +195,9 @@ export default function CoresPage() {
     const date = new Date(normalizedDateStr);
     const now = new Date();
 
-    // 格式化为北京时区
-    const beijingFormatter = (options: Intl.DateTimeFormatOptions) =>
-      new Intl.DateTimeFormat('zh-CN', { ...options, timeZone: 'Asia/Shanghai' })
-
     // 获取北京时区的日期字符串用于比较
-    const dateBeijingStr = beijingFormatter({ year: 'numeric', month: 'numeric', day: 'numeric' }).format(date)
-    const nowBeijingStr = beijingFormatter({ year: 'numeric', month: 'numeric', day: 'numeric' }).format(now)
+    const dateBeijingStr = BEIJING_DAY_FORMATTER.format(date)
+    const nowBeijingStr = BEIJING_DAY_FORMATTER.format(now)
 
     // 计算时间差（毫秒）
     const diff = now.getTime() - date.getTime()
@@ -185,11 +214,11 @@ export default function CoresPage() {
       return `${hours}小时前`
     } else if (days === 1 || (days === 0 && dateBeijingStr !== nowBeijingStr)) {
       // 昨天
-      return "昨天 " + beijingFormatter({ hour: '2-digit', minute: '2-digit' }).format(date)
+      return "昨天 " + BEIJING_TIME_FORMATTER.format(date)
     } else if (days < 7) {
       return `${days}天前`
     } else {
-      return beijingFormatter({ month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
+      return BEIJING_DATETIME_FORMATTER.format(date)
     }
   };
 
@@ -215,14 +244,7 @@ export default function CoresPage() {
     const today = new Date();
 
     // 比较北京时区的日期
-    const beijingFormatter = new Intl.DateTimeFormat('zh-CN', {
-      timeZone: 'Asia/Shanghai',
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric'
-    });
-
-    return beijingFormatter.format(date) === beijingFormatter.format(today);
+    return BEIJING_DAY_FORMATTER.format(date) === BEIJING_DAY_FORMATTER.format(today);
   });
 
   const todayEarned = todayTransactions
@@ -318,43 +340,7 @@ export default function CoresPage() {
           ) : (
             <div className="divide-y">
               {transactions.map((tx) => (
-                <div key={tx.id} className="p-4 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-medium ${getCategoryColor(
-                            tx.category
-                          )}`}
-                        >
-                          {getCategoryName(tx.category)}
-                        </span>
-                      </div>
-                      {tx.description && (
-                        <p className="text-sm text-muted-foreground truncate">
-                          {tx.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        <Clock className="size-3" />
-                        {formatDate(tx.created_at)}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div
-                        className={`text-lg font-bold ${
-                          tx.type === "earn" ? "text-green-500" : "text-red-500"
-                        }`}
-                      >
-                        {tx.type === "earn" ? "+" : "-"}
-                        {tx.amount}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        余额: {tx.balance_after}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <CoreTransactionItem key={tx.id} tx={tx} formatDate={formatDate} getCategoryColor={getCategoryColor} getCategoryName={getCategoryName} />
               ))}
 
               {/* Load More Button */}

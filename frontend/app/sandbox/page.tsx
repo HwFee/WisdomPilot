@@ -35,9 +35,12 @@ export default function SandboxPage() {
   const { push, back } = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [balance, setBalance] = useState<CoreBalance | null>(null)
-  const [testResults, setTestResults] = useState<TestResult[]>([])
-  const [testQuestions, setTestQuestions] = useState<TestQuestion[]>([])
-  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({})
+  const [testState, setTestState] = useState({
+    results: [] as TestResult[],
+    questions: [] as TestQuestion[],
+    answers: {} as Record<number, string>,
+  })
+  const { results: testResults, questions: testQuestions, answers: userAnswers } = testState
   const [username, setUsername] = useState<string>('')
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -50,9 +53,19 @@ export default function SandboxPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setTestQuestions(data.questions || [])
+        setTestState(prev => ({ ...prev, questions: data.questions || [] }))
       }
     } catch { /* ignore */ }
+  }
+
+  const fetchData = async () => {
+    const token = getStoredToken()
+    if (!token) return
+
+    const balanceRes = await fetch(`${API_URL}/api/cores/balance`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (balanceRes.ok) setBalance(await balanceRes.json())
   }
 
   // 初始化
@@ -72,29 +85,13 @@ export default function SandboxPage() {
       }
     } catch { /* ignore */ }
 
-    // 获取余额
-    fetch(`${API_URL}/api/cores/balance`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(setBalance)
-
-    // 获取测试题目
+    // 获取余额和测试题目
+    fetchData()
     fetchTestQuestions(token)
   }, [push, back])
 
-  const fetchData = async () => {
-    const token = getStoredToken()
-    if (!token) return
-
-    const balanceRes = await fetch(`${API_URL}/api/cores/balance`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    if (balanceRes.ok) setBalance(await balanceRes.json())
-  }
-
   const addResult = (success: boolean, message: string, data?: Record<string, unknown>) => {
-    setTestResults(prev => [{ success, message, data }, ...prev].slice(0, 10))
+    setTestState(prev => ({ ...prev, results: [{ success, message, data }, ...prev.results].slice(0, 10) }))
   }
 
   // 沙箱签到
@@ -399,7 +396,7 @@ export default function SandboxPage() {
           </div>
 
           {/* Test Questions */}
-          {testQuestions.length > 0 && (
+          {testState.questions.length > 0 && (
             <div className="border-t pt-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">精进之路测试题</h3>
@@ -410,13 +407,13 @@ export default function SandboxPage() {
                 </button>
               </div>
               <div className="gap-y-2">
-                {testQuestions.slice(0, 2).map((q, idx) => (
+                {testState.questions.slice(0, 2).map((q, idx) => (
                   <div key={q.id} className="p-3 bg-muted/30 rounded-lg text-sm">
                     <div className="font-medium mb-1">{idx + 1}. {q.question}</div>
                     <div className="flex flex-wrap gap-2">
                       {q.options.map((opt, i) => (
-                        <button type="button" key={`answer-${i}`} onClick={() => setUserAnswers(prev => ({ ...prev, [q.id]: ['A', 'B', 'C', 'D'][i] }))}
-                          className={`px-2 py-1 text-xs rounded border ${userAnswers[q.id] === ['A', 'B', 'C', 'D'][i] ? 'bg-primary/20 border-primary' : 'bg-background'}`}>
+                        <button type="button" key={`${q.id}-opt-${opt}`} onClick={() => setTestState(prev => ({ ...prev, answers: { ...prev.answers, [q.id]: ['A', 'B', 'C', 'D'][i] } }))}
+                          className={`px-2 py-1 text-xs rounded border ${testState.answers[q.id] === ['A', 'B', 'C', 'D'][i] ? 'bg-primary/20 border-primary' : 'bg-background'}`}>
                           {['A', 'B', 'C', 'D'][i]}. {opt}
                         </button>
                       ))}
@@ -464,12 +461,12 @@ export default function SandboxPage() {
             <Play className="size-5 text-blue-500" />
             测试结果
           </h2>
-          {testResults.length === 0 ? (
+          {testState.results.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">点击上方按钮开始测试</div>
           ) : (
             <div className="gap-y-2">
-              {testResults.map((r, i) => (
-                <div key={`answer-${i}`} className={`p-3 rounded-lg ${r.success ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+              {testState.results.map((r, i) => (
+                <div key={`result-${r.success}-${r.message?.slice(0, 30) || i}`} className={`p-3 rounded-lg ${r.success ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
                   <div className="flex items-start gap-2">
                     {r.success ? <CheckCircle className="size-5 text-green-500" /> : <XCircle className="size-5 text-red-500" />}
                     <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{r.message}</div>

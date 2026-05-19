@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import Editor, { OnMount } from '@monaco-editor/react'
-import type { editor } from 'monaco-editor'
+import dynamic from 'next/dynamic'
+
+const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 import { Play, Loader2, X, ChevronDown, Terminal } from 'lucide-react'
 import { executeCode, LANGUAGE_CONFIG, CodeExecutionResponse } from '@/lib/code-api'
 import { getStoredToken } from '@/lib/api'
@@ -31,15 +32,15 @@ export function CodeRunner({
   onCodeChange,
   onLanguageChange,
 }: CodeRunnerProps) {
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-  const [code, setCode] = useState(initialCode)
-  const [languageId, setLanguageId] = useState(initialLanguageId)
-  const [isRunning, setIsRunning] = useState(false)
-  const [output, setOutput] = useState<CodeExecutionResponse | null>(null)
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false)
-  const [stdin, setStdin] = useState('')
+  const editorRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null)
+  const [code, setCode] = useState(() => initialCode)
+  const [languageId, setLanguageId] = useState(() => initialLanguageId)
+  const [runState, setRunState] = useState<{ isRunning: boolean; output: CodeExecutionResponse | null }>({ isRunning: false, output: null })
+  const [uiState, setUiState] = useState({ isLangMenuOpen: false, stdin: '' })
+  const { isRunning, output } = runState
+  const { isLangMenuOpen, stdin } = uiState
 
-  const handleEditorMount: OnMount = (editor) => {
+  const handleEditorMount = (editor: import('monaco-editor').editor.IStandaloneCodeEditor) => {
     editorRef.current = editor
     editor.updateOptions({
       minimap: { enabled: false },
@@ -60,7 +61,7 @@ export function CodeRunner({
 
   const handleLanguageChange = (id: number) => {
     setLanguageId(id)
-    setIsLangMenuOpen(false)
+    setUiState(prev => ({ ...prev, isLangMenuOpen: false }))
     onLanguageChange?.(id)
   }
 
@@ -68,8 +69,7 @@ export function CodeRunner({
     const token = getStoredToken()
     if (!token || !code.trim()) return
 
-    setIsRunning(true)
-    setOutput(null)
+    setRunState({ isRunning: true, output: null })
 
     try {
       const result = await executeCode(token, {
@@ -77,22 +77,25 @@ export function CodeRunner({
         language_id: languageId,
         stdin,
       })
-      setOutput(result)
+      setRunState(prev => ({ ...prev, output: result }))
     } catch (error) {
-      setOutput({
-        token: '',
-        status: 'Error',
-        status_id: -1,
-        stdout: null,
-        stderr: null,
-        compile_output: null,
-        message: error instanceof Error ? error.message : '执行失败',
-        time: null,
-        memory: null,
-        exit_code: -1,
+      setRunState({
+        isRunning: false,
+        output: {
+          token: '',
+          status: 'Error',
+          status_id: -1,
+          stdout: null,
+          stderr: null,
+          compile_output: null,
+          message: error instanceof Error ? error.message : '执行失败',
+          time: null,
+          memory: null,
+          exit_code: -1,
+        },
       })
     } finally {
-      setIsRunning(false)
+      setRunState(prev => ({ ...prev, isRunning: false }))
     }
   }, [code, languageId, stdin])
 
@@ -114,7 +117,7 @@ export function CodeRunner({
         <div className="relative">
           <button
             type="button"
-            onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+            onClick={() => setUiState(prev => ({ ...prev, isLangMenuOpen: !prev.isLangMenuOpen }))}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 text-gray-200 text-sm rounded hover:bg-gray-600 transition-colors"
           >
             {selectedLabel}
@@ -193,7 +196,7 @@ export function CodeRunner({
         </div>
         <textarea
           value={stdin}
-          onChange={(e) => setStdin(e.target.value)}
+          onChange={(e) => setUiState(prev => ({ ...prev, stdin: e.target.value }))}
           placeholder="在此输入程序运行时需要的数据，每行对应一次输入..."
           className="w-full h-16 px-3 py-1.5 bg-transparent text-gray-300 text-xs font-mono resize-none focus:outline-none placeholder-gray-600"
           spellCheck={false}

@@ -1,4 +1,5 @@
 import * as React from "react"
+import Image from "next/image"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -54,37 +55,30 @@ interface CardProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {
   asChild?: boolean
+  ref?: React.Ref<HTMLDivElement>
 }
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, padding, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(cardVariants({ variant, padding, className }))}
-      {...props}
-    />
-  )
+const Card = ({ className, variant, padding, ref, ...props }: CardProps) => (
+  <div
+    ref={ref}
+    className={cn(cardVariants({ variant, padding, className }))}
+    {...props}
+  />
 )
 Card.displayName = "Card"
 
 // CardHeader - 卡片头部
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+const CardHeader = ({ className, ref, ...props }: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) => (
   <div
     ref={ref}
     className={cn("flex flex-col gap-y-1.5 pb-4", className)}
     {...props}
   />
-))
+)
 CardHeader.displayName = "CardHeader"
 
 // CardTitle - 卡片标题
-const CardTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
+const CardTitle = ({ className, ref, ...props }: React.HTMLAttributes<HTMLHeadingElement> & { ref?: React.Ref<HTMLParagraphElement> }) => (
   // eslint-disable-next-line jsx-a11y/heading-has-content
   <h3
     ref={ref}
@@ -94,53 +88,42 @@ const CardTitle = React.forwardRef<
     )}
     {...props}
   />
-))
+)
 CardTitle.displayName = "CardTitle"
 
 // CardDescription - 卡片描述
-const CardDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
+const CardDescription = ({ className, ref, ...props }: React.HTMLAttributes<HTMLParagraphElement> & { ref?: React.Ref<HTMLParagraphElement> }) => (
   <p
     ref={ref}
     className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
-))
+)
 CardDescription.displayName = "CardDescription"
 
 // CardContent - 卡片内容
-const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+const CardContent = ({ className, ref, ...props }: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) => (
   <div ref={ref} className={cn("", className)} {...props} />
-))
+)
 CardContent.displayName = "CardContent"
 
 // CardFooter - 卡片底部
-const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+const CardFooter = ({ className, ref, ...props }: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) => (
   <div
     ref={ref}
     className={cn("flex items-center pt-4", className)}
     {...props}
   />
-))
+)
 CardFooter.displayName = "CardFooter"
 
 // CardImage - 卡片图片（可选）
-const CardImage = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    src: string
-    alt: string
-    aspectRatio?: 'video' | 'square' | 'portrait'
-  }
->(({ className, src, alt, aspectRatio = 'video', ...props }, ref) => {
+const CardImage = ({ className, src, alt, aspectRatio = 'video', ref, ...props }: React.HTMLAttributes<HTMLDivElement> & {
+  src: string
+  alt: string
+  aspectRatio?: 'video' | 'square' | 'portrait'
+  ref?: React.Ref<HTMLDivElement>
+}) => {
   const aspectClasses = {
     video: 'aspect-video',
     square: 'aspect-square',
@@ -150,17 +133,19 @@ const CardImage = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("overflow-hidden rounded-t-2xl", aspectClasses[aspectRatio], className)}
+      className={cn("overflow-hidden rounded-t-2xl relative", aspectClasses[aspectRatio], className)}
       {...props}
     >
-      <img
+      <Image
         src={src}
         alt={alt}
-        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        fill
+        className="object-cover transition-transform duration-300 group-hover:scale-105"
+        sizes="(max-width: 768px) 100vw, 50vw"
       />
     </div>
   )
-})
+}
 CardImage.displayName = "CardImage"
 
 export {

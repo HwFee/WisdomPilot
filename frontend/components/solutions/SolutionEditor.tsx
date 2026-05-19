@@ -32,9 +32,9 @@ export function SolutionEditor({
   lang = 'zh',
   isFullPage = false,
 }: SolutionEditorProps) {
-  const [title, setTitle] = useState(initialTitle)
-  const [content, setContent] = useState(initialContent)
-  const [isAnnouncement, setIsAnnouncement] = useState(initialIsAnnouncement)
+  const [title, setTitle] = useState(() => initialTitle)
+  const [content, setContent] = useState(() => initialContent)
+  const [isAnnouncement, setIsAnnouncement] = useState(() => initialIsAnnouncement)
   const [isSaving, setIsSaving] = useState(false)
 
   const t = (zh: string, en: string) => lang === 'zh' ? zh : en
@@ -131,7 +131,7 @@ export function SolutionEditor({
                     ul: ({ children }) => <ul className="list-disc pl-6 mb-3 gap-y-1">{children}</ul>,
                     ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 gap-y-1">{children}</ol>,
                     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
+                    blockquote: ({ children }) => <blockquote className="border-l-2 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
                     code: ({ className, children, ...props }) => {
                       const isInline = !className
                       return isInline
@@ -250,7 +250,7 @@ export function SolutionEditor({
                     ul: ({ children }) => <ul className="list-disc pl-6 mb-3 gap-y-1">{children}</ul>,
                     ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 gap-y-1">{children}</ol>,
                     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
+                    blockquote: ({ children }) => <blockquote className="border-l-2 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
                     code: ({ className, children, ...props }) => {
                       const isInline = !className
                       return isInline

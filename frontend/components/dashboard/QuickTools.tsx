@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { FileText, Star, Lightbulb, Flame, Calendar, Check, Sparkles, ChevronDown, ChevronUp, Trophy, Clock, Gift } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { LazyMotion, domAnimation, m } from 'framer-motion'
 import { staggerContainer, staggerItem } from '@/lib/animations'
 
 // Crown图标组件 (lucide-react中没有直接的crown图标)
@@ -116,17 +116,18 @@ export function QuickTools({
   ]
 
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-      className="grid grid-cols-4 gap-3"
-    >
+    <LazyMotion features={domAnimation}>
+      <m.div
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        className="grid grid-cols-4 gap-3"
+      >
       {/* 错题本、收藏夹、笔记 */}
       {tools.map((tool) => {
         const Icon = tool.icon
         return (
-          <motion.button
+          <m.button
             key={tool.label}
             variants={staggerItem}
             whileHover={{ scale: 1.02, y: -2 }}
@@ -141,12 +142,12 @@ export function QuickTools({
             {tool.count !== undefined && tool.count > 0 && (
               <p className={`text-xl font-bold ${tool.color}`}>{tool.count}</p>
             )}
-          </motion.button>
+          </m.button>
         )
       })}
 
       {/* 打卡模块 - 根据打卡状态显示不同内容 */}
-      <motion.div
+      <m.div
         variants={staggerItem}
         whileHover={{ scale: 1.01 }}
         className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border border-orange-500/20 overflow-hidden"
@@ -287,7 +288,8 @@ export function QuickTools({
             )}
           </div>
         )}
-      </motion.div>
-    </motion.div>
+      </m.div>
+      </m.div>
+    </LazyMotion>
   )
 }

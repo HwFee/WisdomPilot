@@ -17,7 +17,7 @@ import {
   Star,
   PartyPopper,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { FavoriteButton } from "@/components/exercise/FavoriteButton";
 import { NoteButton } from "@/components/exercise/NoteButton";
 import { NoteEditor } from "@/components/notes/NoteEditor";
@@ -82,10 +82,12 @@ const DIFFICULTY_COLORS: Record<number, string> = {
   5: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
-export default function MasteryPathPage() {
+function MasteryPathContent() {
   const params = useParams();
   const { push, replace } = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()
+  // react-doctor-disable-next-line react-compiler-destructure-method, react-doctor/react-compiler-destructure-method
+  const getSearchParam = (name: string) => searchParams.get(name)
   const courseId = Number(params.courseId);
 
   const [loading, setLoading] = useState(true);
@@ -136,7 +138,7 @@ export default function MasteryPathPage() {
   const [enhancedQuestions, setEnhancedQuestions] = useState<
     EnhancedQuizQuestion[]
   >([]);
-  const [enhancedSessionId, setEnhancedSessionId] = useState<string>("");
+  const enhancedSessionIdRef = useRef<string>("");
   const [enhancedLoading, setEnhancedLoading] = useState(false);
   const [enhancedAnswers, setEnhancedAnswers] = useState<Map<string, string>>(
     new Map(),
@@ -193,9 +195,9 @@ export default function MasteryPathPage() {
 
   // Handle query params for jump from wrong question book or section learning
   useEffect(() => {
-    const chapterParam = searchParams.get("chapter");
-    const sectionParam = searchParams.get("section");
-    const exerciseParam = searchParams.get("exercise");
+    const chapterParam = getSearchParam("chapter");
+    const sectionParam = getSearchParam("section");
+    const exerciseParam = getSearchParam("exercise");
 
 
     // 如果没有必要的参数，不处理
@@ -233,7 +235,7 @@ export default function MasteryPathPage() {
 
 
     // 检查是否有从其他页面转移过来的会话
-    const continueSession = searchParams.get("continueSession") === "1";
+    const continueSession = getSearchParam("continueSession") === "1";
     if (continueSession) {
       try {
         const savedSession = localStorage.getItem('masterySession:v1');
@@ -410,6 +412,14 @@ export default function MasteryPathPage() {
             }
           }
           const bktKps = new Map(kpMasteries.map((m: any) => [m.name, m]));
+          // 预构建知识点到问题的索引
+          const kpToQuestions = new Map<string, typeof data.questions>();
+          for (const q of data.questions) {
+            for (const kp of q.knowledge_points || []) {
+              if (!kpToQuestions.has(kp)) kpToQuestions.set(kp, []);
+              kpToQuestions.get(kp)!.push(q);
+            }
+          }
           for (const kp of allKps) {
             const bktKp = bktKps.get(kp);
             if (bktKp && bktKp.total_attempts > 0) {
@@ -422,13 +432,12 @@ export default function MasteryPathPage() {
               // 无 BKT 数据，简单统计兜底
               let kpCorrect = 0;
               let kpWrong = 0;
-              for (const q of data.questions) {
-                if ((q.knowledge_points || []).includes(kp)) {
-                  if (completedMap.get(q.id)) {
-                    kpCorrect++;
-                  } else {
-                    kpWrong++;
-                  }
+              const questionsForKp = kpToQuestions.get(kp) || [];
+              for (const q of questionsForKp) {
+                if (completedMap.get(q.id)) {
+                  kpCorrect++;
+                } else {
+                  kpWrong++;
                 }
               }
               if (kpWrong >= kpCorrect) {
@@ -485,12 +494,13 @@ export default function MasteryPathPage() {
         }
       } else {
         // 正常进入，检查是否有进度可恢复
+        const progressMap = new Map(
+          progressData?.progress_items?.map((p) => [p.question_id, p]) || [],
+        );
         let firstUncompletedIndex = -1;
         for (let i = 0; i < data.questions.length; i++) {
           const q = data.questions[i];
-          const progress = progressData?.progress_items?.find(
-            (p) => p.question_id === q.id,
-          );
+          const progress = progressMap.get(q.id);
           if (!progress?.is_completed && firstUncompletedIndex === -1) {
             firstUncompletedIndex = i;
           }
@@ -616,6 +626,14 @@ export default function MasteryPathPage() {
             }
           }
           const bktKps = new Map(kpMasteries.map((m: any) => [m.name, m]));
+          // 预构建知识点到问题的索引
+          const kpToQuestions = new Map<string, typeof data.questions>();
+          for (const q of data.questions) {
+            for (const kp of q.knowledge_points || []) {
+              if (!kpToQuestions.has(kp)) kpToQuestions.set(kp, []);
+              kpToQuestions.get(kp)!.push(q);
+            }
+          }
           for (const kp of allKps) {
             const bktKp = bktKps.get(kp);
             if (bktKp && bktKp.total_attempts > 0) {
@@ -628,13 +646,12 @@ export default function MasteryPathPage() {
               // 无 BKT 数据，简单统计兜底
               let kpCorrect = 0;
               let kpWrong = 0;
-              for (const q of data.questions) {
-                if ((q.knowledge_points || []).includes(kp)) {
-                  if (completedMap.get(q.id)) {
-                    kpCorrect++;
-                  } else {
-                    kpWrong++;
-                  }
+              const questionsForKp = kpToQuestions.get(kp) || [];
+              for (const q of questionsForKp) {
+                if (completedMap.get(q.id)) {
+                  kpCorrect++;
+                } else {
+                  kpWrong++;
                 }
               }
               if (kpWrong >= kpCorrect) {
@@ -758,15 +775,19 @@ export default function MasteryPathPage() {
       const correctAnswer = currentQuestion.correct_answer?.trim() || "";
       const acceptedForms = correctAnswer
         .split("|")
-        .map((s) => s.trim())
-        .filter(Boolean);
+        .flatMap((s) => {
+          const trimmed = s.trim();
+          return trimmed ? [trimmed] : [];
+        });
       correct = acceptedForms.some((form) => {
         const lower = form.toLowerCase();
         if (lower.includes(";")) {
           const parts = lower
             .split(";")
-            .map((p) => p.trim())
-            .filter(Boolean);
+            .flatMap((p) => {
+              const trimmed = p.trim();
+              return trimmed ? [trimmed] : [];
+            });
           return parts.every((p) => userAnswer.includes(p));
         }
         return userAnswer === lower;
@@ -961,7 +982,7 @@ export default function MasteryPathPage() {
       if (response.success && response.questions && response.questions.length > 0) {
         // First question is ready, show it immediately
         setEnhancedQuestions(response.questions);
-        setEnhancedSessionId(response.session_id);
+        enhancedSessionIdRef.current = response.session_id;
         setEnhancedAnswers(new Map());
         setCurrentQuestionIndex(0);
         setSubmitted(false);
@@ -1104,13 +1125,13 @@ export default function MasteryPathPage() {
       let questionId = parseInt(currentQuestion.id, 10);
 
       // 如果是临时ID（如 "temp_0"），先持久化到 SectionBaseQuestion 获得真实数据库ID
-      if (isNaN(questionId) && enhancedSessionId) {
+      if (isNaN(questionId) && enhancedSessionIdRef.current) {
         const oldId = currentQuestion.id;
         try {
           const persistResult = await persistEnhancedQuestion(
             courseId,
             {
-              session_id: enhancedSessionId,
+              session_id: enhancedSessionIdRef.current,
               question_index: currentQuestionIndex,
               section_id: sectionIdToSave,
               chapter_id: selectedChapterId,
@@ -1228,7 +1249,7 @@ export default function MasteryPathPage() {
       const result = await submitEnhancedQuiz(
         courseId,
         {
-          session_id: enhancedSessionId,
+          session_id: enhancedSessionIdRef.current,
           section_id: selectedSectionId,
           answers: answersArray,
         },
@@ -1280,13 +1301,13 @@ export default function MasteryPathPage() {
     setFinalResult(null);
 
     // Check if we came from a section (小节)
-    const fromSection = searchParams.get("fromSection");
-    const chapterParam = searchParams.get("chapter");
+    const fromSection = getSearchParam("fromSection");
+    const chapterParam = getSearchParam("chapter");
 
     if (fromSection && chapterParam) {
       // Came from section learning page, return to the section learning page
       replace(`/mastery/${courseId}/chapter/${chapterParam}/section/${fromSection}`, { scroll: false });
-    } else if (searchParams.get("chapter") || searchParams.get("exercise") || searchParams.get("skip")) {
+    } else if (getSearchParam("chapter") || getSearchParam("exercise") || getSearchParam("skip")) {
       // Came from wrong question book or favorites, return to chapter selection
       replace(`/mastery/${courseId}`, { scroll: false });
     }
@@ -1297,20 +1318,22 @@ export default function MasteryPathPage() {
   // Loading state - only show for select_chapter step
   if (loading && step === "select_chapter") {
     return (
+      <LazyMotion features={domAnimation}>
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <motion.div
+          <m.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             className="size-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
           />
           <p className="text-muted-foreground">加载中...</p>
-        </motion.div>
+        </m.div>
       </div>
+      </LazyMotion>
     );
   }
 
@@ -1320,6 +1343,7 @@ export default function MasteryPathPage() {
     const accuracy = Math.round(finalResult.accuracy * 100);
 
     return (
+      <LazyMotion features={domAnimation}>
       <div className="min-h-screen bg-background">
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -1340,7 +1364,7 @@ export default function MasteryPathPage() {
 
         <main className="pt-24 pb-12 px-4">
           <div className="max-w-md mx-auto">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
@@ -1350,8 +1374,8 @@ export default function MasteryPathPage() {
                   : "bg-orange-500/10 border-orange-500/30"
               }`}
             >
-              <motion.div
-                initial={{ scale: 0 }}
+              <m.div
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
               >
@@ -1360,18 +1384,18 @@ export default function MasteryPathPage() {
                 ) : (
                   <XCircle className="size-20 text-orange-400 mx-auto mb-4" />
                 )}
-              </motion.div>
+              </m.div>
 
-              <motion.h2
+              <m.h2
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-2xl font-bold text-foreground mb-2"
+                className="text-2xl font-semibold text-foreground mb-2"
               >
                 {passed ? "恭喜通过！" : "继续努力"}
-              </motion.h2>
+              </m.h2>
 
-              <motion.p
+              <m.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
@@ -1383,9 +1407,9 @@ export default function MasteryPathPage() {
                     {finalResult.total_questions} 题 ({accuracy}%)
                   </>
                 )}
-              </motion.p>
+              </m.p>
 
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
@@ -1403,10 +1427,10 @@ export default function MasteryPathPage() {
                     +{finalResult.mastery_points_earned}
                   </span>
                 </div>
-              </motion.div>
+              </m.div>
 
               {finalResult.recommendations.length > 0 && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
@@ -1415,14 +1439,14 @@ export default function MasteryPathPage() {
                   <p className="font-medium text-foreground mb-2">学习建议</p>
                   <ul className="text-muted-foreground gap-y-1">
                     {finalResult.recommendations.map((rec, i) => (
-                      <li key={`rec-${i}`}>• {rec}</li>
+                      <li key={rec}>• {rec}</li>
                     ))}
                   </ul>
-                </motion.div>
+                </m.div>
               )}
-            </motion.div>
+            </m.div>
 
-            <motion.button
+            <m.button
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
@@ -1432,10 +1456,11 @@ export default function MasteryPathPage() {
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all"
             >
               返回章节列表
-            </motion.button>
+            </m.button>
           </div>
         </main>
       </div>
+      </LazyMotion>
     );
   }
 
@@ -1521,9 +1546,9 @@ export default function MasteryPathPage() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {baseResult.weak_points.map((point, i) => (
+                  {baseResult.weak_points.map((point) => (
                     <span
-                      key={`rec-${i}`}
+                      key={point}
                       className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm"
                     >
                       {point}
@@ -1543,9 +1568,9 @@ export default function MasteryPathPage() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {baseResult.strong_points.map((point, i) => (
+                  {baseResult.strong_points.map((point) => (
                     <span
-                      key={`rec-${i}`}
+                      key={point}
                       className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm"
                     >
                       {point}
@@ -1608,9 +1633,9 @@ export default function MasteryPathPage() {
               <span className="font-semibold">强化测试</span>
             </div>
             <div className="flex items-center gap-1">
-              {enhancedQuestions.map((_, i) => (
+              {enhancedQuestions.map((q, i) => (
                 <div
-                  key={`rec-${i}`}
+                  key={q.id}
                   className={`size-2 rounded-full transition-colors ${
                     i < currentQuestionIndex
                       ? "bg-emerald-400"
@@ -1647,9 +1672,9 @@ export default function MasteryPathPage() {
 
               {currentQuestion.knowledge_points.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {currentQuestion.knowledge_points.map((kp, i) => (
+                  {currentQuestion.knowledge_points.map((kp) => (
                     <span
-                      key={`rec-${i}`}
+                      key={kp}
                       className="px-2 py-1 bg-orange-500/10 text-orange-400 text-xs rounded-full"
                     >
                       {kp}
@@ -1925,9 +1950,9 @@ export default function MasteryPathPage() {
 
               {currentQuestion.knowledge_points.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {currentQuestion.knowledge_points.map((kp, i) => (
+                  {currentQuestion.knowledge_points.map((kp) => (
                     <span
-                      key={`rec-${i}`}
+                      key={kp}
                       className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
                     >
                       {kp}
@@ -2008,10 +2033,11 @@ export default function MasteryPathPage() {
             {getQuestionType(currentQuestion) === "fill_blank" && (
               <div className="gap-y-4">
                 <div className="bg-card rounded-xl border border-border p-4">
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="fill-blank-answer" className="block text-sm font-medium text-foreground mb-2">
                     请输入答案：
                   </label>
                   <input
+                    id="fill-blank-answer"
                     type="text"
                     value={baseAnswers.get(currentQuestion.id) || ""}
                     onChange={(e) =>
@@ -2064,7 +2090,7 @@ export default function MasteryPathPage() {
             {getQuestionType(currentQuestion) === "programming" && (
               <div className="gap-y-4">
                 <div className="bg-card rounded-xl border border-border p-4">
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="programming-answer" className="block text-sm font-medium text-foreground mb-2">
                     请编写代码：
                   </label>
                   {currentQuestion.code_template && (
@@ -2073,6 +2099,7 @@ export default function MasteryPathPage() {
                     </div>
                   )}
                   <textarea
+                    id="programming-answer"
                     value={baseAnswers.get(currentQuestion.id) || ""}
                     onChange={(e) =>
                       !submitted &&
@@ -2346,4 +2373,20 @@ export default function MasteryPathPage() {
       )}
     </div>
   );
+}
+
+// Wrapper with Suspense boundary for useSearchParams
+import { Suspense } from "react"
+import { Loader2 } from "lucide-react"
+
+export default function MasteryPathPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    }>
+      <MasteryPathContent />
+    </Suspense>
+  )
 }

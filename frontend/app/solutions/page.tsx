@@ -14,17 +14,20 @@ type PageMode = 'list' | 'create'
 
 function SolutionsContent() {
   const { push } = useRouter()
-  const searchParams = useSearchParams()
+  const { get } = useSearchParams()
 
   const [solutions, setSolutions] = useState<SolutionSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [pageMode, setPageMode] = useState<PageMode>('list')
-  const [lang, setLang] = useState<'zh' | 'en'>('zh')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [userState, setUserState] = useState<{ currentUser: User | null; isAdmin: boolean; lang: 'zh' | 'en' }>({
+    currentUser: null,
+    isAdmin: false,
+    lang: 'zh',
+  })
+  const [uiState, setUiState] = useState({ pageMode: 'list' as PageMode, searchQuery: '' })
+  const { currentUser, isAdmin, lang } = userState
+  const { pageMode, searchQuery } = uiState
 
-  const activeCategory = (searchParams.get('tab') as CategoryType) || 'hot'
+  const activeCategory = (get('tab') as CategoryType) || 'hot'
 
   const t = (zh: string, en: string) => lang === 'zh' ? zh : en
 
@@ -42,7 +45,7 @@ function SolutionsContent() {
       // Match by problem link containing the number
       return false
     })
-  }, [solutions, searchQuery])
+  }, [solutions, uiState.searchQuery])
 
   useEffect(() => {
     const user = getStoredUser()
@@ -53,12 +56,17 @@ function SolutionsContent() {
       return
     }
 
-    setCurrentUser(user)
-    setIsAdmin(user.is_admin || false)
-
     const savedLang = localStorage.getItem('language') || 'zh'
-    setLang(savedLang as 'zh' | 'en')
+    setUserState({
+      currentUser: user,
+      isAdmin: user.is_admin || false,
+      lang: savedLang as 'zh' | 'en',
+    })
+  }, [push])
 
+  useEffect(() => {
+    const token = getStoredToken()
+    if (!token) return
     fetchSolutions(token)
   }, [activeCategory])
 
@@ -114,7 +122,7 @@ function SolutionsContent() {
     // Force title to be string (editor requires title)
     const solutionData = data as SolutionCreate
     await createSolution(token, solutionData)
-    setPageMode('list')
+    setUiState(prev => ({ ...prev, pageMode: 'list' as PageMode }))
     fetchSolutions(token)
   }
 
@@ -127,7 +135,7 @@ function SolutionsContent() {
             {pageMode === 'create' ? (
               <>
                 <button type="button"
-                  onClick={() => setPageMode('list')}
+                  onClick={() => setUiState(prev => ({ ...prev, pageMode: 'list' as PageMode }))}
                   className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ArrowLeft className="size-5" />
@@ -150,7 +158,7 @@ function SolutionsContent() {
                   <h1 className="text-lg font-semibold">{t('讨论区', 'Discussion')}</h1>
                 </div>
                 <button type="button"
-                  onClick={() => setPageMode('create')}
+                  onClick={() => setUiState(prev => ({ ...prev, pageMode: 'create' as PageMode }))}
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
                 >
                   <Plus className="size-4" />
@@ -167,7 +175,7 @@ function SolutionsContent() {
         {pageMode === 'create' ? (
           <SolutionEditor
             onSave={handleSave}
-            onCancel={() => setPageMode('list')}
+            onCancel={() => setUiState(prev => ({ ...prev, pageMode: 'list' as PageMode }))}
             isAdmin={isAdmin}
             lang={lang}
             isFullPage
@@ -190,14 +198,14 @@ function SolutionsContent() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={uiState.searchQuery}
+                  onChange={(e) => setUiState(prev => ({ ...prev, searchQuery: e.target.value }))}
                   placeholder={t('搜索题解序号或关键词', 'Search by ID or keyword')}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
                 />
                 {searchQuery && (
                   <button type="button"
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => setUiState(prev => ({ ...prev, searchQuery: '' }))}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     ×

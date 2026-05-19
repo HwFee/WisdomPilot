@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Gem, ChevronDown, History, TrendingUp, TrendingDown, X } from 'lucide-react'
 import { getCoreBalance, getCoreTransactions, type CoreBalance, type CoreTransaction } from '@/lib/api/core'
@@ -184,12 +185,12 @@ export function CoreDisplay({ initialBalance = 0, showDetails = false, lang = 'z
 
           {/* Footer */}
           <div className="p-3 border-t border-border">
-            <a
+            <Link
               href="/cores"
               className="block text-center text-sm text-primary hover:text-primary-600 transition-colors"
             >
               {t('查看全部记录', 'View All Records')}
-            </a>
+            </Link>
           </div>
         </div>
       )}

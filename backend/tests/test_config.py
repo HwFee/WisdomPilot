@@ -46,8 +46,8 @@ class TestConfigSettings:
 
     def test_debug_default_false(self, monkeypatch):
         """C2: DEBUG should default to False"""
-        # Remove DEBUG if previously set (pydantic treats '' as invalid bool)
-        monkeypatch.delenv("DEBUG", raising=False)
+        # Explicitly set DEBUG=false to override any .env file value
+        monkeypatch.setenv("DEBUG", "false")
         monkeypatch.setenv("SECRET_KEY", "a" * 32)
 
         import importlib

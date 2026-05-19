@@ -81,7 +81,7 @@ class UpdateAIConfigRequest(BaseModel):
 class AIChatRequest(BaseModel):
     """AI 问答请求"""
 
-    message: str = Field(..., max_length=2000)
+    message: str = Field(..., max_length=10000)
 
 
 class AIChatResponse(BaseModel):
@@ -133,7 +133,7 @@ class CodeFeedbackResponse(BaseModel):
 class ChatStreamRequest(BaseModel):
     """AI 流式问答请求"""
 
-    message: str = Field(..., max_length=2000)
+    message: str = Field(..., max_length=10000)
     context: Optional[dict] = Field(default=None, description="题目上下文 {type, question, options?, code?}")
 
 
@@ -181,11 +181,11 @@ class ExerciseHintRequest(BaseModel):
 
     exercise_id: Optional[str] = Field(default=None, max_length=100, description="题目唯一标识（优先使用）")
     exercise_title: str = Field(..., max_length=200, description="题目标题")
-    exercise_description: str = Field(..., max_length=2000, description="题目描述")
+    exercise_description: str = Field(..., max_length=5000, description="题目描述")
     difficulty: int = Field(..., ge=1, le=5, description="难度 1-5")
     knowledge_points: list[str] = Field(default=[], description="相关知识点")
     hint_level: Literal["light", "medium", "deep"] = Field(..., description="提示级别")
-    code_template: str = Field(default="", max_length=2000, description="代码模板")
+    code_template: str = Field(default="", max_length=5000, description="代码模板")
     sample_input: str = Field(default="", max_length=500, description="示例输入")
     sample_output: str = Field(default="", max_length=500, description="示例输出")
 

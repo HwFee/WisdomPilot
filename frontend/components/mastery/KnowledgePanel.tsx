@@ -8,7 +8,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -75,13 +75,14 @@ export function KnowledgePanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm"
-      >
+      <LazyMotion features={domAnimation}>
+        <m.div
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="relative w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm"
+        >
         {/* 顶部光效 */}
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
@@ -147,7 +148,8 @@ export function KnowledgePanel({
             小节测试
           </button>
         </div>
-      </motion.div>
+        </m.div>
+      </LazyMotion>
     </div>
   )
 }
@@ -167,7 +169,7 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
   })) || []
 
   return (
-    <motion.div
+    <m.div
       layout
       className="border border-border/50 rounded-xl overflow-hidden hover:border-primary/30 transition-colors bg-card/50"
       data-knowledge-point
@@ -208,7 +210,7 @@ function KnowledgePointCard({ point, index, isExpanded, onToggle }: KnowledgePoi
       {/* Expanded Content */}
       <AnimatePresence>
         {isExpanded && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -259,7 +261,7 @@ pre({ children }) {
                     // 段落
                     p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
                     // 引用
-                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-2">{children}</blockquote>,
+                    blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/30 pl-4 italic my-2">{children}</blockquote>,
                     // 表格样式
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-3">
@@ -282,9 +284,9 @@ pre({ children }) {
                 <div className="gap-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">示例代码</p>
                   <div className="gap-y-1">
-                    {point.examples.map((example, i) => (
+                    {point.examples.map((example) => (
                       <pre
-                        key={`item-${i}`}
+                        key={`example-${example.slice(0, 30)}`}
                         className="bg-muted rounded-lg p-3 font-mono text-sm overflow-x-auto border border-border/50"
                       >
                         <code>{example}</code>
@@ -302,10 +304,10 @@ pre({ children }) {
                 </div>
               )}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </m.div>
   )
 }
 

@@ -10,7 +10,7 @@ import { getStoredToken } from '@/lib/api'
 import { startLearningSession, endLearningSessionKeepalive } from '@/lib/api/stats'
 import { KnowledgeOrb } from '@/components/ui/knowledge-orb'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import mermaid from 'mermaid'
 import remarkGfm from 'remark-gfm'
@@ -21,8 +21,7 @@ import rehypeHighlight from 'rehype-highlight'
 // Mermaid diagram renderer for knowledge point content
 function MermaidBlock({ code }: { code: string }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [svg, setSvg] = useState<string>('')
-  const [err, setErr] = useState<string | null>(null)
+  const [mermaidState, setMermaidState] = useState<{ svg: string; err: string | null }>({ svg: '', err: null })
 
   useEffect(() => {
     let cancelled = false
@@ -36,12 +35,11 @@ function MermaidBlock({ code }: { code: string }) {
         const id = `mermaid-${Math.random().toString(36).slice(2)}`
         const { svg } = await mermaid.render(id, code)
         if (!cancelled) {
-          setSvg(svg)
-          setErr(null)
+          setMermaidState({ svg, err: null })
         }
       } catch (e) {
         if (!cancelled) {
-          setErr(e instanceof Error ? e.message : 'Mermaid 渲染失败')
+          setMermaidState({ svg: '', err: e instanceof Error ? e.message : 'Mermaid 渲染失败' })
         }
       }
     }
@@ -49,7 +47,7 @@ function MermaidBlock({ code }: { code: string }) {
     return () => { cancelled = true }
   }, [code])
 
-  if (err) {
+  if (mermaidState.err) {
     return (
       <div className="bg-red-950/30 border border-red-700/50 rounded-lg p-3 my-3">
         <p className="text-red-400 text-xs mb-1">流程图渲染失败</p>
@@ -62,7 +60,7 @@ function MermaidBlock({ code }: { code: string }) {
     <div
       ref={ref}
       className="mermaid-diagram my-3 flex justify-center bg-gray-800/50 rounded-lg p-4 overflow-x-auto"
-      dangerouslySetInnerHTML={{ __html: svg }} /* eslint-disable-line react/no-danger */
+      dangerouslySetInnerHTML={{ __html: mermaidState.svg }} /* eslint-disable-line react/no-danger */
     />
   )
 }
@@ -76,15 +74,14 @@ export default function SectionLearningPage() {
   const sectionId = parseInt(params.sectionId as string)
 
   const [section, setSection] = useState<SectionDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [expandedKp, setExpandedKp] = useState<number | null>(null) // 展开的知识点ID
+  const [asyncState, setAsyncState] = useState({ loading: true, saving: false, error: null as string | null })
+  const [uiState, setUiState] = useState({ expandedKp: null as number | null, activeRunnerKpId: null as number | null })
   const contentRef = useRef<HTMLDivElement>(null)
 
   // Code runner state
-  const [activeRunnerKpId, setActiveRunnerKpId] = useState<number | null>(null)
   const [kpEditorStates, setKpEditorStates] = useState<Map<number, { code: string; languageId: number }>>(new Map())
+  const { loading, saving, error } = asyncState
+  const { expandedKp, activeRunnerKpId } = uiState
 
   // 学习时长统计
   const sessionStartedAtRef = useRef<number | null>(null)
@@ -170,13 +167,13 @@ export default function SectionLearningPage() {
     }
 
     try {
-      setLoading(true)
+      setAsyncState(prev => ({ ...prev, loading: true }))
       const response = await getSection(sectionId, token)
       setSection(response.section)
 
       // 默认展开第一个知识点
       if (response.section.knowledge_points && response.section.knowledge_points.length > 0) {
-        setExpandedKp(response.section.knowledge_points[0].id)
+        setUiState(prev => ({ ...prev, expandedKp: response.section.knowledge_points[0].id }))
       }
 
       // 自动保存进度为 content（正在学习中）
@@ -184,9 +181,9 @@ export default function SectionLearningPage() {
         await saveSectionProgress(sectionId, 'content', false, token)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
+      setAsyncState(prev => ({ ...prev, error: err instanceof Error ? err.message : '加载失败' }))
     } finally {
-      setLoading(false)
+      setAsyncState(prev => ({ ...prev, loading: false }))
     }
   }
 
@@ -212,7 +209,7 @@ export default function SectionLearningPage() {
     }
 
     try {
-      setSaving(true)
+      setAsyncState(prev => ({ ...prev, saving: true }))
       await saveSectionProgress(sectionId, 'quiz', false, token)
 
       // 跳转到主页面触发答题状态，带上章节和小节信息
@@ -221,7 +218,7 @@ export default function SectionLearningPage() {
     } catch {
       // Progress save failed - continue anyway
     } finally {
-      setSaving(false)
+      setAsyncState(prev => ({ ...prev, saving: false }))
     }
   }
 
@@ -231,7 +228,7 @@ export default function SectionLearningPage() {
   }
 
   const toggleKp = (kpId: number) => {
-    setExpandedKp(expandedKp === kpId ? null : kpId)
+    setUiState(prev => ({ ...prev, expandedKp: prev.expandedKp === kpId ? null : kpId }))
   }
 
   // Map string language name to Judge0 language_id
@@ -247,9 +244,15 @@ export default function SectionLearningPage() {
     const difficultyLabels = ['入门', '基础', '中等', '进阶', '困难']
 
     // 构建相邻知识点列表
-    const adjacentPoints = section?.knowledge_points
-      ?.filter((_, i) => i === index - 1 || i === index + 1)
-      .map(p => ({ id: String(p.id), title: p.name })) || []
+    const adjacentPoints: Array<{ id: string; title: string }> = []
+    if (section?.knowledge_points) {
+      for (let i = 0; i < section.knowledge_points.length; i++) {
+        if (i === index - 1 || i === index + 1) {
+          const p = section.knowledge_points[i]
+          adjacentPoints.push({ id: String(p.id), title: p.name })
+        }
+      }
+    }
 
     // 构建示例代码列表
     const examples: string[] = []
@@ -352,7 +355,7 @@ export default function SectionLearningPage() {
                       ol: ({ children }) => <ol className="list-decimal list-inside gap-y-1 my-2 ml-2">{children}</ol>,
                       li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
                       p: ({ children }) => <p className="mb-2 last:mb-0 text-muted-foreground">{children}</p>,
-                      blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/50 pl-4 italic my-2">{children}</blockquote>,
+                      blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/30 pl-4 italic my-2">{children}</blockquote>,
                       // 表格样式
                       table: ({ children }) => (
                         <div className="overflow-x-auto my-3">
@@ -415,7 +418,7 @@ export default function SectionLearningPage() {
                       if (activeRunnerKpId !== null) {
                         // Will be handled by CodeRunner's onClose/onCodeChange
                       }
-                      setActiveRunnerKpId(kp.id)
+                      setUiState(prev => ({ ...prev, activeRunnerKpId: kp.id }))
                       // Initialize state if not exists
                       if (!kpEditorStates.has(kp.id)) {
                         setKpEditorStates(prev => {
@@ -442,8 +445,8 @@ export default function SectionLearningPage() {
                   <span className="font-medium text-foreground">学习提示</span>
                 </div>
                 <ul className="gap-y-1 pl-6">
-                  {kp.tips.map((tip, i) => (
-                    <li key={`rec-${i}`} className="text-sm text-muted-foreground flex items-start gap-2">
+                  {kp.tips.map((tip) => (
+                    <li key={`tip-${kp.id}-${tip}`} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-amber-500 mt-1">•</span>
                       <span>{tip}</span>
                     </li>
@@ -460,8 +463,8 @@ export default function SectionLearningPage() {
                   <span className="font-medium text-foreground">常见错误</span>
                 </div>
                 <ul className="gap-y-1 pl-6">
-                  {kp.common_mistakes.map((mistake, i) => (
-                    <li key={`rec-${i}`} className="text-sm text-muted-foreground flex items-start gap-2">
+                  {kp.common_mistakes.map((mistake) => (
+                    <li key={`mistake-${kp.id}-${mistake}`} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-red-500 mt-1">•</span>
                       <span>{mistake}</span>
                     </li>
@@ -548,8 +551,8 @@ export default function SectionLearningPage() {
               学习目标
             </h2>
             <ul className="gap-y-2">
-              {section.learning_objectives.map((objective, index) => (
-                <li key={`rec-${index}`} className="flex items-start gap-2 text-sm">
+              {section.learning_objectives.map((objective) => (
+                <li key={`obj-${section.id}-${objective}`} className="flex items-start gap-2 text-sm">
                   <CheckCircle className="size-4 text-primary flex-shrink-0 mt-0.5" />
                   <span>{objective}</span>
                 </li>
@@ -611,9 +614,10 @@ export default function SectionLearningPage() {
       </main>
 
       {/* Right: Code Runner */}
+      <LazyMotion features={domAnimation}>
       <AnimatePresence mode="wait">
         {activeRunnerKpId !== null && section?.knowledge_points && (
-          <motion.div
+          <m.div
             key="runner-panel"
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -632,7 +636,7 @@ export default function SectionLearningPage() {
                   key={activeRunnerKpId}
                   initialCode={initialCode}
                   initialLanguageId={initialLangId}
-                  onClose={() => setActiveRunnerKpId(null)}
+                  onClose={() => setUiState(prev => ({ ...prev, activeRunnerKpId: null }))}
                   onCodeChange={(newCode) => {
                     setKpEditorStates((prev) => {
                       const next = new Map(prev)
@@ -658,9 +662,10 @@ export default function SectionLearningPage() {
                 />
               )
             })()}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
+      </LazyMotion>
       </div>
 
       {/* Bottom Action Bar */}

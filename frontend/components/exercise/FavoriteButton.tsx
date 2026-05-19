@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef, useTransition } from "react";
 import { Star } from "lucide-react";
 import { getStoredToken } from "@/lib/api";
 import {
@@ -60,8 +60,8 @@ export function FavoriteButton({
   onFavoriteChange,
 }: FavoriteButtonProps) {
   const [isFavorited, setIsFavorited] = useState(false);
-  const [favoriteId, setFavoriteId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const favoriteIdRef = useRef<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const t = (zh: string, en: string) => (lang === "zh" ? zh : en);
 
@@ -83,12 +83,12 @@ export function FavoriteButton({
         console.log("[FavoriteButton] checkStatus result:", result);
         if (cancelled) return;
         setIsFavorited(result.is_favorited);
-        setFavoriteId(result.favorite_id);
+        favoriteIdRef.current = result.favorite_id;
       } catch (error) {
         console.error("[FavoriteButton] checkStatus error:", error);
         if (!cancelled) {
           setIsFavorited(false);
-          setFavoriteId(null);
+          favoriteIdRef.current = null;
         }
       }
     };
@@ -108,48 +108,47 @@ export function FavoriteButton({
 
     console.log("[FavoriteButton] handleToggleFavorite:", {
       isFavorited,
-      favoriteId,
+      favoriteIdRef,
       exerciseKey,
       exerciseId,
       courseId,
     });
 
-    setIsLoading(true);
-    try {
-      if (isFavorited && favoriteId) {
-        console.log("[FavoriteButton] Removing favorite:", favoriteId);
-        await removeFavorite(token, favoriteId);
-        setIsFavorited(false);
-        setFavoriteId(null);
-        onFavoriteChange?.(false);
-      } else {
-        // 与错题本完全一致的请求格式
-        const data: FavoriteCreate = {
-          exercise_key: exerciseKey || "",
-          course_id: courseId ?? 0,
-          exercise_id: exerciseId,
-          chapter_id: chapterId,
-          section_id: sectionId,
-          exercise_content: exerciseContent,
-          exercise_type: exerciseType,
-          exercise_difficulty: exerciseDifficulty,
-          knowledge_points: knowledgePoints,
-        };
-        console.log("[FavoriteButton] Adding favorite:", data);
-        const response = await addFavorite(token, data);
-        console.log("[FavoriteButton] Add favorite response:", response);
-        setIsFavorited(true);
-        setFavoriteId(response.id);
-        onFavoriteChange?.(true);
+    startTransition(async () => {
+      try {
+        if (isFavorited && favoriteIdRef.current) {
+          console.log("[FavoriteButton] Removing favorite:", favoriteIdRef.current);
+          await removeFavorite(token, favoriteIdRef.current);
+          setIsFavorited(false);
+          favoriteIdRef.current = null;
+          onFavoriteChange?.(false);
+        } else {
+          // 与错题本完全一致的请求格式
+          const data: FavoriteCreate = {
+            exercise_key: exerciseKey || "",
+            course_id: courseId ?? 0,
+            exercise_id: exerciseId,
+            chapter_id: chapterId,
+            section_id: sectionId,
+            exercise_content: exerciseContent,
+            exercise_type: exerciseType,
+            exercise_difficulty: exerciseDifficulty,
+            knowledge_points: knowledgePoints,
+          };
+          console.log("[FavoriteButton] Adding favorite:", data);
+          const response = await addFavorite(token, data);
+          console.log("[FavoriteButton] Add favorite response:", response);
+          setIsFavorited(true);
+          favoriteIdRef.current = response.id;
+          onFavoriteChange?.(true);
+        }
+      } catch (error) {
+        console.error("[FavoriteButton] handleToggleFavorite error:", error);
       }
-    } catch (error) {
-      console.error("[FavoriteButton] handleToggleFavorite error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }, [
     isFavorited,
-    favoriteId,
+    favoriteIdRef,
     exerciseKey,
     courseId,
     exerciseId,
@@ -180,7 +179,7 @@ export function FavoriteButton({
         e.stopPropagation();
         handleToggleFavorite();
       }}
-      disabled={isLoading}
+      disabled={isPending}
       className={`
         flex items-center justify-center rounded-lg transition-all duration-200
         ${showLabel ? "px-2.5 gap-1" : sizeClasses[size]}
@@ -189,7 +188,7 @@ export function FavoriteButton({
             ? "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
             : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-yellow-500"
         }
-        ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
+        ${isPending ? "opacity-50 cursor-not-allowed" : ""}
       `}
       title={
         isFavorited

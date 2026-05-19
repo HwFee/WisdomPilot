@@ -117,7 +117,7 @@ export function LuoguTestCaseTable({
         </thead>
         <tbody>
           {results.map((result, index) => (
-            <tr key={`case-${index}`} className={result.passed ? 'bg-[rgba(82,196,26,0.02)]' : 'bg-[rgba(231,76,60,0.02)]'}>
+            <tr key={`case-${result.input.slice(0, 30)}`} className={result.passed ? 'bg-[rgba(82,196,26,0.02)]' : 'bg-[rgba(231,76,60,0.02)]'}>
               <td className="font-medium text-[#303133]">#{index + 1}</td>
               <td>{getStatusBadge(result, index)}</td>
               <td className="text-[#606266] font-mono text-sm">

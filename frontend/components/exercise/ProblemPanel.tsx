@@ -128,9 +128,9 @@ export function ProblemPanel({
           <div className="mb-6">
             <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('知识点', 'Knowledge Points')}</h3>
             <div className="flex flex-wrap gap-2">
-              {knowledgePoints.map((point, index) => (
+              {knowledgePoints.map((point) => (
                 <span
-                  key={`knowledge-${index}`}
+                  key={`knowledge-${point}`}
                   className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
                 >
                   {point}

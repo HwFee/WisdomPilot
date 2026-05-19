@@ -41,6 +41,14 @@ function getSourceLabel(exerciseKey?: string): string {
   return SOURCE_LABELS[sourceType] || '未知来源'
 }
 
+function ClientDate({ dateStr }: { dateStr: string }) {
+  const [formatted, setFormatted] = useState('')
+  useEffect(() => {
+    setFormatted(new Date(dateStr).toLocaleDateString('zh-CN'))
+  }, [dateStr])
+  return <span>{formatted || dateStr.split('T')[0]}</span>
+}
+
 // 提取题目标题 - 与错题本一致
 function getQuestionTitle(fav: FavoriteResponse): string {
   // 优先从 exercise_content.text 提取
@@ -60,9 +68,12 @@ export default function FavoritesPage() {
   const { push, back } = useRouter()
   const [favorites, setFavorites] = useState<FavoriteResponse[]>([])
   const [folders, setFolders] = useState<FavoriteFolderResponse[]>([])
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isSelectMode, setIsSelectMode] = useState(false)
+  const [selectionState, setSelectionState] = useState({
+    selectedFolder: null as string | null,
+    selectedIds: new Set<string>(),
+    isSelectMode: false,
+  })
+  const { selectedFolder, selectedIds, isSelectMode } = selectionState
   const [isLoading, setIsLoading] = useState(true)
   const hasFetched = useRef(false)
 
@@ -96,8 +107,7 @@ export default function FavoritesPage() {
   const handleFolderChange = async (folder: string | null) => {
     const token = getStoredToken()
     if (!token) return
-    setSelectedFolder(folder)
-    setSelectedIds(new Set())
+    setSelectionState(prev => ({ ...prev, selectedFolder: folder, selectedIds: new Set() }))
     setIsLoading(true)
     try {
       const data = await getFavorites(token, 100, 0, folder || undefined)
@@ -130,7 +140,7 @@ export default function FavoritesPage() {
     } else {
       newSelected.add(id)
     }
-    setSelectedIds(newSelected)
+    setSelectionState(prev => ({ ...prev, selectedIds: newSelected }))
   }
 
   const handleBatchDelete = async () => {
@@ -141,8 +151,7 @@ export default function FavoritesPage() {
     try {
       await batchRemoveFavorites(token, Array.from(selectedIds))
       setFavorites(prev => prev.filter(f => !selectedIds.has(f.id)))
-      setSelectedIds(new Set())
-      setIsSelectMode(false)
+      setSelectionState(prev => ({ ...prev, selectedIds: new Set(), isSelectMode: false }))
       const foldersData = await getFavoriteFolders(token)
       setFolders(foldersData.folders)
     } catch {
@@ -162,8 +171,7 @@ export default function FavoritesPage() {
         )
       )
       fetchData(token, selectedFolder || undefined)
-      setSelectedIds(new Set())
-      setIsSelectMode(false)
+      setSelectionState(prev => ({ ...prev, selectedIds: new Set(), isSelectMode: false }))
     } catch {
       // Handle error silently
     }
@@ -193,8 +201,7 @@ export default function FavoritesPage() {
           {favorites.length > 0 && (
             <button type="button"
               onClick={() => {
-                setIsSelectMode(!isSelectMode)
-                setSelectedIds(new Set())
+                setSelectionState(prev => ({ ...prev, isSelectMode: !prev.isSelectMode, selectedIds: new Set() }))
               }}
               className={`p-2 rounded-lg transition-colors ${isSelectMode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
             >
@@ -328,14 +335,14 @@ export default function FavoritesPage() {
 
                       {/* 收藏时间 */}
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                        <span suppressHydrationWarning>收藏于 {new Date(fav.created_at).toLocaleDateString()}</span>
+                        <span>收藏于 <ClientDate dateStr={fav.created_at} /></span>
                       </div>
 
                       {/* 知识点 */}
                       {fav.knowledge_points && fav.knowledge_points.length > 0 && (
                         <div className="flex gap-1 flex-wrap">
-                          {fav.knowledge_points.slice(0, 3).map((kp, i) => (
-                            <span key={`fav-${i}`} className="text-xs px-2 py-0.5 bg-primary/5 text-primary rounded-full">
+                          {fav.knowledge_points.slice(0, 3).map((kp) => (
+                            <span key={kp} className="text-xs px-2 py-0.5 bg-primary/5 text-primary rounded-full">
                               {kp}
                             </span>
                           ))}
