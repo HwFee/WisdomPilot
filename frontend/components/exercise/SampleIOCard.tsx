@@ -29,7 +29,19 @@ export function SampleIOCard({
       setCopied(type)
       setTimeout(() => setCopied(null), 2000)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      // Fallback for non-secure contexts (e.g. HTTP localhost)
+      try {
+        const textarea = document.createElement('textarea')
+        textarea.value = text
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+        setCopied(type)
+        setTimeout(() => setCopied(null), 2000)
+      } catch (fallbackErr) {
+        console.error('Failed to copy:', fallbackErr)
+      }
     }
   }
 

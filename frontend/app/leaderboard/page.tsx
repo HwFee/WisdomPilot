@@ -16,9 +16,9 @@ type LeaderboardType = 'mastery' | 'arena'
 
 function LeaderboardContent() {
   const { push } = useRouter()
-  const { get } = useSearchParams()
+  const searchParams = useSearchParams()
   const [uiState, setUiState] = useState({
-    activeTab: (get('tab') as LeaderboardType) || 'mastery',
+    activeTab: (searchParams.get('tab') as LeaderboardType) || 'mastery',
     offset: 0,
     loading: true,
   })

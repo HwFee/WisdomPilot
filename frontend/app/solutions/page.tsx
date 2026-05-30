@@ -14,7 +14,7 @@ type PageMode = 'list' | 'create'
 
 function SolutionsContent() {
   const { push } = useRouter()
-  const { get } = useSearchParams()
+  const searchParams = useSearchParams()
 
   const [solutions, setSolutions] = useState<SolutionSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,7 +27,7 @@ function SolutionsContent() {
   const { currentUser, isAdmin, lang } = userState
   const { pageMode, searchQuery } = uiState
 
-  const activeCategory = (get('tab') as CategoryType) || 'hot'
+  const activeCategory = (searchParams.get('tab') as CategoryType) || 'hot'
 
   const t = (zh: string, en: string) => lang === 'zh' ? zh : en
 

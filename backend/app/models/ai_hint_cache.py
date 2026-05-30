@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, Integer, Text, ForeignKey
+from sqlalchemy import String, DateTime, Integer, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 
@@ -17,6 +17,11 @@ class AIHintCache(Base):
     """AI 提示缓存 - 用户购买后可免费再次查看"""
 
     __tablename__ = "ai_hint_cache"
+
+    # 防止并发或重复插入导致同一用户对同一题的同一级别出现多条记录
+    __table_args__ = (
+        UniqueConstraint("user_id", "exercise_id", "hint_level", name="uix_hint_cache_user_exercise_level"),
+    )
 
     id: Mapped[str] = mapped_column(
         String(36),

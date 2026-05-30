@@ -19,6 +19,10 @@ export function CustomTestInput({
   const [input, setInput] = useState(() => defaultInput)
   const [copied, setCopied] = useState(false)
 
+  useEffect(() => {
+    setInput(defaultInput)
+  }, [defaultInput])
+
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   const handleRun = async () => {

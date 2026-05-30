@@ -102,7 +102,12 @@ class OpenAIProvider(AIProvider):
 
     async def _stream_connect(self, messages: list) -> httpx.Response:
         """建立流式连接，带重试。只对连接/握手阶段重试，避免内容重复。"""
+        import time
+        t0 = time.time()
         client = self._get_client()
+        t1 = time.time()
+        logger.info(f"[PERF-AI] get_client took {(t1-t0)*1000:.1f}ms")
+
         request = client.build_request(
             "POST",
             f"{self.base_url}/chat/completions",
@@ -117,12 +122,23 @@ class OpenAIProvider(AIProvider):
                 "stream": True,
             },
         )
+        t2 = time.time()
+        logger.info(f"[PERF-AI] build_request took {(t2-t1)*1000:.1f}ms")
+
         for attempt in range(3):
+            t_attempt = time.time()
             try:
+                logger.info(f"[PERF-AI] sending request (attempt {attempt+1}) to {self.base_url}...")
                 response = await client.send(request, stream=True)
+                t_after_send = time.time()
+                logger.info(f"[PERF-AI] client.send completed in {(t_after_send-t_attempt)*1000:.1f}ms")
                 response.raise_for_status()
+                t_after_raise = time.time()
+                logger.info(f"[PERF-AI] raise_for_status completed in {(t_after_raise-t_after_send)*1000:.1f}ms")
+                logger.info(f"[PERF-AI] total _stream_connect took {(t_after_raise-t0)*1000:.1f}ms, status={response.status_code}")
                 return response
             except (httpx.TimeoutException, httpx.ConnectError) as e:
+                logger.error(f"[PERF-AI] attempt {attempt+1} connect failed after {(time.time()-t_attempt)*1000:.1f}ms: {e}")
                 if attempt < 2:
                     logger.warning(f"[OpenAIProvider] Stream connect attempt {attempt + 1} failed ({e}), retrying in {attempt + 1}s...")
                     import asyncio
@@ -131,6 +147,7 @@ class OpenAIProvider(AIProvider):
                     raise
             except httpx.HTTPStatusError as e:
                 # Log detailed error for 4xx/5xx to help diagnose model/key issues
+                logger.error(f"[PERF-AI] attempt {attempt+1} HTTP error after {(time.time()-t_attempt)*1000:.1f}ms: {e.response.status_code}")
                 try:
                     err_body = e.response.text[:500]
                 except Exception:
@@ -145,7 +162,15 @@ class OpenAIProvider(AIProvider):
         raise RuntimeError("Failed to start stream after all retries")
 
     async def stream_generate(self, messages: list) -> AsyncGenerator[str, None]:
+        import time
+        t0 = time.time()
         response = await self._stream_connect(messages)
+        t1 = time.time()
+        logger.info(f"[PERF-AI] _stream_connect returned, TTFB={(t1-t0)*1000:.1f}ms")
+
+        chunk_count = 0
+        total_chars = 0
+        last_log_time = t1
         try:
             async for line in response.aiter_lines():
                 if line.startswith("data: "):
@@ -155,9 +180,28 @@ class OpenAIProvider(AIProvider):
                     chunk = json.loads(data)
                     content = chunk["choices"][0]["delta"].get("content", "")
                     if content:
+                        chunk_count += 1
+                        total_chars += len(content)
+                        now = time.time()
+                        # 每 20 个 chunk 或每 5 秒打一次日志
+                        if chunk_count % 20 == 0 or (now - last_log_time) > 5:
+                            logger.info(
+                                f"[PERF-AI] streaming progress: chunks={chunk_count}, "
+                                f"chars={total_chars}, elapsed={(now-t0)*1000:.1f}ms, "
+                                f"chunk_interval={(now-last_log_time)*1000:.1f}ms"
+                            )
+                            last_log_time = now
                         yield content
+        except Exception as e:
+            logger.error(f"[PERF-AI] stream interrupted after {(time.time()-t0)*1000:.1f}ms, chunks={chunk_count}: {e}")
+            raise
         finally:
             await response.aclose()
+            t_end = time.time()
+            logger.info(
+                f"[PERF-AI] stream finished: total={(t_end-t0)*1000:.1f}ms, "
+                f"chunks={chunk_count}, chars={total_chars}"
+            )
 
 
 class AIService:
@@ -851,12 +895,16 @@ class AIService:
         Yields:
             AI 生成的提示内容（流式）
         """
+        import time
+        t_service_start = time.time()
         if not self.is_configured():
+            logger.error("[PERF-AI] stream_exercise_hint: AI not configured!")
             yield "AI 服务未配置，请联系管理员。"
             return
 
         difficulty_labels = {1: "入门", 2: "基础", 3: "中等", 4: "较难", 5: "困难"}
         diff_label = difficulty_labels.get(difficulty, "中等")
+        logger.info(f"[PERF-AI] stream_exercise_hint starting: level={hint_level}, difficulty={diff_label}, title={exercise_title[:30]}...")
 
         kp_context = ""
         if knowledge_points:
@@ -921,9 +969,17 @@ class AIService:
 注意：代码框架要有详细注释，但不要直接给出完整可运行的答案！"""
 
         messages = [{"role": "user", "content": prompt}]
+        t_prompt_done = time.time()
+        logger.info(f"[PERF-AI] prompt built in {(t_prompt_done-t_service_start)*1000:.1f}ms, prompt_len={len(prompt)}")
 
-        async for chunk in self._provider.stream_generate(messages):
-            yield chunk
+        t_stream_start = time.time()
+        chunk_count = 0
+        try:
+            async for chunk in self._provider.stream_generate(messages):
+                chunk_count += 1
+                yield chunk
+        finally:
+            logger.info(f"[PERF-AI] stream_exercise_hint total={(time.time()-t_service_start)*1000:.1f}ms, prompt_build={(t_prompt_done-t_service_start)*1000:.1f}ms, stream={(time.time()-t_stream_start)*1000:.1f}ms, chunks={chunk_count}")
 
 
 # 全局单例 - 独立模块

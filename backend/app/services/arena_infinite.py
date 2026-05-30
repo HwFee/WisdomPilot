@@ -181,6 +181,49 @@ class ChallengePathService:
 
         return False
 
+    # 硬编码：挑战之路前两题固定
+    HELLO_WORLD_EXERCISE_ID = 211   # 第 1 题：你好，世界！
+    A_PLUS_B_EXERCISE_ID = 207      # 第 2 题：A + B 问题
+
+    async def _find_fixed_exercise(self, exercise_id: int) -> Optional[Exercise]:
+        """按固定 ID 获取题目"""
+        result = await self.db.execute(
+            select(Exercise).where(
+                Exercise.id == exercise_id,
+                Exercise.is_verified,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    def _ensure_fixed_first_two(
+        selected: list[Exercise],
+        hello_world_ex: Optional[Exercise],
+        a_plus_b_ex: Optional[Exercise],
+        count: int,
+    ) -> list[Exercise]:
+        """强制将前两题固定为 Hello World 和 A+B"""
+        if not selected:
+            return selected[:count]
+
+        # 收集需要固定到前两位的题目（按顺序）
+        fixed = []
+        if hello_world_ex:
+            fixed.append(hello_world_ex)
+        if a_plus_b_ex:
+            fixed.append(a_plus_b_ex)
+
+        if not fixed:
+            return selected[:count]
+
+        # 去重：先移除已选列表中存在的固定题
+        fixed_ids = {ex.id for ex in fixed}
+        filtered = [ex for ex in selected if ex.id not in fixed_ids]
+
+        # 组装：固定题放前面，后面接剩余题目
+        result = fixed + filtered
+        return result[:count]
+
     async def _create_initial_exercises(
         self,
         user_id: str,
@@ -189,6 +232,14 @@ class ChallengePathService:
         count: int,
     ) -> list[Exercise]:
         """Create initial exercise set for a new challenge path using hybrid recommendation"""
+        # 查找固定题目，后续所有分支都强制放前两位
+        hello_world_ex = await self._find_fixed_exercise(self.HELLO_WORLD_EXERCISE_ID)
+        a_plus_b_ex = await self._find_fixed_exercise(self.A_PLUS_B_EXERCISE_ID)
+        if hello_world_ex:
+            logger.info(f"Fixed exercise[0]: Hello World id={hello_world_ex.id}")
+        if a_plus_b_ex:
+            logger.info(f"Fixed exercise[1]: A+B id={a_plus_b_ex.id}")
+
         # Get user for adaptive recommendation
         user_result = await self.db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
@@ -228,8 +279,9 @@ class ChallengePathService:
                 ]
 
                 if len(selected) >= count:
+                    selected = self._ensure_fixed_first_two(selected, hello_world_ex, a_plus_b_ex, count)
                     # Create progress records
-                    for i, ex in enumerate(selected[:count]):
+                    for i, ex in enumerate(selected):
                         progress = ArenaExerciseProgress(
                             user_id=user_id,
 
@@ -240,7 +292,7 @@ class ChallengePathService:
                         self.db.add(progress)
 
                     await self.db.flush()
-                    return selected[:count]
+                    return selected
 
             # Fallback: Use adaptive recommendation service for intelligent matching
             adaptive_service = AdaptiveRecommendationService(self.db)
@@ -272,8 +324,9 @@ class ChallengePathService:
                 ]
 
                 if len(selected) >= count:
+                    selected = self._ensure_fixed_first_two(selected, hello_world_ex, a_plus_b_ex, count)
                     # Create progress records
-                    for i, ex in enumerate(selected[:count]):
+                    for i, ex in enumerate(selected):
                         progress = ArenaExerciseProgress(
                             user_id=user_id,
 
@@ -284,7 +337,7 @@ class ChallengePathService:
                         self.db.add(progress)
 
                     await self.db.flush()
-                    return selected[:count]
+                    return selected
 
         # Fast path for new users: skip recommendation services and use
         # difficulty-filtered random selection directly.
@@ -343,24 +396,9 @@ class ChallengePathService:
 
         exercise_pool = list(all_exercises)
 
-        # Try to find a hello-world exercise and place it first
-        hello_world_ex = None
-        for ex in exercise_pool:
-            title = (ex.content or {}).get("title", "")
-            text = (ex.content or {}).get("text", "")
-            desc = (ex.content or {}).get("description", "")
-            combined = f"{title} {text} {desc}".lower()
-            if "hello world" in combined or "helloworld" in combined:
-                hello_world_ex = ex
-                break
-
-        if hello_world_ex:
-            exercise_pool.remove(hello_world_ex)
-            selected = [hello_world_ex]
-            if count > 1:
-                selected += random.sample(exercise_pool, min(count - 1, len(exercise_pool)))
-        else:
-            selected = random.sample(exercise_pool, count)
+        # Fast path 也统一走 _ensure_fixed_first_two 保证强制前两题为 Hello World 和 A+B
+        selected = random.sample(exercise_pool, min(count, len(exercise_pool)))
+        selected = self._ensure_fixed_first_two(selected, hello_world_ex, a_plus_b_ex, count)
 
         for i, ex in enumerate(selected):
             progress = ArenaExerciseProgress(

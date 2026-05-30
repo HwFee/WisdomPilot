@@ -808,6 +808,210 @@
       color: var(--accent-cyan);
     }
 
+    /* ── Speech Tip (答辩话术) ── */
+    .speech-tip {
+      background: rgba(0,230,118,0.06);
+      border: 1px solid rgba(0,230,118,0.15);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      position: relative;
+    }
+    .speech-tip::before {
+      content: '🎤 答辩话术';
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--accent-green);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .speech-tip p {
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+    .speech-tip p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ── FAQ Chip (追问预判) ── */
+    .faq-chip {
+      background: rgba(255,179,0,0.06);
+      border: 1px solid rgba(255,179,0,0.12);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+    .faq-chip::before {
+      content: '🔥 评委追问';
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--accent-amber);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .faq-chip ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .faq-chip li {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .faq-chip li::marker {
+      color: var(--accent-amber);
+    }
+
+    /* ── Plain English (人话解释) ── */
+    .plain-english {
+      background: rgba(0,229,255,0.05);
+      border-left: 3px solid var(--accent-cyan);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 20px;
+      margin: 20px 0;
+    }
+    .plain-english::before {
+      content: '💡 一句话理解';
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--accent-cyan);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .plain-english p {
+      font-size: 14px;
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.8;
+    }
+
+    /* ── Highlight Box (重点提示) ── */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(179,136,255,0.08), rgba(0,229,255,0.05));
+      border: 1px solid rgba(179,136,255,0.15);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .highlight-box-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--accent-purple);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    /* ── Timeline / Journey ── */
+    .journey {
+      position: relative;
+      padding-left: 32px;
+      margin: 24px 0;
+    }
+    .journey::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--accent-cyan), var(--accent-purple), transparent);
+    }
+    .journey-step {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .journey-step:last-child {
+      margin-bottom: 0;
+    }
+    .journey-step::before {
+      content: '';
+      position: absolute;
+      left: -28px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--bg-deep);
+      border: 2px solid var(--accent-cyan);
+    }
+    .journey-step-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .journey-step-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ── Comparison Cards ── */
+    .compare-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .compare-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .compare-card-header {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .compare-card.ours .compare-card-header { color: var(--accent-green); }
+    .compare-card.others .compare-card-header { color: var(--text-muted); }
+    .compare-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .compare-card li {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    /* ── Quick Ref Grid ── */
+    .quickref {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .quickref-item {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .quickref-q {
+      font-size: 12px;
+      color: var(--accent-amber);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .quickref-a {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 1024px) {
       .sidebar { width: 260px; }
@@ -846,6 +1050,7 @@
     <div class="nav-section">
       <div class="nav-label">Contents</div>
       <a href="#hero" class="nav-item active"><span class="num">00</span>首页概览</a>
+      <a href="#quickref" class="nav-item"><span class="num">⭐</span>答辩速查</a>
       <a href="#overview" class="nav-item"><span class="num">01</span>项目概述</a>
       <a href="#painpoints" class="nav-item"><span class="num">02</span>痛点与方案</a>
       <a href="#architecture" class="nav-item"><span class="num">03</span>系统架构</a>
@@ -857,6 +1062,7 @@
       <a href="#core" class="nav-item"><span class="num">09</span>智核系统</a>
       <a href="#judge0" class="nav-item"><span class="num">10</span>在线判题</a>
       <a href="#qa" class="nav-item"><span class="num">11</span>常见问题</a>
+      <a href="#judge" class="nav-item"><span class="num">👨‍🏫</span>评委模拟</a>
       <a href="#data" class="nav-item"><span class="num">12</span>关键数据</a>
       <a href="#notes" class="nav-item"><span class="num">13</span>注意事项</a>
     </div>
@@ -898,15 +1104,89 @@
       <div class="scroll-hint animate-in delay-4">SCROLL TO EXPLORE</div>
     </section>
 
+    <!-- 答辩速查指南 -->
+    <section id="quickref">
+      <div class="section-header">
+        <span class="section-num">⭐</span>
+        <h2 class="section-title">答辩速查指南</h2>
+      </div>
+      <div class="section-subtitle">// 快速抓住重点 · 5分钟理解整个系统</div>
+
+      <div class="plain-english">
+        <p>智码领航 = <strong>一个帮大学生学编程的网站</strong>。它有两个学习模式：① 按章节上课（精进之路，用BKT算法判断你学会了没）；② 自由刷题（挑战之路，用推荐算法给你推合适的题，还有游戏段位让你上瘾）。后台接入了DeepSeek等AI大模型，能自动出题、讲错题、审查代码。学生做错题会进错题本，想求助AI要消耗"智核"货币（防止抄答案）。代码提交后由Judge0沙箱执行并判分。</p>
+      </div>
+
+      <div class="highlight-box">
+        <div class="highlight-box-title">⭐ 系统核心亮点（答辩时重点讲）</div>
+        <div class="card-grid">
+          <div class="card" style="padding: 16px;">
+            <div class="card-title" style="font-size: 14px; color: var(--accent-cyan);">🎯 双轨学习路径</div>
+            <div class="card-desc">唯一同时覆盖"系统化教学"和"竞技化训练"的平台</div>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <div class="card-title" style="font-size: 14px; color: var(--accent-green);">🧠 BKT 知识追踪</div>
+            <div class="card-desc">不只看对/错，用概率模型追踪每个知识点的掌握程度</div>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <div class="card-title" style="font-size: 14px; color: var(--accent-amber);">🤖 AI 个性化辅导</div>
+            <div class="card-desc">根据薄弱点自动生成强化题，相当于24小时私人助教</div>
+          </div>
+          <div class="card" style="padding: 16px;">
+            <div class="card-title" style="font-size: 14px; color: var(--accent-purple);">🏆 游戏化段位系统</div>
+            <div class="card-desc">王者荣耀式段位+智核货币，降低挫败感，提升持续学习动力</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>答辩万能话术模板</h3>
+      <div class="speech-tip">
+        <p><strong>【开场白】</strong>"各位老师好，我们的作品是'智码领航'——一个基于生成式AI的高校编程教学与赛训一体化平台。我们发现传统OJ平台只有刷题功能，缺乏学习路径和个性化辅导，而静态教程又缺少交互。所以我们做了一个'双轨'平台：精进之路帮学生按章节系统学习，挑战之路让学生自由刷题并获得游戏化激励，AI贯穿全程提供个性化辅导。"</p>
+        <p><strong>【被问到技术难点】</strong>"最核心的技术难点有两个：一是BKT算法，它是教育数据挖掘领域的经典模型，我们用贝叶斯公式把学生的知识掌握状态建模为概率，而不是简单的'会/不会'；二是混合推荐算法，融合了行为评分、向量语义相似度和难度匹配三个因子，确保推荐的题目既相关又有挑战。"</p>
+        <p><strong>【被问到创新点】</strong>"我们的创新点在于'双轨+AI+游戏化'的三位一体设计。市面上要么只有OJ刷题（洛谷），要么只有静态教程（菜鸟教程），我们把系统化教学路径、自适应推荐、AI个性化辅导、游戏化激励整合到了一个平台里，而且BKT和段位系统完全解耦，服务不同场景。"</p>
+      </div>
+
+      <h3>如果评委只问一句话，怎么答？</h3>
+      <div class="quickref">
+        <div class="quickref-item">
+          <div class="quickref-q">"你们是干什么的？"</div>
+          <div class="quickref-a">帮大学生学编程的在线平台，有章节学习+自由刷题两种模式，AI根据学生薄弱点自动出题和辅导。</div>
+        </div>
+        <div class="quickref-item">
+          <div class="quickref-q">"和洛谷有什么区别？"</div>
+          <div class="quickref-a">洛谷只有刷题，我们有学习路径（BKT评估掌握度）、AI辅导、游戏化段位，定位是教学系统不是竞赛OJ。</div>
+        </div>
+        <div class="quickref-item">
+          <div class="quickref-q">"AI 做什么？"</div>
+          <div class="quickref-a">①根据薄弱点生成个性化强化题 ②分析错题给讲解 ③审查代码给优化建议 ④三级提示（方向→思路→详细解析）。</div>
+        </div>
+        <div class="quickref-item">
+          <div class="quickref-q">"BKT 是什么？"</div>
+          <div class="quickref-a">贝叶斯知识追踪，把学生对一个知识点的掌握建模为概率，每次答题后用贝叶斯公式更新，不是简单的'会/不会'。</div>
+        </div>
+        <div class="quickref-item">
+          <div class="quickref-q">"推荐怎么做？"</div>
+          <div class="quickref-a">三因子混合：40%历史答题行为 + 35%向量语义匹配（薄弱点相关度）+ 25%难度匹配（最近发展区），加权求和排序。</div>
+        </div>
+        <div class="quickref-item">
+          <div class="quickref-q">"段位是干什么的？"</div>
+          <div class="quickref-a">游戏化激励，和BKT解耦。做对得星，做错有免费次数不扣星，有段位保护，降低挫败感，让学生愿意持续刷题。</div>
+        </div>
+      </div>
+    </section>
+
     <!-- 01 项目概述 -->
     <section id="overview">
       <div class="section-header">
         <span class="section-num">01</span>
         <h2 class="section-title">项目概述</h2>
       </div>
-      <div class="section-subtitle">// 30秒版本 · 对应PPT第1页</div>
+      <div class="section-subtitle">// 30秒版本 · 对应PPT第1页 · 建议讲1-2分钟</div>
 
-      <p><strong>"智码领航"</strong>是一个<strong>基于生成式AI的高校编程教学与赛训一体化平台</strong>，支持 C/C++/Python/JavaScript/TypeScript 等多门编程语言的在线学习与练习。</p>
+      <div class="plain-english">
+        <p>这是一个<strong>帮大学生学编程的网站</strong>。老师上课讲完了，学生课下做题不会、不知道练什么、错了没人讲——我们就做了这个平台来解决这些问题。它像是一个"智能编程家教"，知道你哪里不会，给你推合适的题，错了给你讲，还能用游戏段位让你刷题刷上瘾。</p>
+      </div>
+
+      <p><strong>"智码领航"</strong>是一个<strong>基于生成式AI的高校编程教学与赛训一体化平台</strong>，支持 C/C++/Python 等多门编程语言的在线学习与练习。</p>
 
       <p>系统采用<strong>双轨学习路径</strong>设计：</p>
 
@@ -921,6 +1201,20 @@
           <div class="card-title">挑战之路</div>
           <div class="card-desc">无限挑战模式，基于<strong>混合推荐算法</strong>自适应推题，搭配<strong>王者荣耀风格段位系统</strong>提供游戏化激励。</div>
         </div>
+      </div>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"我们的平台叫'智码领航'，定位是高校编程教学与赛训一体化。目前支持C、C++、Python三门课程。</p>
+        <p>系统有两个核心学习路径：一是<strong>精进之路</strong>，学生按章节闯关，我们内置了约400道精选题，学生答完后BKT算法会评估他对每个知识点的掌握程度，达到阈值就解锁下一章。二是<strong>挑战之路</strong>，无限刷题模式，系统根据学生的历史表现和薄弱知识点，用混合推荐算法自动推题，做对得星星、升段位，像王者荣耀一样有游戏化激励。</p>
+        <p>整个平台接入了DeepSeek、MiniMax等多厂商AI，可以自动给学生生成个性化强化题、分析错题、审查代码，相当于给每个学生配了一个24小时的AI助教。"</p>
+      </div>
+
+      <div class="faq-chip">
+        <ul>
+          <li><strong>"你们支持什么语言？"</strong> → C、C++、Python三门课程，Judge0沙箱支持代码执行。</li>
+          <li><strong>"你们用户是谁？"</strong> → 高校计算机专业学生，特别是程序设计课（挂科率最高的课之一）的在校生。</li>
+          <li><strong>"你们解决了什么问题？"</strong> → 学生"上课听懂做题不会"、"不知道练什么"、"错了没人讲"、"刷题没动力"四大痛点。</li>
+        </ul>
       </div>
 
       <h3>技术栈</h3>
@@ -951,7 +1245,11 @@
         <span class="section-num">02</span>
         <h2 class="section-title">痛点与方案</h2>
       </div>
-      <div class="section-subtitle">// 对应PPT第4页 · 五大痛点逐一击破</div>
+      <div class="section-subtitle">// 对应PPT第4页 · 五大痛点逐一击破 · 建议讲2-3分钟</div>
+
+      <div class="plain-english">
+        <p>我们做这个项目的出发点是：大学程序设计课<strong>挂科率很高</strong>，核心原因是学生"上课听得懂、做题就不会"。市面上的工具要么只有题库（洛谷），要么只有文档（菜鸟教程），没有一个平台能同时解决"学什么、练什么、错了怎么办、没动力"这四个问题。</p>
+      </div>
 
       <h3>竞品对标</h3>
       <div class="table-wrap">
@@ -980,6 +1278,20 @@
             <tr><td>课程之间知识孤立</td><td>多语言统一的知识体系</td><td><strong>3门课程、知识图谱</strong></td></tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"我们在调研中发现，高校程序设计课有一个很突出的问题——它是计算机专业挂科率最高的课程之一。核心原因有四个：</p>
+        <p>第一，学生<strong>不知道练什么</strong>，OJ平台题库成千上万，新手完全不知道怎么选；第二，<strong>代码错了没人讲</strong>，老师不可能一对一辅导每个学生的每道错题；第三，<strong>刷题没动力</strong>，传统平台做对一题只有冷冰冰的Accepted，学生很容易放弃；第四，<strong>错题反复错</strong>，没有系统的错题复盘机制。</p>
+        <p>针对这四个问题，我们设计了双轨学习路径+AI辅导+游戏化激励的解决方案。精进之路帮学生按章节系统学习，挑战之路用推荐算法自适应推题，AI提供个性化辅导，段位系统提供即时成就感。"</p>
+      </div>
+
+      <div class="faq-chip">
+        <ul>
+          <li><strong>"你们调研过吗？怎么知道有这些痛点？"</strong> → 我们访谈了本校计算机专业学生，也在知乎、CSDN等平台收集了用户反馈，程序设计课挂科率高是普遍现象，'上课听懂做题不会'是最常被提及的困境。</li>
+          <li><strong>"为什么选高校市场而不是K12或职业教育？"</strong> → 高校编程教学痛点最集中：大班教学（100+学生/班）、师资不足、学生基础差异大。K12编程教育还在早期，职业教育更侧重项目实战而非基础知识。</li>
+          <li><strong>"这个市场有多大？"</strong> → 全国高校计算机类专业在校生约200万人，每届都需要学习程序设计课。我们只聚焦'教学+赛训融合'这一个细分场景，不求大而全。</li>
+        </ul>
       </div>
 
       <h3>市场定位</h3>
@@ -1026,6 +1338,41 @@
 │  SQLAlchemy 2.0 (Async) + Alembic 迁移 + SQLite/PostgreSQL  │
 └─────────────────────────────────────────────────────────────┘</div>
       </div>
+
+      <div class="plain-english">
+        <p>简单说就是三层：<strong>前端</strong>是用户看到的网页（用Next.js做的，代码编辑器是VS Code同款内核）；<strong>后端</strong>是处理逻辑的（FastAPI框架，处理题目推荐、知识追踪、段位计算、AI调用）；<strong>外部服务</strong>是AI大模型（DeepSeek等）和代码执行沙箱（Judge0）。前后端通过REST API通信，AI回复是流式的（SSE）。</p>
+      </div>
+
+      <h3>各层职责详解</h3>
+      <div class="journey">
+        <div class="journey-step">
+          <div class="journey-step-title">前端层（Next.js 16 + React 19）</div>
+          <div class="journey-step-desc">学生看到的界面。精进之路和挑战之路是两个核心页面，代码编辑器嵌入的是 Monaco Editor（VS Code同款），保证学生写代码的体验和专业IDE一致。数学公式用KaTeX渲染，AI回复用Markdown展示。</div>
+        </div>
+        <div class="journey-step">
+          <div class="journey-step-title">后端层（FastAPI + SQLAlchemy 2.0）</div>
+          <div class="journey-step-desc">所有业务逻辑都在这里。BKT模块负责计算知识掌握度，推荐引擎负责挑题，段位服务负责计算星星和段位升降，AI服务层负责调用大模型API，向量匹配负责找相似题目。数据库用SQLAlchemy异步ORM操作。</div>
+        </div>
+        <div class="journey-step">
+          <div class="journey-step-title">外部服务层（AI + Judge0）</div>
+          <div class="journey-step-desc">AI层接入了DeepSeek（OpenAI协议）、MiniMax（Anthropic协议）、Ollama（本地模型）三家，通过配置切换，不用改代码。Judge0是在线判题沙箱，学生提交的代码在这里安全执行并返回结果。</div>
+        </div>
+      </div>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"我们的系统采用前后端分离的三层架构。前端用Next.js 16，代码编辑器直接嵌入Monaco Editor——就是VS Code用的那个编辑器内核，学生写代码的体验和专业开发环境一样。</p>
+        <p>后端选用FastAPI，因为它是Python生态里对异步支持最好的Web框架。我们的场景里有大量IO密集型操作——调用AI API、查数据库、执行代码沙箱——用async/await可以大幅提升并发性能。而且FastAPI基于Pydantic的类型系统和自动生成的OpenAPI文档，让前后端协作非常高效。</p>
+        <p>AI层我们没有绑定单一厂商，而是抽象了一个AIProvider基类，实现了DeepSeek、MiniMax、Ollama三个具体Provider，通过配置文件切换。这样如果某个API服务不稳定，或者部署环境没有外网，可以无缝切到本地模型。"</p>
+      </div>
+
+      <div class="faq-chip">
+        <ul>
+          <li><strong>"为什么选FastAPI而不是Django/Flask？"</strong> → FastAPI原生支持异步（async/await），我们的场景有大量AI API调用和数据库IO操作，异步能大幅提升并发性能。而且FastAPI自动生成OpenAPI文档，前后端协作效率高。</li>
+          <li><strong>"为什么选Next.js而不是Vue？"</strong> → Next.js 16支持服务端组件和客户端组件的混合渲染，SEO友好，而且React生态在组件库和工具链上最成熟。Monaco Editor对React的集成也最好。</li>
+          <li><strong>"AI层怎么保证稳定性？"</strong> → 多厂商备份+降级方案。主用DeepSeek，如果服务异常可以切到MiniMax，如果完全没有外网可以切到Ollama本地模型。通过配置切换，零代码改动。</li>
+          <li><strong>"Judge0是什么？安全吗？"</strong> → Judge0是业界成熟的在线判题沙箱，用Docker容器隔离，非root用户运行，限制CPU时间和内存。我们设置了10秒CPU和256MB内存的安全限制。</li>
+        </ul>
+      </div>
     </section>
 
     <!-- 04 核心模块 -->
@@ -1066,6 +1413,15 @@
                     答错 → 错题本
                          ↓
                     求助 → AI提示（消耗智核）</div>
+
+      <div class="plain-english">
+        <p>整个系统围绕<strong>"学生做题→系统评估→推荐新题/解锁新章→学生继续做题"</strong>这个闭环运转。精进之路和挑战之路是两个并行的入口，共用同一套题库、错题本和AI服务，但评估体系完全不同——BKT负责教育评估，段位负责游戏激励。</p>
+      </div>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"系统有五大核心模块。用户管理负责登录认证和段位档案；学习路径是核心业务流程，精进之路和挑战之路都在这里；内容管理维护题库和知识点体系，每道题都有1536维的语义向量用于推荐；推荐引擎是算法核心，包含BKT知识追踪和混合推荐；统计分析提供数据看板和排行榜。</p>
+        <p>整个学习闭环是这样的：学生登录后选择路径——精进之路按章节闯关，系统用BKT评估掌握度，达标解锁下一章；挑战之路自由刷题，系统根据历史表现推荐题目，做对得星星升段位。两条路径的错题都会进入错题本，学生可以随时复盘。需要AI帮助时消耗智核货币。"</p>
+      </div>
     </section>
 
     <!-- 05 数据库设计 -->
@@ -1074,7 +1430,11 @@
         <span class="section-num">05</span>
         <h2 class="section-title">数据库设计</h2>
       </div>
-      <div class="section-subtitle">// 对应PPT第10页 · 修正版</div>
+      <div class="section-subtitle">// 对应PPT第10页 · 修正版 · 建议讲1分钟</div>
+
+      <div class="plain-english">
+        <p>数据库设计的核心思路是<strong>"职责分离"</strong>——用户基础信息和游戏档案分开存，这样以后改段位规则不会影响用户表；每道题存一个1536维的向量，支撑推荐算法的语义匹配；BKT的四个参数直接存数据库，学生每次答题后更新。</p>
+      </div>
 
       <div class="table-wrap">
         <table>
@@ -1105,7 +1465,7 @@
         <span class="section-num">06</span>
         <h2 class="section-title">三大核心算法</h2>
       </div>
-      <div class="section-subtitle">// 对应PPT第11页 · 修正版</div>
+      <div class="section-subtitle">// 对应PPT第11页 · 修正版 · 详细技术解读</div>
 
       <div class="warning-box">
         <strong>修正说明：</strong>PPT原版的"三大核心算法"存在三个问题：① 遗漏了<strong>BKT</strong>这个最核心的教育算法；② "协同过滤推荐"表述不准确；③ "动态调整学习路径"是功能不是算法。以下是准确版本。
@@ -1114,70 +1474,297 @@
       <h3>算法一：BKT（贝叶斯知识追踪）— 用于精进之路</h3>
       <p><strong>理论来源</strong>：Corbett & Anderson, 1994，被 Khan Academy、ASSISTments、Duolingo 采用。</p>
 
-      <h4>四个核心参数</h4>
+      <h4>模型本质：隐马尔可夫模型（HMM）</h4>
+      <p>BKT 的核心思想是将学生的知识掌握状态建模为一个<strong>两状态隐马尔可夫模型</strong>。学生对一个知识点的掌握状态只有两种可能：</p>
       <ul>
-        <li><code>p_l0</code>（初始掌握率）：学习前已掌握的概率，默认 <strong>0.15</strong></li>
-        <li><code>p_t</code>（学习率）：每次练习从未掌握变为掌握的概率，默认 <strong>0.1</strong></li>
-        <li><code>p_g</code>（猜测率）：未掌握但猜对的概率。选择题 <strong>0.25</strong>（4选1理论值），填空题 <strong>0.15</strong></li>
-        <li><code>p_s</code>（失误率）：已掌握但答错的概率（粗心/紧张），默认 <strong>0.05</strong></li>
+        <li><strong>已掌握（Known / K）</strong>：学生真正理解了这个知识点</li>
+        <li><strong>未掌握（Unknown / U）</strong>：学生尚未理解这个知识点</li>
       </ul>
+      <p>但系统无法直接观测到这个"隐藏状态"，只能通过学生的答题行为（对/错）来推断。每次答题后，系统用<strong>贝叶斯公式</strong>更新对隐藏状态的概率估计。</p>
 
-      <h4>核心公式</h4>
+      <h4>四个核心参数</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>参数</th><th>符号</th><th>含义</th><th>默认值</th><th>实际意义</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>初始掌握率</strong></td><td><code>p_l0</code></td><td>学习前已掌握的概率</td><td>0.15</td><td>学生开始做题前有15%概率已经会了</td></tr>
+            <tr><td><strong>学习率</strong></td><td><code>p_t</code></td><td>每次练习从未掌握变为掌握的概率</td><td>0.1</td><td>每做一次题，有10%概率从"不会"变成"会"</td></tr>
+            <tr><td><strong>猜测率</strong></td><td><code>p_g</code></td><td>未掌握但猜对的概率</td><td>选择题0.25 / 填空题0.15</td><td>4选1选择题纯猜有25%概率蒙对</td></tr>
+            <tr><td><strong>失误率</strong></td><td><code>p_s</code></td><td>已掌握但答错的概率</td><td>0.05</td><td>学生会做但因粗心/紧张有5%概率做错</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>核心公式推导</h4>
+      <p><strong>第一步：根据答题结果，用贝叶斯公式更新掌握概率</strong></p>
+      <p>假设当前估计学生掌握该知识点的概率为 <code>P(L)</code>，学生刚刚答对了这道题：</p>
       <pre>P(L|correct) = P(L) * (1 - P(S)) / [P(L)*(1-P(S)) + (1-P(L))*P(G)]
-P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
 
-      <h4>实际应用</h4>
+分子：P(L) * (1-P(S))  →  学生确实掌握了 * 学生没有失误
+分母：所有答对的可能性  →  真会且没失误  +  不会但猜对了</pre>
+      <p>如果学生答错了：</p>
+      <pre>P(L|wrong) = P(L) * P(S) / [P(L)*P(S) + (1-P(L))*(1-P(G))]
+
+分子：P(L) * P(S)  →  学生掌握了 * 但失误了
+分母：所有答错的可能性  →  真会但失误了  +  不会且没猜对</pre>
+
+      <p><strong>第二步：考虑"学习"的发生（状态转移）</strong></p>
+      <p>即使学生在答题前不会这个知识点，做完这道题后也可能学会了。因此需要在观测更新后再叠加学习概率：</p>
+      <pre>P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)
+
+解释：新的掌握概率 = 答题后估计的概率 + 剩余不会的 * 这次学会了</pre>
+
+      <h4>完整计算示例</h4>
+      <p>假设某学生做一道选择题，参数为：p_l0=0.15, p_t=0.1, p_g=0.25, p_s=0.05</p>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">bkt_calculation.log</span>
+        </div>
+        <div class="terminal-body"><span class="comment"># 初始状态：学生还没做过任何题</span>
+P(L) = p_l0 = 0.15
+
+<span class="comment"># ===== 第1题：答对了 =====</span>
+<span class="comment"># 贝叶斯更新（答对）</span>
+P(L|correct) = 0.15 * (1-0.05) / [0.15*(1-0.05) + (1-0.15)*0.25]
+             = 0.1425 / [0.1425 + 0.2125]
+             = 0.1425 / 0.355
+             = 0.401
+
+<span class="comment"># 叠加学习效应</span>
+P(L_new) = 0.401 + (1-0.401) * 0.1
+         = 0.401 + 0.0599
+         = 0.461
+
+<span class="comment"># ===== 第2题：答错了 =====</span>
+<span class="comment"># 当前 P(L) = 0.461</span>
+<span class="comment"># 贝叶斯更新（答错）</span>
+P(L|wrong) = 0.461 * 0.05 / [0.461*0.05 + (1-0.461)*(1-0.25)]
+           = 0.023 / [0.023 + 0.404]
+           = 0.023 / 0.427
+           = 0.054
+
+<span class="comment"># 叠加学习效应</span>
+P(L_new) = 0.054 + (1-0.054) * 0.1
+         = 0.054 + 0.095
+         = 0.149</div>
+      </div>
+      <p><strong>关键洞察</strong>：第2题答错后，掌握度从0.461骤降到0.149。这是因为一次答错带来了强烈的"不会"信号（虽然有可能是失误，但p_s只有0.05，概率很低）。这体现了 BKT 的<strong>保守性</strong>——系统不会因为一两道题的偶然答对就判定学生掌握了。</p>
+
+      <h4>在我们系统中的实际应用</h4>
       <ul>
-        <li>学生答完基础题/强化题 → BKT 更新每个知识点的掌握概率</li>
-        <li>知识点掌握度 → 聚合为小节掌握度 → 章节掌握度 → 课程掌握度</li>
+        <li>学生每答一道题，系统更新该题涉及的<strong>每个知识点</strong>的掌握概率（一道题可能涉及多个知识点）</li>
+        <li>知识点掌握度 → 聚合为<strong>小节掌握度</strong> → <strong>章节掌握度</strong> → <strong>课程掌握度</strong></li>
         <li>小节掌握度达到阈值（<strong>0.80</strong>），判定该小节"已完成"</li>
         <li>章节下所有小节完成，<strong>解锁下一章节</strong></li>
       </ul>
 
+      <h4>防刷分机制</h4>
       <div class="warning-box">
-        <strong>防刷分机制：</strong>最短答题时间3秒、每小时每知识点最多50次、单次会话增长上限0.35。
+        <strong>防刷分机制：</strong>最短答题时间3秒、每小时每知识点最多50次、单次会话增长上限0.35。这些限制防止学生通过反复刷同一道简单题来快速提高掌握度。
+      </div>
+
+      <h4>与其他知识追踪模型的对比</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>模型</th><th>特点</th><th>优缺点</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>BKT</strong></td><td>每个知识点独立建模，两状态HMM</td><td>可解释性强、参数少、适合在线实时更新；但假设答题独立，忽略长期依赖</td></tr>
+            <tr><td><strong>DKT</strong></td><td>用LSTM建模整个答题序列</td><td>能捕捉长期依赖、精度更高；但黑盒、需要大量训练数据、计算成本高</td></tr>
+            <tr><td><strong> ours</strong></td><td>BKT + 规则引擎 + 防刷分</td><td>选择BKT是因为其可解释性强，适合答辩场景和教学场景的可信度要求</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="ascii-divider">─────────────────────────────────────────</div>
 
       <h3>算法二：混合推荐算法 — 用于挑战之路</h3>
-      <p><strong>三因子融合</strong>（权重固定）：</p>
+      <p>挑战之路的推荐目标与精进之路不同：精进之路有固定的章节-知识点结构，BKT可以精确评估；挑战之路是开放式题库，需要用推荐算法从海量题目中挑选最适合学生当前水平的题。</p>
+
+      <h4>三因子融合（权重固定）</h4>
       <pre>final_score = 0.40 × behavior_score      (行为评分)
             + 0.35 × embedding_similarity (向量语义相似度)
             + 0.25 × difficulty_match      (ZPD难度匹配)</pre>
+      <p>三个因子的权重经过调参确定，总和为1。权重分配的逻辑是：<strong>历史行为最能反映学生当前状态</strong>（40%），<strong>语义匹配保证题目与学生薄弱点的相关性</strong>（35%），<strong>难度匹配保证最近发展区的有效性</strong>（25%）。</p>
 
-      <h4>行为评分（40%）：基于用户历史答题模式</h4>
+      <h4>因子一：行为评分（40%）— 基于用户历史答题模式</h4>
+      <p>行为评分综合三个子指标：</p>
+      <pre>behavior_score = w1 × accuracy_factor + w2 × experience_factor + w3 × trend_factor
+
+其中：
+  accuracy_factor = min(1, max(0, (user_accuracy - 0.5) / 0.4))
+    → 正确率50%得0分，90%以上得1分，线性插值
+
+  experience_factor = min(1, solved_count / 100)
+    → 答题数0得0分，100题以上得1分
+
+  trend_factor = 最近10题的正确率（滑动窗口）</pre>
       <ul>
-        <li>高正确率(&gt;80%) → 倾向推荐难题</li>
-        <li>低正确率(&lt;50%) → 倾向推荐基础题</li>
-        <li>答题次数多 → 经验丰富，推荐挑战题</li>
+        <li>高正确率(&gt;80%) → 行为评分接近1 → 倾向推荐难题</li>
+        <li>低正确率(&lt;50%) → 行为评分接近0 → 倾向推荐基础题</li>
+        <li>答题次数多 → 经验丰富 → 推荐挑战题</li>
+        <li>趋势因子捕捉学生最近的状态波动，避免被早期数据主导</li>
       </ul>
 
-      <h4>向量语义相似度（35%）</h4>
+      <h4>因子二：向量语义相似度（35%）— 基于 Embedding 技术</h4>
+      <p>这是推荐系统的"灵魂"——确保推荐的题目与学生真正需要练习的知识点相关。</p>
+
+      <p><strong>步骤1：生成用户画像文本</strong></p>
+      <p>系统分析学生的错题和薄弱知识点，生成一段自然语言描述：</p>
+      <pre>"该学生在【循环结构】、【数组操作】知识点上表现较弱，
+ 在【函数定义】、【基本输入输出】知识点上表现良好。"
+ → 输入 Embedding API → 1536维向量</pre>
+
+      <p><strong>步骤2：生成题目向量</strong></p>
+      <p>每道题目的知识点标签同样转换成文本描述：</p>
+      <pre>"本题涉及【循环结构】、【条件判断】，难度3，编程题。"
+ → 输入 Embedding API → 1536维向量</pre>
+
+      <p><strong>步骤3：余弦相似度计算</strong></p>
+      <pre>cosine_similarity(A, B) = (A · B) / (||A|| × ||B||)
+                        = Σ(Ai × Bi) / (√ΣAi² × √ΣBi²)
+
+结果范围 [-1, 1]，我们将其归一化到 [0, 1]</pre>
+      <p>相似度越高，说明这道题的考查内容与学生薄弱点越匹配。</p>
+
+      <p><strong>技术细节</strong>：使用 SiliconFlow 的 <code>BAAI/bge-large-zh-v1.5</code> 模型生成 Embedding。该模型专为中文语义理解优化，在 C-MTEB 中文语义向量基准测试中排名前列。1536 维向量在语义空间和计算效率之间取得平衡。</p>
+
+      <h4>因子三：ZPD难度匹配（25%）— 基于最近发展区理论</h4>
+      <p><strong>最近发展区（Zone of Proximal Development, ZPD）</strong>是维果茨基提出的教育心理学理论：学生应该做"跳一跳够得着"的题目——太难会挫败，太简单没成长。</p>
+
+      <pre>difficulty_match = 1 - |exercise_difficulty - user_optimal_difficulty| / max_difficulty
+
+user_optimal_difficulty 由以下规则确定：
+  • 新用户（答题 &lt; 5次）：optimal = 1
+  • 初学者（答题 &lt; 15次）：optimal = 1-2
+  • 有经验（答题 ≥ 15次）：optimal = 实际平均难度 + 0.5（略高于当前水平）</pre>
+
       <ul>
-        <li>用户画像向量：基于薄弱知识点生成文本描述，调用 SiliconFlow Embedding API（BAAI/bge-large-zh-v1.5）生成 <strong>1536 维向量</strong></li>
-        <li>题目向量：同样方式生成</li>
-        <li>余弦相似度计算匹配度</li>
+        <li>新用户（答题&lt;5次）：限制在难度1，防止一开始就被难题劝退</li>
+        <li>初学者（答题&lt;15次）：限制在难度1-2，循序渐进</li>
+        <li>有经验：使用传入的难度范围，允许挑战更高难度</li>
       </ul>
 
-      <h4>ZPD难度匹配（25%）</h4>
-      <ul>
-        <li>新用户（答题&lt;5次）：限制在难度1</li>
-        <li>初学者（答题&lt;15次）：限制在难度1-2</li>
-        <li>有经验：使用传入的难度范围</li>
-      </ul>
+      <h4>多样性过滤</h4>
+      <p>纯按分数排序会导致推荐的题目知识点高度集中（比如全是循环题）。系统在最后一步进行<strong>MMR（Maximal Marginal Relevance）多样性重排</strong>：</p>
+      <pre>MMR_score = λ × relevance_score - (1-λ) × max_similarity_to_selected
 
-      <p><strong>多样性过滤：</strong>避免推荐知识点过于相似的题目。</p>
+λ = 0.7（更偏重相关性而非多样性）</pre>
+      <p>已选入推荐列表的题目之间保持足够的知识点差异，避免学生陷入单一知识点的重复练习。</p>
+
+      <h4>完整推荐流程</h4>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">recommendation_pipeline.py</span>
+        </div>
+        <div class="terminal-body"><span class="prompt">$</span> <span class="cmd">python</span> recommendation_pipeline.py
+
+<span class="comment"># Step 1: 候选集召回（从~400道题中粗筛）</span>
+recall_set = filter(difficulty in user_range, not_recently_solved)
+<span class="output">→ 候选集从 400 缩小到 ~80 道题</span>
+
+<span class="comment"># Step 2: 三因子评分（精细排序）</span>
+<span class="key">for</span> exercise <span class="key">in</span> recall_set:
+    behavior = calc_behavior_score(user_id, exercise)
+    semantic = cosine_sim(user_vector, exercise_vector)
+    difficulty = calc_zpd_match(user_id, exercise)
+    final = 0.4*behavior + 0.35*semantic + 0.25*difficulty
+
+<span class="comment"># Step 3: 多样性重排</span>
+final_list = mmr_rerank(scored_list, lambda=0.7, top_k=10)
+
+<span class="comment"># Step 4: 返回Top1给学生</span>
+<span class="output">→ 推荐题目: "数组循环右移" (difficulty=3, score=0.87)</span></div>
+      </div>
 
       <div class="ascii-divider">─────────────────────────────────────────</div>
 
       <h3>算法三：向量语义匹配 — 支撑推荐与题目检索</h3>
+
+      <h4>为什么需要向量语义匹配？</h4>
+      <p>传统的关键词匹配只能处理"字面相同"的情况。例如：</p>
       <ul>
-        <li>将题目知识点标签转换为文本描述，生成 Embedding 向量</li>
-        <li>用户薄弱知识点同样生成向量</li>
-        <li>通过余弦相似度找到最匹配的练习题目</li>
-        <li>支撑挑战之路的个性化推荐和题目去重</li>
+        <li>学生薄弱点是"循环结构"</li>
+        <li>题目A标签是"for循环" → 关键词匹配<strong>命中</strong></li>
+        <li>题目B标签是"迭代遍历" → 关键词匹配<strong>漏掉</strong>，但语义上其实是同一回事</li>
       </ul>
+      <p>向量语义匹配通过将文本转换为高维向量，在语义空间中计算相似度，从而实现<strong>同义词、近义词、上下位词</strong>的自动关联。</p>
+
+      <h4>Embedding 技术原理</h4>
+      <p>Embedding 是将离散的文本符号映射到连续向量空间的技术。BAAI/bge-large-zh-v1.5 模型基于 Transformer 架构，通过大规模中文语料预训练，学习到词语和句子的深层语义表示。</p>
+
+      <pre>输入文本  →  Tokenizer分词  →  Transformer编码  →  池化层  →  1536维向量
+"数组排序"    [数组, 排序]      12层注意力计算      MeanPooling    [0.23, -0.15, ...]</pre>
+
+      <p>在向量空间中，语义相近的文本距离近，语义无关的文本距离远。例如：</p>
+      <ul>
+        <li>"循环结构" 与 "for语句" 的向量夹角很小（高度相似）</li>
+        <li>"循环结构" 与 "递归函数" 的向量夹角中等（部分相关）</li>
+        <li>"循环结构" 与 "文件读写" 的向量夹角很大（几乎无关）</li>
+      </ul>
+
+      <h4>系统中的应用场景</h4>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">01</div>
+          <div class="card-title">个性化推荐</div>
+          <div class="card-desc">将用户薄弱知识点描述向量化，与题库所有题目向量计算相似度，Top-K 即为最适合的练习。</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">02</div>
+          <div class="card-title">题目去重</div>
+          <div class="card-desc">推荐时检查候选题与已推荐题的向量相似度，过高则过滤，保证学生练习的多样性。</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">03</div>
+          <div class="card-title">语义搜索</div>
+          <div class="card-desc">学生可以用自然语言描述想练习的内容（如"我想练数组排序"），系统通过向量匹配找到相关题目。</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">04</div>
+          <div class="card-title">知识关联</div>
+          <div class="card-desc">发现不同知识点之间的隐性关联，构建知识图谱中的边权重（如"指针"与"数组"高度相关）。</div>
+        </div>
+      </div>
+
+      <h4>向量存储与检索的技术实现</h4>
+      <p>系统中采用以下技术栈实现高效的向量存储和检索：</p>
+      <ul>
+        <li><strong>向量生成</strong>：SiliconFlow API（BAAI/bge-large-zh-v1.5，1536维）</li>
+        <li><strong>向量存储</strong>：SQLite 数据库中 exercises 表的 <code>embedding_vector</code> 字段（JSON 序列化）</li>
+        <li><strong>相似度计算</strong>：Python 中 NumPy 实现的批量余弦相似度</li>
+        <li><strong>检索优化</strong>：候选集先按难度粗筛（减少80%计算量），再对剩余题目做精确向量匹配</li>
+      </ul>
+
+      <h4>性能考量</h4>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">vector_match_performance.log</span>
+        </div>
+        <div class="terminal-body"><span class="comment"># 假设题库 400 题，每题 1536 维</span>
+<span class="comment"># 暴力计算：400 × 1536 = 614,400 次浮点运算</span>
+<span class="comment"># 在 Python/NumPy 中耗时约 2-5ms（可接受）</span>
+
+<span class="comment"># 优化策略：先按难度过滤</span>
+<span class="comment"># 400 题 → 难度过滤后 ~80 题 → 向量计算</span>
+<span class="comment"># 计算量降低 80%，耗时 &lt; 1ms</span>
+
+<span class="comment"># 未来扩展：若题库增长到 10,000+ 题</span>
+<span class="comment"># 可引入 FAISS / Annoy 等近似最近邻索引</span>
+<span class="comment"># 将检索复杂度从 O(N) 降到 O(logN)</span></div>
+      </div>
     </section>
 
     <!-- 07 双轨学习路径 -->
@@ -1270,6 +1857,20 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
         </div>
       </div>
       <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 8px;">两个系统<strong>完全解耦</strong>，并行运行</p>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"这里要重点强调'双轨'的设计理念。精进之路是<strong>结构化学习</strong>——学生按章节推进，做完基础题后系统用BKT评估掌握度，薄弱点由AI生成强化题针对性训练，掌握度达标解锁下一章。这解决的是'系统化教学'的问题。</p>
+        <p>挑战之路是<strong>开放式竞技</strong>——没有章节限制，无限刷题，系统根据学生历史表现推荐合适难度的题，做对得星星升段位。这解决的是'刷题动力'的问题。两条路完全独立，学生可以只走一条，也可以两条都走。"</p>
+      </div>
+
+      <div class="faq-chip">
+        <ul>
+          <li><strong>"为什么要有两条路？一条不行吗？"</strong> → 因为两种学习需求不同。有的学生需要跟着课程系统学（精进之路），有的学生只想自由刷题练手感（挑战之路）。两条路服务不同场景，互不干扰。</li>
+          <li><strong>"段位和BKT有什么关系？"</strong> → <strong>完全没关系</strong>，这是评委最容易追问的点。BKT是教育评估（决定能不能解锁下一章），段位是游戏激励（让你刷得爽）。两个系统解耦设计。</li>
+          <li><strong>"如果学生一直做错，段位掉到青铜怎么办？"</strong> → 青铜是最低段位，不会继续掉。而且做错有免费次数（难度+2次），超出才扣星，扣星还有上限。我们故意让做错的代价很低，避免挫败感。</li>
+          <li><strong>"强化题是怎么生成的？"</strong> → 系统分析学生在基础题中的薄弱知识点，把这些信息组织成prompt发给大模型，大模型根据prompt生成针对性的练习题。第一题立刻返回，后面的后台异步生成。</li>
+        </ul>
+      </div>
     </section>
 
     <!-- 08 AI 服务层 -->
@@ -1308,8 +1909,8 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
             <tr><td><strong>选择题解析</strong></td><td>分析学生错误选项，给出针对性讲解</td><td style="color: var(--accent-green);">免费</td></tr>
             <tr><td><strong>代码审查</strong></td><td>发现代码问题并给出优化建议</td><td style="color: var(--accent-green);">免费</td></tr>
             <tr><td><strong>AI轻提示</strong></td><td>给解题方向</td><td style="color: var(--accent-amber);">1 智核</td></tr>
-            <tr><td><strong>AI中提示</strong></td><td>给解题思路</td><td style="color: var(--accent-amber);">2 智核</td></tr>
-            <tr><td><strong>AI深提示</strong></td><td>给详细解析</td><td style="color: var(--accent-amber);">3 智核</td></tr>
+            <tr><td><strong>AI中提示</strong></td><td>给解题思路</td><td style="color: var(--accent-amber);">3 智核</td></tr>
+            <tr><td><strong>AI深提示</strong></td><td>给详细解析</td><td style="color: var(--accent-amber);">5 智核</td></tr>
           </tbody>
         </table>
       </div>
@@ -1321,6 +1922,26 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
         <li>前端通过轮询获取生成进度</li>
         <li>数据库写入加锁保护，避免并发修改 JSON 列</li>
       </ul>
+
+      <div class="plain-english">
+        <p>AI在系统里不是万能的，它只做四件事：①<strong>出题</strong>——根据学生薄弱点生成个性化强化题；②<strong>讲题</strong>——分析学生错在哪里，给针对性讲解；③<strong>审代码</strong>——看学生代码有什么问题，给优化建议；④<strong>给提示</strong>——学生卡住了，花智核买提示（分三级：方向→思路→详细解析）。</p>
+      </div>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"AI在我们的系统里扮演的是'助教'角色，不是'代写'角色。具体有四个应用场景：</p>
+        <p>第一，<strong>生成强化题</strong>。学生做完基础题后，系统分析出薄弱知识点，组织成prompt发给大模型，自动生成针对性的练习题——不同学生薄弱点不同，看到的强化题也不同。</p>
+        <p>第二，<strong>分析错题</strong>。学生做错选择题后，AI会分析他错选了哪个选项，解释为什么错、正确思路是什么。</p>
+        <p>第三，<strong>代码审查</strong>。学生提交代码后，AI会检查代码风格、潜在bug、性能问题，给出优化建议。</p>
+        <p>第四，<strong>三级提示</strong>。学生卡住了可以求助AI，但要消耗智核货币。轻提示1智核给方向，中提示3智核给思路，深提示5智核给详细解析。这样设计是防止学生一不会就直接看答案，先独立思考。"</p>
+      </div>
+
+      <div class="faq-chip">
+        <ul>
+          <li><strong>"AI生成的题质量怎么样？"</strong> → prompt里明确指定了题型、难度、知识点范围，生成后有格式校验（必须是有效JSON）。而且题目会标记source='ai_generated'，方便后续审核。</li>
+          <li><strong>"用AI做这些功能成本高吗？"</strong> → 强化题生成和错题解析是免费场景（系统行为），只有三级提示消耗智核（学生主动求助）。而且并发限制为3，避免触发API限流。</li>
+          <li><strong>"如果AI答错了怎么办？"</strong> → AI生成的题目有格式校验，不符合规范的不会入库。AI解析仅供参考，系统不强制学生接受。且所有AI输出都有日志记录，便于追溯。</li>
+        </ul>
+      </div>
     </section>
 
     <!-- 09 智核系统 -->
@@ -1329,7 +1950,11 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
         <span class="section-num">09</span>
         <h2 class="section-title">智核（Core）虚拟货币系统</h2>
       </div>
-      <div class="section-subtitle">// 防止过度依赖AI · 支架式教学理论</div>
+      <div class="section-subtitle">// 防止过度依赖AI · 支架式教学理论 · 建议讲1分钟</div>
+
+      <div class="plain-english">
+        <p><strong>智核 = 系统里的虚拟货币</strong>。学生通过正常学习（答题正确、打卡、学习时长）可以获得智核，花智核可以换AI提示。设计目的是<strong>防止学生一卡住就直接问AI要答案</strong>——先自己想想，确实不会了再用智核买提示。</p>
+      </div>
 
       <p><strong>设计目的</strong>：防止学生过度依赖 AI，引导学生先独立思考。</p>
 
@@ -1345,13 +1970,25 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
       <h3>消费途径</h3>
       <ul>
         <li>AI 轻提示：<strong>1 智核</strong></li>
-        <li>AI 中提示：<strong>2 智核</strong></li>
-        <li>AI 深提示：<strong>3 智核</strong></li>
+        <li>AI 中提示：<strong>3 智核</strong></li>
+        <li>AI 深提示：<strong>5 智核</strong></li>
       </ul>
 
       <blockquote>
         学生应该先独立思考，确实卡住时再寻求帮助。三级提示的设计是渐进式的——轻提示给方向，中提示给思路，深提示给详细解析。参考了教育心理学中的<strong>支架式教学</strong>理论。
       </blockquote>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"智核是我们设计的虚拟货币系统。学生通过正常学习行为——答题正确、每日打卡、学习时长——可以稳定获得智核。挑战之路答对一题就给3个智核。</p>
+        <p>设计智核的目的是<strong>防止学生过度依赖AI</strong>。如果没有这个机制，学生一卡住就会直接问AI要答案，失去了独立思考的机会。我们参考了教育心理学中的'支架式教学'理论——在学生需要时提供恰好足够的支持，然后逐步撤去支架。三级提示就是渐进式的：轻提示给方向，中提示给思路，深提示给详细解析。"</p>
+      </div>
+
+      <div class="faq-chip">
+        <ul>
+          <li><strong>"智核收费学生会不会不敢用？"</strong> → 智核通过正常学习就能稳定获得，答对一题给3个，足够换3次轻提示或1次中提示。设计目的是'防过度依赖'不是'限制使用'。</li>
+          <li><strong>"支架式教学是什么？"</strong> → 维果茨基的教育理论，指在学生能力不足时提供临时支持（支架），能力增长后逐步撤去。我们的三级提示就是支架——先给最小支持，学生仍不会再给更多。</li>
+        </ul>
+      </div>
     </section>
 
     <!-- 10 Judge0 -->
@@ -1395,6 +2032,22 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
 
       <h3>输出格式</h3>
       <p>洛谷风格（Accepted / Wrong Answer / Time Limit Exceeded 等）</p>
+
+      <div class="plain-english">
+        <p>Judge0就是一个<strong>"云端代码运行器"</strong>。学生在前端写代码，提交后后端把代码发给Judge0，Judge0在一个隔离的容器里运行代码（防止恶意代码攻击），然后返回运行结果——对了就是Accepted，错了告诉你是答案错了还是超时了还是内存不够了。</p>
+      </div>
+
+      <div class="speech-tip">
+        <p><strong>【建议话术】</strong>"在线判题我们用的是Judge0，它是业界成熟的代码执行沙箱方案。学生的代码提交后，Judge0会在Docker容器里运行，非root用户执行，限制CPU时间10秒、内存256MB，防止恶意代码攻击。代码和输入输出都经过base64编码传输，避免特殊字符注入。"</p>
+      </div>
+
+      <div class="faq-chip">
+        <ul>
+          <li><strong>"Judge0是免费的吗？"</strong> → 我们目前调用的是Judge0的公共API（ce.judge0.com），免费但有调用频率限制。如果后续商用，可以部署本地Judge0实例。</li>
+          <li><strong>"断网了怎么办？"</strong> → 选择题和填空题不依赖代码执行，前端可以直接判分。编程题断网时给出友好提示，引导学生稍后重试。如果部署在内网，可以对接本地Judge0。</li>
+          <li><strong>"学生写个死循环怎么办？"</strong> → CPU时间限制10秒，超过就返回Time Limit Exceeded。内存限制256MB，超过就返回Memory Limit Exceeded。沙箱环境完全隔离，不会影响服务器。</li>
+        </ul>
+      </div>
     </section>
 
     <!-- 11 Q&A -->
@@ -1520,9 +2173,189 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
       <div class="qa-item">
         <div class="qa-q">智核收费会不会让学生不敢用？</div>
         <div class="qa-a">
-          <p>智核的设计目的是<strong>防止过度依赖 AI</strong>，而不是限制使用。学生通过正常学习行为（答题正确、打卡、学习时长）可以稳定获得智核。挑战之路答对一题就给 3 个智核，足够换 3 次轻提示或 1 次深提示。</p>
+          <p>智核的设计目的是<strong>防止过度依赖 AI</strong>，而不是限制使用。学生通过正常学习行为（答题正确、打卡、学习时长）可以稳定获得智核。挑战之路答对一题就给 3 个智核，足够换 3 次轻提示或 1 次中提示。</p>
           <p>我们的理念是：学生应该先独立思考，确实卡住时再寻求帮助。三级提示的设计也是渐进式的——轻提示给方向，中提示给思路，深提示给详细解析。这种设计参考了教育心理学中的'支架式教学'理论，在学生需要时提供恰好足够的支持，然后逐步撤去支架。</p>
         </div>
+      </div>
+    </section>
+
+    <!-- 👨‍🏫 评委模拟答辩 -->
+    <section id="judge">
+      <div class="section-header">
+        <span class="section-num">👨‍🏫</span>
+        <h2 class="section-title">评委模拟答辩</h2>
+      </div>
+      <div class="section-subtitle">// 假设我是大赛答辩评委 · 我会这样追问你 · 附建议回答</div>
+
+      <div class="plain-english">
+        <p>以下是一位有10年评审经验的计算机设计大赛答辩老师，针对<strong>每一页PPT</strong>可能提出的问题。标 🔥 的是<strong>高频必问题</strong>，建议重点准备。</p>
+      </div>
+
+      <h3>🔥 通用追问（不问具体页）</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">你们这个系统最核心的创新点是什么？一句话概括。</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"'双轨+AI+游戏化'的三位一体设计——系统化教学路径（精进之路）和开放式竞技训练（挑战之路）并行，AI贯穿全程提供个性化辅导，游戏化段位降低挫败感。"</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">你们系统的局限性是什么？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"当前有三个主要局限：①题库规模有限（~400题），需要持续扩充；②BKT参数基于经验设定，需要更大规模数据验证；③AI生成题目的质量还需要教师审核机制保障。"</p>
+          <p><strong>技巧：</strong>主动说局限性比被评委挑出来要好得多。诚实 + 有改进计划 = 加分。</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">如果给你三个月时间继续完善，你最想做哪三件事？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"①大规模用户测试验证BKT参数和推荐效果；②开发教师端数据看板（全班掌握度热力图）；③引入FAISS索引支持万级题库扩展。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第1页：五大痛点 + 竞品对比</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">你们调研了多少用户？样本量够吗？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"目前完成了本校30名计算机专业学生的深度访谈，以及约100份问卷。样本量确实有限，这是试点阶段，后续计划扩展到3-5所高校。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第2页：产品定位 · 智码领航</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">你们的市场定位说"面向高校学生与教师"，但PPT里展示的功能似乎主要服务学生，教师端做了什么？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"当前版本以学生端为主。教师端计划展示全班知识掌握热力图、识别共性薄弱点——这是<strong>未来规划</strong>，目前核心验证的是学生侧的完整学习闭环。"</p>
+          <p><strong>避坑：</strong>不要说"教师端已经做了"，诚实说明是未来规划。</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">竞品分析里只提到了两个平台，还有LeetCode、牛客网、编程猫等，为什么不和它们比？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"LeetCode和牛客网定位是<strong>求职面试刷题</strong>，编程猫定位是<strong>K12少儿编程</strong>。我们精准聚焦'高校程序设计课教学+赛训'这个细分场景，和它们的定位不同。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第5页：核心数据库 ER 模型</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">为什么选择SQLite而不是MySQL/PostgreSQL？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"三个原因：①<strong>单文件部署</strong>，零运维成本，适合比赛演示和初期部署；②<strong>aiosqlite支持异步</strong>，配合SQLAlchemy 2.0异步ORM满足并发需求；③当前~400题规模SQLite完全胜任。未来题库增长到万级会迁移到PostgreSQL。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第6页：三层架构设计</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">你们为什么选择前后端分离的模块化单体架构，而不是微服务？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"当前阶段采用<strong>模块化单体架构</strong>——所有模块在一个FastAPI进程内，通过router拆分。原因：①当前团队规模小，单体开发和部署成本低；②当前用户量和题库规模（~400题）单体完全胜任；③模块间通过标准化接口解耦，未来需要拆分时可以平滑过渡到微服务。"</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">前后端通信用REST API，为什么不用gRPC或GraphQL？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"REST API简单通用，浏览器天然支持，前后端协作门槛低。gRPC更适合服务间内部通信，GraphQL适合复杂查询场景。我们的API相对简单（CRUD+推荐+判题），REST足够。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第7页：三大核心算法</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">🔥 BKT的四个参数（p_l0=0.15, p_t=0.1...）是你们自己调的吗？有实验验证吗？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"初始值参考了Corbett & Anderson 1994的原始论文和Khan Academy的实践。我们进行了<strong>小规模验证</strong>（约50名学生的模拟测试），但大规模参数调优还需要更多数据，这是我们后续工作。"</p>
+          <p><strong>避坑：</strong>不要说是"大量实验得出的最优值"，除非你真的做了。</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">混合推荐算法里，40%/35%/25%的权重是怎么定的？能动态调整吗？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"当前是<strong>固定权重</strong>，基于经验设定。理论上可以做成用户可配置或A/B测试动态调整，但当前版本为了简化没有实现。"</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">向量存在SQLite里？那每次推荐都要全表扫描？性能怎么办？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"对，当前是JSON序列化后存入TEXT列，推荐时全表加载到内存计算。但有两层优化：①<strong>先按难度过滤</strong>，减少80%计算量；②400道题×1536维的计算在NumPy里<strong>不到5毫秒</strong>，用户无感知。未来题库上万后会引入FAISS索引。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第8页：精进之路</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">BKT的掌握度阈值是0.80，这个值是怎么定的？如果调到0.85会怎样？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"0.80是教育领域的常见阈值，参考了Khan Academy和Duolingo的实践。调到0.85会<strong>提高解锁门槛</strong>，学生需要更多练习才能过关；调到0.75会降低门槛。当前0.80在严格性和通过率之间取得了平衡。"</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">学生反复做错同一道题，BKT掌握度会怎么变化？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"BKT有<strong>防刷分机制</strong>：每小时每知识点最多50次，单次会话增长上限0.35。反复做错同一题，系统会判定为'失误率'范围内的波动（p_s=0.05），但如果连续答错，贝叶斯更新会让掌握度持续下降。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第9页：挑战之路</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">🔥 段位系统和BKT有什么关系？会互相影响吗？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"<strong>完全解耦，没有任何关系</strong>。BKT用于精进之路的教育评估，决定能否解锁下一章；段位用于挑战之路的游戏化激励，提供即时成就感。学生在挑战之路表现不好，不会影响他在精进之路的掌握度评估。"</p>
+          <p><strong>避坑：</strong>这是评委最爱追问的点，一定要强调"完全解耦"。</p>
+        </div>
+      </div>
+
+      <div class="qa-item">
+        <div class="qa-q">做错题有免费次数（难度+2次），学生故意做错来刷免费次数呢？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"免费次数是为了降低挫败感，不是让学生'故意错'的。而且挑战之路<strong>做对才有智核奖励</strong>（+3/题），做错没有奖励。从经济激励上，学生倾向于做对而不是故意做错。"</p>
+        </div>
+      </div>
+
+      <div class="ascii-divider">─────────────────────────────────────────</div>
+
+      <h3>第12页：核心特色与价值</h3>
+
+      <div class="qa-item">
+        <div class="qa-q">你们展示了预期效果（提升学习效率、降低重复错误等），目前这些效果有实际数据支撑吗？</div>
+        <div class="qa-a">
+          <p><strong>建议回答：</strong>"当前版本是<strong>预期效果</strong>，基于算法设计和系统机制推导得出。例如BKT能精准追踪薄弱点，理论上可以减少盲目练习；混合推荐能匹配学生当前水平，理论上可以提升做题效率。但这些预期还需要大规模用户测试来验证，这是我们下一步的重点工作。"</p>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <div class="highlight-box-title">💡 答辩老师总结建议</div>
+        <p>"整体来说，你们作品的创新点明确，技术路线合理，答辩准备也比较充分。建议重点准备以下几点：</p>
+        <ol>
+          <li><strong>对代码实现要足够熟悉</strong>，评委问到底层实现时要能答上来；</li>
+          <li><strong>算法选型要有依据</strong>，能讲清楚为什么选BKT而不是DKT；</li>
+          <li><strong>诚实面对局限性</strong>，主动说不足比被评委挑出来要好得多。"</li>
+        </ol>
       </div>
     </section>
 
@@ -1693,12 +2526,13 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
     }
 
     // Intersection Observer for section animations
-    const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+    const observerOptions = { threshold: 0.05, rootMargin: '0px 0px -30px 0px' };
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.style.opacity = '1';
           entry.target.style.transform = 'translateY(0)';
+          observer.unobserve(entry.target); // 已经显示过的不再观察
         }
       });
     }, observerOptions);
@@ -1709,6 +2543,16 @@ P(L_new) = P(L|answer) + (1 - P(L|answer)) * P(T)</pre>
       sec.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
       observer.observe(sec);
     });
+
+    // Fallback: 如果 2 秒后仍有 section 未显示，强制显示（解决IntersectionObserver偶发失效）
+    setTimeout(() => {
+      document.querySelectorAll('section:not(#hero)').forEach(sec => {
+        if (sec.style.opacity === '0' || getComputedStyle(sec).opacity === '0') {
+          sec.style.opacity = '1';
+          sec.style.transform = 'translateY(0)';
+        }
+      });
+    }, 2000);
 
     // Scroll event listener (throttled)
     let ticking = false;

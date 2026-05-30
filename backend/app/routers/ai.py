@@ -387,11 +387,16 @@ async def sse_exercise_hint_generator(
     SQLite 'database is locked' errors when concurrent requests write
     to the users table.
     """
+    import time
+    t_total_start = time.time()
+    logger.info(f"[PERF-HINT] ====== sse_exercise_hint_generator START ====== user={user_id[:8]}... exercise={exercise_id} level={request.hint_level}")
+
     from app.services.core_service import CoreService
     from app.models.ai_hint_cache import AIHintCache
     from app.database import AsyncSessionLocal
 
     # --- Step 1: Deduct cores in a short, independent transaction ---
+    t_step1 = time.time()
     category = f"ai_hint_{request.hint_level}"
     try:
         async with AsyncSessionLocal() as deduct_db:
@@ -406,8 +411,10 @@ async def sse_exercise_hint_generator(
                     description=f"AI提示 - {request.exercise_title[:50]}",
                 )
                 await deduct_db.commit()
+                logger.info(f"[PERF-HINT] Step 1 (deduct cores) done in {(time.time()-t_step1)*1000:.1f}ms")
             except ValueError as e:
                 if "Insufficient" in str(e):
+                    logger.warning(f"[PERF-HINT] Step 1 (deduct cores) INSUFFICIENT in {(time.time()-t_step1)*1000:.1f}ms")
                     error_payload = json.dumps({
                         "error": "智核余额不足",
                         "code": "INSUFFICIENT_CORES",
@@ -416,7 +423,7 @@ async def sse_exercise_hint_generator(
                     return
                 raise
     except Exception as e:
-        logger.error(f"[AI Hint] Core deduction failed for user {user_id[:8]}...: {e}")
+        logger.error(f"[PERF-HINT] Step 1 (deduct cores) FAILED after {(time.time()-t_step1)*1000:.1f}ms: {e}")
         error_payload = json.dumps({
             "error": "服务暂时不可用，请稍后重试",
             "code": "SERVICE_ERROR",
@@ -425,10 +432,14 @@ async def sse_exercise_hint_generator(
         return
 
     # --- Step 2: Stream AI content (NO DB lock held) ---
+    t_step2 = time.time()
     full_content = ""
     stream_failed = False
+    chunks_yielded = 0
 
     for attempt in range(3):
+        t_attempt = time.time()
+        logger.info(f"[PERF-HINT] Step 2 (AI stream) attempt {attempt+1} starting...")
         try:
             async for chunk in ai_service.stream_exercise_hint(
                 exercise_title=request.exercise_title,
@@ -441,10 +452,13 @@ async def sse_exercise_hint_generator(
                 sample_output=request.sample_output,
             ):
                 full_content += chunk
+                chunks_yielded += 1
                 payload = json.dumps({"content": chunk}) + "\n"
                 yield f"data: {payload}\n\n".encode()
+            logger.info(f"[PERF-HINT] Step 2 (AI stream) attempt {attempt+1} SUCCESS in {(time.time()-t_attempt)*1000:.1f}ms, chunks={chunks_yielded}, chars={len(full_content)}")
             break
         except Exception as e:
+            logger.error(f"[PERF-HINT] Step 2 (AI stream) attempt {attempt+1} FAILED after {(time.time()-t_attempt)*1000:.1f}ms: {e}")
             if full_content:
                 logger.error(f"[AI Hint] Stream failed after partial content: {e}")
                 stream_failed = True
@@ -454,22 +468,36 @@ async def sse_exercise_hint_generator(
                 continue
             logger.error(f"[AI Hint] All 3 attempts failed: {e}")
             stream_failed = True
+    logger.info(f"[PERF-HINT] Step 2 total time: {(time.time()-t_step2)*1000:.1f}ms")
 
     # --- Step 3: Save cache in a short, independent transaction ---
+    t_step3 = time.time()
     if full_content:
         try:
             async with AsyncSessionLocal() as cache_db:
-                cache = AIHintCache(
-                    user_id=user_id,
-                    exercise_id=exercise_id,
-                    hint_level=request.hint_level,
-                    hint_content=full_content,
-                    cost=cost,
+                # 先检查是否已存在，避免 UniqueConstraint 冲突或脏数据重复
+                existing = await cache_db.execute(
+                    select(AIHintCache).where(
+                        AIHintCache.user_id == user_id,
+                        AIHintCache.exercise_id == exercise_id,
+                        AIHintCache.hint_level == request.hint_level,
+                    )
                 )
-                cache_db.add(cache)
-                await cache_db.commit()
+                if existing.scalars().first() is None:
+                    cache = AIHintCache(
+                        user_id=user_id,
+                        exercise_id=exercise_id,
+                        hint_level=request.hint_level,
+                        hint_content=full_content,
+                        cost=cost,
+                    )
+                    cache_db.add(cache)
+                    await cache_db.commit()
+                    logger.info(f"[PERF-HINT] Step 3 (save cache) done in {(time.time()-t_step3)*1000:.1f}ms, NEW cache saved")
+                else:
+                    logger.info(f"[PERF-HINT] Step 3 (save cache) skipped in {(time.time()-t_step3)*1000:.1f}ms, already exists")
         except Exception as e:
-            logger.warning(f"[AI Hint] Cache save failed (non-fatal): {e}")
+            logger.warning(f"[PERF-HINT] Step 3 (save cache) FAILED after {(time.time()-t_step3)*1000:.1f}ms: {e}")
 
     # --- Step 4: Refund if stream completely failed (no content sent) ---
     if stream_failed and not full_content:
@@ -490,13 +518,16 @@ async def sse_exercise_hint_generator(
             logger.error(f"[AI Hint] Refund failed: {e}")
 
     # --- Step 5: Termination signal ---
+    t_total = (time.time() - t_total_start) * 1000
     if stream_failed and not full_content:
+        logger.error(f"[PERF-HINT] ====== END (FAILED) ====== total={t_total:.1f}ms")
         error_payload = json.dumps({
             "error": "AI 服务暂不可用，请稍后重试",
             "code": "AI_SERVICE_ERROR",
         }) + "\n"
         yield f"data: {error_payload}\n\n".encode()
     else:
+        logger.info(f"[PERF-HINT] ====== END (SUCCESS) ====== total={t_total:.1f}ms, chunks={chunks_yielded}, chars={len(full_content)}")
         yield b"data: [DONE]\n\n"
 
 
@@ -512,6 +543,8 @@ async def stream_exercise_hint(
     生成后会缓存，下次访问免费。
     DB 写锁仅在扣费和缓存保存的毫秒级事务中持有，不会在 AI 流式生成期间持有。
     """
+    import time
+    t_route_start = time.time()
     from app.models.ai_hint_cache import AIHintCache
 
     # 使用前端传递的 exercise_id，如果没有则基于标题生成
@@ -523,9 +556,11 @@ async def stream_exercise_hint(
             f"{request.exercise_title}:{request.exercise_description[:100]}".encode()
         ).hexdigest()[:16]
 
-    logger.info(f"[AI Hint] user={current_user.id[:8]}... exercise_id={exercise_id} level={request.hint_level}")
+    logger.info(f"[PERF-ROUTE] ====== stream_exercise_hint START ====== user={current_user.id[:8]}... exercise_id={exercise_id} level={request.hint_level}")
 
     # 检查是否已缓存（只读操作，不阻塞）
+    t_cache_check = time.time()
+    # 使用 .first() 而非 scalar_one_or_none() 防止历史脏数据导致多行报错
     result = await db.execute(
         select(AIHintCache).where(
             AIHintCache.user_id == current_user.id,
@@ -533,17 +568,21 @@ async def stream_exercise_hint(
             AIHintCache.hint_level == request.hint_level,
         )
     )
-    cached = result.scalar_one_or_none()
+    cached = result.scalars().first()
+    logger.info(f"[PERF-ROUTE] Cache check done in {(time.time()-t_cache_check)*1000:.1f}ms, hit={cached is not None}")
 
     if cached:
         logger.info("[AI Hint] CACHE HIT! Returning cached content")
-        # 直接返回缓存内容（不扣费）
         async def cached_generator(content: str) -> AsyncGenerator[bytes, None]:
+            t_gen_start = time.time()
             chunk_size = 20
+            total_chars = 0
             for i in range(0, len(content), chunk_size):
                 chunk = content[i:i + chunk_size]
+                total_chars += len(chunk)
                 payload = json.dumps({"content": chunk, "cached": True}) + "\n"
                 yield f"data: {payload}\n\n".encode()
+            logger.info(f"[PERF-ROUTE] Cached content streamed in {(time.time()-t_gen_start)*1000:.1f}ms, chars={total_chars}")
             yield b"data: [DONE]\n\n"
 
         return StreamingResponse(
@@ -555,6 +594,7 @@ async def stream_exercise_hint(
 
     # 获取消耗
     cost = HINT_COSTS.get(request.hint_level, 1)
+    logger.info(f"[PERF-ROUTE] Entering SSE generator, elapsed_so_far={(time.time()-t_route_start)*1000:.1f}ms")
 
     # SSE generator uses independent short-lived DB sessions,
     # NOT the request's db session, to avoid holding SQLite write locks
