@@ -117,25 +117,33 @@ class OpenAIProvider(AIProvider):
                 await asyncio.sleep(attempt + 1)
         raise last_exception
 
+    SYSTEM_ROLE = "system"
+    USER_ROLE = "user"
+    CONTENT_KEY = "content"
+    ROLE_KEY = "role"
+    EXPLANATION_SYSTEM_PROMPT = "你是一位耐心的编程老师，擅长分析学生的错误并给出建设性的反馈。"
+    CODE_REVIEW_SYSTEM_PROMPT = "你是一位资深的代码审查专家，擅长发现代码问题并给出优化建议。"
+    CODE_REVIEW_USER_TEMPLATE = "请审查以下{language}代码：\n\n{code}"
+
+    def _build_system_message(self, prompt_text: str) -> dict:
+        return {self.ROLE_KEY: self.SYSTEM_ROLE, self.CONTENT_KEY: prompt_text}
+
+    def _build_user_message(self, prompt_text: str) -> dict:
+        return {self.ROLE_KEY: self.USER_ROLE, self.CONTENT_KEY: prompt_text}
+
     async def generate_explanation(self, prompt: str) -> str:
         return await self._call_api(
             [
-                {
-                    "role": "system",
-                    "content": "你是一位耐心的编程老师，擅长分析学生的错误并给出建设性的反馈。",
-                },
-                {"role": "user", "content": prompt},
+                self._build_system_message(self.EXPLANATION_SYSTEM_PROMPT),
+                self._build_user_message(prompt),
             ]
         )
 
     async def review_code(self, code: str, language: str) -> str:
         return await self._call_api(
             [
-                {
-                    "role": "system",
-                    "content": "你是一位资深的代码审查专家，擅长发现代码问题并给出优化建议。",
-                },
-                {"role": "user", "content": f"请审查以下{language}代码：\n\n{code}"},
+                self._build_system_message(self.CODE_REVIEW_SYSTEM_PROMPT),
+                self._build_user_message(self.CODE_REVIEW_USER_TEMPLATE.format(language=language, code=code)),
             ]
         )
 
@@ -312,8 +320,6 @@ class AIService:
         self,
         code: str,
         language: str,
-        chapter_id: Optional[int] = None,
-        subsection_index: Optional[int] = None,
     ) -> str:
         """生成代码审查报告"""
         if not self.is_configured():

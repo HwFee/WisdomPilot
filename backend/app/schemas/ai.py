@@ -27,8 +27,6 @@ class CodeReviewRequest(BaseModel):
 
     code: str = Field(..., max_length=5000)
     language: str = Field(..., max_length=20)
-    chapter_id: Optional[int] = None
-    subsection_index: Optional[int] = None
 
 
 class CodeReviewResponse(BaseModel):

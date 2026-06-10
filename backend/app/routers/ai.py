@@ -82,8 +82,6 @@ async def get_code_review(
         review = await ai_service.generate_code_review(
             code=request.code,
             language=request.language,
-            chapter_id=request.chapter_id,
-            subsection_index=request.subsection_index,
         )
         return CodeReviewResponse(review=review)
     except Exception:

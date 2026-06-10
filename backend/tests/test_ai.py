@@ -89,8 +89,6 @@ class TestCodeReview:
         payload = {
             "code": "print('hello')",
             "language": "python",
-            "chapter_id": 1,
-            "subsection_index": 0,
         }
         with patch("app.routers.ai.ai_service.generate_code_review",
                    new=AsyncMock(return_value="代码整体结构不错。建议添加错误处理。")):
