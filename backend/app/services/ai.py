@@ -548,13 +548,16 @@ class AIService:
 
         type_mapping = {
             "choice": "选择题",
-            "programming": "编程题",
             "fill_blank": "填空题",
         }
 
+        if exercise_type not in type_mapping:
+            logger.warning(f"[AIService] Unsupported exercise type '{exercise_type}', skipping generation.")
+            return []
+
         topic_context = f"\n重点关注主题：{topic}" if topic else ""
 
-        prompt = f"""你是一位专业的编程练习题出题老师。请为以下章节生成 {count} 道{difficulty_label}难度的{type_mapping.get(exercise_type, "选择题")}。
+        prompt = f"""你是一位专业的编程练习题出题老师。请为以下章节生成 {count} 道{difficulty_label}难度的{type_mapping[exercise_type]}。
 
 章节标题：{chapter_title}
 章节描述：{chapter_description}{topic_context}
