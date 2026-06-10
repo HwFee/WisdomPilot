@@ -11,8 +11,6 @@ import {
   AIChatResponse,
   ChoiceAnalysisRequest,
   ChoiceAnalysisResponse,
-  CodeFeedbackRequest,
-  CodeFeedbackResponse,
   AIConfigResponse,
   UpdateAIConfigRequest,
   AIStatusResponse,
@@ -128,13 +126,6 @@ export async function analyzeChoice(
   token: string
 ): Promise<ChoiceAnalysisResponse> {
   return post<ChoiceAnalysisResponse>('/api/ai/choice-analysis', token, request)
-}
-
-export async function getCodeFeedback(
-  request: CodeFeedbackRequest,
-  token: string
-): Promise<CodeFeedbackResponse> {
-  return post<CodeFeedbackResponse>('/api/ai/code-feedback', token, request)
 }
 
 // ========================================
@@ -269,8 +260,6 @@ export type {
   AIChatResponse,
   ChoiceAnalysisRequest,
   ChoiceAnalysisResponse,
-  CodeFeedbackRequest,
-  CodeFeedbackResponse,
   AIConfigResponse,
   UpdateAIConfigRequest,
   AIStatusResponse,

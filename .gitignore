@@ -89,3 +89,21 @@ frontend/package-lock.json
 # Agent runtime logs
 .agents/
 .run_logs/
+
+# CodeGraph temp files
+.codegraph/
+
+# Kimi Code local config
+.kimi-code/
+
+# Root-level node_modules (if accidentally created)
+/node_modules/
+/package-lock.json
+/package.json
+/skills-lock.json
+
+# OpenSpec workflow temp directory
+openspec/
+
+# Backup files
+*.bak

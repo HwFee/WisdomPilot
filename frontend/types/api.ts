@@ -534,22 +534,6 @@ export interface ChoiceAnalysisResponse {
   improvement_tips: string[]
 }
 
-export interface CodeFeedbackRequest {
-  code: string
-  language: string
-  exercise_description?: string
-  expected_output?: string
-  actual_output?: string
-  status?: string
-  error_message?: string
-}
-
-export interface CodeFeedbackResponse {
-  error_analysis: string
-  code_improvement: string
-  suggestions: string[]
-}
-
 export interface AIConfigResponse {
   provider: string
   model: string

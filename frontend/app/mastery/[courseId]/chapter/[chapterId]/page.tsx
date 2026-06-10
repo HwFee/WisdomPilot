@@ -1,75 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, CheckCircle, Play, BookOpen, Loader2, Target } from 'lucide-react'
-import { getChapterSections, type SectionSummary } from '@/lib/api/sections'
-import { getStoredToken } from '@/lib/api'
+import { useParams } from 'next/navigation'
+import {
+  ArrowLeft,
+  Clock,
+  CheckCircle,
+  Play,
+  BookOpen,
+  Loader2,
+} from 'lucide-react'
 import { MasteryProgressBar } from '@/components/mastery/MasteryComponents'
-
-interface ChapterInfo {
-  id: number
-  title: string
-  course_id: number
-  course_name: string
-}
+import { useChapterData } from './hooks/use-chapter-data'
 
 export default function ChapterSectionsPage() {
   const params = useParams()
-  const { push } = useRouter()
   const courseId = parseInt(params.courseId as string)
   const chapterId = parseInt(params.chapterId as string)
 
-  const [sections, setSections] = useState<SectionSummary[]>([])
-  const [chapterInfo, setChapterInfo] = useState<ChapterInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadSections()
-  }, [chapterId])
-
-  const loadSections = async () => {
-    const token = getStoredToken()
-    if (!token) {
-      push('/login')
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await getChapterSections(chapterId, token)
-      setSections(response.sections)
-
-      // 调试日志：显示小节掌握度数据
-      response.sections.forEach((s, i) => {
-      })
-
-      // 从第一个section获取章节信息（如果有的话）
-      // 或者调用单独的API获取章节信息
-      // 这里暂时从localStorage获取
-      const stored = localStorage.getItem('current_chapter_info:v1')
-      if (stored) {
-        setChapterInfo(JSON.parse(stored))
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSelectSection = (section: SectionSummary) => {
-    // 跳转到小节学习页面（带章节信息）
-    push(`/mastery/${courseId}/chapter/${chapterId}/section/${section.id}`)
-  }
-
-  const handleBack = () => {
-    push(`/mastery/${courseId}`)
-  }
-
-  const completedCount = sections.filter(s => s.is_completed).length
-  const progress = sections.length > 0 ? Math.round((completedCount / sections.length) * 100) : 0
+  const {
+    sections,
+    chapterInfo,
+    loading,
+    error,
+    completedCount,
+    progress,
+    handleSelectSection,
+    handleBack,
+  } = useChapterData(courseId, chapterId)
 
   if (loading) {
     return (
@@ -141,7 +98,7 @@ export default function ChapterSectionsPage() {
           {sections.map((section, index) => (
             <button type="button"
               key={section.id}
-              onClick={() => handleSelectSection(section)}
+              onClick={() => handleSelectSection(section.id)}
               className="w-full bg-card rounded-xl border p-4 hover:border-primary/50 hover:shadow-sm transition-all text-left group"
             >
               <div className="flex items-start gap-4">
@@ -187,7 +144,7 @@ export default function ChapterSectionsPage() {
                     )}
                   </div>
 
-                  {/* Mastery Progress Bar - 始终显示 */}
+                  {/* Mastery Progress Bar */}
                   <div className="mt-3">
                     <MasteryProgressBar
                       score={section.mastery_score ?? 0}

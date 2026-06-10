@@ -1,24 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   Sparkles,
-  Code2,
   BookOpen,
   Target,
   Zap,
   Brain,
   ChevronRight,
   Swords,
-  FlaskConical,
+  Code2,
 } from 'lucide-react'
-import { getCourseConfig } from '@/lib/icons/course-icons'
 import { Logo } from '@/components/ui/logo'
-import { getCourses } from '@/lib/api/courses'
-import type { CourseSummary } from '@/types/api'
-
+import { CourseCard } from './components/course-card'
+import { useHomeData } from './hooks/use-home-data'
 
 const FEATURES = [
   {
@@ -47,44 +43,19 @@ const FEATURES = [
   },
 ]
 
+const TOOLS = [
+  { icon: Target, label: '错题本', href: '/review', desc: '回顾错题' },
+  { icon: BookOpen, label: '收藏夹', href: '/favorites', desc: '管理收藏' },
+  { icon: Code2, label: '题解广场', href: '/solutions', desc: '参考题解' },
+]
+
 export default function Home() {
-  const [pageState, setPageState] = useState({
-    isLoggedIn: false,
-    mounted: false,
-    courses: [] as CourseSummary[],
-    coursesLoading: true,
-  })
-  const { isLoggedIn, mounted, courses, coursesLoading } = pageState
-
-  useEffect(() => {
-    const token = localStorage.getItem('token:v1')
-    const isLoggedInValue = !!token
-
-    // 从 API 获取真实课程数据（未登录也能访问）
-    getCourses()
-      .then((data) => {
-        setPageState({
-          isLoggedIn: isLoggedInValue,
-          mounted: true,
-          courses: data.courses,
-          coursesLoading: false,
-        })
-      })
-      .catch((err) => {
-        console.error('Failed to fetch courses:', err)
-        setPageState({
-          isLoggedIn: isLoggedInValue,
-          mounted: true,
-          courses: [],
-          coursesLoading: false,
-        })
-      })
-  }, [])
+  const { isLoggedIn, mounted, courses, coursesLoading } = useHomeData()
 
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full size-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
       </div>
     )
   }
@@ -97,9 +68,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <Logo className="text-blue-500" />
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">智码领航</h1>
-              </div>
+              <h1 className="text-lg font-semibold text-foreground">智码领航</h1>
             </div>
             <div className="flex items-center gap-3">
               {isLoggedIn ? (
@@ -111,10 +80,7 @@ export default function Home() {
                 </Link>
               ) : (
                 <>
-                  <Link
-                    href="/login"
-                    className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
-                  >
+                  <Link href="/login" className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
                     登录
                   </Link>
                   <Link
@@ -132,8 +98,8 @@ export default function Home() {
 
       {/* Hero */}
       <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 gradient-mesh"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 gradient-mesh" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
@@ -186,13 +152,12 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map((feature, index) => (
+            {FEATURES.map((feature) => (
               <div
                 key={feature.title}
                 className="group p-6 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all card-interactive"
               >
-                <div className={`size-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg`}
-                >
+                <div className={`size-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-5 shadow-lg`}>
                   <feature.icon className="size-7 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
@@ -215,54 +180,13 @@ export default function Home() {
 
           {coursesLoading ? (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full size-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {courses.map((course) => {
-                const config = getCourseConfig(course.code.toLowerCase())
-                return (
-                  <Link
-                    key={course.id}
-                    href={`/mastery/${course.id}`}
-                    className="group relative p-6 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all card-interactive overflow-hidden"
-                  >
-                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config?.gradient || 'from-primary to-primary-600'}`} />
-
-                    <div className="flex items-center gap-4 mb-4 mt-2">
-                      <div className={`size-14 rounded-xl bg-gradient-to-br ${config?.gradient || 'from-primary to-primary-600'} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}
-                      >
-                        <div className="size-7 text-white">{config?.icon}</div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                          {course.name}
-                        </h3>
-                        <div className="flex gap-1 mt-1">
-                          <div className={`size-1.5 rounded-full ${0 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
-                          <div className={`size-1.5 rounded-full ${1 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
-                          <div className={`size-1.5 rounded-full ${2 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
-                          <div className={`size-1.5 rounded-full ${3 < course.difficulty_level ? 'bg-primary' : 'bg-muted'}`} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                      {course.description || '暂无描述'}
-                    </p>
-
-                    <div className="flex items-center justify-between text-xs pt-3 border-t border-border/50">
-                      <span className="text-muted-foreground">
-                        难度 {Array(course.difficulty_level).fill('★').join('')}
-                      </span>
-                      <span className="flex items-center gap-1 text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                        开始学习
-                        <ChevronRight className="size-3" />
-                      </span>
-                    </div>
-                  </Link>
-                )
-              })}
+              {courses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
             </div>
           )}
         </div>
@@ -279,12 +203,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {[
-              { icon: Target, label: '错题本', href: '/review', desc: '回顾错题' },
-              { icon: BookOpen, label: '收藏夹', href: '/favorites', desc: '管理收藏' },
-              { icon: FlaskConical, label: '代码沙盒', href: '/sandbox', desc: '自由实验' },
-              { icon: Code2, label: '题解广场', href: '/solutions', desc: '参考题解' },
-            ].map((tool) => (
+            {TOOLS.map((tool) => (
               <Link
                 key={tool.href}
                 href={isLoggedIn ? tool.href : '/register'}
@@ -301,8 +220,8 @@ export default function Home() {
 
       {/* CTA */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-primary/10 rounded-full blur-3xl" />
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground mb-6">

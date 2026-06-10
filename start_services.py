@@ -173,8 +173,17 @@ def wait_for_url(url: str, timeout: float = 30.0, interval: float = 0.5) -> bool
 
 
 def resolve_pnpm() -> str:
+    import shutil
+
+    pnpm_path = shutil.which("pnpm")
+    if pnpm_path:
+        return pnpm_path
+
     candidates = [
         r"C:\Program Files\nodejs\pnpm.cmd",
+        r"C:\Program Files (x86)\nodejs\pnpm.cmd",
+        os.path.expanduser(r"~\AppData\Roaming\npm\pnpm.cmd"),
+        os.path.expanduser(r"~\AppData\Roaming\npm\pnpm"),
         "pnpm.cmd",
         "pnpm",
     ]
@@ -184,13 +193,11 @@ def resolve_pnpm() -> str:
             capture_output=True,
             text=True,
             check=False,
-            shell=False,
+            shell=is_windows(),
         )
         if result.returncode == 0:
             return candidate
     raise RuntimeError("未找到 pnpm，请先安装 pnpm。")
-
-
 def ensure_frontend_dependencies(frontend_dir: Path, pnpm_cmd: str) -> None:
     node_modules = frontend_dir / "node_modules"
     if node_modules.exists():

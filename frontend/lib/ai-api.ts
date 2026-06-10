@@ -161,49 +161,6 @@ export async function getChoiceAnalysis(
 }
 
 // ========================================
-// AI 编程题反馈 —— 纠错 + 优化 + 建议 三合一
-// ========================================
-
-export interface CodeFeedbackRequest {
-  code: string
-  language: string
-  exercise_description: string
-  expected_output: string
-  actual_output?: string
-  status?: string
-  error_message?: string
-  chapter_id: number
-  exercise_id: string
-}
-
-export interface CodeFeedbackResponse {
-  diagnosis: string
-  suggestions: string
-  optimized_code: string
-}
-
-export async function getCodeFeedback(
-  token: string,
-  request: CodeFeedbackRequest
-): Promise<CodeFeedbackResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/code-feedback`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(request),
-  })
-
-  if (!response.ok) {
-    const data = await response.json()
-    throw new Error(data.detail || '获取 AI 反馈失败')
-  }
-
-  return response.json()
-}
-
-// ========================================
 // AI Provider Status
 // ========================================
 

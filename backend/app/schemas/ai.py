@@ -106,28 +106,6 @@ class ChoiceAnalysisResponse(BaseModel):
     is_correct: bool
 
 
-class CodeFeedbackRequest(BaseModel):
-    """编程题 AI 反馈请求 —— 代码纠错 + 优化 + 建议 三合一"""
-
-    code: str = Field(..., max_length=5000)
-    language: str = Field(..., max_length=20)
-    exercise_description: str = Field(..., max_length=1000)
-    expected_output: str = Field(default="", max_length=500)
-    actual_output: str = Field(default="", max_length=500)
-    status: str = Field(default="", max_length=50)
-    error_message: str = Field(default="", max_length=500)
-    chapter_id: int
-    exercise_id: str = Field(..., max_length=50)
-
-
-class CodeFeedbackResponse(BaseModel):
-    """编程题 AI 反馈响应"""
-
-    diagnosis: str
-    suggestions: str
-    optimized_code: str
-
-
 class ChatStreamRequest(BaseModel):
     """AI 流式问答请求"""
 

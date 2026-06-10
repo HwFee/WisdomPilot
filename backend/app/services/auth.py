@@ -31,7 +31,7 @@ class AuthService:
                 or_(User.email == user_data.email, User.username == user_data.username)
             )
         )
-        existing_user = result.scalar_one_or_none()
+        existing_user = result.scalars().first()
 
         if existing_user:
             if existing_user.email == user_data.email:

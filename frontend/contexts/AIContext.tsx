@@ -2,7 +2,7 @@
 
 import { createContext, use, useState, useCallback, type ReactNode } from 'react'
 import { getStoredToken } from '@/lib/api'
-import { getChoiceAnalysis, getCodeFeedback, getChoiceExplanation, type ChoiceAnalysisRequest, type CodeFeedbackRequest, type ChoiceExplanationRequest } from '@/lib/ai-api'
+import { getChoiceAnalysis, getChoiceExplanation, type ChoiceAnalysisRequest, type ChoiceExplanationRequest } from '@/lib/ai-api'
 
 // ========================================
 // Types
@@ -65,11 +65,8 @@ export interface AIContextState {
   hintResult: string | null
   analysisLoading: boolean
   analysisResult: AIAnalysisResult | null
-  feedbackLoading: boolean
-  feedbackResult: AIAnalysisResult | null
   triggerHint: () => Promise<void>
   triggerAnalysis: () => Promise<void>
-  triggerFeedback: () => Promise<void>
   clearResults: () => void
 
   // Question panel state (for exercise pages - choice/fill_blank questions)
@@ -111,8 +108,6 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   const [hintResult, setHintResult] = useState<string | null>(null)
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null)
-  const [feedbackLoading, setFeedbackLoading] = useState(false)
-  const [feedbackResult, setFeedbackResult] = useState<AIAnalysisResult | null>(null)
 
   // Question panel state (for exercise pages - choice/fill_blank questions)
   const [activeQuestion, setActiveQuestion] = useState<CurrentExerciseContext | null>(null)
@@ -147,7 +142,6 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   const clearResults = useCallback(() => {
     setHintResult(null)
     setAnalysisResult(null)
-    setFeedbackResult(null)
   }, [])
 
   const triggerHint = useCallback(async () => {
@@ -216,44 +210,6 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     }
   }, [currentExercise])
 
-  const triggerFeedback = useCallback(async () => {
-    if (!currentExercise || currentExercise.type !== 'programming') return
-
-    setFeedbackLoading(true)
-    setFeedbackResult(null)
-
-    const token = getStoredToken()
-    if (!token) {
-      setFeedbackLoading(false)
-      return
-    }
-
-    try {
-      const request: CodeFeedbackRequest = {
-        code: currentExercise.code || '',
-        language: currentExercise.language || 'python',
-        exercise_description: currentExercise.exerciseDescription || '',
-        expected_output: currentExercise.expectedOutput || '',
-        actual_output: currentExercise.actualOutput || '',
-        status: currentExercise.status || '',
-        error_message: currentExercise.errorMessage || '',
-        chapter_id: currentExercise.chapterId,
-        exercise_id: String(currentExercise.exerciseId),
-      }
-      const response = await getCodeFeedback(token, request)
-      setFeedbackResult({
-        diagnosis: response.diagnosis,
-        suggestions: response.suggestions,
-        optimizedCode: response.optimized_code,
-      })
-    } catch (error) {
-      console.error('[AI] 获取反馈失败:', error)
-      setFeedbackResult({ diagnosis: '获取 AI 反馈失败，请重试。', suggestions: '', optimizedCode: currentExercise.code || '' })
-    } finally {
-      setFeedbackLoading(false)
-    }
-  }, [currentExercise])
-
   return (
     <AIContext.Provider value={{
       currentExercise,
@@ -262,11 +218,8 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
       hintResult,
       analysisLoading,
       analysisResult,
-      feedbackLoading,
-      feedbackResult,
       triggerHint,
       triggerAnalysis,
-      triggerFeedback,
       clearResults,
       activeQuestion,
       isPanelOpen,

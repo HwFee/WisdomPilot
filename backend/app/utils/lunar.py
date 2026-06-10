@@ -122,34 +122,13 @@ CHINESE_NEW_YEAR = {
     2035: (2, 8),
 }
 
-# 预计算的农历节日日期（公历）
-PRECOMPUTED_LUNAR_HOLIDAYS = {
-    # 春节（农历正月初一）
-    (2, 10): {"name": "春节", "name_en": "Spring Festival"},
-    (1, 29): {"name": "春节", "name_en": "Spring Festival"},
-    (2, 17): {"name": "春节", "name_en": "Spring Festival"},
-    # 清明节（公历4月4-6日）
-    (4, 4): {"name": "清明节", "name_en": "Qingming Festival"},
-    (4, 5): {"name": "清明节", "name_en": "Qingming Festival"},
-    (4, 6): {"name": "清明节", "name_en": "Qingming Festival"},
-    # 端午节
-    (6, 10): {"name": "端午节", "name_en": "Dragon Boat Festival"},
-    (5, 31): {"name": "端午节", "name_en": "Dragon Boat Festival"},
-    (6, 19): {"name": "端午节", "name_en": "Dragon Boat Festival"},
-    (6, 9): {"name": "端午节", "name_en": "Dragon Boat Festival"},
-    # 中秋节
-    (9, 17): {"name": "中秋节", "name_en": "Mid-Autumn Festival"},
-    (10, 6): {"name": "中秋节", "name_en": "Mid-Autumn Festival"},
-    (9, 25): {"name": "中秋节", "name_en": "Mid-Autumn Festival"},
-    (9, 15): {"name": "中秋节", "name_en": "Mid-Autumn Festival"},
-    # 重阳节
-    (10, 11): {"name": "重阳节", "name_en": "Double Ninth Festival"},
-    (10, 29): {"name": "重阳节", "name_en": "Double Ninth Festival"},
-    (10, 18): {"name": "重阳节", "name_en": "Double Ninth Festival"},
-    # 元宵节
-    (2, 24): {"name": "元宵节", "name_en": "Lantern Festival"},
-    (2, 12): {"name": "元宵节", "name_en": "Lantern Festival"},
-    (3, 3): {"name": "元宵节", "name_en": "Lantern Festival"},
+# 农历节日（按农历月日判断，不依赖预计算公历日期）
+LUNAR_HOLIDAYS = {
+    (1, 1): {"name": "春节", "name_en": "Spring Festival"},
+    (1, 15): {"name": "元宵节", "name_en": "Lantern Festival"},
+    (5, 5): {"name": "端午节", "name_en": "Dragon Boat Festival"},
+    (8, 15): {"name": "中秋节", "name_en": "Mid-Autumn Festival"},
+    (9, 9): {"name": "重阳节", "name_en": "Double Ninth Festival"},
 }
 
 # 公历节日（固定日期）
@@ -329,12 +308,24 @@ def get_solar_term_today(g_year: int, g_month: int, g_day: int) -> Optional[dict
 
 
 def get_holiday(g_year: int, g_month: int, g_day: int) -> Optional[dict]:
-    """获取指定日期的传统节日"""
+    """获取指定日期的节日"""
     key = (g_month, g_day)
-    if key in PRECOMPUTED_LUNAR_HOLIDAYS:
-        return PRECOMPUTED_LUNAR_HOLIDAYS[key].copy()
+    # 公历固定节日
     if key in SOLAR_HOLIDAYS:
         return SOLAR_HOLIDAYS[key].copy()
+
+    # 农历节日：根据农历日期判断
+    lunar = get_lunar_date(g_year, g_month, g_day)
+    if lunar["lunar_year"] > 0:
+        lunar_key = (lunar["lunar_month"], lunar["lunar_day"])
+        if lunar_key in LUNAR_HOLIDAYS:
+            return LUNAR_HOLIDAYS[lunar_key].copy()
+
+    # 清明节（按节气判断）
+    solar_term = get_solar_term(g_year, g_month, g_day)
+    if solar_term and solar_term["name"] == "清明":
+        return {"name": "清明节", "name_en": "Qingming Festival"}
+
     return None
 
 

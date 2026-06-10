@@ -1,153 +1,22 @@
 'use client'
 
 import { Suspense } from 'react'
-import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { getStoredToken, logout } from '@/lib/api'
-import { ArrowLeft, Trophy, Swords, Crown, Medal, Flame, Star } from 'lucide-react'
-import { getMasteryLeaderboard, getArenaLeaderboard, TIER_NAMES } from '@/lib/api'
-import { getUserCourseProgress } from '@/lib/api/courses'
-import { getTierConfig } from '@/lib/icons/tier-icons'
-import type { LeaderboardEntry, Tier } from '@/types/api'
-import type { CourseProgress } from '@/lib/api/courses'
-
-type LeaderboardType = 'mastery' | 'arena'
+import { ArrowLeft, Trophy, Swords } from 'lucide-react'
+import { useLeaderboard } from './hooks/use-leaderboard'
+import { CurrentUserCard } from './components/current-user-card'
+import { LeaderboardEntryItem } from './components/leaderboard-entry-item'
 
 function LeaderboardContent() {
-  const { push } = useRouter()
-  const searchParams = useSearchParams()
-  const [uiState, setUiState] = useState({
-    activeTab: (searchParams.get('tab') as LeaderboardType) || 'mastery',
-    offset: 0,
-    loading: true,
-  })
-  const courseIdRef = useRef<number>(1)
-  const [dataState, setDataState] = useState({
-    enrolledCourses: [] as CourseProgress[],
-    leaderboard: [] as LeaderboardEntry[],
-  })
-  const currentUserIdRef = useRef<string | null>(null)
-  const [currentUserState, setCurrentUserState] = useState<{ rank: number | null; data: LeaderboardEntry | null }>({ rank: null, data: null })
-  const { activeTab, offset, loading } = uiState
-  const { enrolledCourses, leaderboard } = dataState
-  const { rank: currentUserRank, data: currentUserData } = currentUserState
-  const courseLoadingRef = useRef(true)
-  const limit = 20
-  const hasFetched = useRef(false)
-  const hasFetchedCourses = useRef(false)
+  const {
+    activeTab, offset, loading,
+    enrolledCourses, leaderboard,
+    currentUserRank, currentUserData, currentUserId,
+    limit,
+    handleTabChange, handleLoadMore,
+  } = useLeaderboard()
 
-  const fetchData = async (token: string, tab: LeaderboardType, off: number = 0) => {
-    try {
-      setUiState(prev => ({ ...prev, loading: true }))
-      const data = tab === 'mastery'
-        ? await getMasteryLeaderboard(courseIdRef.current, token, limit, off)
-        : await getArenaLeaderboard(courseIdRef.current, token, limit, off)
 
-      if (off === 0) {
-        setDataState(prev => ({ ...prev, leaderboard: data.entries }))
-      } else {
-        setDataState(prev => ({ ...prev, leaderboard: [...prev.leaderboard, ...data.entries] }))
-      }
-      setCurrentUserState(prev => ({ ...prev, rank: data.user_rank }))
-
-      // Find current user's data in leaderboard
-      const userId = currentUserIdRef.current || (() => {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          return payload.sub
-        } catch {
-          return null
-        }
-      })()
-
-      if (userId && data.entries) {
-        const userEntry = data.entries.find((e: LeaderboardEntry) => e.user_id === userId)
-        if (userEntry) {
-          setCurrentUserState(prev => ({ ...prev, data: userEntry }))
-        }
-      }
-    } catch (error) {
-      console.error('[Leaderboard] Error:', error)
-    } finally {
-      setUiState(prev => ({ ...prev, loading: false }))
-    }
-  }
-
-  useEffect(() => {
-    if (hasFetchedCourses.current) return
-    const token = getStoredToken()
-    if (!token) {
-      logout()
-      push('/login')
-      return
-    }
-
-    // Get current user info from token
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      currentUserIdRef.current = payload.sub
-    } catch {
-      // Ignore parsing errors
-    }
-
-    // Fetch enrolled courses first
-    getUserCourseProgress(token)
-      .then((progress) => {
-        const courses = progress.courses || []
-        setDataState(prev => ({ ...prev, enrolledCourses: courses }))
-        // Use first enrolled course, or first available course, or default to 1
-        if (courses.length > 0) {
-          const firstEnrolled = courses.find(c => c.progress !== null && c.progress > 0) || courses[0]
-          courseIdRef.current = firstEnrolled.course_id
-        }
-        // Fetch leaderboard data now that course is determined
-        if (!hasFetched.current) {
-          hasFetched.current = true
-          fetchData(token, uiState.activeTab, 0)
-        }
-      })
-      .catch((err) => {
-        console.error('[Leaderboard] Failed to fetch course progress:', err)
-      })
-      .finally(() => {
-        courseLoadingRef.current = false
-        hasFetchedCourses.current = true
-      })
-  }, [push, uiState.activeTab])
-
-  // Update URL when tab changes
-  const handleTabChange = (tab: LeaderboardType) => {
-    setUiState(prev => ({ ...prev, activeTab: tab, offset: 0 }))
-    setCurrentUserState(prev => ({ ...prev, data: null }))
-    const token = getStoredToken()
-    if (token) {
-      fetchData(token, tab, 0)
-    }
-    push(`/leaderboard?tab=${tab}`)
-  }
-
-  const handleLoadMore = () => {
-    const newOffset = uiState.offset + limit
-    setUiState(prev => ({ ...prev, offset: newOffset }))
-    const token = getStoredToken()
-    if (token) {
-      fetchData(token, uiState.activeTab, newOffset)
-    }
-  }
-
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="size-6 text-yellow-500" />
-      case 2:
-        return <Medal className="size-6 text-gray-400" />
-      case 3:
-        return <Medal className="size-6 text-amber-600" />
-      default:
-        return <span className="text-lg font-bold text-muted-foreground">{rank}</span>
-    }
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -207,57 +76,13 @@ function LeaderboardContent() {
             </div>
           </div>
 
-          {/* Current User Card - Shows user's rank and stats */}
+          {/* Current User Card */}
           {currentUserRank && (
-            <div className="mb-6">
-              <div className={`border rounded-xl p-4 ${
-                activeTab === 'mastery'
-                  ? 'bg-amber-500/5 border-amber-500/20'
-                  : 'bg-blue-500/5 border-blue-500/20'
-              }`}>
-                <div className="flex items-center gap-4">
-                  {/* Rank Badge */}
-                  <div className={`size-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg ${
-                    activeTab === 'mastery'
-                      ? 'bg-amber-500 text-white shadow-amber-500/25'
-                      : 'bg-blue-500 text-white shadow-blue-500/25'
-                  }`}>
-                    #{currentUserRank}
-                  </div>
-
-                  {/* User Info */}
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">你的排名</p>
-                    {activeTab === 'mastery' ? (
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-foreground text-lg">{currentUserData?.mastery_xp ?? 0}</span>
-                        <span className="text-sm text-muted-foreground">经验值</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        {currentUserData?.tier ? (
-                          <>
-                            <span className="size-5 flex items-center justify-center">
-                              {getTierConfig(currentUserData.tier)?.icon}
-                            </span>
-                            <span className="font-medium text-foreground">{TIER_NAMES[currentUserData.tier as Tier]}</span>
-                            {currentUserData.sub_tier && (
-                              <span className="text-muted-foreground">{['I','II','III','IV','V'][currentUserData.sub_tier - 1]}</span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">未定级</span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Star className="size-4 text-yellow-500" />
-                          <span className="font-medium">{currentUserData?.stars ?? 0}</span>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CurrentUserCard
+              activeTab={activeTab}
+              currentUserRank={currentUserRank}
+              currentUserData={currentUserData}
+            />
           )}
 
           {/* No Data State */}
@@ -303,59 +128,12 @@ function LeaderboardContent() {
           ) : leaderboard.length > 0 && (
             <div className="flex flex-col gap-y-2">
               {leaderboard.map((entry) => (
-                <div
+                <LeaderboardEntryItem
                   key={entry.user_id}
-                  className={`rounded-xl border p-4 flex items-center justify-between transition-all ${
-                    entry.user_id === currentUserIdRef.current ? 'ring-2 ring-primary border-primary/30 bg-primary/5' : 'bg-card hover:border-primary/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="size-10 bg-muted rounded-xl flex items-center justify-center">
-                      {getRankIcon(entry.rank)}
-                    </div>
-                    <div className="size-10 bg-gradient-to-br from-primary to-primary-600 rounded-full flex items-center justify-center text-primary-foreground font-medium shadow-md">
-                      {entry.username.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {entry.username}
-                        {entry.user_id === currentUserIdRef.current && (
-                          <span className="ml-2 text-xs text-primary">(你)</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    {activeTab === 'mastery' ? (
-                      <div className="flex items-center gap-2 justify-end">
-                        <Trophy className="size-4 text-amber-500" />
-                        <span className="font-bold text-foreground text-lg">{entry.mastery_xp ?? 0}</span>
-                        <span className="text-xs text-muted-foreground">经验值</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 justify-end">
-                        {entry.tier ? (
-                          <>
-                            <span className="size-4 flex items-center justify-center">
-                              {getTierConfig(entry.tier)?.icon}
-                            </span>
-                            <span className="font-medium text-foreground">{TIER_NAMES[entry.tier as Tier]}</span>
-                            {entry.sub_tier && (
-                              <span className="text-muted-foreground">{['I','II','III','IV','V'][entry.sub_tier - 1]}</span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">未定级</span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Star className="size-4 text-yellow-500" />
-                          <span className="font-bold">{entry.stars ?? 0}</span>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  entry={entry}
+                  activeTab={activeTab}
+                  isCurrentUser={entry.user_id === currentUserId}
+                />
               ))}
             </div>
           )}

@@ -1,86 +1,40 @@
 'use client'
 
-import { Suspense, useEffect, useState, useMemo } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { MessageSquare, Plus, ArrowLeft, Home, Search } from 'lucide-react'
-import { getSolutionSummary, createSolution, deleteSolution, likeSolution, SolutionSummary, SolutionCreate, SolutionUpdate } from '@/lib/api/solutions'
-import { getStoredToken, getStoredUser, User } from '@/lib/api/auth'
 import { SolutionCategoryNav } from '@/components/solutions/SolutionCategoryNav'
 import { SolutionArticleList } from '@/components/solutions/SolutionArticleList'
 import { SolutionEditor } from '@/components/solutions/SolutionEditor'
-
-type CategoryType = 'hot' | 'new' | 'pinned' | 'announcement'
-type PageMode = 'list' | 'create'
+import { useSolutionsData } from './hooks/use-solutions-data'
+import { filterSolutions } from './lib/solutions-utils'
+import type { CategoryType, PageMode } from './lib/solutions-utils'
+import type { SolutionCreate, SolutionUpdate } from '@/lib/api/solutions'
 
 function SolutionsContent() {
-  const { push } = useRouter()
   const searchParams = useSearchParams()
+  const {
+    solutions,
+    loading,
+    userState,
+    handleDelete,
+    handleLike,
+    handleSave,
+    push,
+  } = useSolutionsData()
 
-  const [solutions, setSolutions] = useState<SolutionSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [userState, setUserState] = useState<{ currentUser: User | null; isAdmin: boolean; lang: 'zh' | 'en' }>({
-    currentUser: null,
-    isAdmin: false,
-    lang: 'zh',
-  })
-  const [uiState, setUiState] = useState({ pageMode: 'list' as PageMode, searchQuery: '' })
+  const [pageMode, setPageMode] = useState<PageMode>('list')
+  const [searchQuery, setSearchQuery] = useState('')
   const { currentUser, isAdmin, lang } = userState
-  const { pageMode, searchQuery } = uiState
 
   const activeCategory = (searchParams.get('tab') as CategoryType) || 'hot'
 
-  const t = (zh: string, en: string) => lang === 'zh' ? zh : en
+  const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
-  const filteredSolutions = useMemo(() => {
-    if (!searchQuery.trim()) return solutions
-
-    const query = searchQuery.toLowerCase().trim()
-    const queryNum = parseInt(query)
-
-    return solutions.filter(s => {
-      // Match by ID (exact number match)
-      if (queryNum && s.id === queryNum) return true
-      // Match by title keyword
-      if (s.title.toLowerCase().includes(query)) return true
-      // Match by problem link containing the number
-      return false
-    })
-  }, [solutions, uiState.searchQuery])
-
-  useEffect(() => {
-    const user = getStoredUser()
-    const token = getStoredToken()
-
-    if (!token || !user) {
-      push('/login')
-      return
-    }
-
-    const savedLang = localStorage.getItem('language') || 'zh'
-    setUserState({
-      currentUser: user,
-      isAdmin: user.is_admin || false,
-      lang: savedLang as 'zh' | 'en',
-    })
-  }, [push])
-
-  useEffect(() => {
-    const token = getStoredToken()
-    if (!token) return
-    fetchSolutions(token)
-  }, [activeCategory])
-
-  const fetchSolutions = async (token: string) => {
-    try {
-      setLoading(true)
-      const data = await getSolutionSummary(token, 50)
-      setSolutions(data)
-    } catch (error) {
-      console.error('Failed to fetch solutions:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const filteredSolutions = useMemo(
+    () => filterSolutions(solutions, searchQuery),
+    [solutions, searchQuery],
+  )
 
   const handleCategoryChange = (category: CategoryType) => {
     push(`/solutions?tab=${category}`)
@@ -90,40 +44,8 @@ function SolutionsContent() {
     push(`/solutions/${id}`)
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(t('确定删除这篇题解吗？', 'Delete this solution?'))) return
-
-    const token = getStoredToken()
-    if (!token) return
-
-    try {
-      await deleteSolution(token, id)
-      fetchSolutions(token)
-    } catch (error) {
-      console.error('Failed to delete:', error)
-    }
-  }
-
-  const handleLike = async (id: number) => {
-    const token = getStoredToken()
-    if (!token) return
-
-    try {
-      const updated = await likeSolution(token, id)
-      setSolutions(prev => prev.map(s => s.id === id ? { ...s, like_count: updated.like_count } : s))
-    } catch (error) {
-      console.error('Failed to like:', error)
-    }
-  }
-
-  const handleSave = async (data: SolutionCreate | SolutionUpdate) => {
-    const token = getStoredToken()
-    if (!token) return
-    // Force title to be string (editor requires title)
-    const solutionData = data as SolutionCreate
-    await createSolution(token, solutionData)
-    setUiState(prev => ({ ...prev, pageMode: 'list' as PageMode }))
-    fetchSolutions(token)
+  const handleSaveWrapper = async (data: SolutionCreate | SolutionUpdate) => {
+    await handleSave(data, () => setPageMode('list'))
   }
 
   return (
@@ -135,7 +57,7 @@ function SolutionsContent() {
             {pageMode === 'create' ? (
               <>
                 <button type="button"
-                  onClick={() => setUiState(prev => ({ ...prev, pageMode: 'list' as PageMode }))}
+                  onClick={() => setPageMode('list')}
                   className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ArrowLeft className="size-5" />
@@ -158,7 +80,7 @@ function SolutionsContent() {
                   <h1 className="text-lg font-semibold">{t('讨论区', 'Discussion')}</h1>
                 </div>
                 <button type="button"
-                  onClick={() => setUiState(prev => ({ ...prev, pageMode: 'create' as PageMode }))}
+                  onClick={() => setPageMode('create')}
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
                 >
                   <Plus className="size-4" />
@@ -174,8 +96,8 @@ function SolutionsContent() {
       <main className="max-w-[1400px] mx-auto px-4 sm:p-6">
         {pageMode === 'create' ? (
           <SolutionEditor
-            onSave={handleSave}
-            onCancel={() => setUiState(prev => ({ ...prev, pageMode: 'list' as PageMode }))}
+            onSave={handleSaveWrapper}
+            onCancel={() => setPageMode('list')}
             isAdmin={isAdmin}
             lang={lang}
             isFullPage
@@ -198,14 +120,14 @@ function SolutionsContent() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
                 <input
                   type="text"
-                  value={uiState.searchQuery}
-                  onChange={(e) => setUiState(prev => ({ ...prev, searchQuery: e.target.value }))}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('搜索题解序号或关键词', 'Search by ID or keyword')}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
                 />
                 {searchQuery && (
                   <button type="button"
-                    onClick={() => setUiState(prev => ({ ...prev, searchQuery: '' }))}
+                    onClick={() => setSearchQuery('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     ×
@@ -224,7 +146,7 @@ function SolutionsContent() {
                 loading={loading}
                 activeCategory={activeCategory}
                 onArticleClick={handleArticleClick}
-                onDelete={handleDelete}
+                onDelete={(id) => handleDelete(id, t('确定删除这篇题解吗？', 'Delete this solution?'))}
                 onLike={handleLike}
                 currentUserId={currentUser?.id}
                 lang={lang}
@@ -241,7 +163,7 @@ export default function SolutionsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
+        <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent" />
       </div>
     }>
       <SolutionsContent />

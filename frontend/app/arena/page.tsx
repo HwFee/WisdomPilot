@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   Loader2,
   Code2,
-  Terminal,
   Send,
   Star,
   PartyPopper,
@@ -63,865 +62,88 @@ import {
 import type {
   ChallengeExercise,
 } from "@/types/api";
-
-// ========================================
-// Types
-// ========================================
-
-interface Exercise {
-  id: number;
-  z_id?: string;
-  type: "choice" | "programming" | "fill_blank";
-  difficulty: number;
-  content: {
-    text?: string;
-    title?: string;
-    description?: string;
-    options?: string[];
-    code_template?: string;
-    input_format?: string;
-    output_format?: string;
-    sample_input?: string;
-    sample_output?: string;
-    time_limit?: number;
-    memory_limit?: number;
-    samples?: Array<{ input: string; output: string }>;
-  };
-  knowledge_points: string[];
-  hints?: string[];
-  test_cases?: Array<{ input: string; output: string; name?: string }>;
-  solution?: {
-    answer?: string;
-    explanation?: string;
-  };
-}
-
-interface TestCaseResult {
-  passed: boolean;
-  input: string;
-  expected: string;
-  actual: string;
-  time?: number;
-  memory?: number;
-  message?: string;
-}
-
-interface ExerciseProgress {
-  exercise_id: number;
-  exercise_index: number;
-  is_completed: boolean;
-  is_correct: boolean;
-  is_unlocked: boolean;
-  saved_code: string;
-  current_language: string;
-  title: string;
-  difficulty: number;
-}
-
-interface TestCase {
-  input?: string;
-  output?: string;
-}
-
-interface ProgressExercise {
-  exercise_id: number;
-  exercise_index: number;
-  is_completed: boolean;
-  is_correct: boolean;
-  is_unlocked: boolean;
-  z_id?: string;
-  saved_code?: string;
-  current_language?: string;
-  title?: string;
-  difficulty?: number;
-  content?: {
-    text?: string;
-    description?: string;
-    code_template?: string;
-    samples?: Array<{ input?: string; output?: string }>;
-  };
-  knowledge_points?: string[];
-  test_cases?: TestCase[];
-}
-
-interface ChallengeProgressResponse {
-  exercises: ProgressExercise[];
-  current_index?: number;
-  session_id?: string;
-}
-
-type FeedbackState = "idle" | "correct" | "wrong";
-type RightPanelTab = "code" | "test" | "output";
-
-// ========================================
-// Language Configuration
-// ========================================
-
-interface LanguageConfig {
-  id: number;
-  name: string;
-  monaco: string;
-}
-
-const LANGUAGE_MAP: Record<string, LanguageConfig> = {
-  c: { id: 50, name: "C", monaco: "c" },
-  cpp: { id: 54, name: "C++", monaco: "cpp" },
-  python: { id: 71, name: "Python", monaco: "python" },
-  java: { id: 62, name: "Java", monaco: "java" },
-  rust: { id: 73, name: "Rust", monaco: "rust" },
-};
-
-const LANGUAGE_OPTIONS = Object.entries(LANGUAGE_MAP).map(([key, config]) => ({
-  key,
-  ...config,
-}));
-
-// ========================================
-// Result Modal Component
-// ========================================
-
-interface ResultModalProps {
-  isCorrect: boolean;
-  passedCount: number;
-  totalCount: number;
-  starsEarned: number;
-  promoted: boolean;
-  demoted: boolean;
-  firstTimeCorrect: boolean;
-  firstTimeWrong: boolean;
-  onStay: () => void;
-  onNext: () => void;
-  canGoNext: boolean;
-}
-
-function ResultModal({
-  isCorrect,
-  passedCount,
-  totalCount,
-  starsEarned,
-  promoted,
-  demoted,
-  firstTimeCorrect,
-  firstTimeWrong,
-  onStay,
-  onNext,
-  canGoNext,
-}: ResultModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div
-        className={`bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all ${
-          isCorrect ? "border-2 border-[#52C41A]" : "border-2 border-[#E74C3C]"
-        }`}
-      >
-        <div className="text-center">
-          {isCorrect ? (
-            <>
-              <CheckCircle className="size-20 text-[#52C41A] mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-[#52C41A] mb-2">
-                太棒了！全部通过
-              </h2>
-              <p className="text-[#606266] mb-2">
-                {firstTimeCorrect && starsEarned > 0 ? (
-                  <span className="text-yellow-500 font-medium flex items-center justify-center gap-1">
-                    <Star className="size-5 fill-yellow-500" />
-                    +{starsEarned}
-                  </span>
-                ) : (
-                  <span className="text-[#909399]">已获得星星</span>
-                )}
-              </p>
-              {promoted && (
-                <p className="text-[#E6A23C] font-bold mb-4 flex items-center justify-center gap-1">
-                  <PartyPopper className="size-5" />
-                  恭喜晋级！
-                </p>
-              )}
-              {!promoted && (
-                <p className="text-[#909399] mb-4">
-                  继续挑战下一题
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              <XCircle className="size-20 text-[#E74C3C] mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-[#E74C3C] mb-2">
-                答案错误
-              </h2>
-              <p className="text-[#606266] mb-6">
-                通过 {passedCount}/{totalCount} 个测试点
-                {firstTimeWrong && starsEarned < 0 && (
-                  <span className="text-red-500 ml-2 flex items-center">
-                    <Star className="size-4 text-red-400" />
-                    {starsEarned}
-                  </span>
-                )}
-              </p>
-              {demoted && (
-                <p className="text-[#E74C3C] font-bold mb-4 flex items-center justify-center gap-1">
-                  <Frown className="size-5" />
-                  段位下降...
-                </p>
-              )}
-            </>
-          )}
-
-          <div className="flex gap-3 justify-center">
-            <button type="button"
-              onClick={onStay}
-              className="px-6 py-3 bg-white border border-[#E4E7ED] rounded-xl font-medium text-[#303133] hover:bg-[#F5F7FA] transition-colors"
-            >
-              留在本题
-            </button>
-            {canGoNext && (
-              <button type="button"
-                onClick={onNext}
-                className="px-6 py-3 bg-gradient-to-r from-[#3498DB] to-[#2980B9] text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center gap-2"
-              >
-                下一题
-                <ArrowRight className="size-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ========================================
-// Exercise Navigation Component
-// ========================================
-
-interface ExerciseNavigationProps {
-  exercises: ExerciseProgress[];
-  currentIndex: number;
-  onSwitch: (index: number) => void;
-}
-
-function ExerciseNavigation({
-  exercises,
-  currentIndex,
-  onSwitch,
-}: ExerciseNavigationProps) {
-  // 显示5个题目，当前题始终在第3个位置（索引2，即中间）
-  const MAX_VISIBLE = 5;
-  const CENTER_INDEX = 2; // 当前题目在显示区的中间位置
-
-  // 计算显示范围的起始位置
-  // currentIndex = start + CENTER_INDEX => start = currentIndex - CENTER_INDEX
-  let start = currentIndex - CENTER_INDEX;
-  let end = start + MAX_VISIBLE;
-
-  // 边界处理：开头不够时
-  if (start < 0) {
-    start = 0;
-    end = Math.min(exercises.length, MAX_VISIBLE);
-  }
-
-  // 边界处理：结尾不够时
-  if (end > exercises.length) {
-    end = exercises.length;
-    start = Math.max(0, end - MAX_VISIBLE);
-  }
-
-  const visibleExercises = exercises.slice(start, end);
-
-  return (
-    <div className="flex items-center gap-1.5">
-      {visibleExercises.map((ex, idx) => {
-        const globalIndex = start + idx;
-        const isCurrent = globalIndex === currentIndex;
-
-        return (
-          <button type="button"
-            key={ex.exercise_id}
-            onClick={() => ex.is_unlocked && onSwitch(globalIndex)}
-            disabled={!ex.is_unlocked}
-            title={`第 ${globalIndex + 1} 题: ${ex.title || "未命名"}`}
-            className={`rounded-lg text-xs font-bold transition-all duration-300 ease-out ${
-              isCurrent
-                ? "size-10 bg-[#3498DB] text-white scale-110 shadow-lg z-10"
-                : ex.is_correct
-                  ? "size-8 bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]"
-                  : ex.is_completed
-                    ? "size-8 bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]"
-                    : ex.is_unlocked
-                      ? "size-8 bg-white text-[#606266] border border-[#E4E7ED] hover:border-[#3498DB]"
-                      : "size-8 bg-[#F5F7FA] text-[#C0C4CC] border border-[#E4E7ED] cursor-not-allowed"
-            }`}
-          >
-            {globalIndex + 1}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ========================================
-// Exercise List Modal Component - 显示所有做过的题目
-// ========================================
-
-interface ExerciseListModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  exercises: ExerciseProgress[];
-  currentIndex: number;
-  onSwitch: (index: number) => void;
-}
-
-function ExerciseListModal({
-  isOpen,
-  onClose,
-  exercises,
-  currentIndex,
-  onSwitch,
-}: ExerciseListModalProps) {
-  if (!isOpen) return null;
-
-  const handleSwitch = (index: number) => {
-    if (exercises[index]?.is_unlocked) {
-      onSwitch(index);
-      onClose();
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
-      role="button"
-      tabIndex={0}
-      aria-label="关闭"
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-[#303133]">题目列表</h3>
-          <button type="button"
-            onClick={onClose}
-            className="text-[#909399] hover:text-[#606266]"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
-
-        <div className="overflow-y-auto flex-1 gap-y-2">
-          {exercises.map((ex, index) => (
-            <button type="button"
-              key={ex.exercise_id}
-              onClick={() => handleSwitch(index)}
-              disabled={!ex.is_unlocked}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${
-                index === currentIndex
-                  ? "bg-[#3498DB]/10 border border-[#3498DB]"
-                  : ex.is_unlocked
-                    ? "hover:bg-[#F5F7FA] border border-transparent"
-                    : "opacity-50 cursor-not-allowed border border-transparent"
-              }`}
-            >
-              <span
-                className={`size-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                  index === currentIndex
-                    ? "bg-[#3498DB] text-white"
-                    : ex.is_correct
-                      ? "bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]"
-                      : ex.is_completed
-                        ? "bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]"
-                        : ex.is_unlocked
-                          ? "bg-[#E4E7ED] text-[#606266]"
-                          : "bg-[#F5F7FA] text-[#C0C4CC]"
-                }`}
-              >
-                {index + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-[#303133] truncate">
-                  {ex.title || `第 ${index + 1} 题`}
-                </div>
-                <div className="text-xs text-[#909399]">
-                  难度: {"★".repeat(ex.difficulty || 1)}
-                  {ex.is_completed && (
-                    <span
-                      className={`ml-2 ${ex.is_correct ? "text-[#52C41A]" : "text-[#E74C3C]"}`}
-                    >
-                      {ex.is_correct ? "已答对" : "已答错"}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {!ex.is_unlocked && (
-                <span className="text-xs text-[#C0C4CC] flex items-center gap-1">
-                  <Lock className="size-3" />
-                  未解锁
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-[#E4E7ED] text-center text-sm text-[#909399]">
-          已完成 {exercises.filter((e) => e.is_completed).length} 题
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ========================================
-// Main Component
-// ========================================
-
-const DIFFICULTY_NAMES: Record<number, string> = {
-  1: "入门",
-  2: "普及-",
-  3: "普及/提高-",
-  4: "普及+/提高",
-  5: "提高+/省选-",
-  6: "省选/NOI-",
-  7: "NOI",
-  8: "NOI+/CTSC",
-};
-
-// 内部组件 - 使用 useSearchParams
+import {
+  Exercise,
+  TestCaseResult,
+  ExerciseProgress,
+  ProgressExercise,
+  ChallengeProgressResponse,
+  TestCase,
+  FeedbackState,
+  RightPanelTab,
+  LANGUAGE_MAP,
+  LANGUAGE_OPTIONS,
+  DIFFICULTY_NAMES,
+} from "./types"
+import { ResultModal, ExerciseNavigation, ExerciseListModal } from "./components"
+import { useArenaSession } from "./use-arena-session"
+import { useCodeRunner } from "./use-code-runner"
 function ArenaContent() {
-  const { push } = useRouter();
-  const searchParams = useSearchParams()
-  // react-doctor-disable-next-line react-compiler-destructure-method, react-doctor/react-compiler-destructure-method
-  const getSearchParam = (name: string) => searchParams.get(name)
-  const difficultyFromDashboard = getSearchParam("difficulty");
-  const exerciseIndexFromReview = getSearchParam("exerciseIndex"); // 从错题本跳转时的题目索引
+  const session = useArenaSession()
+  const runner = useCodeRunner()
 
-  // Arena state
-  const sessionIdRef = useRef<string>("");
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>(
-    [],
-  );
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const {
+    push,
+    exercises,
+    exerciseProgress,
+    currentIndex,
+    loading,
+    tierInfo,
+    coreBalance,
+    contentLoadingMap,
+    contentErrorMap,
+    savedCodesRef,
+    sessionIdRef,
+    currentDifficultyRef,
+    switchToExercise,
+    handleNext,
+    handleStay,
+    handleRetry,
+    handleExitSave,
+    handleExit,
+    endTrackedSession,
+    setExerciseProgress,
+    setExercises,
+    loadExerciseContent,
+    showExerciseList,
+    setShowExerciseList,
+    setTierInfo,
+    setCoreBalance,
+  } = session
 
-  // Code state - saved codes per exercise, per language
-  const savedCodesRef = useRef<Record<number, Record<string, string>>>({});
-  const [code, setCode] = useState("");
-  const [language, setLanguage] = useState<string>("python");
-  const [feedbackState, setFeedbackState] = useState<FeedbackState>("idle");
+  const {
+    code,
+    setCode,
+    language,
+    setLanguage,
+    feedbackState,
+    setFeedbackState,
+    testResults,
+    setTestResults,
+    isSubmitting,
+    setIsSubmitting,
+    customTestInput,
+    setCustomTestInput,
+    customTestOutput,
+    setCustomTestOutput,
+    isCustomRunning,
+    setIsCustomRunning,
+    rightPanelTab,
+    setRightPanelTab,
+    showResultModal,
+    setShowResultModal,
+    modalResult,
+    setModalResult,
+    codeRef,
+    reset,
+    handleCustomRun,
+    handleSampleRun,
+  } = runner
 
-  // Right panel state
-  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("code");
-  const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [customTestInput, setCustomTestInput] = useState("");
-  const [customTestOutput, setCustomTestOutput] = useState<{
-    output?: string;
-    expected?: string;
-    passed?: boolean;
-    error?: string;
-  } | null>(null);
-  const [isCustomRunning, setIsCustomRunning] = useState(false);
-
-  // Result modal state
-  const [showResultModal, setShowResultModal] = useState(false);
-  const [modalResult, setModalResult] = useState<{
-    isCorrect: boolean;
-    passedCount: number;
-    totalCount: number;
-    starsEarned: number;
-    promoted: boolean;
-    demoted: boolean;
-    firstTimeCorrect: boolean;
-    firstTimeWrong: boolean;
-  } | null>(null);
-
-  // Exercise list modal state
-  const [showExerciseList, setShowExerciseList] = useState(false);
-
-  // Tier tracking
-  const [tierInfo, setTierInfo] = useState<{
-    tier: string;
-    sub_tier: number;
-    stars: number;
-    full_name: string;
-  } | null>(null);
-
-  // Core balance for AI hints
-  const [coreBalance, setCoreBalance] = useState<number | undefined>(undefined);
-
-  // Exercise content loading state (lite mode: content loaded on demand)
-  const [contentLoadingMap, setContentLoadingMap] = useState<Record<number, boolean>>({});
-  const [contentErrorMap, setContentErrorMap] = useState<Record<number, string>>({});
-  const loadedContentRef = useRef<Set<number>>(new Set()); // tracks which exercises have full content
-  const loadingContentRef = useRef<Set<number>>(new Set()); // tracks in-flight loads to prevent duplicates
-
-  // Refs
-  const codeRef = useRef(code);
-  codeRef.current = code;
-  const currentIndexRef = useRef(currentIndex);
-  currentIndexRef.current = currentIndex;
-  const mountedRef = useRef(true);
-  const isMountedRef = useRef(false);
-  const sessionStartedAtRef = useRef<number | null>(null);
-  const sessionEndedRef = useRef(false);
-  const sessionInitializedRef = useRef(false); // 防止 StrictMode 重复初始化
-  const currentDifficultyRef = useRef<number>(1); // 当前挑战之路难度等级
-
-  const endTrackedSession = useCallback(() => {
-
-    if (sessionEndedRef.current) {
-      return;
-    }
-
-    const token = getStoredToken();
-    const startedAt = sessionStartedAtRef.current;
-
-
-    if (!token || !startedAt) {
-      return;
-    }
-
-    const durationSeconds = Math.max(
-      1,
-      Math.round((Date.now() - startedAt) / 1000),
-    );
-    const durationMinutes = (durationSeconds / 60).toFixed(1);
-
-    sessionEndedRef.current = true;
-
-    // Use keepalive fetch so the request survives page navigation / unmount.
-    endLearningSessionKeepalive(token, durationSeconds, undefined);
-  }, []);
-
-  // ========================================
-  // Data Fetching
-  // ========================================
-
-  const initChallenge = useCallback(async () => {
-    const token = getStoredToken();
-    if (!token) {
-      push("/login");
-      return;
-    }
-
-    const difficulty = difficultyFromDashboard
-      ? parseInt(difficultyFromDashboard)
-      : 1;
-    currentDifficultyRef.current = difficulty;
-
-    try {
-      setLoading(true);
-
-      // 并行获取：挑战进度 + 段位信息 + 智核余额 + 学习会话
-      const parallelTasks: Promise<unknown>[] = [
-        getChallengeProgress(token).catch(() => null),
-        getGlobalTierInfo().catch(() => null),
-        getCoreBalance().catch(() => null),
-      ];
-
-      // 学习会话也并行启动，不阻塞核心数据加载
-      if (!sessionInitializedRef.current) {
-        parallelTasks.push(
-          startStageSession(token, 0)
-            .then(() => {
-              const now = Date.now();
-              sessionStartedAtRef.current = now;
-              sessionEndedRef.current = false;
-              sessionInitializedRef.current = true;
-            })
-            .catch((error) => {
-              console.error("[学习时长] 启动会话失败:", error);
-            }),
-        );
-      }
-
-      const [progressData, tierData, balanceData] = await Promise.all(parallelTasks) as [
-        ChallengeProgressResponse | null,
-        { tier: string; sub_tier: number; stars: number; full_name: string } | null,
-        { balance: number } | null,
-      ];
-
-      // 处理段位和智核
-      if (tierData) {
-        setTierInfo({
-          tier: tierData.tier,
-          sub_tier: tierData.sub_tier,
-          stars: tierData.stars,
-          full_name: tierData.full_name,
-        });
-      }
-      if (balanceData) {
-        setCoreBalance(balanceData.balance);
-      }
-
-      // 先确定语言：优先用 localStorage 中保存的偏好，否则默认 python
-      // 必须在 processProgressData 之前，否则 savedCodes 初始化会用错误的 language key
-      const savedLanguage = localStorage.getItem("preferred_language");
-      const effectiveLanguage =
-        savedLanguage && LANGUAGE_MAP[savedLanguage] ? savedLanguage : "python";
-      if (effectiveLanguage !== language) {
-        setLanguage(effectiveLanguage);
-      }
-
-      // 处理挑战进度
-      if (progressData && progressData.exercises && progressData.exercises.length > 0) {
-        processProgressData(progressData, difficulty, effectiveLanguage);
-      } else {
-        // 没有练习题，初始化挑战之路
-        const sessionData = await startInfiniteSession(
-          {
-            difficulty_level: difficulty,
-            initial_count: 3,
-          },
-          token,
-        );
-
-        // 直接从 startInfiniteSession 响应构建进度数据，避免再次请求
-        if (sessionData.exercises && sessionData.exercises.length > 0) {
-          const builtProgress: ChallengeProgressResponse = {
-            exercises: sessionData.exercises.map((ex: ChallengeExercise, i: number) => ({
-              exercise_id: ex.id,
-              exercise_index: i,
-              is_completed: false,
-              is_correct: false,
-              is_unlocked: i === 0,
-              z_id: ex.z_id,
-              saved_code: "",
-              current_language: "python",
-              title: ex.title || `题目 ${i + 1}`,
-              difficulty: ex.difficulty,
-              content: ex.content,
-              knowledge_points: ex.knowledge_points || [],
-              test_cases: ex.test_cases || [],
-            })),
-            current_index: 0,
-            session_id: sessionData.session_id,
-          };
-          processProgressData(builtProgress, difficulty, effectiveLanguage);
-        } else {
-          const newProgressData = await getChallengeProgress(token);
-          processProgressData(newProgressData, difficulty, effectiveLanguage);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to initialize challenge:", error);
-      push("/dashboard");
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [push, difficultyFromDashboard]);
-
-  // 处理进度数据的辅助函数
-  const processProgressData = (
-    progressData: ChallengeProgressResponse,
-    difficulty: number,
-    effectiveLanguage: string = language,
-  ) => {
-    setCurrentIndex(progressData.current_index || 0);
-    // 保存 session_id 用于收藏
-    if (progressData.session_id) {
-      sessionIdRef.current = progressData.session_id;
-    }
-
-    // 判断是否是 lite 模式（无 content 字段）
-    const isLite = progressData.exercises.length > 0 && !progressData.exercises[0]?.content;
-
-    // 转换练习题格式 - lite 模式下 content 为空占位
-    const exerciseList: Exercise[] = progressData.exercises.map((ex: ProgressExercise) => {
-      const testCases = ex.test_cases || [];
-      const samples = ex.content?.samples || [];
-      const sampleInput = samples[0]?.input || testCases[0]?.input || "";
-      const sampleOutput = samples[0]?.output || testCases[0]?.output || "";
-      return {
-        id: ex.exercise_id,
-        z_id: ex.z_id,
-        type: ((ex as ProgressExercise & { type?: string }).type || "programming") as Exercise["type"],
-        difficulty: ex.difficulty || difficulty,
-        content: isLite ? {
-          title: ex.title,
-          description: "",
-          code_template: getTemplate(effectiveLanguage),
-          sample_input: "",
-          sample_output: "",
-          samples: [],
-        } : {
-          text: ex.content?.text || ex.title,
-          title: ex.title,
-          description: ex.content?.description || ex.content?.text || ex.title,
-          code_template: ex.content?.code_template || getTemplate(effectiveLanguage),
-          sample_input: sampleInput,
-          sample_output: sampleOutput,
-          samples: samples.map((s: { input?: string; output?: string }) => ({
-            input: s.input || "",
-            output: s.output || "",
-          })),
-        },
-        knowledge_points: ex.knowledge_points || [],
-        test_cases: testCases.map((tc: TestCase) => ({
-          input: tc.input || "",
-          output: tc.output || "",
-        })),
-      };
-    });
-
-    setExercises(exerciseList);
-
-    // 设置进度信息
-    const initialProgress: ExerciseProgress[] = progressData.exercises.map(
-      (ex: ProgressExercise) => ({
-        exercise_id: ex.exercise_id,
-        exercise_index: ex.exercise_index,
-        is_completed: ex.is_completed,
-        is_correct: ex.is_correct,
-        is_unlocked: ex.is_unlocked,
-        saved_code: ex.saved_code || "",
-        current_language: ex.current_language || "python",
-        title: ex.title || `题目 ${ex.exercise_index + 1}`,
-        difficulty: ex.difficulty || 1,
-      }),
-    );
-    setExerciseProgress(initialProgress);
-
-    // 初始化保存的代码：用当前语言作为 key（之前硬编码为 "python" 导致切换语言后取不到）
-    const initialCodes: Record<number, Record<string, string>> = {};
-    progressData.exercises.forEach((ex: ProgressExercise) => {
-      initialCodes[ex.exercise_id] = {
-        [effectiveLanguage]:
-          ex.saved_code || ex.content?.code_template || getTemplate(effectiveLanguage),
-      };
-    });
-    savedCodesRef.current = initialCodes;
-
-    // 处理从错题本跳转的情况
-    const targetIndex = exerciseIndexFromReview
-      ? parseInt(exerciseIndexFromReview)
-      : progressData.current_index || 0;
-    const validIndex = Math.min(
-      Math.max(0, targetIndex),
-      exerciseList.length - 1,
-    );
-
-    if (exerciseList.length > 0) {
-      setCurrentIndex(validIndex);
-      const savedCode =
-        initialCodes[exerciseList[validIndex].id]?.[effectiveLanguage] ||
-        exerciseList[validIndex].content.code_template ||
-        getTemplate(effectiveLanguage);
-      setCode(savedCode);
-
-      // Lite 模式下：立即按需加载当前题目的完整内容
-      if (isLite) {
-        loadExerciseContent(exerciseList[validIndex].id, validIndex);
-      }
-    }
-  };
-
-  // 按需加载单个题目的完整内容（lite 模式优化）
-  const loadExerciseContent = async (exerciseId: number, index: number) => {
-    // Prevent duplicate in-flight requests
-    if (loadingContentRef.current.has(exerciseId)) return;
-    if (loadedContentRef.current.has(exerciseId)) return;
-
-    const token = getStoredToken();
-    if (!token) return;
-
-    loadingContentRef.current.add(exerciseId);
-    setContentLoadingMap((prev) => ({ ...prev, [exerciseId]: true }));
-    setContentErrorMap((prev) => {
-      const next = { ...prev };
-      delete next[exerciseId];
-      return next;
-    });
-
-    try {
-      const data = await getChallengeExerciseContent(exerciseId, token);
-      loadedContentRef.current.add(exerciseId);
-
-      if (!mountedRef.current) return;
-
-      const exercise = data.exercise;
-      const samples = exercise.content?.samples || [];
-      const sampleInput = samples[0]?.input || "";
-      const sampleOutput = samples[0]?.output || "";
-
-      setExercises((prev) => {
-        const updated = [...prev];
-        if (updated[index]) {
-          updated[index] = {
-            ...updated[index],
-            type: (exercise.type || updated[index].type) as Exercise["type"],
-            content: {
-              text: exercise.content?.text || updated[index].content.title,
-              title: exercise.title || updated[index].content.title,
-              description: exercise.content?.description || exercise.content?.text || updated[index].content.title,
-              code_template: exercise.content?.code_template || getTemplate("python"),
-              sample_input: sampleInput,
-              sample_output: sampleOutput,
-              samples: samples.map((s: { input?: string; output?: string }) => ({
-                input: s.input || "",
-                output: s.output || "",
-              })),
-            },
-            knowledge_points: exercise.knowledge_points || [],
-            test_cases: (exercise.test_cases || []).map((tc: { input?: string; output?: string }) => ({
-              input: tc.input || "",
-              output: tc.output || "",
-            })),
-          };
-        }
-        return updated;
-      });
-
-      // Use ref to check current index (avoids stale closure)
-      if (index === currentIndexRef.current) {
-        const updated = { ...savedCodesRef.current };
-        const existingCode = updated[exerciseId]?.[language];
-        // 只在没有保存代码时才使用模板
-        if (!existingCode || existingCode === getTemplate("python")) {
-          updated[exerciseId] = {
-            ...updated[exerciseId],
-            [language]: exercise.content?.code_template || getTemplate(language),
-          };
-          savedCodesRef.current = updated;
-          setCode(exercise.content?.code_template || getTemplate(language));
-        }
-      }
-    } catch (error) {
-      console.error("[挑战之路] 加载题目内容失败:", error);
-      const errorMsg = error instanceof Error ? error.message : "加载失败";
-      setContentErrorMap((prev) => ({ ...prev, [exerciseId]: errorMsg }));
-      // Remove from loaded set so retry can happen
-      loadedContentRef.current.delete(exerciseId);
-    } finally {
-      loadingContentRef.current.delete(exerciseId);
-      if (mountedRef.current) {
-        setContentLoadingMap((prev) => {
-          const next = { ...prev };
-          delete next[exerciseId];
-          return next;
-        });
-      }
-    }
-  };
-
-  useEffect(() => {
-    initChallenge();
-  }, [initChallenge]);
-
-  // ========================================
-  // Language helpers
-  // ========================================
+  const currentExercise = exercises[currentIndex]
+  const currentProgress = exerciseProgress[currentIndex]
 
   const getLanguageId = () => LANGUAGE_MAP[language]?.id || 71;
-
   const handleLanguageChange = (newLang: string) => {
     if (newLang === language) return;
 
@@ -965,89 +187,6 @@ function ArenaContent() {
 
   // ========================================
   // Test execution
-  // ========================================
-
-  const handleCustomRun = async (
-    input: string,
-    isFromSample: boolean = false,
-  ) => {
-    if (!code || isCustomRunning) return;
-
-    setIsCustomRunning(true);
-    setCustomTestOutput(null);
-    if (isFromSample) {
-      setRightPanelTab("test");
-    }
-
-    try {
-      const token = getStoredToken();
-      if (!token) return;
-
-      const result = await executeCode(
-        {
-          code: code,
-          language_id: getLanguageId(),
-          stdin: input,
-        },
-        token,
-      );
-
-      setCustomTestOutput({
-        output: result.stdout || "",
-        expected: undefined,
-        passed: undefined,
-        error: result.stderr || result.compile_output,
-      });
-    } catch (error) {
-      console.error("Custom run failed:", error);
-      setCustomTestOutput({ error: "运行失败，请重试" });
-    } finally {
-      setIsCustomRunning(false);
-    }
-  };
-
-  const handleSampleRun = async (input: string, expectedOutput?: string) => {
-    setCustomTestInput(input);
-
-    if (!code || isCustomRunning) return;
-
-    setIsCustomRunning(true);
-    setCustomTestOutput(null);
-    setRightPanelTab("test");
-
-    try {
-      const token = getStoredToken();
-      if (!token) return;
-
-      const result = await executeCode(
-        {
-          code: code,
-          language_id: getLanguageId(),
-          stdin: input,
-        },
-        token,
-      );
-
-      const output = (result.stdout || "").trim();
-      const expected = (expectedOutput || "").trim();
-      const passed = output === expected;
-
-      setCustomTestOutput({
-        output: output,
-        expected: expected,
-        passed: passed,
-        error: result.stderr || result.compile_output,
-      });
-    } catch (error) {
-      console.error("Sample run failed:", error);
-      setCustomTestOutput({ error: "运行失败，请重试" });
-    } finally {
-      setIsCustomRunning(false);
-    }
-  };
-
-  // ========================================
-  // Submit
   // ========================================
 
   const handleSubmit = async () => {
@@ -1280,205 +419,14 @@ function ArenaContent() {
   // Navigation
   // ========================================
 
-  const switchToExercise = useCallback(
-    async (index: number) => {
-      if (index < 0 || index >= exercises.length) return;
-
-      const currentExercise = exercises[currentIndex];
-      const targetExercise = exercises[index];
-
-      // Check if unlocked
-      const targetProgress = exerciseProgress.find(
-        (p) => p.exercise_id === targetExercise.id,
-      );
-      if (targetProgress && !targetProgress.is_unlocked) {
-        return; // Can't switch to locked exercise
-      }
-
-      // Save current code
-      if (currentExercise) {
-        savedCodesRef.current = {
-          ...savedCodesRef.current,
-          [currentExercise.id]: {
-            ...savedCodesRef.current[currentExercise.id],
-            [language]: codeRef.current,
-          },
-        };
-      }
-
-      setCurrentIndex(index);
-
-      // Restore code for target exercise
-      const savedCodeForLang = savedCodesRef.current[targetExercise.id]?.[language];
-      if (savedCodeForLang) {
-        setCode(savedCodeForLang);
-      } else {
-        setCode(targetExercise.content.code_template || getTemplate(language));
-      }
-
-      // 按需加载目标题目的完整内容（如果是 lite 模式还没加载过的）
-      if (!loadedContentRef.current.has(targetExercise.id) && !loadingContentRef.current.has(targetExercise.id)) {
-        loadExerciseContent(targetExercise.id, index);
-      }
-
-      setTestResults([]);
-      setFeedbackState("idle");
-      setRightPanelTab("code");
-      setCustomTestOutput(null);
-      setShowResultModal(false);
-    },
-    [exercises, currentIndex, exerciseProgress, savedCodesRef, language],
-  );
-
-  const handleNext = useCallback(() => {
-    setShowResultModal(false);
-    if (currentIndex < exercises.length - 1) {
-      switchToExercise(currentIndex + 1);
-    }
-  }, [currentIndex, exercises.length, switchToExercise]);
-
-  const handleStay = useCallback(() => {
-    setShowResultModal(false);
-  }, []);
-
-  const handleRetry = useCallback(() => {
-    setTestResults([]);
-    setFeedbackState("idle");
-    setCustomTestOutput(null);
-    setRightPanelTab("code");
-    setShowResultModal(false);
-  }, []);
-
-  // ========================================
-  // Exit
-  // ========================================
-
-  const handleExitSave = useCallback(async () => {
-    const token = getStoredToken();
-    const currentExercise = exercises[currentIndex];
-
-    if (token && currentExercise) {
-      try {
-        await saveChallengeCode(
-          {
-            exercise_id: currentExercise.id,
-            code: codeRef.current,
-            language: language,
-          },
-          token,
-        );
-      } catch (error) {
-        console.error("Failed to save on exit:", error);
-      }
-    }
-  }, [exercises, currentIndex, language]);
-
-  // Cleanup on unmount
-  // 使用 isMountedRef 来区分 StrictMode 的假 unmount 和真正的 unmount
-  useEffect(() => {
-    mountedRef.current = true;
-    isMountedRef.current = true;
-
-    return () => {
-      mountedRef.current = false;
-
-      // StrictMode 下，cleanup 会立即执行，然后重新 mount
-      // 使用 requestAnimationFrame 或 setTimeout 来延迟执行
-      // 如果很快重新 mount，则 isMountedRef 会变回 true
-      isMountedRef.current = false;
-      // 重置 session 初始化标记，允许重新进入页面时重新初始化
-      sessionInitializedRef.current = false;
-
-      // 延迟执行 endTrackedSession，给 StrictMode 重新 mount 的机会
-      requestAnimationFrame(() => {
-        if (!isMountedRef.current) {
-          endTrackedSession();
-        }
-      });
-    };
-  }, [endTrackedSession]);
-
-  const handleExit = async () => {
-    await handleExitSave();
-    endTrackedSession();
-    push("/dashboard");
-  };
-
-  // ========================================
-  // Difficulty names
-  // ========================================
-  // Loading State
-  // ========================================
-
-  if (loading && exercises.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-white to-[#F7F8FA] flex flex-col">
-        <header className="h-[50px] bg-white border-b border-[#E4E7ED] flex items-center justify-between px-4">
-          <div className="skeleton h-8 w-32 rounded-lg"></div>
-          <div className="flex items-center gap-4">
-            <div className="skeleton h-6 w-40 rounded-lg"></div>
-            <div className="skeleton h-8 w-20 rounded-full"></div>
-          </div>
-        </header>
-        <main className="flex-1 flex pt-[50px]">
-          <div className="w-[40%] border-r border-[#E4E7ED] p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="skeleton h-8 w-20 rounded-lg"></div>
-              <div className="skeleton h-6 w-16 rounded-lg"></div>
-            </div>
-            <div className="skeleton h-7 w-3/4 rounded mb-4"></div>
-            <div className="flex flex-col gap-y-3">
-              <div className="skeleton h-4 w-full rounded"></div>
-              <div className="skeleton h-4 w-full rounded"></div>
-              <div className="skeleton h-4 w-2/3 rounded"></div>
-            </div>
-          </div>
-          <div className="w-[60%] flex flex-col">
-            <div className="h-12 bg-[#F5F7FA] border-b border-[#E4E7ED] flex items-center gap-2 px-4">
-              <div className="skeleton h-8 w-16 rounded"></div>
-              <div className="skeleton h-8 w-16 rounded"></div>
-            </div>
-            <div className="flex-1 bg-white">
-              <div className="skeleton h-full w-full"></div>
-            </div>
-          </div>
-        </main>
-        <div className="h-[72px] bg-white border-t border-[#E4E7ED] flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <div className="skeleton size-8 rounded-lg"></div>
-            <div className="skeleton h-4 w-32 rounded"></div>
-          </div>
-          <div className="flex gap-2">
-            <div className="skeleton h-10 w-20 rounded-lg"></div>
-            <div className="skeleton h-10 w-24 rounded-lg"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ========================================
-  // Main IDE View
-  // ========================================
-
-  if (exercises.length === 0) return null;
-
-  const currentExercise = exercises[currentIndex];
-  const currentProgress = exerciseProgress.find(
-    (p) => p.exercise_id === currentExercise.id,
-  );
-  const isLastExercise = currentIndex === exercises.length - 1;
-  const passedCount = testResults.filter((r) => r.passed).length;
-  const canGoNext =
-    currentIndex < exercises.length - 1 &&
-    exerciseProgress[currentIndex + 1]?.is_unlocked;
+  const canGoNext = currentIndex < exercises.length - 1
 
   return (
     <div className="min-h-screen ide-container flex flex-col">
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 z-50 h-[50px] ide-header">
         <div className="h-full px-4 flex items-center justify-between">
-          <button type="button" onClick={handleExit} className="ide-header-back">
+          <button type="button" onClick={() => handleExit(code, language)} className="ide-header-back">
             <X className="size-4" />
             <span className="text-sm">退出挑战</span>
           </button>
@@ -1488,7 +436,7 @@ function ArenaContent() {
             <ExerciseNavigation
               exercises={exerciseProgress}
               currentIndex={currentIndex}
-              onSwitch={switchToExercise}
+              onSwitch={(idx: number) => switchToExercise(idx, language, (newCode: string) => { setCode(newCode); reset(); setRightPanelTab("code"); })}
             />
 
             {/* 题目列表按钮 */}
@@ -1563,7 +511,7 @@ function ArenaContent() {
                   <p className="text-xs text-red-500 mb-3">{contentErrorMap[currentExercise.id]}</p>
                   <button
                     type="button"
-                    onClick={() => loadExerciseContent(currentExercise.id, currentIndex)}
+                    onClick={() => loadExerciseContent(currentExercise.id, currentIndex, language)}
                     className="px-3 py-1.5 bg-white border border-red-300 text-red-600 text-xs rounded-md hover:bg-red-50 transition-colors"
                   >
                     重试
@@ -1745,7 +693,7 @@ function ArenaContent() {
               <div className="h-full overflow-y-auto p-4 bg-[#FAFBFC]">
                 <LuoguTestCaseTable
                   results={testResults}
-                  passedCount={passedCount}
+                  passedCount={testResults.filter(r => r.passed).length}
                   totalCount={testResults.length}
                   isRunning={isSubmitting}
                 />
@@ -1827,7 +775,7 @@ function ArenaContent() {
                   <>
                     <div className="h-6 w-px bg-[#E4E7ED]" />
                     <LuoguTestCasesSummary
-                      passedCount={passedCount}
+                      passedCount={testResults.filter(r => r.passed).length}
                       totalCount={testResults.length}
                     />
                   </>
@@ -1893,7 +841,7 @@ function ArenaContent() {
                   <p className="font-semibold text-[#E74C3C]">答案错误</p>
                   {testResults.length > 0 && (
                     <p className="text-sm text-[#E74C3C]/70">
-                      通过 {passedCount}/{testResults.length} 个测试点 ·
+                      通过 {testResults.filter(r => r.passed).length}/{testResults.length} 个测试点 ·
                       修改后重新提交
                     </p>
                   )}
@@ -1950,7 +898,7 @@ function ArenaContent() {
         onClose={() => setShowExerciseList(false)}
         exercises={exerciseProgress}
         currentIndex={currentIndex}
-        onSwitch={switchToExercise}
+        onSwitch={(idx: number) => switchToExercise(idx, language, (newCode: string) => { setCode(newCode); reset(); setRightPanelTab("code"); })}
       />
     </div>
   );

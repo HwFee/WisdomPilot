@@ -24,8 +24,6 @@ from app.schemas.ai import (
     AIChatResponse,
     ChoiceAnalysisRequest,
     ChoiceAnalysisResponse,
-    CodeFeedbackRequest,
-    CodeFeedbackResponse,
     ChatStreamRequest,
     AIStatusResponse,
     TestConnectionRequest,
@@ -304,28 +302,6 @@ async def analyze_choice(
         return ChoiceAnalysisResponse(**result)
     except Exception:
         logger.exception("AI analysis failed")
-        raise HTTPException(status_code=500, detail="AI 服务暂不可用，请稍后重试")
-
-
-@analysis_router.post("/code-feedback", response_model=CodeFeedbackResponse)
-async def get_code_feedback(
-    request: CodeFeedbackRequest,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-):
-    """编程题 AI 反馈 —— 纠错 + 优化 + 建议 三合一"""
-    try:
-        result = await ai_service.generate_code_feedback(
-            code=request.code,
-            language=request.language,
-            exercise_description=request.exercise_description,
-            expected_output=request.expected_output,
-            actual_output=request.actual_output,
-            status=request.status,
-            error_message=request.error_message,
-        )
-        return CodeFeedbackResponse(**result)
-    except Exception:
-        logger.exception("AI feedback failed")
         raise HTTPException(status_code=500, detail="AI 服务暂不可用，请稍后重试")
 
 
