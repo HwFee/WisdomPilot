@@ -353,13 +353,11 @@ class AIService:
             q_type = context.get("type", "")
             q_text = context.get("question", "")
             q_opts = context.get("options", [])
-            q_code = context.get("code", "")
 
             opts_str = ""
             if q_opts:
                 opts_str = "\n".join([f"{chr(65+i)}. {opt}" for i, opt in enumerate(q_opts)])
 
-            code_line = f"代码：\n{q_code}" if q_code else ""
             opts_line = f"选项：\n{opts_str}" if opts_str else ""
 
             context_parts = [
@@ -369,8 +367,6 @@ class AIService:
             ]
             if opts_line:
                 context_parts.append(opts_line)
-            if code_line:
-                context_parts.append(code_line)
 
             context_str = "\n".join(context_parts)
 
