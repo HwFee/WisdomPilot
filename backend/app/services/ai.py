@@ -1,5 +1,6 @@
 """AI 服务层 - 支持多种 AI 提供商，与原有代码完全隔离"""
 
+import asyncio
 import json
 import logging
 import httpx
@@ -25,6 +26,20 @@ class OpenAIProvider(AIProvider):
 
     _client: Optional[httpx.AsyncClient] = None
 
+    CHAT_COMPLETIONS_ENDPOINT = "/chat/completions"
+    HEADER_AUTHORIZATION = "Authorization"
+    HEADER_CONTENT_TYPE = "Content-Type"
+    MEDIA_TYPE_JSON = "application/json"
+    JSON_KEY_MODEL = "model"
+    JSON_KEY_MESSAGES = "messages"
+    JSON_KEY_TEMPERATURE = "temperature"
+    JSON_KEY_CHOICES = "choices"
+    JSON_KEY_MESSAGE = "message"
+    JSON_KEY_CONTENT = "content"
+    MAX_RETRIES = 3
+    RETRYABLE_STATUS_THRESHOLD = 500
+    ERROR_BODY_TRUNCATION_LENGTH = 500
+
     def __init__(self, config: AIProviderConfig):
         self.config = config
         self.base_url = config.base_url or "https://api.deepseek.com"
@@ -38,44 +53,68 @@ class OpenAIProvider(AIProvider):
             )
         return OpenAIProvider._client
 
+    def _build_chat_headers(self) -> dict:
+        return {
+            self.HEADER_AUTHORIZATION: f"Bearer {self.config.api_key}",
+            self.HEADER_CONTENT_TYPE: self.MEDIA_TYPE_JSON,
+        }
+
+    def _build_chat_payload(self, messages: list) -> dict:
+        return {
+            self.JSON_KEY_MODEL: self.config.model,
+            self.JSON_KEY_MESSAGES: messages,
+            self.JSON_KEY_TEMPERATURE: self.config.temperature,
+        }
+
+    def _extract_content(self, response: httpx.Response) -> str:
+        return response.json()[self.JSON_KEY_CHOICES][0][self.JSON_KEY_MESSAGE][self.JSON_KEY_CONTENT]
+
+    def _log_http_error(self, error: httpx.HTTPStatusError) -> None:
+        try:
+            err_body = error.response.text[:self.ERROR_BODY_TRUNCATION_LENGTH]
+        except Exception:
+            err_body = "<unable to read response body>"
+        logger.error(
+            f"[OpenAIProvider] HTTP {error.response.status_code} "
+            f"from {error.request.url}: {err_body}"
+        )
+
+    def _should_retry_network_error(self, attempt: int) -> bool:
+        return attempt < self.MAX_RETRIES - 1
+
+    def _should_retry_http_error(self, error: httpx.HTTPStatusError, attempt: int) -> bool:
+        return error.response.status_code >= self.RETRYABLE_STATUS_THRESHOLD and attempt < self.MAX_RETRIES - 1
+
     async def _call_api(self, messages: list) -> str:
         client = self._get_client()
         last_exception = None
-        for attempt in range(3):
+        for attempt in range(self.MAX_RETRIES):
             try:
                 response = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.config.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": self.config.model,
-                        "messages": messages,
-                        "temperature": self.config.temperature,
-                    },
+                    f"{self.base_url}{self.CHAT_COMPLETIONS_ENDPOINT}",
+                    headers=self._build_chat_headers(),
+                    json=self._build_chat_payload(messages),
                 )
                 response.raise_for_status()
-                return response.json()["choices"][0]["message"]["content"]
+                return self._extract_content(response)
             except (httpx.TimeoutException, httpx.ConnectError) as e:
                 last_exception = e
-                if attempt < 2:
-                    logger.warning(f"[OpenAIProvider] API call attempt {attempt + 1} failed ({e}), retrying in {attempt + 1}s...")
-                    import asyncio
-                    await asyncio.sleep(attempt + 1)
+                if not self._should_retry_network_error(attempt):
+                    break
+                logger.warning(
+                    f"[OpenAIProvider] API call attempt {attempt + 1} failed ({e}), "
+                    f"retrying in {attempt + 1}s..."
+                )
+                await asyncio.sleep(attempt + 1)
             except httpx.HTTPStatusError as e:
-                # Log detailed error for 4xx/5xx to help diagnose model/key issues
-                try:
-                    err_body = e.response.text[:500]
-                except Exception:
-                    err_body = "<unable to read response body>"
-                logger.error(f"[OpenAIProvider] HTTP {e.response.status_code} from {e.request.url}: {err_body}")
-                if e.response.status_code >= 500 and attempt < 2:
-                    logger.warning(f"[OpenAIProvider] API call attempt {attempt + 1} got {e.response.status_code}, retrying in {attempt + 1}s...")
-                    import asyncio
-                    await asyncio.sleep(attempt + 1)
-                else:
+                self._log_http_error(e)
+                if not self._should_retry_http_error(e, attempt):
                     raise
+                logger.warning(
+                    f"[OpenAIProvider] API call attempt {attempt + 1} got "
+                    f"{e.response.status_code}, retrying in {attempt + 1}s..."
+                )
+                await asyncio.sleep(attempt + 1)
         raise last_exception
 
     async def generate_explanation(self, prompt: str) -> str:
