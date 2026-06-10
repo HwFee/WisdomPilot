@@ -88,7 +88,7 @@ def kill_process_tree(pid: int) -> None:
         )
     else:
         try:
-            os.killpg(pid, signal.SIGTERM)
+            os.killpg(pid, signal.SIGTERM) # type: ignore
         except ProcessLookupError:
             pass
 
