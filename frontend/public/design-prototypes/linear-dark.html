@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智码领航 — Linear Dark 设计方向</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0C0C0C;
+      --bg-elevated: #111111;
+      --bg-hover: #1A1A1A;
+      --border: #1F1F1F;
+      --border-hover: #2A2A2A;
+      --text-primary: #FFFFFF;
+      --text-secondary: #A0A0A0;
+      --text-muted: #555555;
+      --accent: #8B5CF6;
+      --accent-dim: rgba(139, 92, 246, 0.15);
+      --success: #22C55E;
+      --success-dim: rgba(34, 197, 94, 0.1);
+      --danger: #EF4444;
+      --danger-dim: rgba(239, 68, 68, 0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    }
+
+    /* ── 顶部栏 ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 56px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.3px;
+    }
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .nav {
+      display: flex;
+      gap: 2px;
+    }
+    .nav-item {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 450;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .nav-item:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+    .nav-item.active {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+      font-weight: 500;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px 4px 4px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .user-btn:hover { border-color: var(--border-hover); }
+    .user-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* ── 主容器 ── */
+    .main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    /* ── 欢迎区 ── */
+    .welcome {
+      margin-bottom: 32px;
+    }
+    .welcome-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .welcome-greeting {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+    .welcome-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .welcome-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .welcome-bar {
+      height: 1px;
+      background: var(--border);
+      position: relative;
+    }
+    .welcome-bar::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 120px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    /* ── 统计区 ── */
+    .stats-section { margin-bottom: 32px; }
+    .stats-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .stats-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stats-date {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .stat-cell {
+      background: var(--bg-elevated);
+      padding: 24px;
+      transition: background 0.12s;
+    }
+    .stat-cell:hover { background: var(--bg-hover); }
+    .stat-value {
+      font-family: 'Geist Mono', monospace;
+      font-size: 32px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 450;
+    }
+    .stat-delta {
+      font-size: 11px;
+      margin-top: 8px;
+      font-family: 'Geist Mono', monospace;
+    }
+    .stat-delta.up { color: var(--success); }
+    .stat-delta.down { color: var(--danger); }
+
+    /* ── 内容网格 ── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1px;
+    }
+    .panel {
+      background: var(--bg-elevated);
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .panel-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+    }
+    .panel-body { padding: 4px 0; }
+
+    /* ── 课程列表 ── */
+    .course-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+      cursor: default;
+    }
+    .course-row:last-child { border-bottom: none; }
+    .course-row:hover { background: var(--bg-hover); }
+    .course-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Geist Mono', monospace;
+      flex-shrink: 0;
+    }
+    .course-info { flex: 1; min-width: 0; }
+    .course-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .course-chapter {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .course-bar {
+      width: 80px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .course-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--text-primary);
+      transition: width 0.3s;
+    }
+    .course-pct {
+      font-family: 'Geist Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      width: 36px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── 工具列表 ── */
+    .tool-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .tool-row:last-child { border-bottom: none; }
+    .tool-row:hover { background: var(--bg-hover); }
+    .tool-row:hover .tool-action { opacity: 1; }
+    .tool-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .tool-info { flex: 1; }
+    .tool-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .tool-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .tool-action {
+      font-size: 11px;
+      color: var(--text-secondary);
+      opacity: 0;
+      transition: opacity 0.15s;
+      font-family: 'Geist Mono', monospace;
+    }
+
+    /* ── 活动列表 ── */
+    .activity-list { padding: 8px 0; }
+    .activity-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .activity-row:last-child { border-bottom: none; }
+    .activity-row:hover { background: var(--bg-hover); }
+    .activity-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+    .activity-content { flex: 1; min-width: 0; }
+    .activity-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .activity-text strong { font-weight: 500; }
+    .activity-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-family: 'Geist Mono', monospace;
+    }
+    .activity-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      font-family: 'Geist Mono', monospace;
+    }
+
+    /* ── 段位面板 ── */
+    .tier-section {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tier-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .tier-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .tier-info { flex: 1; }
+    .tier-name {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .tier-next {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+    .tier-xp {
+      text-align: right;
+    }
+    .tier-xp-val {
+      font-family: 'Geist Mono', monospace;
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .tier-xp-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tier-bar-wrap {
+      margin-top: 16px;
+    }
+    .tier-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .tier-bar-fill {
+      height: 100%;
+      width: 81.6%;
+      border-radius: 2px;
+      background: var(--text-primary);
+    }
+    .tier-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Geist Mono', monospace;
+    }
+
+    /* ── 签到 ── */
+    .checkin-section {
+      padding: 20px 24px;
+    }
+    .checkin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .checkin-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .checkin-streak {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: 'Geist Mono', monospace;
+    }
+    .checkin-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .checkin-cell {
+      text-align: center;
+    }
+    .checkin-day-name {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-family: 'Geist Mono', monospace;
+    }
+    .checkin-day-box {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      transition: all 0.12s;
+    }
+    .checkin-day-box.done {
+      background: var(--text-primary);
+      border-color: var(--text-primary);
+      color: var(--bg);
+    }
+    .checkin-day-box.today {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── 颜色工具 ── */
+    .bg-accent-dim { background: var(--accent-dim); }
+    .bg-success-dim { background: var(--success-dim); }
+    .bg-danger-dim { background: var(--danger-dim); }
+    .text-accent { color: var(--accent); }
+    .text-success { color: var(--success); }
+    .text-danger { color: var(--danger); }
+
+    /* ── 底部 ── */
+    .footer {
+      margin-top: 32px;
+      padding: 20px 0;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ── 响应式 ── */
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-grid { grid-template-columns: 1fr; }
+      .main { padding: 20px; }
+      .nav { display: none; }
+    }
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .welcome-greeting { font-size: 22px; }
+      .topbar { padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部栏 -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <div class="logo-dot"></div>
+        智码领航
+      </div>
+      <nav class="nav">
+        <div class="nav-item active">仪表盘</div>
+        <div class="nav-item">竞技场</div>
+        <div class="nav-item">掌握度</div>
+        <div class="nav-item">课程</div>
+        <div class="nav-item">排行榜</div>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="user-btn">
+        <div class="user-avatar">C</div>
+        <span>CodeMaster</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- 欢迎区 -->
+    <section class="welcome">
+      <div class="welcome-row">
+        <h1 class="welcome-greeting">下午好，CodeMaster</h1>
+        <div class="welcome-meta">
+          <span>🔥 12</span>
+          <span>·</span>
+          <span>2,450 XP</span>
+        </div>
+      </div>
+      <div class="welcome-bar"></div>
+    </section>
+
+    <!-- 统计区 -->
+    <section class="stats-section">
+      <div class="stats-header">
+        <span class="stats-title">Overview</span>
+        <span class="stats-date">2026-06-11</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <div class="stat-value">12</div>
+          <div class="stat-label">解题数量</div>
+          <div class="stat-delta up">+3</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-value">87.5%</div>
+          <div class="stat-label">正确率</div>
+          <div class="stat-delta up">+5.2%</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-value">2.5h</div>
+          <div class="stat-label">学习时长</div>
+          <div class="stat-delta down">−0.5h</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-value">12</div>
+          <div class="stat-label">连续天数</div>
+          <div class="stat-delta up">record</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 中部内容 -->
+    <div class="content-grid">
+      <!-- 课程进度 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Courses</span>
+          <span class="panel-badge">4 active</span>
+        </div>
+        <div class="panel-body">
+          <div class="course-row">
+            <div class="course-icon">C</div>
+            <div class="course-info">
+              <div class="course-name">C语言程序设计</div>
+              <div class="course-chapter">Ch.8 · 指针与数组</div>
+            </div>
+            <div class="course-bar"><div class="course-bar-fill" style="width:68%"></div></div>
+            <span class="course-pct">68%</span>
+          </div>
+          <div class="course-row">
+            <div class="course-icon">Py</div>
+            <div class="course-info">
+              <div class="course-name">Python程序设计</div>
+              <div class="course-chapter">Ch.5 · 函数与模块</div>
+            </div>
+            <div class="course-bar"><div class="course-bar-fill" style="width:45%"></div></div>
+            <span class="course-pct">45%</span>
+          </div>
+          <div class="course-row">
+            <div class="course-icon">Ds</div>
+            <div class="course-info">
+              <div class="course-name">数据结构与算法</div>
+              <div class="course-chapter">Ch.3 · 链表</div>
+            </div>
+            <div class="course-bar"><div class="course-bar-fill" style="width:32%"></div></div>
+            <span class="course-pct">32%</span>
+          </div>
+          <div class="course-row">
+            <div class="course-icon">Rs</div>
+            <div class="course-info">
+              <div class="course-name">Rust程序设计</div>
+              <div class="course-chapter">Ch.2 · 所有权系统</div>
+            </div>
+            <div class="course-bar"><div class="course-bar-fill" style="width:18%"></div></div>
+            <span class="course-pct">18%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷工具 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Shortcuts</span>
+        </div>
+        <div class="panel-body">
+          <div class="tool-row">
+            <div class="tool-icon">⚔️</div>
+            <div class="tool-info">
+              <div class="tool-name">竞技场</div>
+              <div class="tool-desc">随机挑战</div>
+            </div>
+            <span class="tool-action">Open →</span>
+          </div>
+          <div class="tool-row">
+            <div class="tool-icon">📝</div>
+            <div class="tool-info">
+              <div class="tool-name">错题复习</div>
+              <div class="tool-desc">8 pending</div>
+            </div>
+            <span class="tool-action">Open →</span>
+          </div>
+          <div class="tool-row">
+            <div class="tool-icon">⭐</div>
+            <div class="tool-info">
+              <div class="tool-name">我的收藏</div>
+              <div class="tool-desc">24 items</div>
+            </div>
+            <span class="tool-action">Open →</span>
+          </div>
+          <div class="tool-row">
+            <div class="tool-icon">📒</div>
+            <div class="tool-info">
+              <div class="tool-name">学习笔记</div>
+              <div class="tool-desc">2h ago</div>
+            </div>
+            <span class="tool-action">Open →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部内容 -->
+    <div class="content-grid">
+      <!-- 最近活动 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Activity</span>
+        </div>
+        <div class="panel-body activity-list">
+          <div class="activity-row">
+            <div class="activity-indicator" style="background:var(--success)"></div>
+            <div class="activity-content">
+              <div class="activity-text">完成 <strong>C语言 — 指针算术</strong></div>
+              <div class="activity-meta">100% accuracy · 3m24s</div>
+            </div>
+            <span class="activity-time">10m ago</span>
+          </div>
+          <div class="activity-row">
+            <div class="activity-indicator" style="background:var(--accent)"></div>
+            <div class="activity-content">
+              <div class="activity-text">竞技场连胜 <strong>3</strong> 局</div>
+              <div class="activity-meta">+45 XP · 2 opponents</div>
+            </div>
+            <span class="activity-time">1h ago</span>
+          </div>
+          <div class="activity-row">
+            <div class="activity-indicator" style="background:var(--text-muted)"></div>
+            <div class="activity-content">
+              <div class="activity-text">收藏 <strong>Python — 装饰器详解</strong></div>
+              <div class="activity-meta">Ch.6</div>
+            </div>
+            <span class="activity-time">3h ago</span>
+          </div>
+          <div class="activity-row">
+            <div class="activity-indicator" style="background:var(--text-muted)"></div>
+            <div class="activity-content">
+              <div class="activity-text">掌握知识点 <strong>递归函数</strong></div>
+              <div class="activity-meta">82% mastery</div>
+            </div>
+            <span class="activity-time">5h ago</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 段位 & 签到 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Progress</span>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div class="tier-section">
+            <div class="tier-row">
+              <div class="tier-icon">🥇</div>
+              <div class="tier-info">
+                <div class="tier-name">Gold Tier</div>
+                <div class="tier-next">2,450 / 3,000 XP → Platinum</div>
+              </div>
+              <div class="tier-xp">
+                <div class="tier-xp-val">2,450</div>
+                <div class="tier-xp-label">XP</div>
+              </div>
+            </div>
+            <div class="tier-bar-wrap">
+              <div class="tier-bar"><div class="tier-bar-fill"></div></div>
+              <div class="tier-bar-labels">
+                <span>Gold</span>
+                <span>Platinum</span>
+              </div>
+            </div>
+          </div>
+          <div class="checkin-section">
+            <div class="checkin-header">
+              <span class="checkin-title">Check-in</span>
+              <span class="checkin-streak">12 day streak</span>
+            </div>
+            <div class="checkin-grid">
+              <div class="checkin-cell">
+                <div class="checkin-day-name">M</div>
+                <div class="checkin-day-box done">✓</div>
+              </div>
+              <div class="checkin-cell">
+                <div class="checkin-day-name">T</div>
+                <div class="checkin-day-box done">✓</div>
+              </div>
+              <div class="checkin-cell">
+                <div class="checkin-day-name">W</div>
+                <div class="checkin-day-box done">✓</div>
+              </div>
+              <div class="checkin-cell">
+                <div class="checkin-day-name">T</div>
+                <div class="checkin-day-box done">✓</div>
+              </div>
+              <div class="checkin-cell">
+                <div class="checkin-day-name">F</div>
+                <div class="checkin-day-box done">✓</div>
+              </div>
+              <div class="checkin-cell">
+                <div class="checkin-day-name">S</div>
+                <div class="checkin-day-box done">✓</div>
+              </div>
+              <div class="checkin-cell">
+                <div class="checkin-day-name">S</div>
+                <div class="checkin-day-box today">·</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+      <span>智码领航 Linear Dark 设计样板 | 方向 E — 极简暗色美学</span>
+      <span>1px 线条 · 微妙层次 · 现代 SaaS</span>
+    </div>
+  </main>
+</body>
+</html>
