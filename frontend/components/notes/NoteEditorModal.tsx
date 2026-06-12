@@ -1,11 +1,7 @@
 'use client'
 
-import { NoteEditorToolbar } from './NoteEditorToolbar'
-import { NoteTagSelector } from './NoteTagSelector'
-import { NoteTitleInput } from './NoteTitleInput'
-import { MarkdownEditorPane } from './MarkdownEditorPane'
-import { MarkdownPreviewPane } from './MarkdownPreviewPane'
-import { NoteEditorFooter } from './NoteEditorFooter'
+import { Panel } from '@/components/layout'
+import { NoteEditorBody } from './NoteEditorBody'
 import type { NoteResponse, NoteTagResponse } from '@/types/api'
 
 interface NoteEditorModalProps {
@@ -51,47 +47,29 @@ export function NoteEditorModal({
 }: NoteEditorModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-4xl aspect-square max-h-[90vh] flex flex-col overflow-hidden">
-        <NoteEditorToolbar
+      <Panel className="w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <NoteEditorBody
           note={note}
-          lang={lang}
-          showTagSelector={showTagSelector}
-          onToggleTagSelector={onToggleTagSelector}
-          onClose={onClose}
-          variant="modal"
-        />
-        {showTagSelector && (
-          <NoteTagSelector
-            selectedTags={selectedTags}
-            selectedTagSet={selectedTagSet}
-            availableTags={availableTags}
-            newTagName={newTagName}
-            lang={lang}
-            onNewTagNameChange={onNewTagNameChange}
-            onCreateTag={onCreateTag}
-            onToggleTag={onToggleTag}
-            variant="modal"
-          />
-        )}
-        <NoteTitleInput title={title} lang={lang} onTitleChange={onTitleChange} variant="modal" />
-        <div className="flex-1 flex gap-4 p-5 overflow-hidden min-h-0">
-          <MarkdownEditorPane
-            content={content}
-            lang={lang}
-            onContentChange={onContentChange}
-            variant="modal"
-          />
-          <MarkdownPreviewPane content={content} lang={lang} variant="modal" />
-        </div>
-        <NoteEditorFooter
-          isSaving={isSaving}
+          title={title}
           content={content}
+          selectedTags={selectedTags}
+          selectedTagSet={selectedTagSet}
+          availableTags={availableTags}
+          newTagName={newTagName}
+          showTagSelector={showTagSelector}
+          isSaving={isSaving}
           lang={lang}
+          onTitleChange={onTitleChange}
+          onContentChange={onContentChange}
+          onNewTagNameChange={onNewTagNameChange}
+          onCreateTag={onCreateTag}
+          onToggleTag={onToggleTag}
+          onToggleTagSelector={onToggleTagSelector}
           onSave={onSave}
           onCancel={onClose}
           variant="modal"
         />
-      </div>
+      </Panel>
     </div>
   )
 }
