@@ -5,29 +5,28 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { QuickTools } from '../QuickTools'
 
 describe('QuickTools', () => {
-  it('renders all 4 tool cards', () => {
+  it('renders quick tools panel with three tool items', () => {
     render(<QuickTools />)
 
+    expect(screen.getByText('快捷入口')).toBeInTheDocument()
     expect(screen.getByText('错题本')).toBeInTheDocument()
     expect(screen.getByText('收藏夹')).toBeInTheDocument()
     expect(screen.getByText('笔记')).toBeInTheDocument()
-    // 打卡模块包含日期
-    expect(screen.getByText('打卡')).toBeInTheDocument()
   })
 
-  it('displays wrong count when provided', () => {
+  it('displays wrong count in description when provided', () => {
     render(<QuickTools wrongCount={12} />)
 
-    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText('12 道错题待复习')).toBeInTheDocument()
   })
 
-  it('displays streak days', () => {
+  it('displays streak days in check-in panel', () => {
     render(<QuickTools streakDays={7} />)
 
     expect(screen.getByText('7')).toBeInTheDocument()
   })
 
-  it('calls onWrongClick when wrong questions card is clicked', () => {
+  it('calls onWrongClick when wrong questions tool is clicked', () => {
     const handleClick = jest.fn()
     render(<QuickTools wrongCount={5} onWrongClick={handleClick} />)
 
@@ -35,7 +34,7 @@ describe('QuickTools', () => {
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 
-  it('calls onFavoritesClick when favorites card is clicked', () => {
+  it('calls onFavoritesClick when favorites tool is clicked', () => {
     const handleClick = jest.fn()
     render(<QuickTools onFavoritesClick={handleClick} />)
 
@@ -43,7 +42,7 @@ describe('QuickTools', () => {
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 
-  it('calls onNotesClick when notes card is clicked', () => {
+  it('calls onNotesClick when notes tool is clicked', () => {
     const handleClick = jest.fn()
     render(<QuickTools onNotesClick={handleClick} />)
 
@@ -74,9 +73,11 @@ describe('QuickTools', () => {
     expect(screen.getByText('Notes')).toBeInTheDocument()
   })
 
-  it('renders 4 cards in grid layout', () => {
+  it('renders tools as a list inside a panel', () => {
     const { container } = render(<QuickTools />)
-    const grid = container.querySelector('.grid-cols-4')
-    expect(grid).toBeInTheDocument()
+    const panel = container.querySelector('.bg-card.border.border-border')
+    expect(panel).toBeInTheDocument()
+    const tools = container.querySelectorAll('button')
+    expect(tools.length).toBeGreaterThanOrEqual(3)
   })
 })

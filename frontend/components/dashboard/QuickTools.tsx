@@ -9,8 +9,10 @@ import {
   Check,
   Sparkles,
   Trophy,
+  Crown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Panel, PanelHeader, ToolItem } from '@/components/layout'
 
 // ── 常量 ──
 
@@ -28,19 +30,6 @@ const STREAK_MULTIPLIER_THRESHOLDS: MultiplierThreshold[] = [
   { threshold: 1.2, text: '1.2x', color: 'bg-green-500/20 text-green-600' },
 ]
 
-// ── Crown 图标 (lucide-react 中没有直接的 crown 图标) ──
-
-const CrownIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-  >
-    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 14h14v2H5v-2z" />
-  </svg>
-)
-
 // ── 类型 ──
 
 interface QuickToolsProps {
@@ -55,14 +44,10 @@ interface QuickToolsProps {
   onNotesClick?: () => void
   onCheckIn?: () => void
   lang?: 'zh' | 'en'
-  // Enhanced check-in fields
   lunarStr?: string
   solarTerm?: string
   holiday?: string
   streakMultiplier?: number
-  // Additional details
-  nextTierDays?: number | null
-  xpEarnedToday?: number
 }
 
 interface TierInfo {
@@ -122,7 +107,7 @@ function getNextTierInfo(streakDays: number, lang: 'zh' | 'en'): TierInfo | null
 function TierIcon({ type, className }: { type: TierInfo['iconType']; className?: string }) {
   switch (type) {
     case 'crown':
-      return <CrownIcon className={className} />
+      return <Crown className={className} strokeWidth={1.5} />
     case 'trophy':
       return <Trophy className={className} strokeWidth={1.5} />
     case 'sparkles':
@@ -256,8 +241,6 @@ export function QuickTools({
   solarTerm,
   holiday,
   streakMultiplier = 1.0,
-  nextTierDays,
-  xpEarnedToday,
 }: QuickToolsProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
@@ -269,108 +252,101 @@ export function QuickTools({
   })
 
   const nextTierInfo = getNextTierInfo(streakDays, lang)
+  const multiplierBadge = getMultiplierBadge(streakMultiplier)
 
   const tools = [
     {
-      icon: FileText,
-      label: t('错题本', 'Wrong'),
-      count: wrongCount,
+      icon: <FileText className="size-5 text-foreground" strokeWidth={1.5} />,
+      iconClassName: 'bg-red-500/10 text-red-600',
+      name: t('错题本', 'Wrong'),
+      desc: wrongCount > 0 ? `${wrongCount} ${t('道错题待复习', 'questions to review')}` : t('复习做错的题目', 'Review wrong answers'),
       onClick: onWrongClick,
     },
     {
-      icon: Star,
-      label: t('收藏夹', 'Favorites'),
-      count: favoritesCount,
+      icon: <Star className="size-5 text-foreground" strokeWidth={1.5} />,
+      iconClassName: 'bg-amber-500/10 text-amber-600',
+      name: t('收藏夹', 'Favorites'),
+      desc: favoritesCount > 0 ? `${favoritesCount} ${t('个收藏知识点', 'favorited items')}` : t('查看收藏的内容', 'View favorites'),
       onClick: onFavoritesClick,
     },
     {
-      icon: Lightbulb,
-      label: t('笔记', 'Notes'),
-      count: notesCount,
+      icon: <Lightbulb className="size-5 text-foreground" strokeWidth={1.5} />,
+      iconClassName: 'bg-green-500/10 text-green-600',
+      name: t('笔记', 'Notes'),
+      desc: notesCount > 0 ? `${notesCount} ${t('条学习笔记', 'notes')}` : t('记录学习心得', 'Take notes'),
       onClick: onNotesClick,
     },
-  ] as const
+  ]
 
   return (
-    <div className="grid grid-cols-4 gap-3">
-      {tools.map((tool) => {
-        const Icon = tool.icon
-        return (
-          <button
-            key={tool.label}
-            type="button"
-            onClick={tool.onClick}
-            className="bg-card rounded-lg border border-border p-4 hover:border-foreground/30 transition-colors text-left"
-          >
-            <div className="size-10 rounded-lg bg-secondary border border-border flex items-center justify-center mb-2">
-              <Icon className="size-5 text-foreground" strokeWidth={1.5} />
+    <div className="flex flex-col gap-6">
+      <Panel>
+        <PanelHeader title={t('快捷入口', 'Quick Tools')} />
+        <div>
+          {tools.map((tool) => (
+            <ToolItem key={tool.name} {...tool} />
+          ))}
+        </div>
+      </Panel>
+
+      <Panel>
+        <PanelHeader title={t('签到', 'Check In')} />
+        <div className="px-8 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="size-4 text-foreground" strokeWidth={1.5} />
+              <span className="text-xs text-muted-foreground">{dateStr}</span>
             </div>
-            <p className="text-sm font-medium text-foreground truncate">{tool.label}</p>
-            {tool.count > 0 && (
-              <p className="text-xl font-bold text-foreground">{tool.count}</p>
+            {multiplierBadge && (
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${multiplierBadge.color}`}>
+                <Sparkles className="size-3" />
+                {multiplierBadge.text}
+              </div>
             )}
-          </button>
-        )
-      })}
-
-      {/* 打卡模块 */}
-      <div className="bg-card rounded-lg border border-border overflow-hidden">
-        {/* 未打卡状态 */}
-        {!isCheckedIn && (
-          <div className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="size-4 text-foreground" strokeWidth={1.5} />
-                <span className="text-xs text-muted-foreground">{dateStr}</span>
-              </div>
-              <CalendarTags lunarStr={lunarStr} solarTerm={solarTerm} holiday={holiday} />
-            </div>
-            <button
-              type="button"
-              onClick={onCheckIn}
-              className="w-full mt-3 px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-medium hover:bg-foreground/90 transition-colors"
-            >
-              {t('打卡', 'Check')}
-            </button>
-            <div className="mt-3 flex flex-col gap-y-2">
-              <TotalCheckin totalCheckinDays={totalCheckinDays} t={t} />
-              {nextTierInfo && (
-                <NextTierProgress streakDays={streakDays} nextTierInfo={nextTierInfo} t={t} />
-              )}
-              <StreakBonus streakDays={streakDays} streakMultiplier={streakMultiplier} t={t} />
-            </div>
           </div>
-        )}
 
-        {/* 已打卡状态 */}
-        {isCheckedIn && (
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="size-4 text-foreground" strokeWidth={1.5} />
-                <span className="text-xs text-muted-foreground">{dateStr}</span>
+          <CalendarTags lunarStr={lunarStr} solarTerm={solarTerm} holiday={holiday} className="mb-4" />
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Flame className={`size-5 ${streakDays > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                <span className="text-2xl font-bold text-foreground">{streakDays}</span>
+                <span className="text-sm text-muted-foreground">{t('天连续', 'streak')}</span>
               </div>
-              <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 text-emerald-600 rounded-md text-xs font-medium">
-                <Check className="size-3" strokeWidth={1.5} />
+              {totalCheckinDays > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{totalCheckinDays}</span>
+                  <span className="ml-1">{t('天打卡', 'total')}</span>
+                </div>
+              )}
+            </div>
+
+            {isCheckedIn ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 text-emerald-600 rounded-full text-sm font-medium">
+                <Check className="size-4" />
                 {t('已打卡', 'Done')}
               </div>
-            </div>
-            <CalendarTags
-              lunarStr={lunarStr}
-              solarTerm={solarTerm}
-              holiday={holiday}
-              className="mb-3"
-            />
-            <TotalCheckin totalCheckinDays={totalCheckinDays} t={t} />
-            <div className="mt-3 flex flex-col gap-y-2">
-              {nextTierInfo && (
-                <NextTierProgress streakDays={streakDays} nextTierInfo={nextTierInfo} t={t} />
-              )}
-              <StreakBonus streakDays={streakDays} streakMultiplier={streakMultiplier} t={t} />
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onCheckIn}
+                className="px-4 py-1.5 bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-colors"
+              >
+                {t('打卡', 'Check')}
+              </button>
+            )}
           </div>
-        )}
-      </div>
+
+          <div className="mt-4 flex flex-col gap-y-3">
+            <TotalCheckin totalCheckinDays={totalCheckinDays} t={t} />
+            {nextTierInfo && (
+              <NextTierProgress streakDays={streakDays} nextTierInfo={nextTierInfo} t={t} />
+            )}
+            <StreakBonus streakDays={streakDays} streakMultiplier={streakMultiplier} t={t} />
+          </div>
+        </div>
+      </Panel>
     </div>
   )
 }
