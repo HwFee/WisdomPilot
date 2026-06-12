@@ -2,6 +2,7 @@ import { Trophy, Star } from 'lucide-react'
 import { TIER_NAMES } from '@/lib/api'
 import { getTierConfig } from '@/lib/icons/tier-icons'
 import { getRankIcon, getSubTierLabel } from '../lib/leaderboard-utils'
+import { cn } from '@/lib/utils'
 import type { LeaderboardEntry, Tier } from '@/types/api'
 
 interface LeaderboardEntryItemProps {
@@ -13,27 +14,23 @@ interface LeaderboardEntryItemProps {
 export function LeaderboardEntryItem({ entry, activeTab, isCurrentUser }: LeaderboardEntryItemProps) {
   return (
     <div
-      className={`rounded-lg border p-4 flex items-center justify-between transition-all ${
-        isCurrentUser ? 'border-primary bg-primary-50' : 'bg-card hover:border-primary'
-      }`}
+      className={cn(
+        "grid grid-cols-[auto_auto_1fr_auto] items-center gap-5 px-8 py-5 border-b border-border last:border-b-0",
+        isCurrentUser ? "bg-primary/5" : "hover:bg-muted/30 transition-colors"
+      )}
     >
-      <div className="flex items-center gap-4">
-        <div className="size-10 bg-muted rounded-lg flex items-center justify-center">
-          {getRankIcon(entry.rank)}
-        </div>
-        <div className="size-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-medium">
-          {entry.username.charAt(0)}
-        </div>
-        <div>
-          <p className="font-medium text-foreground">
-            {entry.username}
-            {isCurrentUser && (
-              <span className="ml-2 text-xs text-primary">(你)</span>
-            )}
-          </p>
-        </div>
+      <div className="size-10 bg-muted rounded-lg flex items-center justify-center">
+        {getRankIcon(entry.rank)}
       </div>
-
+      <div className="size-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-medium">
+        {entry.username.charAt(0)}
+      </div>
+      <div className="font-medium text-foreground">
+        {entry.username}
+        {isCurrentUser && (
+          <span className="ml-2 text-xs text-primary">(你)</span>
+        )}
+      </div>
       <div className="text-right">
         {activeTab === 'mastery' ? (
           <div className="flex items-center gap-2 justify-end">

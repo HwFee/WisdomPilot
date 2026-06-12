@@ -3,6 +3,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Trophy, Swords } from 'lucide-react'
+import { PageContainer, Panel } from '@/components/layout'
 import { useLeaderboard } from './hooks/use-leaderboard'
 import { CurrentUserCard } from './components/current-user-card'
 import { LeaderboardEntryItem } from './components/leaderboard-entry-item'
@@ -16,13 +17,11 @@ function LeaderboardContent() {
     handleTabChange, handleLoadMore,
   } = useLeaderboard()
 
-
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageContainer>
           <div className="flex items-center justify-between h-14">
             <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="size-4" strokeWidth={1.5} />
@@ -43,13 +42,13 @@ function LeaderboardContent() {
             </div>
             <div className="w-20"></div>
           </div>
-        </div>
+        </PageContainer>
       </header>
 
       <main className="pt-20 pb-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageContainer>
           {/* Tabs */}
-          <div className="mb-6">
+          <div className="flex justify-center mb-12">
             <div className="inline-flex items-center bg-muted rounded-lg p-1">
               <button type="button"
                 onClick={() => handleTabChange('mastery')}
@@ -124,7 +123,7 @@ function LeaderboardContent() {
               <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent"></div>
             </div>
           ) : leaderboard.length > 0 && (
-            <div className="flex flex-col gap-y-2">
+            <Panel>
               {leaderboard.map((entry) => (
                 <LeaderboardEntryItem
                   key={entry.user_id}
@@ -133,7 +132,7 @@ function LeaderboardContent() {
                   isCurrentUser={entry.user_id === currentUserId}
                 />
               ))}
-            </div>
+            </Panel>
           )}
 
           {/* Load More */}
@@ -147,7 +146,7 @@ function LeaderboardContent() {
               </button>
             </div>
           )}
-        </div>
+        </PageContainer>
       </main>
 
       {/* Footer Info */}
