@@ -11,19 +11,20 @@ export function useSolutionDetail(solutionId: number) {
   const { push } = useRouter()
   const { currentUser, isAdmin, lang } = useSolutionsAuth()
   const [solution, setSolution] = useState<SolutionResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const loading = !initialized
 
   const fetchSolution = useCallback(async (token: string) => {
     try {
-      setLoading(true)
       const data = await getSolution(token, solutionId)
+      // react-doctor-disable-next-line no-derived-state — solution is fetched from the API, not derivable from props/state
       setSolution(data)
     } catch (error) {
       console.error('Failed to fetch solution:', error)
       push('/solutions')
     } finally {
-      setLoading(false)
+      setInitialized(true)
     }
   }, [solutionId, push])
 

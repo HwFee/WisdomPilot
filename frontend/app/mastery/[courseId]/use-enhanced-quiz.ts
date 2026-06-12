@@ -57,10 +57,11 @@ export function useEnhancedQuiz(
 
   // Cleanup polling on unmount
   useEffect(() => {
+    const intervalRef = pollingIntervalRef;
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, []);
@@ -344,6 +345,7 @@ export function useEnhancedQuiz(
       enhancedAnswers,
       enhancedSessionIdRef,
       currentSectionIdRef,
+      currentQuestionIndex,
       setIsCorrect,
       setSubmitted,
       setCompletedQuestionsMap,
@@ -408,6 +410,7 @@ export function useEnhancedQuiz(
       enhancedQuestions,
       generationStatus,
       generationProgress,
+      currentQuestionIndex,
       setCurrentQuestionIndex,
       setSubmitted,
       handleSubmitAllEnhancedAnswers,

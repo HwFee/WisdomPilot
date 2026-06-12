@@ -7,11 +7,8 @@ import { ArrowLeft, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import type { DailyTimeTrendPoint } from "@/types/api";
 
 function ClientDate({ date, options, className }: { date: string; options: Intl.DateTimeFormatOptions; className?: string }) {
-  const [formatted, setFormatted] = useState('')
-  useEffect(() => {
-    setFormatted(new Date(date).toLocaleDateString('zh-CN', options))
-  }, [date, JSON.stringify(options)])
-  return <span className={className}>{formatted}</span>
+  const formatted = new Date(date).toLocaleDateString('zh-CN', options)
+  return <span className={className} suppressHydrationWarning>{formatted}</span>
 }
 
 export default function TimeDetailPage(){

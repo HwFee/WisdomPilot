@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import type { FavoriteResponse } from '@/types/api'
 
 // 题目类型中文映射 - 完全参照错题本
@@ -39,11 +38,8 @@ export function getSourceLabel(exerciseKey?: string): string {
 }
 
 export function ClientDate({ dateStr }: { dateStr: string }) {
-  const [formatted, setFormatted] = useState('')
-  useEffect(() => {
-    setFormatted(new Date(dateStr).toLocaleDateString('zh-CN'))
-  }, [dateStr])
-  return <span>{formatted || dateStr.split('T')[0]}</span>
+  const formatted = new Date(dateStr).toLocaleDateString('zh-CN')
+  return <span suppressHydrationWarning>{formatted}</span>
 }
 
 // 提取题目标题 - 与错题本一致

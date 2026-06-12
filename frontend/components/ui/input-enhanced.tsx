@@ -221,7 +221,7 @@ const Textarea = ({
   ...props
 }: TextareaProps & { ref?: React.Ref<HTMLTextAreaElement> }) => {
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(ref as any)
-    const [charCount, setCharCount] = React.useState(0)
+    const charCount = typeof value === 'string' ? value.length : String(value || '').length
 
     // 自动调整高度
     React.useEffect(() => {
@@ -232,18 +232,10 @@ const Textarea = ({
       }
     }, [value, autoResize, minHeight, maxHeight])
 
-    // 字符计数
-    React.useEffect(() => {
-      if (showCount) {
-        setCharCount(String(value || '').length)
-      }
-    }, [value, showCount])
-
     const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       if (maxLength && e.target.value.length > maxLength) {
         return
       }
-      setCharCount(e.target.value.length)
       onChange?.(e)
     }
 

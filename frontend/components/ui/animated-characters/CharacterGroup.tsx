@@ -45,7 +45,9 @@ export function CharacterGroup({ isLookingAway = false, lang = 'zh' }: Character
       timeouts.push(t)
     }
 
+    // react-doctor-disable-next-line react-doctor/no-initialize-state — blinkState starts as open eyes; these are the first scheduled blinks, not initial state
     queueBlink('purple', true, 3000)
+    // react-doctor-disable-next-line react-doctor/no-initialize-state — blinkState starts as open eyes; these are the first scheduled blinks, not initial state
     queueBlink('black', true, 3500)
 
     return () => {

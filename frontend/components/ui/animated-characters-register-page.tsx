@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link'
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useRef, useTransition, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,46 +41,30 @@ function RegisterPage() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
 
-  // Validation results
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [passwordResult, setPasswordResult] = useState<ReturnType<typeof validatePassword> | null>(null);
-  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
-
   const t = (en: string, zh: string) => lang === 'en' ? en : zh;
 
+  const emailError = useMemo(() => {
+    if (!emailTouched || !email) return null
+    const result = validateEmail(email, lang)
+    return result.valid ? null : result.error || null
+  }, [email, emailTouched, lang])
 
+  const usernameError = useMemo(() => {
+    if (!usernameTouched || !username) return null
+    const result = validateUsername(username, lang)
+    return result.valid ? null : result.error || null
+  }, [username, usernameTouched, lang])
 
-  // Real-time validation
-  useEffect(() => {
-    if (emailTouched && email) {
-      const result = validateEmail(email, lang);
-      setEmailError(result.valid ? null : result.error || null);
-    }
-  }, [email, emailTouched, lang]);
+  const passwordResult = useMemo(() => {
+    if (!passwordTouched || !password) return null
+    return validatePassword(password, lang)
+  }, [password, passwordTouched, lang])
 
-  useEffect(() => {
-    if (usernameTouched && username) {
-      const result = validateUsername(username, lang);
-      setUsernameError(result.valid ? null : result.error || null);
-    }
-  }, [username, usernameTouched, lang]);
-
-  useEffect(() => {
-    if (passwordTouched && password) {
-      const result = validatePassword(password, lang);
-      setPasswordResult(result);
-    } else {
-      setPasswordResult(null);
-    }
-  }, [password, passwordTouched, lang]);
-
-  useEffect(() => {
-    if (confirmPasswordTouched && confirmPassword) {
-      const result = validatePasswordConfirm(password, confirmPassword, lang);
-      setConfirmPasswordError(result.valid ? null : result.error || null);
-    }
-  }, [password, confirmPassword, confirmPasswordTouched, lang]);
+  const confirmPasswordError = useMemo(() => {
+    if (!confirmPasswordTouched || !confirmPassword) return null
+    const result = validatePasswordConfirm(password, confirmPassword, lang)
+    return result.valid ? null : result.error || null
+  }, [password, confirmPassword, confirmPasswordTouched, lang])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

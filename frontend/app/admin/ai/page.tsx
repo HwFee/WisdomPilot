@@ -95,7 +95,10 @@ export default function AdminAISettingsPage() {
           {TABS.map(tab => (
             <button type="button"
               key={tab.id}
-              onClick={() => ctx.setActiveTab(tab.id)}
+              onClick={() => {
+                ctx.setActiveTab(tab.id)
+                if (tab.id === 'status') ctx.fetchStatus()
+              }}
               className={cn(
                 'px-4 py-2 text-sm font-medium rounded-md transition-all',
                 ctx.activeTab === tab.id

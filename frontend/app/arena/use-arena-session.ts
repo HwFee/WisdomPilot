@@ -33,19 +33,31 @@ export function useArenaSession() {
     [searchParams],
   )
   const difficultyFromDashboard = getSearchParam('difficulty')
-  const exerciseIndexFromReviewRef = useRef(getSearchParam('exerciseIndex'))
+  const difficultyFromDashboardRef = useRef(difficultyFromDashboard)
+  difficultyFromDashboardRef.current = difficultyFromDashboard
+  const exerciseIndexFromReviewRef = useRef<string | null>(null)
+  if (exerciseIndexFromReviewRef.current === null) {
+    exerciseIndexFromReviewRef.current = getSearchParam('exerciseIndex')
+  }
 
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgress[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
+  const loading = !initialized
   const [showExerciseList, setShowExerciseList] = useState(false)
 
   const savedCodesRef = useRef<Record<number, Record<string, string>>>({})
   const [contentLoadingMap, setContentLoadingMap] = useState<Record<number, boolean>>({})
   const [contentErrorMap, setContentErrorMap] = useState<Record<number, string>>({})
-  const loadedContentRef = useRef<Set<number>>(new Set())
-  const loadingContentRef = useRef<Set<number>>(new Set())
+  const loadedContentRef = useRef<Set<number>>(null!)
+  if (!loadedContentRef.current) {
+    loadedContentRef.current = new Set<number>()
+  }
+  const loadingContentRef = useRef<Set<number>>(null!)
+  if (!loadingContentRef.current) {
+    loadingContentRef.current = new Set<number>()
+  }
 
   const [tierInfo, setTierInfo] = useState<{
     tier: string
@@ -253,12 +265,10 @@ export function useArenaSession() {
       return
     }
 
-    const difficulty = difficultyFromDashboard ? parseInt(difficultyFromDashboard) : 1
+    const difficulty = difficultyFromDashboardRef.current ? parseInt(difficultyFromDashboardRef.current) : 1
     currentDifficultyRef.current = difficulty
 
     try {
-      setLoading(true)
-
       const parallelTasks: Promise<unknown>[] = [
         getChallengeProgress(token).catch(() => null),
         getGlobalTierInfo().catch(() => null),
@@ -287,6 +297,7 @@ export function useArenaSession() {
       ]
 
       if (tierData) {
+        // react-doctor-disable-next-line no-derived-state — tierInfo is fetched from the API, not derivable from props/state
         setTierInfo({
           tier: tierData.tier,
           sub_tier: tierData.sub_tier,
@@ -347,10 +358,10 @@ export function useArenaSession() {
       push('/dashboard')
     } finally {
       if (mountedRef.current) {
-        setLoading(false)
+        setInitialized(true)
       }
     }
-  }, [push, difficultyFromDashboard, processProgressData, loadExerciseContent])
+  }, [push, processProgressData, loadExerciseContent])
 
   const switchToExercise = useCallback(
     (index: number, language: string, onSwitch: (newCode: string) => void) => {
@@ -431,12 +442,12 @@ export function useArenaSession() {
 
   useEffect(() => {
     initChallenge()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [initChallenge])
 
   useEffect(() => {
+    const mounted = mountedRef
     return () => {
-      mountedRef.current = false
+      mounted.current = false
       endTrackedSession()
     }
   }, [endTrackedSession])
@@ -470,7 +481,6 @@ export function useArenaSession() {
     setExercises,
     setExerciseProgress,
     setCurrentIndex,
-    setLoading,
     setTierInfo,
     setCoreBalance,
     setContentLoadingMap,

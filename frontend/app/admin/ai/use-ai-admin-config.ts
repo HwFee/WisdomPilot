@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   getAIConfig,
@@ -18,16 +18,20 @@ type Message = { type: 'success' | 'error'; text: string } | null
 
 export function useAIAdminConfig() {
   const { push } = useRouter()
+  const tokenRef = useRef<string | null>(
+    typeof window !== 'undefined' ? localStorage.getItem('token:v1') : null,
+  )
 
   const [activeTab, setActiveTab] = useState<TabId>('deepseek')
   const [config, setConfig] = useState<AIConfigResponse | null>(null)
   const [status, setStatus] = useState<AIStatusResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<TestConnectionResponse | null>(null)
   const [message, setMessage] = useState<Message>(null)
+  const isLoading = !initialized && !message
 
   // DeepSeek state
   const [deepseekKey, setDeepseekKey] = useState('')
@@ -50,11 +54,6 @@ export function useAIAdminConfig() {
   const [minimaxKeyReplaceMode, setMinimaxKeyReplaceMode] = useState(false)
 
   const [localFirst, setLocalFirst] = useState(false)
-
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token:v1') : null
-  const currentUser = typeof window !== 'undefined'
-    ? JSON.parse(localStorage.getItem('user:v1') || 'null')
-    : null
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
@@ -83,20 +82,21 @@ export function useAIAdminConfig() {
   }, [])
 
   const fetchConfig = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     try {
-      setIsLoading(true)
       const data = await getAIConfig(token)
       setConfig(data)
       applyConfig(data)
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : '获取配置失败' })
     } finally {
-      setIsLoading(false)
+      setInitialized(true)
     }
-  }, [token, applyConfig])
+  }, [applyConfig])
 
   const fetchStatus = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     try {
       setIsRefreshing(true)
@@ -107,24 +107,22 @@ export function useAIAdminConfig() {
     } finally {
       setIsRefreshing(false)
     }
-  }, [token])
+  }, [])
 
   useEffect(() => {
-    if (!token || !currentUser?.is_admin) {
+    const currentUser =
+      typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('user:v1') || 'null')
+        : null
+    if (!tokenRef.current || !currentUser?.is_admin) {
       push('/login')
       return
     }
     fetchConfig()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    if (activeTab === 'status') {
-      fetchStatus()
-    }
-  }, [activeTab, fetchStatus])
+  }, [push, fetchConfig])
 
   const handleSaveDeepSeek = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     setIsSaving(true)
     try {
@@ -150,9 +148,10 @@ export function useAIAdminConfig() {
     } finally {
       setIsSaving(false)
     }
-  }, [token, deepseekTemp, deepseekModel, deepseekKey, deepseekKeyReplaceMode, deepseekUrl, localFirst, showMessage, fetchConfig])
+  }, [deepseekTemp, deepseekModel, deepseekKey, deepseekKeyReplaceMode, deepseekUrl, localFirst, showMessage, fetchConfig])
 
   const handleSaveMinimax = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     setIsSaving(true)
     try {
@@ -178,9 +177,10 @@ export function useAIAdminConfig() {
     } finally {
       setIsSaving(false)
     }
-  }, [token, minimaxTemp, minimaxModel, minimaxKey, minimaxKeyReplaceMode, minimaxUrl, localFirst, showMessage, fetchConfig])
+  }, [minimaxTemp, minimaxModel, minimaxKey, minimaxKeyReplaceMode, minimaxUrl, localFirst, showMessage, fetchConfig])
 
   const handleTestDeepSeek = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     setIsTesting(true)
     setTestResult(null)
@@ -197,9 +197,10 @@ export function useAIAdminConfig() {
     } finally {
       setIsTesting(false)
     }
-  }, [token, deepseekKey, deepseekModel, deepseekUrl])
+  }, [deepseekKey, deepseekModel, deepseekUrl])
 
   const handleTestMinimax = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     setIsTesting(true)
     setTestResult(null)
@@ -216,9 +217,10 @@ export function useAIAdminConfig() {
     } finally {
       setIsTesting(false)
     }
-  }, [token, minimaxKey, minimaxModel, minimaxUrl])
+  }, [minimaxKey, minimaxModel, minimaxUrl])
 
   const handleDeleteDeepseekKey = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     setIsSaving(true)
     try {
@@ -232,9 +234,10 @@ export function useAIAdminConfig() {
     } finally {
       setIsSaving(false)
     }
-  }, [token, showMessage, fetchConfig])
+  }, [showMessage, fetchConfig])
 
   const handleDeleteMinimaxKey = useCallback(async () => {
+    const token = tokenRef.current
     if (!token) return
     setIsSaving(true)
     try {
@@ -248,7 +251,7 @@ export function useAIAdminConfig() {
     } finally {
       setIsSaving(false)
     }
-  }, [token, showMessage, fetchConfig])
+  }, [showMessage, fetchConfig])
 
   return {
     push,
@@ -293,7 +296,6 @@ export function useAIAdminConfig() {
     // Common
     localFirst,
     setLocalFirst,
-    token,
     // Actions
     fetchConfig,
     fetchStatus,

@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion'
 import type { MasteryQuizQuestion, QuizAnswer } from '@/types/api'
 
@@ -25,25 +25,21 @@ export function MasteryQuizPanel({
   onOpenEditor,
 }: MasteryQuizPanelProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const answersRef = useRef<Map<string, string>>(new Map())
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [answers, setAnswers] = useState<Map<string, string>>(() => new Map())
   const [startTime] = useState(() => Date.now())
 
   const currentQuestion = questions[currentIndex]
   const isLastQuestion = currentIndex === questions.length - 1
   const progress = ((currentIndex + 1) / questions.length) * 100
-
-  // Reset selected option when question changes
-  useEffect(() => {
-    const savedAnswer = answersRef.current.get(currentQuestion?.id)
-    setSelectedOption(savedAnswer || null)
-  }, [currentIndex, currentQuestion?.id])
+  const selectedOption = currentQuestion ? answers.get(currentQuestion.id) || null : null
 
   const handleSelectOption = (option: string) => {
-    setSelectedOption(option)
-    const newMap = new Map(answersRef.current)
-    newMap.set(currentQuestion.id, option)
-    answersRef.current = newMap
+    if (!currentQuestion) return
+    setAnswers(prev => {
+      const next = new Map(prev)
+      next.set(currentQuestion.id, option)
+      return next
+    })
   }
 
   const handleNext = () => {
@@ -51,7 +47,7 @@ export function MasteryQuizPanel({
       // Submit all answers
       const finalAnswers: QuizAnswer[] = questions.map(q => ({
         question_id: q.id,
-        answer: answersRef.current.get(q.id) || '',
+        answer: answers.get(q.id) || '',
       }))
       const totalTime = Math.floor((Date.now() - startTime) / 1000)
       onSubmit(finalAnswers, totalTime)

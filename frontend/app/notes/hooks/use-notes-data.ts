@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { getStoredToken, logout } from '@/lib/api'
 import { getNotes, getNoteTags } from '@/lib/api/notes'
@@ -10,12 +10,17 @@ import type { NoteResponse } from '@/types/api'
 export function useNotesData() {
   const { push, back } = useRouter()
   const [notes, setNotes] = useState<NoteResponse[]>([])
-  const [filteredNotes, setFilteredNotes] = useState<NoteResponse[]>([])
+  const [searchOverride, setSearchOverride] = useState<NoteResponse[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const hasFetched = useRef(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const filteredNotes = useMemo(() => {
+    if (searchOverride !== null) return searchOverride
+    return filterNotesBySearch(filterNotesByTags(notes, selectedTags), searchQuery)
+  }, [notes, selectedTags, searchQuery, searchOverride])
 
   const fetchData = useCallback(async (token: string) => {
     try {
@@ -70,14 +75,6 @@ export function useNotesData() {
     fetchData(token)
   }, [push, back, fetchData])
 
-  // Apply filters when dependencies change
-  useEffect(() => {
-    let result = notes
-    result = filterNotesByTags(result, selectedTags)
-    result = filterNotesBySearch(result, searchQuery)
-    setFilteredNotes(result)
-  }, [notes, selectedTags, searchQuery])
-
   const handleDelete = useCallback((noteId: string) => {
     setNotes((prev) => prev.filter((n) => n.id !== noteId))
   }, [])
@@ -96,13 +93,13 @@ export function useNotesData() {
     (results: NoteResponse[], query: string) => {
       if (query) {
         setSearchQuery(query)
-        setFilteredNotes(results)
+        setSearchOverride(results)
       } else {
         setSearchQuery('')
-        setFilteredNotes(filterNotesByTags(notes, selectedTags))
+        setSearchOverride(null)
       }
     },
-    [notes, selectedTags],
+    [],
   )
 
   return {

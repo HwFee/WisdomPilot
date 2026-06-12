@@ -40,6 +40,7 @@ export function NoteTagFilter({
   }, [])
 
   useEffect(() => {
+    // react-doctor-disable-next-line no-derived-state — tags are fetched from the API and are not derivable from props/state
     loadTags()
   }, [loadTags])
 

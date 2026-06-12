@@ -11,8 +11,9 @@ import type { WrongQuestionResponse as WrongQuestion } from '@/lib/api/review'
 export function useReviewData() {
   const { push } = useRouter()
   const [wrongQuestions, setWrongQuestions] = useState<WrongQuestion[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const loading = !initialized && !error
 
   const getToken = useCallback(() => {
     if (typeof window === 'undefined') return null
@@ -27,17 +28,17 @@ export function useReviewData() {
     }
 
     try {
-      setLoading(true)
       const wrongData = await getWrongQuestions(token).catch(() => ({
         wrong_questions: [],
         total: 0,
         unresolved_count: 0,
       }))
+      // react-doctor-disable-next-line no-derived-state — wrongQuestions are fetched from the API, not derivable from props/state
       setWrongQuestions(wrongData.wrong_questions || [])
     } catch {
       setError('获取错题数据失败')
     } finally {
-      setLoading(false)
+      setInitialized(true)
     }
   }, [getToken, push])
 

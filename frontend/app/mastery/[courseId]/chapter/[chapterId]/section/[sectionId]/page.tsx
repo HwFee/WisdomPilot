@@ -36,34 +36,34 @@ export default function SectionLearningPage() {
   const { transferSession } = useLearningSession(sectionId, section)
 
   useEffect(() => {
+    const loadSection = async () => {
+      const token = getStoredToken()
+      if (!token) {
+        push('/login')
+        return
+      }
+
+      try {
+        setAsyncState(prev => ({ ...prev, loading: true }))
+        const response = await getSection(sectionId, token)
+        setSection(response.section)
+
+        if (response.section.knowledge_points && response.section.knowledge_points.length > 0) {
+          setUiState(prev => ({ ...prev, expandedKp: response.section.knowledge_points[0].id }))
+        }
+
+        if (response.section.last_position === 'content' && !response.section.is_completed) {
+          await saveSectionProgress(sectionId, 'content', false, token)
+        }
+      } catch (err) {
+        setAsyncState(prev => ({ ...prev, error: err instanceof Error ? err.message : '加载失败' }))
+      } finally {
+        setAsyncState(prev => ({ ...prev, loading: false }))
+      }
+    }
+
     loadSection()
-  }, [sectionId])
-
-  const loadSection = async () => {
-    const token = getStoredToken()
-    if (!token) {
-      push('/login')
-      return
-    }
-
-    try {
-      setAsyncState(prev => ({ ...prev, loading: true }))
-      const response = await getSection(sectionId, token)
-      setSection(response.section)
-
-      if (response.section.knowledge_points && response.section.knowledge_points.length > 0) {
-        setUiState(prev => ({ ...prev, expandedKp: response.section.knowledge_points[0].id }))
-      }
-
-      if (response.section.last_position === 'content' && !response.section.is_completed) {
-        await saveSectionProgress(sectionId, 'content', false, token)
-      }
-    } catch (err) {
-      setAsyncState(prev => ({ ...prev, error: err instanceof Error ? err.message : '加载失败' }))
-    } finally {
-      setAsyncState(prev => ({ ...prev, loading: false }))
-    }
-  }
+  }, [sectionId, courseId, chapterId, push])
 
   const handleStartQuiz = async () => {
     const token = getStoredToken()

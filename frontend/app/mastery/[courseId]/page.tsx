@@ -182,45 +182,7 @@ function MasteryPathContent() {
     fetchOverview();
   }, [fetchOverview]);
 
-  // Handle query params for jump from wrong question book or section learning
-  useEffect(() => {
-    const chapterParam = getSearchParam("chapter");
-    const sectionParam = getSearchParam("section");
-    const exerciseParam = getSearchParam("exercise");
-
-
-    // 如果没有必要的参数，不处理
-    if (!chapterParam) {
-      return;
-    }
-
-    if (!overview?.chapters) {
-      return;
-    }
-
-    const chapterId = parseInt(chapterParam);
-    const chapter = overview.chapters.find((c) => c.chapter_id === chapterId);
-
-
-    if (!chapter) {
-      return;
-    }
-
-    // 保存 section_id（如果有）
-    const sectionId = sectionParam ? parseInt(sectionParam) : null;
-
-    // 跳转到具体题目
-    // exerciseParam 是 question_id，需要在获取题目列表后找到对应索引
-    const targetQuestionId = exerciseParam ? parseInt(exerciseParam) : 0;
-
-    // Directly start quiz at the target question
-    startQuizAtQuestion(chapterId, targetQuestionId, sectionId || undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, overview]);
-
-
-
-  // Start base quiz at a specific question (for jump from wrong question book)
+  // Start base quiz at a specific question (for jump from wrong question book or section learning)
   // targetQuestionId: 目标题目的 question_id，如果为 0 则从头开始或恢复进度
   const startQuizAtQuestion = async (
     chapterId: number,
@@ -418,6 +380,28 @@ function MasteryPathContent() {
       setBaseQuestionLoading(false);
     }
   };
+
+  const startQuizAtQuestionRef = useRef(startQuizAtQuestion);
+  startQuizAtQuestionRef.current = startQuizAtQuestion;
+
+  // Handle query params for jump from wrong question book or section learning
+  useEffect(() => {
+    const chapterParam = searchParams.get("chapter");
+    const sectionParam = searchParams.get("section");
+    const exerciseParam = searchParams.get("exercise");
+
+    if (!chapterParam) return;
+    if (!overview?.chapters) return;
+
+    const chapterId = parseInt(chapterParam);
+    const chapter = overview.chapters.find((c) => c.chapter_id === chapterId);
+    if (!chapter) return;
+
+    const sectionId = sectionParam ? parseInt(sectionParam) : null;
+    const targetQuestionId = exerciseParam ? parseInt(exerciseParam) : 0;
+
+    startQuizAtQuestionRef.current(chapterId, targetQuestionId, sectionId || undefined);
+  }, [searchParams, overview]);
 
   // Handle chapter selection - navigate to section selection page
   const handleSelectChapter = async (

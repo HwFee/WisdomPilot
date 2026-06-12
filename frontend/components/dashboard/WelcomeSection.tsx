@@ -38,15 +38,13 @@ function formatTime(date: Date) {
 
 export function WelcomeSection({ user, lang = 'zh', streakDays = 0 }: WelcomeSectionProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
-  const [quote, setQuote] = useState<{ content: string; author: string } | null>(null)
   const quoteIndexRef = useRef(0)
-  const [time, setTime] = useState(formatTime(new Date()))
-
-  useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * QUOTES.length)
-    quoteIndexRef.current = randomIndex
-    setQuote(QUOTES[randomIndex])
-  }, [])
+  const [quote, setQuote] = useState<{ content: string; author: string } | null>(() => {
+    const index = Math.floor(Math.random() * QUOTES.length)
+    quoteIndexRef.current = index
+    return QUOTES[index]
+  })
+  const [time, setTime] = useState(() => formatTime(new Date()))
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -58,7 +56,6 @@ export function WelcomeSection({ user, lang = 'zh', streakDays = 0 }: WelcomeSec
   }, [])
 
   useEffect(() => {
-    setTime(formatTime(new Date()))
     const interval = setInterval(() => setTime(formatTime(new Date())), TIME_UPDATE_INTERVAL_MS)
     return () => clearInterval(interval)
   }, [])

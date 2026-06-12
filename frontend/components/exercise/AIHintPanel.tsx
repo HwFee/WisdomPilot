@@ -326,21 +326,18 @@ function StreamHintModal({
   const Icon = config.icon;
 
   // 拖动相关状态
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => {
+    if (typeof window === 'undefined') return null
+    const saved = localStorage.getItem('aiHintModalPosition:v1')
+    if (!saved) return null
+    try {
+      return JSON.parse(saved)
+    } catch {
+      return null
+    }
+  })
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
-
-  // 从 localStorage 加载保存的位置
-  useEffect(() => {
-    const saved = localStorage.getItem('aiHintModalPosition:v1');
-    if (saved) {
-      try {
-        setPosition(JSON.parse(saved));
-      } catch {
-        // 解析失败，使用默认位置
-      }
-    }
-  }, []);
 
   // 保存位置到 localStorage
   const savePosition = useCallback((pos: { x: number; y: number }) => {

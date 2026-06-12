@@ -109,7 +109,7 @@ export function FavoriteButton({
     return () => {
       cancelled = true;
     };
-  }, [exerciseKey, exerciseId]);
+  }, [exerciseKey, exerciseId, courseId]);
 
   const handleToggleFavorite = useCallback(async () => {
     const token = getStoredToken();

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { MessageSquare, Pin, Eye, Heart, ArrowRight, Megaphone, AlertCircle } from 'lucide-react'
 import { Panel, PanelHeader } from '@/components/layout'
@@ -38,11 +38,7 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
     announcement: t('公告', 'Announcement'),
   }
 
-  useEffect(() => {
-    fetchSolutions()
-  }, [])
-
-  const fetchSolutions = async () => {
+  const fetchSolutions = useCallback(async () => {
     setError(null)
     try {
       const token = getStoredToken()
@@ -53,12 +49,17 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
       const data = await getSolutionSummary(token, SOLUTION_FETCH_LIMIT)
       setSolutions(data)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : t('加载失败', 'Failed to load')
+      const msg = e instanceof Error ? e.message : (lang === 'zh' ? '加载失败' : 'Failed to load')
+      // react-doctor-disable-next-line no-derived-state — error comes from an async API call, not derivable from props/state
       setError(msg)
     } finally {
       setLoading(false)
     }
-  }
+  }, [lang])
+
+  useEffect(() => {
+    fetchSolutions()
+  }, [fetchSolutions])
 
   const handleLike = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()

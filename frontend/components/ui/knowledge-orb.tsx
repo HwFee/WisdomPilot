@@ -576,10 +576,11 @@ export function KnowledgeOrb({
 
   // ── Clear outline on unmount ────────────────────────────
   useEffect(() => {
+    const highlightRef = prevHighlightRef
     return () => {
       stopHit()
-      if (prevHighlightRef.current) {
-        (prevHighlightRef.current as HTMLElement).style.outline = ""
+      if (highlightRef.current) {
+        (highlightRef.current as HTMLElement).style.outline = ""
       }
     }
   }, [stopHit])
