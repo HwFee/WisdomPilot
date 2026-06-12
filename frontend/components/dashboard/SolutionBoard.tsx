@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { MessageSquare, Pin, Eye, Heart, ArrowRight, Megaphone, AlertCircle } from 'lucide-react'
 import { getSolutionSummary, likeSolution, SolutionSummary } from '@/lib/api/solutions'
-import { getStoredToken, getStoredUser } from '@/lib/api/auth'
+import { getStoredToken } from '@/lib/api/auth'
 
 type TabType = 'hot' | 'new' | 'pinned' | 'announcement'
 
@@ -19,17 +19,14 @@ const TIME_THRESHOLDS = {
 
 interface SolutionBoardProps {
   lang?: 'zh' | 'en'
-  compact?: boolean
 }
 
-export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardProps) {
+export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
   const { push } = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('hot')
   const [solutions, setSolutions] = useState<SolutionSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const currentUserIdRef = useRef<string | null>(null)
-  const isAdminRef = useRef(false)
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
@@ -41,11 +38,6 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
   }
 
   useEffect(() => {
-    const user = getStoredUser()
-    if (user) {
-      currentUserIdRef.current = user.id
-      isAdminRef.current = user.is_admin || false
-    }
     fetchSolutions()
   }, [])
 

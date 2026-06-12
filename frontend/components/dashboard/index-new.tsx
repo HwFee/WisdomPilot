@@ -590,7 +590,6 @@ export default function DashboardPage() {
               <div className="flex-1 min-h-0">
                 <SolutionBoard
                   lang={lang}
-                  compact
                 />
               </div>
               {/* 最近动态 */}
