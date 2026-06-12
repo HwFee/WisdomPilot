@@ -461,11 +461,6 @@ body {
   }
 }
 
-@keyframes overlay-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 @keyframes overlay-exit {
   from { opacity: 1; }
   to { opacity: 0; }
@@ -536,10 +531,6 @@ body {
 
 .animate-modal-exit {
   animation: modal-exit 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-overlay-enter {
-  animation: overlay-enter 0.2s ease-out forwards;
 }
 
 .animate-overlay-exit {
@@ -688,12 +679,6 @@ body {
   background: hsl(var(--secondary));
 }
 
-/* 难度标签 - Swiss Precision 8级体系（纯色） */
-.difficulty-badge {
-  position: relative;
-  overflow: hidden;
-}
-
 /* 1级 - 入门 (红色) */
 .difficulty-1 {
   background: hsl(0 84% 60%);
@@ -734,19 +719,6 @@ body {
   background: hsl(222 47% 11%);
 }
 
-/* 知识点胶囊标签 - Swiss Precision */
-.knowledge-tag {
-  background: hsl(var(--primary-50));
-  border: 1px solid hsl(var(--primary-200));
-  color: hsl(var(--primary));
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.knowledge-tag:hover {
-  background: hsl(var(--primary-100));
-  border-color: hsl(var(--primary));
-}
-
 /* IDE 代码编辑器区域，独立滚动 */
 .ide-editor-panel {
   background: hsl(var(--card));
@@ -764,53 +736,6 @@ body {
   right: 0;
   height: 1px;
   background: hsl(var(--border));
-}
-
-/* IDE 底部操作栏 - Swiss Precision */
-.ide-action-bar {
-  background: hsl(var(--card));
-}
-
-.ide-action-bar-success {
-  background: hsl(142 76% 95%);
-  border-top: 2px solid hsl(160 84% 39%);
-}
-
-.ide-action-bar-error {
-  background: hsl(0 84% 95%);
-  border-top: 2px solid hsl(0 84% 60%);
-}
-
-.ide-action-bar-idle {
-  background: hsl(var(--card));
-  border-top: 1px solid hsl(var(--border));
-}
-
-/* 提交按钮 - Swiss Precision */
-.btn-submit {
-  background: hsl(var(--primary));
-  transition: background-color 0.15s ease;
-  color: hsl(var(--primary-foreground));
-}
-
-.btn-submit:hover:not(:disabled) {
-  background: hsl(var(--primary-600));
-}
-
-.btn-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* 成功按钮 - Swiss Precision */
-.btn-success {
-  background: hsl(var(--success));
-  transition: background-color 0.15s ease;
-  color: hsl(var(--success-foreground));
-}
-
-.btn-success:hover {
-  background: hsl(160 84% 33%);
 }
 
 /* 错误重试按钮 - Swiss Precision */
@@ -864,57 +789,6 @@ body {
 .monaco-editor .view-overlays .current-line {
   background: rgba(99, 102, 241, 0.1) !important;
   border-left: 2px solid rgba(99, 102, 241, 0.5) !important;
-}
-
-/* 代码块样式 */
-.code-block {
-  background: linear-gradient(135deg, rgba(30, 30, 46, 0.8) 0%, rgba(24, 24, 37, 0.9) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* 输入输出框 */
-.io-block {
-  background: rgba(15, 15, 26, 0.6);
-  border: 1px solid rgba(99, 102, 241, 0.15);
-  border-radius: 8px;
-  position: relative;
-}
-
-.io-block::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
-}
-
-/* 成功状态动画 */
-@keyframes success-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
-  }
-}
-
-.success-pulse {
-  animation: success-pulse 1s ease-out;
-}
-
-/* 错误状态抖动 */
-@keyframes error-shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
-}
-
-.error-shake {
-  animation: error-shake 0.4s ease-out;
 }
 
 /* 运行中加载动画 */
@@ -1220,19 +1094,6 @@ body {
   gap: 8px;
 }
 
-.btn-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: none;
-}
-
 .btn-run {
   background: linear-gradient(135deg, #52C41A 0%, #27AE60 100%);
   color: white;
@@ -1242,32 +1103,6 @@ body {
 .btn-run:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(82, 196, 26, 0.35);
-}
-
-.btn-submit {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-}
-
-.btn-submit:hover:not(:disabled) {
-  background: hsl(var(--primary-600));
-}
-
-.btn-reset {
-  background: hsl(var(--card));
-  color: hsl(var(--muted-foreground));
-  border: 1px solid hsl(var(--border));
-}
-
-.btn-reset:hover {
-  color: hsl(var(--primary));
-  border-color: hsl(var(--primary));
-  background: hsl(var(--secondary));
-}
-
-.btn-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ============================================
@@ -1303,106 +1138,9 @@ body {
   background: hsl(var(--primary-50));
 }
 
-/* ============================================
-   进度自动保存提示 - 浅色风格
-   ============================================ */
-
-.auto-save-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: rgba(82, 196, 26, 0.1);
-  border: 1px solid rgba(82, 196, 26, 0.2);
-  border-radius: 6px;
-  font-size: 11px;
-  color: #52C41A;
-}
-
-.auto-save-indicator.saving {
-  background: rgba(243, 156, 17, 0.1);
-  border-color: rgba(243, 156, 17, 0.2);
-  color: #F39C11;
-}
-
-/* ============================================
-   IDE 顶部导航栏 - 浅色主题
-   ============================================ */
-
-.ide-header {
-  background: hsl(var(--card));
-  border-bottom: 1px solid hsl(var(--border));
-}
-
-.ide-header-back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: hsl(var(--muted-foreground));
-  font-size: 14px;
-  transition: color 0.15s ease, background-color 0.15s ease;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-}
-
-.ide-header-back:hover {
-  color: hsl(var(--primary));
-  background: hsl(var(--primary-50));
-}
-
 .ide-header-title {
   color: hsl(var(--foreground));
   font-weight: 600;
-}
-
-/* ============================================
-   代码块样式 - 浅色主题
-   ============================================ */
-
-.code-block {
-  background: #FAFBFC;
-  border: 1px solid #E4E7ED;
-  border-radius: 8px;
-  box-shadow: none;
-}
-
-.io-block {
-  background: #FAFBFC;
-  border: 1px solid #E4E7ED;
-  border-radius: 8px;
-  position: relative;
-}
-
-.io-block::before {
-  display: none;
-}
-
-/* 成功状态动画 */
-@keyframes success-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(82, 196, 26, 0);
-  }
-}
-
-.success-pulse {
-  animation: success-pulse 1s ease-out;
-}
-
-/* 错误状态抖动 */
-@keyframes error-shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
-}
-
-.error-shake {
-  animation: error-shake 0.4s ease-out;
 }
 
 /* 运行中加载动画 */
@@ -1477,11 +1215,6 @@ body {
 @media (max-width: 768px) {
   .luogu-test-table {
     font-size: 12px;
-  }
-
-  .btn-action {
-    padding: 8px 14px;
-    font-size: 13px;
   }
 }
 
