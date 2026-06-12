@@ -1,6 +1,7 @@
-import { Trophy, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { TIER_NAMES } from '@/lib/api'
 import { getTierConfig } from '@/lib/icons/tier-icons'
+import { getSubTierLabel } from '../lib/leaderboard-utils'
 import type { LeaderboardEntry, Tier } from '@/types/api'
 
 interface CurrentUserCardProps {
@@ -12,18 +13,10 @@ interface CurrentUserCardProps {
 export function CurrentUserCard({ activeTab, currentUserRank, currentUserData }: CurrentUserCardProps) {
   return (
     <div className="mb-6">
-      <div className={`border rounded-xl p-4 ${
-        activeTab === 'mastery'
-          ? 'bg-amber-500/5 border-amber-500/20'
-          : 'bg-blue-500/5 border-blue-500/20'
-      }`}>
+      <div className="border rounded-lg p-4 bg-secondary border-border">
         <div className="flex items-center gap-4">
           {/* Rank Badge */}
-          <div className={`size-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg ${
-            activeTab === 'mastery'
-              ? 'bg-amber-500 text-white shadow-amber-500/25'
-              : 'bg-blue-500 text-white shadow-blue-500/25'
-          }`}>
+          <div className="size-14 rounded-lg flex items-center justify-center font-bold text-xl bg-primary text-primary-foreground">
             #{currentUserRank}
           </div>
 
@@ -44,14 +37,14 @@ export function CurrentUserCard({ activeTab, currentUserRank, currentUserData }:
                     </span>
                     <span className="font-medium text-foreground">{TIER_NAMES[currentUserData.tier as Tier]}</span>
                     {currentUserData.sub_tier && (
-                      <span className="text-muted-foreground">{['I','II','III','IV','V'][currentUserData.sub_tier - 1]}</span>
+                      <span className="text-muted-foreground">{getSubTierLabel(currentUserData.sub_tier)}</span>
                     )}
                   </>
                 ) : (
                   <span className="text-muted-foreground">未定级</span>
                 )}
                 <span className="flex items-center gap-1">
-                  <Star className="size-4 text-yellow-500" />
+                  <Star className="size-4 text-amber-600" strokeWidth={1.5} />
                   <span className="font-medium">{currentUserData?.stars ?? 0}</span>
                 </span>
               </div>

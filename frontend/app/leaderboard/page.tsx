@@ -21,22 +21,22 @@ function LeaderboardContent() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
-            <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group">
-              <ArrowLeft className="size-4 group-hover:-translate-x-0.5 transition-transform" />
+            <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="size-4" strokeWidth={1.5} />
               <span className="text-sm">返回</span>
             </Link>
             <div className="flex items-center gap-2">
               {activeTab === 'mastery' ? (
                 <>
-                  <Trophy className="size-5 text-amber-500" />
+                  <Trophy className="size-5 text-amber-600" strokeWidth={1.5} />
                   <span className="font-semibold text-foreground">精进榜</span>
                 </>
               ) : (
                 <>
-                  <Swords className="size-5 text-blue-500" />
+                  <Swords className="size-5 text-primary" strokeWidth={1.5} />
                   <span className="font-semibold text-foreground">竞技榜</span>
                 </>
               )}
@@ -50,27 +50,27 @@ function LeaderboardContent() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Tabs */}
           <div className="mb-6">
-            <div className="inline-flex items-center bg-muted rounded-xl p-1">
+            <div className="inline-flex items-center bg-muted rounded-lg p-1">
               <button type="button"
                 onClick={() => handleTabChange('mastery')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'mastery'
-                    ? 'bg-card text-amber-500 shadow-sm'
+                    ? 'bg-card text-amber-600'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Trophy className="size-4" />
+                <Trophy className="size-4" strokeWidth={1.5} />
                 <span>精进榜</span>
               </button>
               <button type="button"
                 onClick={() => handleTabChange('arena')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   activeTab === 'arena'
-                    ? 'bg-card text-blue-500 shadow-sm'
+                    ? 'bg-card text-primary'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Swords className="size-4" />
+                <Swords className="size-4" strokeWidth={1.5} />
                 <span>竞技榜</span>
               </button>
             </div>
@@ -88,13 +88,11 @@ function LeaderboardContent() {
           {/* No Data State */}
           {!loading && leaderboard.length === 0 && (
             <div className="text-center py-12">
-              <div className={`size-16 rounded-full mx-auto mb-4 flex items-center justify-center ${
-                activeTab === 'mastery' ? 'bg-amber-500/10' : 'bg-blue-500/10'
-              }`}>
+              <div className="size-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-secondary">
                 {activeTab === 'mastery' ? (
-                  <Trophy className="size-8 text-amber-500" />
+                  <Trophy className="size-8 text-amber-600" strokeWidth={1.5} />
                 ) : (
-                  <Swords className="size-8 text-blue-500" />
+                  <Swords className="size-8 text-primary" strokeWidth={1.5} />
                 )}
               </div>
               {enrolledCourses.length === 0 ? (
@@ -143,7 +141,7 @@ function LeaderboardContent() {
             <div className="text-center mt-6">
               <button type="button"
                 onClick={handleLoadMore}
-                className="px-6 py-2 bg-muted text-foreground rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors"
+                className="px-6 py-2 bg-muted text-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"
               >
                 加载更多
               </button>
