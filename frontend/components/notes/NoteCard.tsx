@@ -10,6 +10,10 @@ import { getStoredToken } from '@/lib/api'
 import { deleteNote, exportNote } from '@/lib/api/notes'
 import type { NoteResponse } from '@/types/api'
 
+function translate(lang: 'zh' | 'en', zh: string, en: string) {
+  return lang === 'zh' ? zh : en
+}
+
 // Module-level Beijing timezone formatters
 const BEIJING_ZH_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
   timeZone: 'Asia/Shanghai',
@@ -46,15 +50,13 @@ export function NoteCard({
   const [deleted, setDeleted] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
 
-  const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
-
   // 是否正在处理中
   const isProcessing = note.processing_status === 'pending' || note.processing_status === 'processing'
 
   const handleDelete = useCallback(async () => {
     if (deleted || isDeleting) return
 
-    if (!confirm(t('确定要删除这条笔记吗？', 'Are you sure you want to delete this note?'))) {
+    if (!confirm(translate(lang, '确定要删除这条笔记吗？', 'Are you sure you want to delete this note?'))) {
       return
     }
 
@@ -68,11 +70,11 @@ export function NoteCard({
       onDelete?.(note.id)
     } catch (error) {
       console.error('[笔记] 删除失败:', { noteId: note.id, error })
-      alert(t('删除失败: ' + (error instanceof Error ? error.message : '未知错误'), 'Delete failed: ' + (error instanceof Error ? error.message : 'Unknown error')))
+      alert(translate(lang, '删除失败: ' + (error instanceof Error ? error.message : '未知错误'), 'Delete failed: ' + (error instanceof Error ? error.message : 'Unknown error')))
     } finally {
       setIsDeleting(false)
     }
-  }, [note.id, t, onDelete, deleted, isDeleting])
+  }, [note.id, lang, onDelete, deleted, isDeleting])
 
   const handleExport = useCallback(async () => {
     const token = getStoredToken()
@@ -123,9 +125,9 @@ export function NoteCard({
   }, [note.exercise_id, note.chapter_id, note.course_id, note.section_id, push])
 
   const sourceLabel = {
-    manual: t('手动', 'Manual'),
-    ai_answer: t('AI回答', 'AI Answer'),
-    question: t('题目', 'Question'),
+    manual: translate(lang, '手动', 'Manual'),
+    ai_answer: translate(lang, 'AI回答', 'AI Answer'),
+    question: translate(lang, '题目', 'Question'),
   }
 
   return (
@@ -135,7 +137,7 @@ export function NoteCard({
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-foreground truncate">
-              {note.title || t('无标题笔记', 'Untitled Note')}
+              {note.title || translate(lang, '无标题笔记', 'Untitled Note')}
             </h3>
             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -150,10 +152,10 @@ export function NoteCard({
                 <button type="button"
                   onClick={handleGoToExercise}
                   className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs font-medium hover:bg-primary/20 transition-colors"
-                  title={t('跳转到关联题目', 'Go to related exercise')}
+                  title={translate(lang, '跳转到关联题目', 'Go to related exercise')}
                 >
                   <ExternalLink className="size-3" />
-                  {t('题目 #', 'Exercise #')}{note.exercise_id}
+                  {translate(lang, '题目 #', 'Exercise #')}{note.exercise_id}
                 </button>
               )}
             </div>
@@ -162,35 +164,35 @@ export function NoteCard({
             <button type="button"
               onClick={() => setShowPreview(true)}
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
-              title={t('预览', 'Preview')}
+              title={translate(lang, '预览', 'Preview')}
             >
               <FileText className="size-4" />
-              <span>{t('预览', 'Preview')}</span>
+              <span>{translate(lang, '预览', 'Preview')}</span>
             </button>
             <button type="button"
               onClick={() => onEdit?.(note)}
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
-              title={t('编辑', 'Edit')}
+              title={translate(lang, '编辑', 'Edit')}
             >
               <Edit className="size-4" />
-              <span>{t('编辑', 'Edit')}</span>
+              <span>{translate(lang, '编辑', 'Edit')}</span>
             </button>
             <button type="button"
               onClick={handleExport}
               className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
-              title={t('导出', 'Export')}
+              title={translate(lang, '导出', 'Export')}
             >
               <Download className="size-4" />
-              <span>{t('导出', 'Export')}</span>
+              <span>{translate(lang, '导出', 'Export')}</span>
             </button>
             <button type="button"
               onClick={handleDelete}
               disabled={isDeleting || deleted}
               className="flex items-center gap-1.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
-              title={t('删除', 'Delete')}
+              title={translate(lang, '删除', 'Delete')}
             >
               <Trash2 className="size-4" />
-              <span>{t('删除', 'Delete')}</span>
+              <span>{translate(lang, '删除', 'Delete')}</span>
             </button>
           </div>
         </div>
@@ -210,7 +212,7 @@ export function NoteCard({
           <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4">
             <Loader2 className="size-4 animate-spin text-amber-500" />
             <span className="text-sm text-amber-600 dark:text-amber-400">
-              {t('这条笔记正在处理中...', 'This note is being processed...')}
+              {translate(lang, '这条笔记正在处理中...', 'This note is being processed...')}
             </span>
           </div>
         )}
@@ -251,20 +253,20 @@ export function NoteCard({
           <div className="bg-card rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-3">
-                <h2 className="font-semibold">{note.title || t('笔记预览', 'Note Preview')}</h2>
+                <h2 className="font-semibold">{note.title || translate(lang, '笔记预览', 'Note Preview')}</h2>
                 {note.exercise_id && (
                   <button type="button"
                     onClick={handleGoToExercise}
                     className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
                   >
                     <ExternalLink className="size-3" />
-                    {t('跳转到题目', 'Go to exercise')}
+                    {translate(lang, '跳转到题目', 'Go to exercise')}
                   </button>
                 )}
                 {isProcessing && (
                   <span className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-500/10 text-amber-600 rounded-md">
                     <Loader2 className="size-3 animate-spin" />
-                    {t('处理中', 'Processing')}
+                    {translate(lang, '处理中', 'Processing')}
                   </span>
                 )}
               </div>
@@ -286,7 +288,7 @@ export function NoteCard({
             {isProcessing && (
               <div className="p-4 border-t bg-amber-500/5 flex items-center justify-center gap-2 text-amber-600">
                 <Loader2 className="size-4 animate-spin" />
-                <span className="text-sm">{t('笔记正在处理中，请稍后刷新查看...', 'Note is being processed, please refresh later...')}</span>
+                <span className="text-sm">{translate(lang, '笔记正在处理中，请稍后刷新查看...', 'Note is being processed, please refresh later...')}</span>
               </div>
             )}
           </div>

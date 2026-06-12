@@ -6,6 +6,10 @@ import { getStoredToken } from '@/lib/api'
 import { getNoteTags, createNoteTag, deleteNoteTag } from '@/lib/api/notes'
 import type { NoteTagResponse } from '@/types/api'
 
+function translate(lang: 'zh' | 'en', zh: string, en: string) {
+  return lang === 'zh' ? zh : en
+}
+
 interface NoteTagFilterProps {
   selectedTags: string[]
   onTagsChange: (tags: string[]) => void
@@ -21,7 +25,6 @@ export function NoteTagFilter({
   const [newTagName, setNewTagName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
 
-  const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
   const selectedTagSet = new Set(selectedTags)
 
   // Load tags
@@ -63,7 +66,7 @@ export function NoteTagFilter({
   }, [newTagName])
 
   const handleDeleteTag = useCallback(async (tagId: string, tagName: string) => {
-    if (!confirm(t('确定要删除这个标签吗？', 'Are you sure you want to delete this tag?'))) {
+    if (!confirm(translate(lang, '确定要删除这个标签吗？', 'Are you sure you want to delete this tag?'))) {
       return
     }
 
@@ -77,7 +80,7 @@ export function NoteTagFilter({
     } catch (error) {
       console.error('[标签] 删除失败:', error)
     }
-  }, [selectedTags, t, onTagsChange])
+  }, [selectedTags, lang, onTagsChange])
 
   const toggleTag = useCallback((tagName: string) => {
     onTagsChange(
@@ -114,7 +117,7 @@ export function NoteTagFilter({
             onClick={() => onTagsChange([])}
             className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
           >
-            {t('清除', 'Clear')}
+            {translate(lang, '清除', 'Clear')}
           </button>
         </div>
       )}
@@ -140,7 +143,7 @@ export function NoteTagFilter({
                   <button type="button"
                     onClick={() => handleDeleteTag(tag.id, tag.name)}
                     className="ml-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                    title={t('删除标签', 'Delete tag')}
+                    title={translate(lang, '删除标签', 'Delete tag')}
                   >
                     <X className="size-3.5" />
                   </button>
@@ -156,7 +159,7 @@ export function NoteTagFilter({
           value={newTagName}
           onChange={(e) => setNewTagName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-          placeholder={t('新建标签...', 'New tag...')}
+          placeholder={translate(lang, '新建标签...', 'New tag...')}
           className="flex-1 px-4 py-2 text-sm border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
         />
         <button type="button"
@@ -164,7 +167,7 @@ export function NoteTagFilter({
           disabled={isCreating || !newTagName.trim()}
           className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"
         >
-          {t('添加', 'Add')}
+          {translate(lang, '添加', 'Add')}
         </button>
       </div>
     </div>

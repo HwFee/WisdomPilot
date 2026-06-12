@@ -13,6 +13,10 @@ import { getStoredToken } from '@/lib/api'
 import { createNote, updateNote, createNoteTag, getNoteTags } from '@/lib/api/notes'
 import type { NoteCreate, NoteResponse, NoteTagResponse } from '@/types/api'
 
+function translate(lang: 'zh' | 'en', zh: string, en: string) {
+  return lang === 'zh' ? zh : en
+}
+
 const EMPTY_STRING_ARRAY: string[] = []
 
 interface NoteEditorProps {
@@ -60,8 +64,6 @@ export function NoteEditor({
   const { newTagName, showTagSelector } = tagUi
   const [isSaving, setIsSaving] = useState(false)
 
-  const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
-
   const selectedTagSet = useMemo(() => new Set(noteState.selectedTags), [noteState.selectedTags])
 
   // Load available tags
@@ -98,7 +100,7 @@ export function NoteEditor({
       } else {
         // Create new note
         const noteData: NoteCreate = {
-          title: noteState.title || `${t('笔记', 'Note')} ${new Date().toLocaleDateString()}`,
+          title: noteState.title || `${translate(lang, '笔记', 'Note')} ${new Date().toLocaleDateString()}`,
           content: noteState.content,
           course_id: courseId,
           exercise_id: exerciseId,
@@ -119,7 +121,7 @@ export function NoteEditor({
     } finally {
       setIsSaving(false)
     }
-  }, [note, noteState.title, noteState.content, noteState.selectedTags, exerciseId, chapterId, sectionId, courseId, subsectionIndex, knowledgePoints, source, t, onSave, onClose])
+  }, [note, noteState.title, noteState.content, noteState.selectedTags, exerciseId, chapterId, sectionId, courseId, subsectionIndex, knowledgePoints, source, lang, onSave, onClose])
 
   const handleCreateTag = useCallback(async () => {
     if (!tagUi.newTagName.trim()) return
@@ -156,22 +158,22 @@ export function NoteEditor({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/30">
           <h2 className="text-lg font-semibold">
-            {note ? t('编辑笔记', 'Edit Note') : t('新建笔记', 'New Note')}
+            {note ? translate(lang, '编辑笔记', 'Edit Note') : translate(lang, '新建笔记', 'New Note')}
           </h2>
           <div className="flex items-center gap-3">
             <button type="button"
               onClick={() => setTagUi(prev => ({ ...prev, showTagSelector: !prev.showTagSelector }))}
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors text-sm"
-              title={t('管理标签', 'Manage Tags')}
+              title={translate(lang, '管理标签', 'Manage Tags')}
             >
               <Tags className="size-4" />
-              <span>{t('标签', 'Tags')}</span>
+              <span>{translate(lang, '标签', 'Tags')}</span>
             </button>
             {onClose && (
               <button type="button"
                 onClick={onClose}
                 className="p-2 hover:bg-muted rounded-lg transition-colors"
-                title={t('关闭', 'Close')}
+                title={translate(lang, '关闭', 'Close')}
               >
                 <Minimize2 className="size-5" />
               </button>
@@ -204,14 +206,14 @@ export function NoteEditor({
                 value={tagUi.newTagName}
                 onChange={(e) => setTagUi(prev => ({ ...prev, newTagName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-                placeholder={t('输入新标签名', 'New tag name')}
+                placeholder={translate(lang, '输入新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
               />
               <button type="button"
                 onClick={handleCreateTag}
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
               >
-                {t('创建', 'Create')}
+                {translate(lang, '创建', 'Create')}
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -239,7 +241,7 @@ export function NoteEditor({
             type="text"
             value={noteState.title}
             onChange={(e) => setNoteState(prev => ({ ...prev, title: e.target.value }))}
-            placeholder={t('笔记标题（可选）', 'Note title (optional)')}
+            placeholder={translate(lang, '笔记标题（可选）', 'Note title (optional)')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
           />
         </div>
@@ -251,13 +253,13 @@ export function NoteEditor({
             <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
               <div className="flex items-center gap-2">
                 <Edit3 className="size-4" />
-                <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
+                <span>{translate(lang, 'Markdown 编辑器', 'Markdown Editor')}</span>
               </div>
             </div>
             <textarea
               value={noteState.content}
               onChange={(e) => setNoteState(prev => ({ ...prev, content: e.target.value }))}
-              placeholder={t('使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
+              placeholder={translate(lang, '使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
               className="flex-1 w-full p-6 resize-none bg-background font-mono text-base leading-relaxed focus:outline-none"
             />
           </div>
@@ -267,7 +269,7 @@ export function NoteEditor({
             <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
               <div className="flex items-center gap-2">
                 <Eye className="size-4" />
-                <span>{t('实时预览', 'Live Preview')}</span>
+                <span>{translate(lang, '实时预览', 'Live Preview')}</span>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
@@ -300,7 +302,7 @@ export function NoteEditor({
                     td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
                   }}
                 >
-                  {content || t('暂无内容', 'No content yet')}
+                  {content || translate(lang, '暂无内容', 'No content yet')}
                 </ReactMarkdown>
               </div>
             </div>
@@ -312,7 +314,7 @@ export function NoteEditor({
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 <Save className="size-4" />
-                {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
+                {isSaving ? translate(lang, '保存中...', 'Saving...') : translate(lang, '保存', 'Save')}
               </button>
             </div>
           </div>
@@ -328,16 +330,16 @@ export function NoteEditor({
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b">
           <h2 className="text-xl font-semibold">
-            {note ? t('编辑笔记', 'Edit Note') : t('新建笔记', 'New Note')}
+            {note ? translate(lang, '编辑笔记', 'Edit Note') : translate(lang, '新建笔记', 'New Note')}
           </h2>
           <div className="flex items-center gap-3">
             <button type="button"
               onClick={() => setTagUi(prev => ({ ...prev, showTagSelector: !prev.showTagSelector }))}
               className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors"
-              title={t('管理标签', 'Manage Tags')}
+              title={translate(lang, '管理标签', 'Manage Tags')}
             >
               <Tags className="size-5" />
-              <span className="text-sm">{t('标签', 'Tags')}</span>
+              <span className="text-sm">{translate(lang, '标签', 'Tags')}</span>
             </button>
             <button type="button"
               onClick={onClose}
@@ -373,14 +375,14 @@ export function NoteEditor({
                 value={tagUi.newTagName}
                 onChange={(e) => setTagUi(prev => ({ ...prev, newTagName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-                placeholder={t('输入新标签名', 'New tag name')}
+                placeholder={translate(lang, '输入新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
               />
               <button type="button"
                 onClick={handleCreateTag}
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
               >
-                {t('创建', 'Create')}
+                {translate(lang, '创建', 'Create')}
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -411,7 +413,7 @@ export function NoteEditor({
             type="text"
             value={noteState.title}
             onChange={(e) => setNoteState(prev => ({ ...prev, title: e.target.value }))}
-            placeholder={t('笔记标题（可选）', 'Note title (optional)')}
+            placeholder={translate(lang, '笔记标题（可选）', 'Note title (optional)')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
           />
         </div>
@@ -423,13 +425,13 @@ export function NoteEditor({
             <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Edit3 className="size-4" />
-                <span>{t('编辑', 'Edit')}</span>
+                <span>{translate(lang, '编辑', 'Edit')}</span>
               </div>
             </div>
             <textarea
               value={noteState.content}
               onChange={(e) => setNoteState(prev => ({ ...prev, content: e.target.value }))}
-              placeholder={t('使用 Markdown 编写...', 'Write in Markdown...')}
+              placeholder={translate(lang, '使用 Markdown 编写...', 'Write in Markdown...')}
               className="flex-1 w-full p-4 resize-none rounded-xl border border-border bg-muted/30 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -439,7 +441,7 @@ export function NoteEditor({
             <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Eye className="size-4" />
-                <span>{t('预览', 'Preview')}</span>
+                <span>{translate(lang, '预览', 'Preview')}</span>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 rounded-xl border border-border bg-muted/30">
@@ -448,7 +450,7 @@ export function NoteEditor({
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex, rehypeHighlight]}
                 >
-                  {content || t('暂无内容', 'No content yet')}
+                  {content || translate(lang, '暂无内容', 'No content yet')}
                 </ReactMarkdown>
               </div>
             </div>
@@ -458,14 +460,14 @@ export function NoteEditor({
         {/* Footer */}
         <div className="flex items-center justify-between p-5 border-t bg-muted/30">
           <div className="text-sm text-muted-foreground">
-            {t('支持 Markdown，数学公式 $...$ 和代码高亮', 'Markdown, math $...$ and code highlighting')}
+            {translate(lang, '支持 Markdown，数学公式 $...$ 和代码高亮', 'Markdown, math $...$ and code highlighting')}
           </div>
           <div className="flex gap-3">
             <button type="button"
               onClick={onClose}
               className="px-5 py-2.5 text-sm border-2 rounded-xl hover:bg-muted transition-colors"
             >
-              {t('取消', 'Cancel')}
+              {translate(lang, '取消', 'Cancel')}
             </button>
             <button type="button"
               onClick={handleSave}
@@ -473,7 +475,7 @@ export function NoteEditor({
               className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               <Save className="size-4" />
-              {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
+              {isSaving ? translate(lang, '保存中...', 'Saving...') : translate(lang, '保存', 'Save')}
             </button>
           </div>
         </div>

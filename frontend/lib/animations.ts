@@ -183,28 +183,37 @@ export function useCountUp(
  * 滚动触发动画
  */
 export function useScrollAnimation(threshold: number = 0.1) {
-  const ref = useRef<HTMLElement>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const thresholdRef = useRef(threshold)
 
   useEffect(() => {
-    const element = ref.current
-    if (!element) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.unobserve(element)
-        }
-      },
-      { threshold }
-    )
-
-    observer.observe(element)
-    return () => observer.disconnect()
+    thresholdRef.current = threshold
   }, [threshold])
 
-  return { ref, isVisible }
+  const setRef = useCallback(
+    (element: HTMLElement | null) => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
+      if (element && !isVisible) {
+        observerRef.current = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true)
+              observerRef.current?.disconnect()
+            }
+          },
+          { threshold: thresholdRef.current }
+        )
+        observerRef.current.observe(element)
+      }
+    },
+    [isVisible]
+  )
+
+  return { ref: setRef, isVisible }
 }
 
 /**
