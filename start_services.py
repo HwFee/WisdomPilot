@@ -279,7 +279,7 @@ def start_frontend(frontend_dir: Path, log_dir: Path, pnpm_cmd: str) -> subproce
     env["NODE_OPTIONS"] = "--max-old-space-size=4096"
     env["NEXT_TELEMETRY_DISABLED"] = "1"
 
-    command = [pnpm_cmd, "exec", "next", "dev", "--port", str(FRONTEND_PORT), "--no-turbo"]
+    command = [pnpm_cmd, "exec", "next", "dev", "--port", str(FRONTEND_PORT)]
     print(f"[启动] 前端 Next.js: {' '.join(command)}")
     creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0
     return subprocess.Popen(
