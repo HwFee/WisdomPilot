@@ -8,11 +8,11 @@ import {
   Target,
   Zap,
   Brain,
-  ChevronRight,
   Swords,
   Code2,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
+import { PageContainer } from '@/components/layout'
 import { CourseCard } from './components/course-card'
 import { useHomeData } from './hooks/use-home-data'
 
@@ -49,6 +49,20 @@ const TOOLS = [
   { icon: Code2, label: '题解广场', href: '/solutions', desc: '参考题解' },
 ]
 
+function HeroDecoration() {
+  return (
+    <div className="relative hidden lg:flex items-center justify-center h-full min-h-[400px]">
+      <div className="absolute inset-0 border border-border bg-card" />
+      <div className="relative grid grid-cols-2 gap-4 p-8">
+        <div className="w-32 h-32 border border-border bg-muted" />
+        <div className="w-32 h-32 border border-border bg-primary/10" />
+        <div className="w-32 h-32 border border-border bg-primary/10" />
+        <div className="w-32 h-32 border border-border bg-muted" />
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const { isLoggedIn, mounted, courses, coursesLoading } = useHomeData()
 
@@ -63,8 +77,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
+        <PageContainer>
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <Logo className="text-blue-500" />
@@ -93,57 +107,60 @@ export default function Home() {
               )}
             </div>
           </div>
-        </div>
+        </PageContainer>
       </header>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 gradient-mesh" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+      <section className="min-h-screen flex items-center pt-16">
+        <PageContainer className="w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+            <div className="lg:col-span-2 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-sm text-primary mb-8">
+                <Sparkles className="size-4" />
+                <span>基于生成式 AI 的程序设计实践教学系统</span>
+              </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-sm text-primary mb-8">
-              <Sparkles className="size-4" />
-              <span>基于生成式 AI 的程序设计实践教学系统</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-foreground mb-6 tracking-tight">
+                开启你的
+                <span className="text-gradient">编程学习之旅</span>
+              </h1>
+
+              <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto lg:mx-0">
+                闯关式学习路径，AI 个性化推荐，在线代码运行与评测，
+                <br className="hidden sm:block" />
+                助你从零基础到熟练掌握编程技能
+              </p>
+
+              <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
+                {!isLoggedIn && (
+                  <Link
+                    href="/register"
+                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-medium text-primary-foreground bg-primary rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary/25 hover-lift"
+                  >
+                    免费开始学习
+                    <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                )}
+                <Link
+                  href="/courses"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-medium text-foreground bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-muted transition-all"
+                >
+                  <BookOpen className="size-5 text-primary" />
+                  浏览课程
+                </Link>
+              </div>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-foreground mb-6 tracking-tight">
-              开启你的
-              <span className="text-gradient">编程学习之旅</span>
-            </h1>
-
-            <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              闯关式学习路径，AI 个性化推荐，在线代码运行与评测，
-              <br className="hidden sm:block" />
-              助你从零基础到熟练掌握编程技能
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              {!isLoggedIn && (
-                <Link
-                  href="/register"
-                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-medium text-primary-foreground bg-primary rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary/25 hover-lift"
-                >
-                  免费开始学习
-                  <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              )}
-              <Link
-                href="/courses"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-medium text-foreground bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-muted transition-all"
-              >
-                <BookOpen className="size-5 text-primary" />
-                浏览课程
-              </Link>
+            <div className="lg:col-span-1">
+              <HeroDecoration />
             </div>
           </div>
-        </div>
+        </PageContainer>
       </section>
 
       {/* Features */}
       <section className="py-20 border-y border-border bg-card/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageContainer>
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-semibold text-foreground mb-4">平台功能</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -151,7 +168,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {FEATURES.map((feature) => (
               <div
                 key={feature.title}
@@ -165,12 +182,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </PageContainer>
       </section>
 
       {/* Courses */}
       <section className="py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageContainer>
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-semibold text-foreground mb-4">课程</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -183,18 +200,18 @@ export default function Home() {
               <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {courses.map((course) => (
                 <CourseCard key={course.id} course={course} />
               ))}
             </div>
           )}
-        </div>
+        </PageContainer>
       </section>
 
       {/* Tools Grid */}
       <section className="py-20 bg-card/30 border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageContainer>
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-semibold text-foreground mb-4">学习工具</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -215,15 +232,12 @@ export default function Home() {
               </Link>
             ))}
           </div>
-        </div>
+        </PageContainer>
       </section>
 
       {/* CTA */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-primary/10 rounded-full blur-3xl" />
-
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-24 border-b border-border bg-card/30">
+        <PageContainer className="text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground mb-6">
             准备好开始了吗？
           </h2>
@@ -242,12 +256,12 @@ export default function Home() {
               <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           )}
-        </div>
+        </PageContainer>
       </section>
 
       {/* Footer */}
       <footer className="py-10 border-t border-border bg-card/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageContainer>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Logo size={32} className="text-blue-500" />
@@ -260,7 +274,7 @@ export default function Home() {
               &copy; 2026 智码领航
             </p>
           </div>
-        </div>
+        </PageContainer>
       </footer>
     </div>
   )
