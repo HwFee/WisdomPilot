@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
-import { FileText, Edit, Trash2, Download, Calendar, Tag, ExternalLink, Loader2 } from 'lucide-react'
+import { FileText, Edit, Trash2, Download, Calendar, Tag, ExternalLink, Loader2, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { getStoredToken } from '@/lib/api'
 import { deleteNote, exportNote } from '@/lib/api/notes'
 import type { NoteResponse } from '@/types/api'
@@ -149,51 +150,63 @@ export function NoteCard({
               </span>
               {/* 关联题目链接 */}
               {note.exercise_id && (
-                <button type="button"
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={handleGoToExercise}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-md text-xs font-medium hover:bg-primary/20 transition-colors"
+                  className="h-6 px-2 gap-1"
                   title={translate(lang, '跳转到关联题目', 'Go to related exercise')}
                 >
                   <ExternalLink className="size-3" />
                   {translate(lang, '题目 #', 'Exercise #')}{note.exercise_id}
-                </button>
+                </Button>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button type="button"
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setShowPreview(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={translate(lang, '预览', 'Preview')}
             >
-              <FileText className="size-4" />
-              <span>{translate(lang, '预览', 'Preview')}</span>
-            </button>
-            <button type="button"
+              <FileText className="size-4 mr-1.5" strokeWidth={1.5} />
+              {translate(lang, '预览', 'Preview')}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => onEdit?.(note)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={translate(lang, '编辑', 'Edit')}
             >
-              <Edit className="size-4" />
-              <span>{translate(lang, '编辑', 'Edit')}</span>
-            </button>
-            <button type="button"
+              <Edit className="size-4 mr-1.5" strokeWidth={1.5} />
+              {translate(lang, '编辑', 'Edit')}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm hover:bg-muted rounded-lg transition-colors"
               title={translate(lang, '导出', 'Export')}
             >
-              <Download className="size-4" />
-              <span>{translate(lang, '导出', 'Export')}</span>
-            </button>
-            <button type="button"
+              <Download className="size-4 mr-1.5" strokeWidth={1.5} />
+              {translate(lang, '导出', 'Export')}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleDelete}
               disabled={isDeleting || deleted}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
+              className="text-destructive hover:text-destructive"
               title={translate(lang, '删除', 'Delete')}
             >
-              <Trash2 className="size-4" />
-              <span>{translate(lang, '删除', 'Delete')}</span>
-            </button>
+              <Trash2 className="size-4 mr-1.5" strokeWidth={1.5} />
+              {translate(lang, '删除', 'Delete')}
+            </Button>
           </div>
         </div>
 
@@ -255,13 +268,16 @@ export function NoteCard({
               <div className="flex items-center gap-3">
                 <h2 className="font-semibold">{note.title || translate(lang, '笔记预览', 'Note Preview')}</h2>
                 {note.exercise_id && (
-                  <button type="button"
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
                     onClick={handleGoToExercise}
-                    className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+                    className="h-7 px-2 gap-1"
                   >
                     <ExternalLink className="size-3" />
                     {translate(lang, '跳转到题目', 'Go to exercise')}
-                  </button>
+                  </Button>
                 )}
                 {isProcessing && (
                   <span className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-500/10 text-amber-600 rounded-md">
@@ -270,12 +286,15 @@ export function NoteCard({
                   </span>
                 )}
               </div>
-              <button type="button"
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowPreview(false)}
-                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                aria-label={translate(lang, '关闭', 'Close')}
               >
-                ×
-              </button>
+                <X className="size-4" />
+              </Button>
             </div>
             <div className={`flex-1 overflow-y-auto p-6 prose prose-sm dark:prose-invert max-w-none ${isProcessing ? 'blur-sm' : ''}`}>
               <ReactMarkdown

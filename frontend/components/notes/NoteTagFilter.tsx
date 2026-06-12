@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { X, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { getStoredToken } from '@/lib/api'
 import { getNoteTags, createNoteTag, deleteNoteTag } from '@/lib/api/notes'
 import type { NoteTagResponse } from '@/types/api'
@@ -40,7 +41,7 @@ export function NoteTagFilter({
   }, [])
 
   useEffect(() => {
-    // react-doctor-disable-next-line no-derived-state — tags are fetched from the API and are not derivable from props/state
+    // react-doctor-disable-next-line no-derived-state, react-doctor/no-derived-state — tags are fetched from the API and are not derivable from props/state
     loadTags()
   }, [loadTags])
 
@@ -105,21 +106,28 @@ export function NoteTagFilter({
                 style={{ borderColor: tag?.color }}
               >
                 {tagName}
-                <button type="button"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => toggleTag(tagName)}
-                  className="hover:text-primary/70"
+                  className="size-5 hover:text-primary/70"
+                  aria-label={translate(lang, '取消选择', 'Deselect')}
                 >
                   <X className="size-4" />
-                </button>
+                </Button>
               </span>
             )
           })}
-          <button type="button"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => onTagsChange([])}
-            className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
+            className="rounded-full"
           >
             {translate(lang, '清除', 'Clear')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -134,20 +142,27 @@ export function NoteTagFilter({
                   className="group px-3 py-1.5 text-sm border-2 rounded-full flex items-center gap-1 hover:bg-muted transition-colors"
                   style={{ borderColor: tag.color }}
                 >
-                  <button type="button"
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleTag(tag.name)}
-                    className="flex items-center gap-1"
+                    className="h-auto p-0 px-0 gap-1"
                   >
                     <Plus className="size-4" />
                     {tag.name}
-                  </button>
-                  <button type="button"
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleDeleteTag(tag.id, tag.name)}
-                    className="ml-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                    className="ml-1 size-5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
                     title={translate(lang, '删除标签', 'Delete tag')}
+                    aria-label={translate(lang, '删除标签', 'Delete tag')}
                   >
                     <X className="size-3.5" />
-                  </button>
+                  </Button>
                 </span>,
               ]
         )}
@@ -164,13 +179,13 @@ export function NoteTagFilter({
           aria-label={translate(lang, '新建标签', 'New tag')}
           className="flex-1 px-4 py-2 text-sm border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
         />
-        <button type="button"
+        <Button
+          type="button"
           onClick={handleCreateTag}
           disabled={isCreating || !newTagName.trim()}
-          className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"
         >
           {translate(lang, '添加', 'Add')}
-        </button>
+        </Button>
       </div>
     </div>
   )
