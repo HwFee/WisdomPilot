@@ -65,21 +65,26 @@ export function NoteTagSelector({
         </Button>
       </div>
       <div className="flex flex-wrap gap-2">
-        {availableTags
-          .filter((tag) => !selectedTagSet.has(tag.name))
-          .map((tag) => (
-            <Button
-              type="button"
-              key={tag.id}
-              variant="ghost"
-              size="sm"
-              onClick={() => onToggleTag(tag.name)}
-              className="border border-border rounded-full px-3"
-              style={{ borderColor: tag.color }}
-            >
-              {tag.name}
-            </Button>
-          ))}
+        {(() => {
+          const items = []
+          for (const tag of availableTags) {
+            if (selectedTagSet.has(tag.name)) continue
+            items.push(
+              <Button
+                type="button"
+                key={tag.id}
+                variant="ghost"
+                size="sm"
+                onClick={() => onToggleTag(tag.name)}
+                className="border border-border rounded-full px-3"
+                style={{ borderColor: tag.color }}
+              >
+                {tag.name}
+              </Button>
+            )
+          }
+          return items
+        })()}
       </div>
     </div>
   )

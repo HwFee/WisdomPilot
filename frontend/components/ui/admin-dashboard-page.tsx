@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useReducer } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Panel, PanelHeader } from '@/components/layout/Panel'
@@ -35,31 +35,92 @@ function getCurrentUser() {
   }
 }
 
+// ========================================
+// State / reducer (useReducer consolidates the previous
+// 5 useState calls + the derived `isLoading` flag)
+// ========================================
+
+type Status = 'loading' | 'ready' | 'error'
+
+interface AdminState {
+  status: Status
+  users: User[]
+  onlineUsers: User[]
+  error: string
+  deleteConfirm: string | null
+}
+
+type AdminAction =
+  | { type: 'fetch_start' }
+  | { type: 'fetch_success'; users: User[] }
+  | { type: 'fetch_failure'; error: string }
+  | { type: 'set_online_users'; users: User[] }
+  | { type: 'set_error'; error: string }
+  | { type: 'request_delete'; userId: string }
+  | { type: 'cancel_delete' }
+  | { type: 'remove_user'; userId: string }
+
+const initialState: AdminState = {
+  status: 'loading',
+  users: [],
+  onlineUsers: [],
+  error: '',
+  deleteConfirm: null,
+}
+
+function adminReducer(state: AdminState, action: AdminAction): AdminState {
+  switch (action.type) {
+    case 'fetch_start':
+      return { ...state, status: 'loading', error: '' }
+    case 'fetch_success':
+      return { ...state, status: 'ready', users: action.users, error: '' }
+    case 'fetch_failure':
+      return { ...state, status: 'error', error: action.error }
+    case 'set_online_users':
+      return { ...state, onlineUsers: action.users }
+    case 'set_error':
+      return { ...state, error: action.error }
+    case 'request_delete':
+      return { ...state, deleteConfirm: action.userId }
+    case 'cancel_delete':
+      return { ...state, deleteConfirm: null }
+    case 'remove_user':
+      return {
+        ...state,
+        users: state.users.filter((u) => u.id !== action.userId),
+        deleteConfirm: null,
+      }
+    default:
+      return state
+  }
+}
+
 export default function AdminDashboardPage() {
   const { push } = useRouter()
-  const [users, setUsers] = useState<User[]>([])
-  const [onlineUsers, setOnlineUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [state, dispatch] = useReducer(adminReducer, initialState)
+
+  // `isLoading` is derived from `status` — no need to store it as state
+  // and pay the extra render cost.
+  const isLoading = state.status === 'loading'
 
   const currentUser = getCurrentUser()
 
   const fetchUsers = useCallback(async () => {
     const token = getAuthToken()
     if (!token) return
+    dispatch({ type: 'fetch_start' })
     try {
-      setIsLoading(true)
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Failed to fetch users')
       const data = await res.json()
-      setUsers(data)
+      dispatch({ type: 'fetch_success', users: data })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching users')
-    } finally {
-      setIsLoading(false)
+      dispatch({
+        type: 'fetch_failure',
+        error: err instanceof Error ? err.message : 'Error fetching users',
+      })
     }
   }, [])
 
@@ -82,9 +143,12 @@ export default function AdminDashboardPage() {
       })
       if (!res.ok) throw new Error('Failed to fetch online users')
       const data = await res.json()
-      setOnlineUsers(data)
+      dispatch({ type: 'set_online_users', users: data })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching online users')
+      dispatch({
+        type: 'set_error',
+        error: err instanceof Error ? err.message : 'Error fetching online users',
+      })
     }
   }
 
@@ -97,10 +161,12 @@ export default function AdminDashboardPage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Failed to delete user')
-      setUsers(prev => prev.filter(u => u.id !== userId))
-      setDeleteConfirm(null)
+      dispatch({ type: 'remove_user', userId })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error deleting user')
+      dispatch({
+        type: 'set_error',
+        error: err instanceof Error ? err.message : 'Error deleting user',
+      })
     }
   }
 
@@ -141,9 +207,9 @@ export default function AdminDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {error && (
+        {state.error && (
           <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
-            {error}
+            {state.error}
           </div>
         )}
 
@@ -156,7 +222,7 @@ export default function AdminDashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">总用户数</p>
-                <p className="text-2xl font-bold text-foreground">{users.length}</p>
+                <p className="text-2xl font-bold text-foreground">{state.users.length}</p>
               </div>
             </div>
           </StatCell>
@@ -174,7 +240,7 @@ export default function AdminDashboardPage() {
                     onClick={fetchOnlineUsers}
                     className="hover:text-success underline"
                   >
-                    {onlineUsers.length}
+                    {state.onlineUsers.length}
                   </button>
                 </p>
               </div>
@@ -189,7 +255,7 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="text-sm text-muted-foreground">活跃用户</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {users.filter(u => u.is_active).length}
+                  {state.users.filter((u) => u.is_active).length}
                 </p>
               </div>
             </div>
@@ -229,7 +295,7 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {state.users.map((user) => (
                 <tr key={user.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{user.username}</div>
@@ -252,7 +318,7 @@ export default function AdminDashboardPage() {
                     <ClientDate dateStr={user.created_at} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {deleteConfirm === user.id ? (
+                    {state.deleteConfirm === user.id ? (
                       <div className="flex items-center justify-end gap-2">
                         <span className="text-destructive text-xs">确认删除?</span>
                         <Button
@@ -265,7 +331,7 @@ export default function AdminDashboardPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setDeleteConfirm(null)}
+                          onClick={() => dispatch({ type: 'cancel_delete' })}
                         >
                           取消
                         </Button>
@@ -274,7 +340,7 @@ export default function AdminDashboardPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setDeleteConfirm(user.id)}
+                        onClick={() => dispatch({ type: 'request_delete', userId: user.id })}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         aria-label={`删除用户 ${user.username}`}
                       >
@@ -287,7 +353,7 @@ export default function AdminDashboardPage() {
             </tbody>
           </table>
 
-          {users.length === 0 && (
+          {state.users.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               暂无用户
             </div>

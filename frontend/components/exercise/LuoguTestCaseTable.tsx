@@ -21,6 +21,14 @@ interface LuoguTestCaseTableProps {
   isRunning?: boolean
 }
 
+const STATUS_CONFIG: Record<string, { className: string; icon: typeof XCircle; label: string }> = {
+  WA: { className: 'inline-flex items-center px-3 py-1 bg-destructive/10 text-destructive rounded font-semibold text-xs', icon: XCircle, label: 'WA' },
+  TLE: { className: 'inline-flex items-center px-3 py-1 bg-warning/10 text-warning rounded font-semibold text-xs', icon: Clock, label: 'TLE' },
+  MLE: { className: 'inline-flex items-center px-3 py-1 bg-warning/10 text-warning rounded font-semibold text-xs', icon: Cpu, label: 'MLE' },
+  RE: { className: 'inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded font-semibold text-xs', icon: AlertTriangle, label: 'RE' },
+  CE: { className: 'inline-flex items-center px-3 py-1 bg-destructive/10 text-destructive rounded font-semibold text-xs', icon: XCircle, label: 'CE' },
+}
+
 function formatMemory(memory?: number) {
   if (!memory) return '-'
   return `${(memory / 1024).toFixed(2)} MB`
@@ -146,15 +154,7 @@ function StatusBadge({ result, index, isRunning }: StatusBadgeProps) {
   }
 
   const status = result.status || 'WA'
-  const statusConfig: Record<string, { className: string; icon: typeof XCircle; label: string }> = {
-    WA: { className: 'inline-flex items-center px-3 py-1 bg-destructive/10 text-destructive rounded font-semibold text-xs', icon: XCircle, label: 'WA' },
-    TLE: { className: 'inline-flex items-center px-3 py-1 bg-warning/10 text-warning rounded font-semibold text-xs', icon: Clock, label: 'TLE' },
-    MLE: { className: 'inline-flex items-center px-3 py-1 bg-warning/10 text-warning rounded font-semibold text-xs', icon: Cpu, label: 'MLE' },
-    RE: { className: 'inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded font-semibold text-xs', icon: AlertTriangle, label: 'RE' },
-    CE: { className: 'inline-flex items-center px-3 py-1 bg-destructive/10 text-destructive rounded font-semibold text-xs', icon: XCircle, label: 'CE' },
-  }
-
-  const config = statusConfig[status] || statusConfig.WA
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.WA
   const Icon = config.icon
 
   return (

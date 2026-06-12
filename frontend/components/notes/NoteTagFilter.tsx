@@ -132,37 +132,42 @@ export function NoteTagFilter({
 
       {/* Available tags */}
       <div className="flex flex-wrap gap-2">
-        {tags
-          .filter((tag) => !selectedTagSet.has(tag.name))
-          .map((tag) => (
-            <span
-              key={tag.id}
-              className="group inline-flex items-center gap-1 border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
-              style={{ borderColor: tag.color }}
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleTag(tag.name)}
-                className="h-auto p-0 gap-1"
+        {(() => {
+          const items = []
+          for (const tag of tags) {
+            if (selectedTagSet.has(tag.name)) continue
+            items.push(
+              <span
+                key={tag.id}
+                className="group inline-flex items-center gap-1 border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
+                style={{ borderColor: tag.color }}
               >
-                <Plus className="size-3.5" strokeWidth={1.5} />
-                {tag.name}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDeleteTag(tag.id, tag.name)}
-                className="ml-1 size-5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                title={translate(lang, '删除标签', 'Delete tag')}
-                aria-label={translate(lang, '删除标签', 'Delete tag')}
-              >
-                <X className="size-3.5" strokeWidth={1.5} />
-              </Button>
-            </span>
-          ))}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleTag(tag.name)}
+                  className="h-auto p-0 gap-1"
+                >
+                  <Plus className="size-3.5" strokeWidth={1.5} />
+                  {tag.name}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteTag(tag.id, tag.name)}
+                  className="ml-1 size-5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                  title={translate(lang, '删除标签', 'Delete tag')}
+                  aria-label={translate(lang, '删除标签', 'Delete tag')}
+                >
+                  <X className="size-3.5" strokeWidth={1.5} />
+                </Button>
+              </span>
+            )
+          }
+          return items
+        })()}
       </div>
 
       {/* Create new tag */}

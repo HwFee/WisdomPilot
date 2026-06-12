@@ -4,8 +4,8 @@ import { X, AlertCircle } from 'lucide-react'
 import { Gem } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { HintLevel } from './HintMessage'
-import { HINT_CONFIG } from './HintMessage'
+import type { HintLevel } from './hint-message.constants'
+import { HINT_CONFIG } from './hint-message.constants'
 
 // ========================================
 // Modal close button (header X)

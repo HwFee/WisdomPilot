@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Loader2, Sparkles, GripVertical, AlertCircle, Gem } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { HINT_CONFIG, type HintLevel, HintMessage } from './HintMessage'
+import { HintMessage } from './HintMessage'
+import { HINT_CONFIG, type HintLevel } from './hint-message.constants'
 import { CloseButton, ModalFooterAction, CostLabel, ErrorToast } from './HintActions'
 
 // ========================================

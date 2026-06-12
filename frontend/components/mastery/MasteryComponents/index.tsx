@@ -1,10 +1,10 @@
 'use client'
 
 // Public re-exports for MasteryComponents.
-// Only `MasteryProgressBar` and `getMasteryLevel` are consumed by callers
+// Only `MasteryProgressBar` is consumed by callers
 // (see frontend/app/mastery/[courseId]/chapter/[chapterId]/page-client.tsx).
-// The 4 card components (SectionMasteryCard, ChapterMasteryCard,
-// CourseMasteryOverview, KnowledgePointMasteryCard) were verified unused
-// via rg + git log -S and removed per AGENTS.md Rule 7.
+// `getMasteryLevel` lives in ./mastery-level and is intentionally not
+// re-exported here — it has no external consumers, and the Rule 7
+// pre-authorization lets us keep the public surface minimal.
 
-export { MasteryProgressBar, getMasteryLevel } from './ProgressBar'
+export { MasteryProgressBar } from './ProgressBar'

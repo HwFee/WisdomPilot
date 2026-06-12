@@ -17,7 +17,7 @@ export const fadeIn: Variants = {
 }
 
 /** 从下方滑入 */
-export const slideUp: Variants = {
+const slideUp: Variants = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -20 },

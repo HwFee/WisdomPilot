@@ -1,6 +1,7 @@
 'use client'
 
 import { LazyMotion, domAnimation, m } from 'framer-motion'
+import { getMasteryLevel } from './mastery-level'
 
 // ========================================
 // MasteryProgressBar - animated progress bar with level color
@@ -52,47 +53,4 @@ export function MasteryProgressBar({
       </div>
     </LazyMotion>
   )
-}
-
-// ========================================
-// getMasteryLevel - shared helper used by ProgressBar and all cards
-// ========================================
-
-export function getMasteryLevel(score: number) {
-  if (score >= 95) {
-    return {
-      label: '精通',
-      badgeColor: 'bg-success/10 dark:bg-success/20',
-      textColor: 'text-success',
-      progressColor: 'bg-success',
-    }
-  } else if (score >= 85) {
-    return {
-      label: '熟练',
-      badgeColor: 'bg-primary/10 dark:bg-primary/20',
-      textColor: 'text-primary',
-      progressColor: 'bg-primary',
-    }
-  } else if (score >= 70) {
-    return {
-      label: '练习',
-      badgeColor: 'bg-warning/10 dark:bg-warning/20',
-      textColor: 'text-warning',
-      progressColor: 'bg-warning',
-    }
-  } else if (score >= 50) {
-    return {
-      label: '学习',
-      badgeColor: 'bg-warning/10 dark:bg-warning/20',
-      textColor: 'text-warning',
-      progressColor: 'bg-warning/80',
-    }
-  } else {
-    return {
-      label: '入门',
-      badgeColor: 'bg-muted',
-      textColor: 'text-muted-foreground',
-      progressColor: 'bg-muted-foreground/40',
-    }
-  }
 }
