@@ -1,7 +1,7 @@
 'use client'
 
 import { X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
 import { translate } from './note-translate'
 import type { NoteTagResponse } from '@/types/api'
 
@@ -28,27 +28,25 @@ export function NoteTagSelector({
   onToggleTag,
   variant,
 }: NoteTagSelectorProps) {
-  const containerClass =
-    variant === 'fullPage'
-      ? 'px-6 py-4 border-b bg-muted/30'
-      : 'px-5 py-4 border-b bg-muted/30'
-
   return (
-    <div className={containerClass}>
+    <div className="border-b border-border px-6 py-4">
       <div className="flex flex-wrap gap-2 mb-4">
         {selectedTags.map((tag) => (
           <span
             key={tag}
-            className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-2"
+            className="inline-flex items-center gap-1 border border-border px-3 py-1.5 text-sm text-foreground"
           >
             {tag}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => onToggleTag(tag)}
-              className="hover:text-primary/70"
+              className="size-5 -mr-1"
+              aria-label={translate(lang, `取消选择 ${tag}`, `Deselect ${tag}`)}
             >
-              <X className={variant === 'fullPage' ? 'size-3.5' : 'size-4'} />
-            </button>
+              <X className="size-3.5" strokeWidth={1.5} />
+            </Button>
           </span>
         ))}
       </div>
@@ -60,35 +58,28 @@ export function NoteTagSelector({
           onKeyDown={(e) => e.key === 'Enter' && onCreateTag()}
           placeholder={translate(lang, '输入新标签名', 'New tag name')}
           aria-label={translate(lang, '新标签名', 'New tag name')}
-          className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
+          className="flex-1 h-9 px-3 text-sm bg-background border border-border focus:outline-none focus:border-foreground"
         />
-        <button
-          type="button"
-          onClick={onCreateTag}
-          className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-        >
+        <Button type="button" size="sm" onClick={onCreateTag}>
           {translate(lang, '创建', 'Create')}
-        </button>
+        </Button>
       </div>
       <div className="flex flex-wrap gap-2">
-        {(() => {
-          const tagButtons: ReactNode[] = []
-          for (const tag of availableTags) {
-            if (selectedTagSet.has(tag.name)) continue
-            tagButtons.push(
-              <button
-                type="button"
-                key={tag.id}
-                onClick={() => onToggleTag(tag.name)}
-                className="px-3 py-1.5 text-sm border-2 rounded-full hover:bg-muted transition-colors"
-                style={{ borderColor: tag.color }}
-              >
-                {tag.name}
-              </button>
-            )
-          }
-          return tagButtons
-        })()}
+        {availableTags
+          .filter((tag) => !selectedTagSet.has(tag.name))
+          .map((tag) => (
+            <Button
+              type="button"
+              key={tag.id}
+              variant="ghost"
+              size="sm"
+              onClick={() => onToggleTag(tag.name)}
+              className="border border-border rounded-full px-3"
+              style={{ borderColor: tag.color }}
+            >
+              {tag.name}
+            </Button>
+          ))}
       </div>
     </div>
   )
