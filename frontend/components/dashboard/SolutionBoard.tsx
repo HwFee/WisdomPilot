@@ -50,7 +50,7 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
       setSolutions(data)
     } catch (e) {
       const msg = e instanceof Error ? e.message : (lang === 'zh' ? '加载失败' : 'Failed to load')
-      // react-doctor-disable-next-line no-derived-state — error comes from an async API call, not derivable from props/state
+      /* react-doctor-disable-next-line no-derived-state */
       setError(msg)
     } finally {
       setLoading(false)

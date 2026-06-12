@@ -44,7 +44,7 @@ export function MermaidBlock({ code }: { code: string }) {
     <div
       ref={ref}
       className="mermaid-diagram my-3 flex justify-center bg-gray-800/50 rounded-lg p-4 overflow-x-auto"
-      // react-doctor-disable-next-line no-danger
+      /* react-doctor-disable-next-line no-danger */
       dangerouslySetInnerHTML={{ __html: mermaidState.svg }} /* eslint-disable-line react/no-danger */
     />
   )

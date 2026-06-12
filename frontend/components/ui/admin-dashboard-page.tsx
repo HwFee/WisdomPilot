@@ -17,11 +17,22 @@ interface User {
 }
 
 function ClientDate({ dateStr }: { dateStr: string }) {
-  const [formatted, setFormatted] = useState('')
-  useEffect(() => {
-    setFormatted(new Date(dateStr).toLocaleDateString('zh-CN'))
-  }, [dateStr])
+  const formatted = new Date(dateStr).toLocaleDateString('zh-CN')
   return <span suppressHydrationWarning>{formatted}</span>
+}
+
+function getAuthToken() {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('token:v1')
+}
+
+function getCurrentUser() {
+  if (typeof window === 'undefined') return null
+  try {
+    return JSON.parse(localStorage.getItem('user:v1') || 'null')
+  } catch {
+    return null
+  }
 }
 
 export default function AdminDashboardPage() {
@@ -30,20 +41,6 @@ export default function AdminDashboardPage() {
   const [onlineUsers, setOnlineUsers] = useState<User[]>([])
   const [status, setStatus] = useState({ isLoading: true, error: '' })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-
-  const getAuthToken = () => {
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem('token:v1')
-  }
-
-  const getCurrentUser = () => {
-    if (typeof window === 'undefined') return null
-    try {
-      return JSON.parse(localStorage.getItem('user:v1') || 'null')
-    } catch {
-      return null
-    }
-  }
 
   const currentUser = getCurrentUser()
 
