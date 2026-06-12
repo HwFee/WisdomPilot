@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Play, Loader2, X, Copy, Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface CustomTestInputProps {
   onRun: (input: string) => Promise<void>
@@ -52,29 +53,31 @@ export function CustomTestInput({
   }
 
   return (
-    <div className="custom-test-input">
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-[#F5F7FA] border-b border-[#E4E7ED]">
-        <span className="text-sm font-medium text-[#606266]">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-muted border-b border-border">
+        <span className="text-sm font-medium text-foreground">
           {t('测试', 'Test')}
         </span>
         <div className="flex items-center gap-2">
-          <button type="button"
+          <button
+            type="button"
             onClick={handleCopy}
             disabled={!input}
-            className="p-1.5 text-[#909399] hover:text-[#3498DB] hover:bg-[#EBEEF5] rounded transition-colors disabled:opacity-30"
+            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-secondary rounded transition-colors disabled:opacity-30"
             title={t('复制', 'Copy')}
           >
             {copied ? (
-              <Check className="size-4 text-[#52C41A]" />
+              <Check className="size-4 text-success" />
             ) : (
               <Copy className="size-4" />
             )}
           </button>
-          <button type="button"
+          <button
+            type="button"
             onClick={handleClear}
             disabled={!input}
-            className="p-1.5 text-[#909399] hover:text-[#E74C3C] hover:bg-[#EBEEF5] rounded transition-colors disabled:opacity-30"
+            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-secondary rounded transition-colors disabled:opacity-30"
             title={t('清空', 'Clear')}
           >
             <X className="size-4" />
@@ -83,24 +86,26 @@ export function CustomTestInput({
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white">
+      <div className="p-3 bg-card">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('输入测试数据...', 'Enter test input...')}
           aria-label={t('测试输入', 'Test input')}
-          className="w-full h-24 px-3 py-2 bg-[#FAFBFC] border border-[#E4E7ED] rounded-lg text-sm font-mono text-[#303133] placeholder-[#C0C4CC] focus:outline-none focus:border-[#3498DB] focus:ring-1 focus:ring-[#3498DB]/20 resize-none"
+          className="w-full h-24 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none"
           spellCheck={false}
         />
         <div className="flex items-center justify-between mt-2">
-          <span className="text-xs text-[#909399]">
+          <span className="text-xs text-muted-foreground">
             {t('Ctrl+Enter 运行', 'Ctrl+Enter to run')}
           </span>
-          <button type="button"
+          <Button
+            type="button"
+            variant="success"
+            size="sm"
             onClick={handleRun}
             disabled={isRunning || !input.trim()}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-[#52C41A] hover:bg-[#27AE60] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRunning ? (
               <>
@@ -113,7 +118,7 @@ export function CustomTestInput({
                 {t('运行', 'Run')}
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -142,10 +147,10 @@ export function TestOutputDisplay({
 
   if (isRunning) {
     return (
-      <div className="test-output-display running">
+      <div className="bg-card border border-primary/30 rounded-lg overflow-hidden">
         <div className="flex items-center justify-center py-6">
-          <Loader2 className="size-5 animate-spin text-[#3498DB]" />
-          <span className="ml-2 text-sm text-[#606266]">{t('运行中...', 'Running...')}</span>
+          <Loader2 className="size-5 animate-spin text-primary" />
+          <span className="ml-2 text-sm text-muted-foreground">{t('运行中...', 'Running...')}</span>
         </div>
       </div>
     )
@@ -156,37 +161,51 @@ export function TestOutputDisplay({
   }
 
   return (
-    <div className={`test-output-display ${passed ? 'passed' : error ? 'error' : 'failed'}`}>
+    <div
+      className={
+        passed
+          ? 'bg-card border border-success/30 rounded-lg overflow-hidden'
+          : error
+          ? 'bg-card border border-destructive/30 rounded-lg overflow-hidden'
+          : 'bg-card border border-border rounded-lg overflow-hidden'
+      }
+    >
       {passed !== undefined && (
-        <div className={`status-bar ${passed ? 'accepted' : 'wrong'}`}>
+        <div
+          className={
+            passed
+              ? 'px-3 py-2.5 border-b border-success/20 bg-success/5'
+              : 'px-3 py-2.5 border-b border-destructive/20 bg-destructive/5'
+          }
+        >
           {passed ? (
-            <span className="text-[#52C41A] font-medium">✓ {t('通过', 'Accepted')}</span>
+            <span className="text-success font-medium">✓ {t('通过', 'Accepted')}</span>
           ) : (
-            <span className="text-[#E74C3C] font-medium">✗ {t('答案错误', 'Wrong Answer')}</span>
+            <span className="text-destructive font-medium">✗ {t('答案错误', 'Wrong Answer')}</span>
           )}
         </div>
       )}
 
       {error ? (
         <div className="p-3">
-          <span className="text-xs font-medium text-[#E74C3C] uppercase tracking-wide mb-1.5 block">
+          <span className="text-xs font-medium text-destructive uppercase tracking-wide mb-1.5 block">
             {t('错误', 'Error')}
           </span>
-          <pre className="text-xs font-mono text-[#E74C3C] whitespace-pre-wrap">{error}</pre>
+          <pre className="text-xs font-mono text-destructive whitespace-pre-wrap">{error}</pre>
         </div>
       ) : (
         <div className="p-3">
-          <span className="text-xs font-medium text-[#52C41A] uppercase tracking-wide mb-1.5 block">
+          <span className="text-xs font-medium text-success uppercase tracking-wide mb-1.5 block">
             {t('输出', 'Output')}
           </span>
-          <pre className="text-xs font-mono text-[#303133] whitespace-pre-wrap">{output || '(空)'}</pre>
+          <pre className="text-xs font-mono text-foreground whitespace-pre-wrap">{output || '(空)'}</pre>
 
           {expected !== undefined && !passed && (
-            <div className="mt-3 pt-3 border-t border-[#E4E7ED]">
-              <span className="text-xs font-medium text-[#3498DB] uppercase tracking-wide mb-1.5 block">
+            <div className="mt-3 pt-3 border-t border-border">
+              <span className="text-xs font-medium text-primary uppercase tracking-wide mb-1.5 block">
                 {t('期望', 'Expected')}
               </span>
-              <pre className="text-xs font-mono text-[#303133] whitespace-pre-wrap">{expected || '(空)'}</pre>
+              <pre className="text-xs font-mono text-foreground whitespace-pre-wrap">{expected || '(空)'}</pre>
             </div>
           )}
         </div>

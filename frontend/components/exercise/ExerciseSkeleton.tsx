@@ -1,104 +1,60 @@
-"use client";
-
 /**
  * ExerciseSkeleton - 题目骨架屏占位组件
- *
- * 用于流式生成模式，在题目生成过程中显示占位动画
+ * Swiss style: uses design tokens, no custom CSS classes.
  */
-
-import { LazyMotion, domAnimation, m } from "framer-motion";
-
 interface ExerciseSkeletonProps {
-  index?: number;
-  showNumber?: boolean;
+  index?: number
+  showNumber?: boolean
 }
 
 export function ExerciseSkeleton({ index = 0, showNumber = true }: ExerciseSkeletonProps) {
   return (
-    <div className="bg-card rounded-2xl border border-border/50 p-6 mb-4 animate-pulse">
-      {/* 题目序号和类型标签 */}
-      <div className="flex items-center gap-3 mb-4">
-        {showNumber && (
-          <div className="size-8 bg-muted rounded-lg" />
-        )}
-        <div className="w-16 h-6 bg-muted rounded-lg" />
-        <div className="w-24 h-4 bg-muted rounded-full" />
-      </div>
-
-      {/* 题目文本 */}
-      <div className="flex flex-col gap-y-2 mb-6">
-        <div className="h-5 bg-muted rounded w-full" />
-        <div className="h-5 bg-muted rounded w-4/5" />
-        <div className="h-5 bg-muted rounded w-3/5" />
-      </div>
-
-      {/* 选项骨架 */}
-      <div className="flex flex-col gap-y-3">
-        {[1, 2, 3, 4].map((n) => (
-          <div key={`skeleton-${n}`} className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-            <div className="size-8 bg-muted rounded-lg flex-shrink-0" />
-            <div className="flex-1 h-4 bg-muted rounded" />
-          </div>
-        ))}
-      </div>
-
-      {/* 知识点标签 */}
-      <div className="flex gap-2 mt-4 pt-4 border-t border-border/30">
-        <div className="w-16 h-5 bg-muted rounded-full" />
-        <div className="w-20 h-5 bg-muted rounded-full" />
-      </div>
+    <div className="animate-pulse p-4 border border-border rounded-lg">
+      {showNumber && <div className="h-3 w-8 bg-muted rounded mb-3" />}
+      <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+      <div className="h-4 bg-muted rounded w-1/2" />
     </div>
-  );
+  )
 }
 
 /**
  * ExerciseSkeletonList - 多个骨架屏占位
  */
 interface ExerciseSkeletonListProps {
-  count: number;
-  startIndex?: number;
+  count: number
+  startIndex?: number
 }
 
 function ExerciseSkeletonList({ count, startIndex = 0 }: ExerciseSkeletonListProps) {
   return (
-    <div className="flex flex-col gap-y-4">
+    <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
         <ExerciseSkeleton key={startIndex + i} index={startIndex + i} />
       ))}
     </div>
-  );
+  )
 }
 
 /**
- * GeneratingIndicator - 生成中指示器
+ * GeneratingIndicator - AI 生成中的占位指示
+ * Swiss style: tokenized colors, no custom animation styles.
  */
-export function GeneratingIndicator({ progress, total }: { progress: number; total: number }) {
+export function GeneratingIndicator() {
   return (
-    <LazyMotion features={domAnimation}>
-      <m.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mb-4"
-      >
-        <div className="size-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-amber-600">
-            题目生成中...
-          </p>
-          <div className="mt-1 h-1.5 bg-amber-200 rounded-full overflow-hidden">
-            <m.div
-              className="h-full bg-amber-500 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${(progress / total) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </div>
-        <span className="text-sm text-amber-600 font-medium">
-          {progress}/{total}
-        </span>
-      </m.div>
-    </LazyMotion>
-  );
+    <div className="flex items-center gap-2 text-muted-foreground">
+      <span
+        className="h-2 w-2 rounded-full bg-primary animate-pulse"
+        style={{ animationDelay: '0ms' }}
+      />
+      <span
+        className="h-2 w-2 rounded-full bg-primary animate-pulse"
+        style={{ animationDelay: '200ms' }}
+      />
+      <span
+        className="h-2 w-2 rounded-full bg-primary animate-pulse"
+        style={{ animationDelay: '400ms' }}
+      />
+      <span className="text-sm">AI 正在生成...</span>
+    </div>
+  )
 }
-

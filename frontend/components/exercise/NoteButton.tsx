@@ -2,50 +2,40 @@
 
 import { useState, useCallback, useEffect, useRef, useTransition } from 'react'
 import { FileText, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { getStoredToken } from '@/lib/api'
 import { getNotes, type NoteResponse } from '@/lib/api/notes'
+import { cn } from '@/lib/utils'
 
 const SIZE_CLASSES = {
-  sm: 'size-6',
-  md: 'size-8',
-  lg: 'size-10',
-}
+  sm: 'size-9',
+  md: 'size-10',
+  lg: 'size-11',
+} as const
 
 const ICON_SIZES = {
   sm: 'size-3.5',
   md: 'size-4',
   lg: 'size-5',
-}
+} as const
 
 interface NoteButtonProps {
-  /** 课程ID */
   courseId: number
-  /** 原始练习题ID */
   exerciseId?: number
-  /** 章节ID（精进之路来源） */
   chapterId?: number
-  /** 小节ID */
   sectionId?: number
-  /** 题目内容快照 */
   exerciseContent?: {
     title?: string
     text?: string
     description?: string
     options?: string[]
   }
-  /** 知识点 */
   knowledgePoints?: string[]
-  /** 尺寸 */
   size?: 'sm' | 'md' | 'lg'
-  /** 是否显示标签 */
   showLabel?: boolean
-  /** 语言 */
   lang?: 'zh' | 'en'
-  /** 笔记状态变化回调 */
   onNoteChange?: (note: NoteResponse | null) => void
-  /** 点击按钮时调用，由父组件处理打开编辑器 */
   onClick?: (existingNote: NoteResponse | null) => void
-  /** 改变此值会触发重新检查笔记状态 */
   refreshKey?: number | string
 }
 
@@ -68,7 +58,6 @@ export function NoteButton({
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
-  // 检查是否已有笔记
   useEffect(() => {
     let cancelled = false
 
@@ -77,10 +66,7 @@ export function NoteButton({
 
     startTransition(async () => {
       try {
-        // 通过搜索来检查是否存在笔记
         const result = await getNotes(token, { chapterId, limit: 100 })
-
-        // 查找关联到该题目的笔记
         const note = result.notes.find((n) => n.exercise_id === exerciseId)
         if (note) {
           setHasNote(true)
@@ -97,7 +83,6 @@ export function NoteButton({
     })
   }, [exerciseId, chapterId, onNoteChange, refreshKey])
 
-  // 检测 refreshKey 变化时强制重新检查
   useEffect(() => {
     if (refreshKey !== undefined && refreshKey !== prevRefreshKeyRef.current) {
       prevRefreshKeyRef.current = refreshKey
@@ -109,26 +94,26 @@ export function NoteButton({
   }, [onClick])
 
   return (
-    <button type="button"
+    <Button
+      type="button"
+      variant="ghost"
+      size={showLabel ? 'default' : 'icon'}
       onClick={(e) => {
         e.stopPropagation()
         handleClick()
       }}
       disabled={isPending}
-      className={`
-        flex items-center justify-center rounded-lg transition-all duration-200
-        ${showLabel ? 'px-2.5 gap-1' : SIZE_CLASSES[size]}
-        ${
-          hasNote
-            ? 'bg-primary/20 text-primary hover:bg-primary/30'
-            : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary'
-        }
-        ${isPending ? 'opacity-50 cursor-not-allowed' : ''}
-      `}
+      className={cn(
+        showLabel ? 'px-2.5 gap-1' : SIZE_CLASSES[size],
+        hasNote
+          ? 'bg-primary/20 text-primary hover:bg-primary/30'
+          : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary',
+        isPending && 'opacity-50 cursor-not-allowed'
+      )}
       title={hasNote ? t('查看/编辑笔记', 'View/Edit Note') : t('记笔记', 'Add Note')}
     >
       {isPending ? (
-        <Loader2 className={`${ICON_SIZES[size]} animate-spin`} />
+        <Loader2 className={cn(ICON_SIZES[size], 'animate-spin')} />
       ) : (
         <FileText className={ICON_SIZES[size]} />
       )}
@@ -137,6 +122,6 @@ export function NoteButton({
           {hasNote ? t('已记笔记', 'Noted') : t('笔记', 'Note')}
         </span>
       )}
-    </button>
+    </Button>
   )
 }

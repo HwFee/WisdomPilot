@@ -7,7 +7,7 @@ const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
 function EditorLoading() {
   return (
-    <div className="flex items-center justify-center h-full text-[#909399]">
+    <div className="flex items-center justify-center h-full text-muted-foreground">
       <div className="animate-pulse">{/* Loading state */}</div>
     </div>
   )
@@ -1090,7 +1090,7 @@ export function CodeEditorPanel({
   }, [])
 
   return (
-    <div className="h-full bg-white">
+    <div className="h-full">
       <Editor
         height={height}
         language={language}
