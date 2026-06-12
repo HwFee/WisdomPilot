@@ -285,9 +285,11 @@ export function ExerciseListModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-overlay-enter">
-      <button
+      <Button
         type="button"
-        className="absolute inset-0 bg-black/50"
+        variant="ghost"
+        size="sm"
+        className="absolute inset-0 h-full w-full rounded-none bg-black/50 hover:bg-black/50 p-0"
         aria-label="关闭"
         onClick={onClose}
       />
