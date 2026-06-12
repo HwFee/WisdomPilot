@@ -4,59 +4,59 @@
 
 ## Phase 1: 共享布局基础设施
 
-- [ ] 1.1 审查 `frontend/app/globals.css`，确保 Swiss Precision layout token 完备（spacing、container、grid）
-- [ ] 1.2 创建/更新共享布局组件（如 `PageContainer`、`SectionHeader`、`Panel`）
-- [ ] 1.3 类型检查 + 构建验证
+- [x] 1.1 审查 `frontend/app/globals.css`，确保 Swiss Precision layout token 完备（spacing、container、grid）
+- [x] 1.2 创建/更新共享布局组件（如 `PageContainer`、`SectionHeader`、`Panel`）
+- [x] 1.3 类型检查 + 构建验证
 
 ## Phase 2: Dashboard 布局重构
 
-- [ ] 2.1 重构 `frontend/components/dashboard/index-new.tsx`：12 列网格、统一间距、移除固定高度
-- [ ] 2.2 重构 `WelcomeSection`：2:1 分栏布局
-- [ ] 2.3 重构 `TodayStats`：4 列网格分隔线保持，调整 padding
-- [ ] 2.4 重构 `QuickTools`：与统计区形成信息层级
-- [ ] 2.5 重构 `CurrentLearningPanel`：面板式布局，双路径卡片清晰分区
-- [ ] 2.6 重构 `DualLeaderboardPreview`：面板式 + 列表对齐
-- [ ] 2.7 重构 `SolutionBoard` + `RecentActivity`：右栏堆叠布局
-- [ ] 2.8 Dashboard Rule 1-11 审核 + 类型检查 + 构建验证
+- [x] 2.1 重构 `frontend/components/dashboard/index-new.tsx`：12 列网格、统一间距、移除固定高度
+- [x] 2.2 重构 `WelcomeSection`：2:1 分栏布局
+- [x] 2.3 重构 `TodayStats`：4 列网格分隔线保持，调整 padding
+- [x] 2.4 重构 `QuickTools`：与统计区形成信息层级
+- [x] 2.5 重构 `CurrentLearningPanel`：面板式布局，双路径卡片清晰分区
+- [x] 2.6 重构 `DualLeaderboardPreview`：面板式 + 列表对齐
+- [x] 2.7 重构 `SolutionBoard` + `RecentActivity`：右栏堆叠布局
+- [x] 2.8 Dashboard Rule 1-11 审核 + 类型检查 + 构建验证
 
 ## Phase 3: Landing 页布局重构
 
-- [ ] 3.1 创建/重构 `frontend/app/page.tsx`：Swiss Precision landing 布局
-- [ ] 3.2 Landing 页 Rule 1-11 审核 + 类型检查 + 构建验证
+- [x] 3.1 创建/重构 `frontend/app/page.tsx`：Swiss Precision landing 布局
+- [x] 3.2 Landing 页 Rule 1-11 审核 + 类型检查 + 构建验证
 
 ## Phase 4: Arena 布局重构
 
-- [ ] 4.1 重构 `frontend/app/arena/page.tsx`：题目/代码/输出三栏或双栏布局
-- [ ] 4.2 重构 `frontend/app/arena/components.tsx`：结果弹窗、导航、列表模态框布局
-- [ ] 4.3 Arena Rule 1-11 审核 + 类型检查 + 构建验证
+- [x] 4.1 重构 `frontend/app/arena/page.tsx`：题目/代码/输出三栏或双栏布局
+- [x] 4.2 重构 `frontend/app/arena/components.tsx`：结果弹窗、导航、列表模态框布局
+- [x] 4.3 Arena Rule 1-11 审核 + 类型检查 + 构建验证
 
 ## Phase 5: Mastery 布局重构
 
-- [ ] 5.1 重构 `frontend/app/mastery/[courseId]/page.tsx`：章节列表布局
-- [ ] 5.2 重构 `frontend/app/mastery/[courseId]/components/*.tsx`：quiz、分析、结果视图
-- [ ] 5.3 重构 `frontend/app/mastery/[courseId]/chapter/[chapterId]/page.tsx`
-- [ ] 5.4 重构 `frontend/app/mastery/[courseId]/chapter/[chapterId]/section/[sectionId]/page.tsx` + components
-- [ ] 5.5 Mastery Rule 1-11 审核 + 类型检查 + 构建验证
+- [x] 5.1 重构 `frontend/app/mastery/[courseId]/page.tsx`：章节列表布局
+- [x] 5.2 重构 `frontend/app/mastery/[courseId]/components/*.tsx`：quiz、分析、结果视图
+- [x] 5.3 重构 `frontend/app/mastery/[courseId]/chapter/[chapterId]/page.tsx`
+- [x] 5.4 重构 `frontend/app/mastery/[courseId]/chapter/[chapterId]/section/[sectionId]/page.tsx` + components
+- [x] 5.5 Mastery Rule 1-11 审核 + 类型检查 + 构建验证
 
 ## Phase 6: Courses 布局重构
 
-- [ ] 6.1 重构 `frontend/app/courses/page.tsx`：课程卡片网格布局
-- [ ] 6.2 Courses Rule 1-11 审核 + 类型检查 + 构建验证
+- [x] 6.1 重构 `frontend/app/courses/page.tsx`：课程卡片网格布局
+- [x] 6.2 Courses Rule 1-11 审核 + 类型检查 + 构建验证
 
 ## Phase 7: Leaderboard 布局重构
 
-- [ ] 7.1 重构 `frontend/app/leaderboard/page.tsx` + components：榜单条目对齐、当前用户卡片
-- [ ] 7.2 Leaderboard Rule 1-11 审核 + 类型检查 + 构建验证
+- [x] 7.1 重构 `frontend/app/leaderboard/page.tsx` + components：榜单条目对齐、当前用户卡片
+- [x] 7.2 Leaderboard Rule 1-11 审核 + 类型检查 + 构建验证
 
 ## Phase 8: 全局验证与 react-doctor 优化
 
-- [ ] 8.1 全站 `npx tsc --noEmit`
-- [ ] 8.2 全站 `pnpm build`
-- [ ] 8.3 安装并运行 [react-doctor](https://github.com/millionco/react-doctor)，扫描全站
-- [ ] 8.4 根据 react-doctor 报告持续优化，直到评分达到 100 分
-- [ ] 8.5 启动服务验证（前后端）
-- [ ] 8.6 `npx codegraph sync`
-- [ ] 8.7 提交所有变更
+- [x] 8.1 全站 `npx tsc --noEmit`
+- [x] 8.2 全站 `pnpm build`
+- [x] 8.3 安装并运行 [react-doctor](https://github.com/millionco/react-doctor)，扫描全站
+- [x] 8.4 根据 react-doctor 报告持续优化，直到评分达到 100 分
+- [x] 8.5 启动服务验证（前后端）
+- [x] 8.6 `npx codegraph sync`
+- [x] 8.7 提交所有变更
 
 ---
 
