@@ -1,6 +1,7 @@
 'use client'
 
 import { Pencil, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface ApiKeyFieldProps {
   label: string
@@ -39,21 +40,26 @@ export function ApiKeyField({
             <div className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-muted/50 text-muted-foreground font-mono tracking-widest overflow-hidden text-ellipsis whitespace-nowrap">
               {maskedPreview}
             </div>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onEnterReplace}
-              className="flex items-center gap-1 px-3 py-2 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors shrink-0"
+              className="flex items-center gap-1 border-primary text-primary hover:bg-primary/10 shrink-0"
             >
               <Pencil className="size-3.5" />
               替换
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={onDelete}
-              className="flex items-center gap-1 px-3 py-2 text-sm border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition-colors shrink-0"
+              className="size-auto p-2 text-red-500 hover:bg-red-50 hover:text-red-600 shrink-0"
+              aria-label="删除 API 密钥"
             >
               <Trash2 className="size-3.5" />
-            </button>
+            </Button>
           </>
         ) : !replaceMode ? (
           <input
@@ -75,13 +81,15 @@ export function ApiKeyField({
               data-autofocus="true"
               className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-background font-mono focus:ring-2 focus:ring-primary focus:border-transparent"
             />
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onCancelReplace}
-              className="px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors shrink-0"
+              className="shrink-0"
             >
               取消
-            </button>
+            </Button>
           </>
         )}
       </div>
