@@ -9,6 +9,7 @@ import {
   Lock,
   Trophy,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/layout";
 import type { ExerciseProgress } from "./types";
 
@@ -165,20 +166,23 @@ export function ResultModal({
             )}
 
             <div className="flex gap-3 justify-center">
-              <button type="button"
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
                 onClick={onStay}
-                className="px-6 py-3 bg-card border border-border rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
               >
                 留在本题
-              </button>
+              </Button>
               {canGoNext && (
-                <button type="button"
+                <Button
+                  type="button"
+                  size="lg"
                   onClick={onNext}
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center gap-2"
                 >
                   下一题
-                  <ArrowRight className="size-4" strokeWidth={1.5} />
-                </button>
+                  <ArrowRight className="size-4 ml-2" strokeWidth={1.5} />
+                </Button>
               )}
             </div>
           </div>
@@ -225,25 +229,26 @@ export function ExerciseNavigation({
         const isCurrent = globalIndex === currentIndex;
 
         return (
-          <button type="button"
+          <Button
+            type="button"
             key={ex.exercise_id}
             onClick={() => ex.is_unlocked && onSwitch(globalIndex)}
             disabled={!ex.is_unlocked}
             title={`第 ${globalIndex + 1} 题: ${ex.title || "未命名"}`}
             className={`rounded-lg text-xs font-bold transition-colors duration-300 ease-out ${
               isCurrent
-                ? "size-10 bg-primary text-primary-foreground z-10"
+                ? "size-10 bg-primary text-primary-foreground z-10 hover:bg-primary/90"
                 : ex.is_correct
-                  ? "size-8 bg-emerald-50 text-emerald-700 border-2 border-emerald-500"
+                  ? "size-8 bg-emerald-50 text-emerald-700 border-2 border-emerald-500 hover:bg-emerald-50"
                   : ex.is_completed
-                    ? "size-8 bg-red-50 text-red-700 border-2 border-red-500"
+                    ? "size-8 bg-red-50 text-red-700 border-2 border-red-500 hover:bg-red-50"
                     : ex.is_unlocked
                       ? "size-8 bg-card text-muted-foreground border border-border hover:border-primary"
                       : "size-8 bg-muted text-muted-foreground border border-border cursor-not-allowed"
             }`}
           >
             {globalIndex + 1}
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -293,21 +298,26 @@ export function ExerciseListModal({
         <Panel className="h-full flex flex-col">
         <div className="flex justify-between items-center px-6 py-4 border-b border-border">
           <h3 className="text-lg font-semibold text-foreground">题目列表</h3>
-          <button type="button"
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
+            aria-label="关闭"
           >
             <X className="size-5" strokeWidth={1.5} />
-          </button>
+          </Button>
         </div>
 
         <div className="overflow-y-auto flex-1 p-2 gap-y-2">
           {exercises.map((ex, index) => (
-            <button type="button"
+            <Button
+              type="button"
               key={ex.exercise_id}
+              variant="ghost"
               onClick={() => handleSwitch(index)}
               disabled={!ex.is_unlocked}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
+              className={`w-full h-auto justify-start text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
                 index === currentIndex
                   ? "bg-primary/10 border border-primary"
                   : ex.is_unlocked
@@ -356,7 +366,7 @@ export function ExerciseListModal({
                   未解锁
                 </span>
               )}
-            </button>
+            </Button>
           ))}
         </div>
 
