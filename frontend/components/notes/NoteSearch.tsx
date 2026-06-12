@@ -50,14 +50,14 @@ export function NoteSearch({
 
   return (
     <div className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
       <input
-        type="text"
+        type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder || t('搜索笔记...', 'Search notes...')}
         aria-label={placeholder || t('搜索笔记', 'Search notes')}
-        className="w-full pl-11 pr-11 py-3 text-base border-2 rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+        className="w-full h-10 pl-10 pr-10 bg-background border border-border text-sm focus:outline-none focus:border-foreground transition-colors"
       />
       {query && (
         <Button
@@ -65,15 +65,15 @@ export function NoteSearch({
           variant="ghost"
           size="icon"
           onClick={() => setQuery('')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 size-8"
+          className="absolute right-1 top-1/2 -translate-y-1/2 size-8"
           aria-label={t('清除搜索', 'Clear search')}
         >
-          <X className="size-5 text-muted-foreground" />
+          <X className="size-4 text-muted-foreground" strokeWidth={1.5} />
         </Button>
       )}
       {isSearching && (
         <div className="absolute right-12 top-1/2 -translate-y-1/2">
-          <div className="size-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
     </div>

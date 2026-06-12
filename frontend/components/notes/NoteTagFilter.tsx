@@ -102,7 +102,7 @@ export function NoteTagFilter({
             return (
               <span
                 key={tagName}
-                className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-2"
+                className="inline-flex items-center gap-1 border border-border px-3 py-1.5 text-sm text-foreground"
                 style={{ borderColor: tag?.color }}
               >
                 {tagName}
@@ -111,10 +111,10 @@ export function NoteTagFilter({
                   variant="ghost"
                   size="icon"
                   onClick={() => toggleTag(tagName)}
-                  className="size-5 hover:text-primary/70"
+                  className="size-5 -mr-1"
                   aria-label={translate(lang, '取消选择', 'Deselect')}
                 >
-                  <X className="size-4" />
+                  <X className="size-3.5" strokeWidth={1.5} />
                 </Button>
               </span>
             )
@@ -124,7 +124,6 @@ export function NoteTagFilter({
             variant="ghost"
             size="sm"
             onClick={() => onTagsChange([])}
-            className="rounded-full"
           >
             {translate(lang, '清除', 'Clear')}
           </Button>
@@ -133,43 +132,41 @@ export function NoteTagFilter({
 
       {/* Available tags */}
       <div className="flex flex-wrap gap-2">
-        {tags.flatMap((tag) =>
-          selectedTagSet.has(tag.name)
-            ? []
-            : [
-                <span
-                  key={tag.id}
-                  className="group px-3 py-1.5 text-sm border-2 rounded-full flex items-center gap-1 hover:bg-muted transition-colors"
-                  style={{ borderColor: tag.color }}
-                >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleTag(tag.name)}
-                    className="h-auto p-0 px-0 gap-1"
-                  >
-                    <Plus className="size-4" />
-                    {tag.name}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteTag(tag.id, tag.name)}
-                    className="ml-1 size-5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                    title={translate(lang, '删除标签', 'Delete tag')}
-                    aria-label={translate(lang, '删除标签', 'Delete tag')}
-                  >
-                    <X className="size-3.5" />
-                  </Button>
-                </span>,
-              ]
-        )}
+        {tags
+          .filter((tag) => !selectedTagSet.has(tag.name))
+          .map((tag) => (
+            <span
+              key={tag.id}
+              className="group inline-flex items-center gap-1 border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
+              style={{ borderColor: tag.color }}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleTag(tag.name)}
+                className="h-auto p-0 gap-1"
+              >
+                <Plus className="size-3.5" strokeWidth={1.5} />
+                {tag.name}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteTag(tag.id, tag.name)}
+                className="ml-1 size-5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                title={translate(lang, '删除标签', 'Delete tag')}
+                aria-label={translate(lang, '删除标签', 'Delete tag')}
+              >
+                <X className="size-3.5" strokeWidth={1.5} />
+              </Button>
+            </span>
+          ))}
       </div>
 
       {/* Create new tag */}
-      <div className="flex gap-3 pt-3 border-t">
+      <div className="flex gap-3 pt-3 border-t border-border">
         <input
           type="text"
           value={newTagName}
@@ -177,12 +174,13 @@ export function NoteTagFilter({
           onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
           placeholder={translate(lang, '新建标签...', 'New tag...')}
           aria-label={translate(lang, '新建标签', 'New tag')}
-          className="flex-1 px-4 py-2 text-sm border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
+          className="flex-1 h-9 px-3 text-sm bg-background border border-border focus:outline-none focus:border-foreground transition-colors"
         />
         <Button
           type="button"
           onClick={handleCreateTag}
           disabled={isCreating || !newTagName.trim()}
+          size="sm"
         >
           {translate(lang, '添加', 'Add')}
         </Button>
