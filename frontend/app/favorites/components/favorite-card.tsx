@@ -2,8 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import { Star, Trash2, CheckSquare, Square } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { FavoriteResponse } from '@/types/api'
-import { getTypeLabel, getSourceType, getSourceLabel, ClientDate, getQuestionTitle } from '../lib/favorite-utils'
+import { getTypeLabel, getSourceType, getSourceLabel, getQuestionTitle } from '../lib/favorite-utils'
+import { ClientDate } from './client-date'
 
 interface FavoriteCardProps {
   fav: FavoriteResponse
@@ -100,36 +102,46 @@ export function FavoriteCard({ fav, isSelectMode, isSelected, onToggleSelect, on
 
           {/* 选择按钮 - 放在底部 */}
           {isSelectMode && (
-            <button type="button"
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => onToggleSelect(fav.id)}
-              className="mt-2 p-1"
+              className="mt-2"
+              aria-label={isSelected ? '取消选择' : '选择'}
             >
               {isSelected ? (
                 <CheckSquare className="size-5 text-primary" />
               ) : (
                 <Square className="size-5 text-muted-foreground" />
               )}
-            </button>
+            </Button>
           )}
         </div>
 
         <div className="flex flex-col items-end gap-2">
           {/* 复习按钮 */}
-          <button type="button"
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
             onClick={handleReview}
-            className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-all flex-shrink-0"
           >
             复习
-          </button>
+          </Button>
 
           {/* 删除按钮 */}
           {!isSelectMode && (
-            <button type="button"
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => onRemove(fav.id)}
-              className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+              className="text-muted-foreground hover:text-red-500"
+              aria-label="删除"
             >
               <Trash2 className="size-5" />
-            </button>
+            </Button>
           )}
         </div>
       </div>

@@ -37,11 +37,6 @@ export function getSourceLabel(exerciseKey?: string): string {
   return SOURCE_LABELS[sourceType] || '未知来源'
 }
 
-export function ClientDate({ dateStr }: { dateStr: string }) {
-  const formatted = new Date(dateStr).toLocaleDateString('zh-CN')
-  return <span suppressHydrationWarning>{formatted}</span>
-}
-
 // 提取题目标题 - 与错题本一致
 export function getQuestionTitle(fav: FavoriteResponse): string {
   // 优先从 exercise_content.text 提取

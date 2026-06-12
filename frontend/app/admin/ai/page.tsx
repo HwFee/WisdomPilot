@@ -16,6 +16,7 @@ import {
   Trash2,
   Pencil,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Field } from './components/field'
 import { ApiKeyField } from './components/api-key-field'
@@ -51,12 +52,14 @@ export default function AdminAISettingsPage() {
             <Settings className="size-6 text-primary" />
             <h1 className="text-xl font-semibold text-foreground">AI 配置管理</h1>
           </div>
-          <button type="button"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => ctx.push('/admin')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             返回管理后台
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -93,21 +96,24 @@ export default function AdminAISettingsPage() {
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-muted p-1 rounded-lg w-fit">
           {TABS.map(tab => (
-            <button type="button"
+            <Button
+              type="button"
               key={tab.id}
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 ctx.setActiveTab(tab.id)
                 if (tab.id === 'status') ctx.fetchStatus()
               }}
               className={cn(
-                'px-4 py-2 text-sm font-medium rounded-md transition-all',
+                'rounded-md',
                 ctx.activeTab === tab.id
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -243,14 +249,17 @@ export default function AdminAISettingsPage() {
           <div className="flex flex-col gap-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">连接状态</h2>
-              <button type="button"
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={ctx.fetchStatus}
                 disabled={ctx.isRefreshing}
-                className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
+                className="text-primary hover:text-primary/80"
               >
-                <ChevronRight className={cn('size-4', ctx.isRefreshing && 'animate-spin')} />
+                <ChevronRight className={cn('size-4 mr-1', ctx.isRefreshing && 'animate-spin')} />
                 刷新
-              </button>
+              </Button>
             </div>
             {ctx.isRefreshing && !ctx.status ? (
               <div className="flex items-center justify-center py-12">

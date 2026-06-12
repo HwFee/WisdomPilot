@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Loader2, Save, Zap, CheckCircle, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { TestConnectionResponse } from '@/lib/ai-api'
 
@@ -54,14 +55,17 @@ export function ConfigCard({
       <div className="flex flex-col gap-y-5">
         {children}
         <div className="flex items-center gap-3 pt-2 border-t">
-          <button type="button"
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={onTest}
             disabled={isTesting}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 disabled:opacity-50 transition-colors"
+            className="border-primary text-primary hover:bg-primary/10"
           >
-            <testButtonVariant.icon className={cn('size-4', testButtonVariant.iconClassName)} />
+            <testButtonVariant.icon className={cn('size-4 mr-1.5', testButtonVariant.iconClassName)} />
             {testButtonVariant.label}
-          </button>
+          </Button>
           {resultVariant && (
             <div className={cn('flex items-center gap-2 text-sm', resultVariant.className)}>
               <resultVariant.icon className="size-4" />
@@ -73,14 +77,15 @@ export function ConfigCard({
           )}
         </div>
       </div>
-      <button type="button"
+      <Button
+        type="button"
         onClick={onSave}
         disabled={isSaving}
-        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        className="self-start"
       >
-        <saveButtonVariant.icon className={cn('size-4', saveButtonVariant.iconClassName)} />
+        <saveButtonVariant.icon className={cn('size-4 mr-2', saveButtonVariant.iconClassName)} />
         {saveButtonVariant.label}
-      </button>
+      </Button>
     </div>
   )
 }
