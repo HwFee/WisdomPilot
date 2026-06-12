@@ -274,7 +274,12 @@ def start_frontend(frontend_dir: Path, log_dir: Path, pnpm_cmd: str) -> subproce
     stdout_file = open(log_dir / "frontend.log", "w", encoding="utf-8")
     stderr_file = open(log_dir / "frontend.err.log", "w", encoding="utf-8")
 
-    command = [pnpm_cmd, "exec", "next", "dev", "--port", str(FRONTEND_PORT)]
+    # 禁用 Turbopack 避免 PostCSS worker 爆炸；限制 Node 内存并指定单一 worker 进程
+    env = os.environ.copy()
+    env["NODE_OPTIONS"] = "--max-old-space-size=4096"
+    env["NEXT_TELEMETRY_DISABLED"] = "1"
+
+    command = [pnpm_cmd, "exec", "next", "dev", "--port", str(FRONTEND_PORT), "--no-turbo"]
     print(f"[启动] 前端 Next.js: {' '.join(command)}")
     creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0
     return subprocess.Popen(
@@ -283,6 +288,7 @@ def start_frontend(frontend_dir: Path, log_dir: Path, pnpm_cmd: str) -> subproce
         stdout=stdout_file,
         stderr=stderr_file,
         creationflags=creationflags,
+        env=env,
     )
 
 
