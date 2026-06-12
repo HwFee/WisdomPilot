@@ -1,6 +1,6 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
+import { Flame } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
 interface User {
@@ -11,6 +11,7 @@ interface User {
 interface WelcomeSectionProps {
   user: User
   lang?: 'zh' | 'en'
+  streakDays?: number
 }
 
 const QUOTES = [
@@ -25,11 +26,21 @@ const QUOTES = [
 ]
 
 const QUOTE_ROTATION_INTERVAL_MS = 30_000
+const TIME_UPDATE_INTERVAL_MS = 60_000
 
-export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
+function pad(n: number) {
+  return String(n).padStart(2, '0')
+}
+
+function formatTime(date: Date) {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+export function WelcomeSection({ user, lang = 'zh', streakDays = 0 }: WelcomeSectionProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
   const [quote, setQuote] = useState<{ content: string; author: string } | null>(null)
   const quoteIndexRef = useRef(0)
+  const [time, setTime] = useState(formatTime(new Date()))
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * QUOTES.length)
@@ -46,6 +57,12 @@ export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    setTime(formatTime(new Date()))
+    const interval = setInterval(() => setTime(formatTime(new Date())), TIME_UPDATE_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [])
+
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 6) return t('夜深了', 'Good night')
@@ -55,25 +72,36 @@ export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {getGreeting()}，<span className="text-primary">{user.username}</span>
-          </h1>
-          {quote && (
-            <blockquote className="mt-3 pl-4 border-l-2 border-foreground text-sm text-muted-foreground italic leading-relaxed">
-              {quote.content}
-              <cite className="block mt-1 not-italic text-xs text-muted-foreground/70">
-                — {quote.author}
-              </cite>
-            </blockquote>
-          )}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 pb-12 mb-12 border-b border-border">
+      <div className="lg:col-span-2">
+        <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+          {getGreeting()}，<span className="text-primary">{user.username}！</span>
+        </h1>
+        <p className="mt-3 text-base text-muted-foreground max-w-md">
+          {t('今天准备挑战点什么？', 'What would you like to challenge today?')}
+        </p>
+        {quote && (
+          <blockquote className="mt-6 pl-4 border-l-2 border-foreground text-sm text-muted-foreground italic leading-relaxed">
+            {quote.content}
+            <cite className="block mt-1 not-italic text-xs text-muted-foreground/70">
+              — {quote.author}
+            </cite>
+          </blockquote>
+        )}
+      </div>
+
+      <div className="flex flex-col items-start text-left lg:items-end lg:text-right justify-center">
+        <div className="text-5xl font-bold tracking-tight font-mono text-foreground">
+          {time}
         </div>
-        <div className="flex-shrink-0 ml-6">
-          <div className="w-12 h-12 rounded-xl bg-secondary border border-border flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
-          </div>
+        <div className="text-[13px] uppercase tracking-[2px] text-muted-foreground mt-2">
+          {t('北京时间', 'Beijing Time')}
+        </div>
+        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-sm font-medium">
+          <Flame className="w-4 h-4 text-orange-500" strokeWidth={1.5} />
+          <span>
+            {t('连续打卡', 'Streak')} {streakDays} {t('天', 'days')}
+          </span>
         </div>
       </div>
     </div>
