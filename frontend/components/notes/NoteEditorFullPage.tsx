@@ -1,5 +1,6 @@
 'use client'
 
+import { Panel } from '@/components/layout'
 import { NoteEditorToolbar } from './NoteEditorToolbar'
 import { NoteTagSelector } from './NoteTagSelector'
 import { NoteTitleInput } from './NoteTitleInput'
@@ -50,7 +51,7 @@ export function NoteEditorFullPage({
   onClose,
 }: NoteEditorFullPageProps) {
   return (
-    <div className="bg-card rounded-2xl border border-border overflow-hidden h-full flex flex-col">
+    <Panel className="h-full flex flex-col overflow-hidden">
       <NoteEditorToolbar
         note={note}
         lang={lang}
@@ -89,6 +90,6 @@ export function NoteEditorFullPage({
         onSave={onSave}
         variant="fullPage"
       />
-    </div>
+    </Panel>
   )
 }
