@@ -4,7 +4,6 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
-  Brain,
   XCircle,
   CheckCircle,
   AlertTriangle,
@@ -13,6 +12,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PageContainer, Panel, PanelHeader, EmptyState } from '@/components/layout'
 import { useReviewData } from './hooks/use-review-data'
 import { getQuestionTitle, getSourceInfo, getReviewUrl } from './lib/review-utils'
 
@@ -47,12 +47,9 @@ function ReviewPageContent() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center p-8">
-          <AlertTriangle className="size-12 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="size-12 text-destructive mx-auto mb-4" strokeWidth={1.5} />
           <p className="text-muted-foreground mb-4">{error}</p>
-          <Button
-            type="button"
-            onClick={() => { clearError(); fetchData() }}
-          >
+          <Button onClick={() => { clearError(); fetchData() }}>
             重试
           </Button>
         </div>
@@ -62,111 +59,89 @@ function ReviewPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
-            <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="size-4" />
-              <span className="text-sm">返回</span>
+      <header className="h-14 border-b bg-card">
+        <div className="max-w-[1280px] mx-auto px-6 h-full flex items-center gap-3">
+          <Button asChild variant="ghost" size="icon" aria-label="返回">
+            <Link href="/dashboard">
+              <ArrowLeft className="size-5" strokeWidth={1.5} />
             </Link>
-            <div className="flex items-center gap-2">
-              <Brain className="size-5 text-primary" />
-              <span className="font-semibold text-foreground">错题本</span>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={fetchData}
-              title="刷新"
-              aria-label="刷新"
-            >
-              <RefreshCw className="size-4" />
-            </Button>
-          </div>
+          </Button>
+          <h1 className="text-sm font-semibold uppercase tracking-[2px]">错题本</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={fetchData}
+            className="ml-auto"
+            aria-label="刷新"
+          >
+            <RefreshCw className="size-4" strokeWidth={1.5} />
+          </Button>
         </div>
       </header>
 
-      <main className="pt-20 pb-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <main className="bg-background min-h-[calc(100vh-3.5rem)]">
+        <PageContainer className="py-8">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full size-8 border-2 border-primary border-t-transparent" />
             </div>
           ) : wrongQuestions.length === 0 ? (
-            <div className="text-center py-16 bg-card rounded-2xl border border-border">
-              <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">暂无错题</h3>
-              <p className="text-sm text-muted-foreground">继续保持，做错的题目会自动记录</p>
-            </div>
+            <EmptyState
+              icon={CheckCircle}
+              title="没有错题"
+              description="所有题目都答对了！继续保持。"
+            />
           ) : (
-            <div className="flex flex-col gap-y-3">
-              {wrongQuestions.map((wq) => {
-                const { type: sourceType, label: sourceLabel } = getSourceInfo(wq)
-                const questionTitle = getQuestionTitle(wq)
+            <Panel>
+              <PanelHeader title="错题列表" count={`${wrongQuestions.length} 道`} />
+              <div className="divide-y divide-border">
+                {wrongQuestions.map((wq) => {
+                  const { type: sourceType, label: sourceLabel } = getSourceInfo(wq)
+                  const questionTitle = getQuestionTitle(wq)
+                  const tags: string[] = []
+                  if (sourceLabel) tags.push(sourceLabel)
+                  if (wq.exercise_type) tags.push(wq.exercise_type)
+                  tags.push(`错误 ${wq.error_count} 次`)
 
-                return (
-                  <div
-                    key={wq.id}
-                    className="bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-4">
+                  return (
+                    <article
+                      key={wq.id}
+                      className="px-6 py-4 flex items-center gap-4 hover:bg-muted/30"
+                    >
+                      {wq.is_resolved ? (
+                        <CheckCircle className="size-4 text-green-500 flex-shrink-0" strokeWidth={1.5} />
+                      ) : (
+                        <XCircle className="size-4 text-red-500 flex-shrink-0" strokeWidth={1.5} />
+                      )}
                       <div className="flex-1 min-w-0">
-                        {/* Title */}
-                        <div className="flex items-center gap-2 mb-2">
-                          {wq.is_resolved ? (
-                            <CheckCircle className="size-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="size-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <span className="font-medium text-foreground truncate">{questionTitle}</span>
-                        </div>
-
-                        {/* Tags */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            sourceType === 'arena'
-                              ? 'bg-purple-500/10 text-purple-500'
-                              : 'bg-blue-500/10 text-blue-500'
-                          }`}>
-                            {sourceLabel}
-                          </span>
-                          <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{wq.exercise_type}</span>
-                          <span className="text-xs text-muted-foreground">错误 {wq.error_count} 次</span>
-                        </div>
+                        <h3 className="text-sm font-medium truncate">{questionTitle}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{tags.join(' · ')}</p>
                       </div>
-
-                      {/* Actions */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <Button
-                          type="button"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(wq.id)}
-                          className="text-muted-foreground hover:text-red-500"
-                          title="删除"
                           aria-label="删除"
                         >
-                          <Trash2 className="size-4" />
+                          <Trash2 className="size-4 text-muted-foreground hover:text-red-500" strokeWidth={1.5} />
                         </Button>
                         <Button
-                          type="button"
                           variant="secondary"
                           size="sm"
                           onClick={() => push(getReviewUrl(wq))}
                         >
                           复习
-                          <ChevronRight className="size-4 ml-1" />
+                          <ChevronRight className="size-4 ml-1" strokeWidth={1.5} />
                         </Button>
                       </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                    </article>
+                  )
+                })}
+              </div>
+            </Panel>
           )}
-        </div>
+        </PageContainer>
       </main>
     </div>
   )
