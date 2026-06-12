@@ -1,6 +1,7 @@
 'use client'
 
 import { X, Tags, Minimize2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { translate } from './note-translate'
 import type { NoteResponse } from '@/types/api'
 
@@ -21,60 +22,39 @@ export function NoteEditorToolbar({
   onClose,
   variant,
 }: NoteEditorToolbarProps) {
+  const title = note ? translate(lang, '编辑笔记', 'Edit Note') : translate(lang, '新建笔记', 'New Note')
+
   if (variant === 'fullPage') {
     return (
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/30">
-        <h2 className="text-lg font-semibold">
-          {note ? translate(lang, '编辑笔记', 'Edit Note') : translate(lang, '新建笔记', 'New Note')}
-        </h2>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggleTagSelector}
-            className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors text-sm"
-            title={translate(lang, '管理标签', 'Manage Tags')}
-          >
-            <Tags className="size-4" />
-            <span>{translate(lang, '标签', 'Tags')}</span>
-          </button>
+      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onToggleTagSelector}>
+            <Tags className="size-4 mr-1.5" strokeWidth={1.5} />
+            {translate(lang, '标签', 'Tags')}
+          </Button>
           {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
-              title={translate(lang, '关闭', 'Close')}
-            >
-              <Minimize2 className="size-5" />
-            </button>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label={translate(lang, '关闭', 'Close')}>
+              <Minimize2 className="size-4" strokeWidth={1.5} />
+            </Button>
           )}
         </div>
-      </div>
+      </header>
     )
   }
 
   return (
-    <div className="flex items-center justify-between p-5 border-b">
-      <h2 className="text-xl font-semibold">
-        {note ? translate(lang, '编辑笔记', 'Edit Note') : translate(lang, '新建笔记', 'New Note')}
-      </h2>
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onToggleTagSelector}
-          className="flex items-center gap-2 px-3 py-2 hover:bg-muted rounded-lg transition-colors"
-          title={translate(lang, '管理标签', 'Manage Tags')}
-        >
-          <Tags className="size-5" />
-          <span className="text-sm">{translate(lang, '标签', 'Tags')}</span>
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-2 hover:bg-muted rounded-lg transition-colors"
-        >
-          <X className="size-5" />
-        </button>
+    <header className="flex items-center justify-between border-b border-border px-6 py-4">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={onToggleTagSelector}>
+          <Tags className="size-4 mr-1.5" strokeWidth={1.5} />
+          {translate(lang, '标签', 'Tags')}
+        </Button>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label={translate(lang, '关闭', 'Close')}>
+          <X className="size-4" strokeWidth={1.5} />
+        </Button>
       </div>
-    </div>
+    </header>
   )
 }
