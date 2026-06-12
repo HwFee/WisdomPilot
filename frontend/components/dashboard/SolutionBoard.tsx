@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { MessageSquare, Pin, Eye, Heart, ArrowRight, Megaphone, AlertCircle } from 'lucide-react'
+import { Panel, PanelHeader } from '@/components/layout'
 import { getSolutionSummary, likeSolution, SolutionSummary } from '@/lib/api/solutions'
 import { getStoredToken } from '@/lib/api/auth'
 
@@ -131,10 +132,10 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
         tabIndex={0}
         onClick={() => handleItemClick(solution.id)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleItemClick(solution.id) } }}
-        className={`group p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer ${
+        className={`group px-8 py-4 hover:bg-muted transition-colors cursor-pointer ${
           isAnnouncementItem
-            ? 'bg-[#FFFBEB] border border-[#FDE68A] hover:bg-[#FEF3C7] dark:bg-amber-950 dark:border-amber-800 dark:hover:bg-amber-900'
-            : 'bg-muted'
+            ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-950 dark:hover:bg-amber-900'
+            : ''
         }`}
       >
         <div className="flex items-start gap-2">
@@ -174,29 +175,29 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
   }
 
   return (
-    <div className="bg-card rounded-lg border border-border p-6 h-full flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <MessageSquare className="size-5 text-primary" strokeWidth={1.5} />
-          {t('讨论区', 'Discussion')}
-        </h3>
-        <button type="button"
-          onClick={handleEnterSolutions}
-          className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-primary rounded-lg text-sm font-medium hover:bg-muted transition-colors"
-        >
-          {t('进入', 'Enter')}
-          <ArrowRight className="size-4" strokeWidth={1.5} />
-        </button>
-      </div>
+    <Panel className="h-full flex flex-col">
+      <PanelHeader
+        title={t('题解广场', 'Solutions')}
+        count={t(`${solutions.length} 篇`, `${solutions.length}`)}
+        action={
+          <button type="button"
+            onClick={handleEnterSolutions}
+            className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-foreground rounded-lg text-xs font-medium hover:bg-muted transition-colors"
+          >
+            {t('进入', 'Enter')}
+            <ArrowRight className="size-4" strokeWidth={1.5} />
+          </button>
+        }
+      />
 
-      <div className="flex gap-2 mb-4 flex-shrink-0">
+      <div className="flex gap-2 px-8 py-4 border-b border-border flex-shrink-0">
         {(Object.keys(tabMap) as TabType[]).map(tab => (
           <button type="button"
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
               activeTab === tab
-                ? 'bg-primary text-primary-foreground'
+                ? 'bg-foreground text-background'
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -227,11 +228,11 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
             <p className="text-sm">{t('暂无内容', 'No content yet')}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-y-3">
+          <div className="divide-y divide-border">
             {getSortedSolutions().map(renderSolutionItem)}
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   )
 }
