@@ -3,6 +3,16 @@
 import { useRef, useState, useEffect } from 'react'
 import mermaid from 'mermaid'
 
+interface MermaidDiagramProps {
+  svg: string
+  className: string
+}
+
+function MermaidDiagram({ svg, className }: MermaidDiagramProps) {
+  // react-doctor-disable-next-line no-danger
+  return <div className={className} dangerouslySetInnerHTML={{ __html: svg }} /* eslint-disable-line react/no-danger */ />
+}
+
 export function MermaidBlock({ code }: { code: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const [mermaidState, setMermaidState] = useState<{ svg: string; err: string | null }>({ svg: '', err: null })
@@ -41,12 +51,9 @@ export function MermaidBlock({ code }: { code: string }) {
   }
 
   return (
-    <div
-      ref={ref}
-      className="mermaid-diagram my-3 flex justify-center bg-gray-800/50 rounded-lg p-4 overflow-x-auto"
-      /* react-doctor-disable-next-line no-danger */
-      dangerouslySetInnerHTML={{ __html: mermaidState.svg }} /* eslint-disable-line react/no-danger */
-    />
+    <div ref={ref}>
+      <MermaidDiagram svg={mermaidState.svg} className="mermaid-diagram my-3 flex justify-center bg-gray-800/50 rounded-lg p-4 overflow-x-auto" />
+    </div>
   )
 }
 (MermaidBlock as any).isMermaid = true
