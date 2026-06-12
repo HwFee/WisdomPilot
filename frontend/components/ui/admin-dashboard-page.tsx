@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Shield, Users, UserCheck, Trash2, RefreshCw, LogOut } from 'lucide-react'
+import { Panel, PanelHeader } from '@/components/layout/Panel'
+import { StatsGrid, StatCell } from '@/components/layout/StatsGrid'
+import { Shield, Users, UserCheck, RefreshCw, LogOut } from 'lucide-react'
 
 interface User {
   id: string
@@ -111,26 +111,26 @@ export default function AdminDashboardPage() {
 
   if (status.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <RefreshCw className="size-8 animate-spin text-blue-600 mx-auto" />
-          <p className="mt-2 text-gray-600">加载中...</p>
+          <RefreshCw className="size-8 animate-spin text-primary mx-auto" />
+          <p className="mt-2 text-muted-foreground">加载中...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="size-8 text-blue-600" />
-            <h1 className="text-2xl font-semibold text-gray-900">管理后台</h1>
+            <Shield className="size-8 text-primary" />
+            <h1 className="text-2xl font-semibold text-foreground">管理后台</h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600">管理员: {currentUser?.username}</span>
+            <span className="text-muted-foreground">管理员: {currentUser?.username}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="size-4 mr-2" />
               退出登录
@@ -141,114 +141,119 @@ export default function AdminDashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {status.error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
             {status.error}
           </div>
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+        <StatsGrid className="mb-8">
+          <StatCell>
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <Users className="size-6 text-blue-600" />
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Users className="size-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">总用户数</p>
-                <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+                <p className="text-sm text-muted-foreground">总用户数</p>
+                <p className="text-2xl font-bold text-foreground">{users.length}</p>
               </div>
             </div>
-          </div>
+          </StatCell>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <StatCell>
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-full">
-                <UserCheck className="size-6 text-green-600" />
+              <div className="p-3 bg-success/10 rounded-full">
+                <UserCheck className="size-6 text-success" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">在线用户</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  <button type="button"
+                <p className="text-sm text-muted-foreground">在线用户</p>
+                <p className="text-2xl font-bold text-foreground">
+                  <button
+                    type="button"
                     onClick={fetchOnlineUsers}
-                    className="hover:text-green-600 underline"
+                    className="hover:text-success underline"
                   >
                     {onlineUsers.length}
                   </button>
                 </p>
               </div>
             </div>
-          </div>
+          </StatCell>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <StatCell>
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-red-100 rounded-full">
-                <UserCheck className="size-6 text-red-600" />
+              <div className="p-3 bg-warning/10 rounded-full">
+                <UserCheck className="size-6 text-warning" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">活跃用户</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-muted-foreground">活跃用户</p>
+                <p className="text-2xl font-bold text-foreground">
                   {users.filter(u => u.is_active).length}
                 </p>
               </div>
             </div>
-          </div>
-        </div>
+          </StatCell>
+        </StatsGrid>
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">用户列表</h2>
-            <Button variant="outline" size="sm" onClick={fetchUsers}>
-              <RefreshCw className="size-4 mr-2" />
-              刷新
-            </Button>
-          </div>
+        <Panel>
+          <PanelHeader
+            title="用户列表"
+            action={
+              <Button variant="outline" size="sm" onClick={fetchUsers}>
+                <RefreshCw className="size-4 mr-2" />
+                刷新
+              </Button>
+            }
+          />
 
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border bg-muted">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   用户名
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   邮箱
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   状态
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   注册时间
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {users.map((user) => (
-                <tr key={user.id}>
+                <tr key={user.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                    <div className="text-sm font-medium text-foreground">{user.username}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{user.email}</div>
+                    <div className="text-sm text-muted-foreground">{user.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      user.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        user.is_active
+                          ? 'bg-success/10 text-success'
+                          : 'bg-destructive/10 text-destructive'
+                      }`}
+                    >
                       {user.is_active ? '活跃' : '禁用'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     <ClientDate dateStr={user.created_at} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {deleteConfirm === user.id ? (
                       <div className="flex items-center justify-end gap-2">
-                        <span className="text-red-600 text-xs">确认删除?</span>
+                        <span className="text-destructive text-xs">确认删除?</span>
                         <Button
                           variant="destructive"
                           size="sm"
@@ -269,9 +274,10 @@ export default function AdminDashboardPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setDeleteConfirm(user.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        aria-label={`删除用户 ${user.username}`}
                       >
-                        <Trash2 className="size-4" />
+                        删除
                       </Button>
                     )}
                   </td>
@@ -281,11 +287,11 @@ export default function AdminDashboardPage() {
           </table>
 
           {users.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-muted-foreground">
               暂无用户
             </div>
           )}
-        </div>
+        </Panel>
       </main>
     </div>
   )
