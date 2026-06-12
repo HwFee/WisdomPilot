@@ -5,6 +5,14 @@ import dynamic from 'next/dynamic'
 
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
+function EditorLoading() {
+  return (
+    <div className="flex items-center justify-center h-full text-[#909399]">
+      <div className="animate-pulse">{/* Loading state */}</div>
+    </div>
+  )
+}
+
 interface CodeEditorPanelProps {
   value: string
   onChange: (value: string) => void
@@ -1175,11 +1183,7 @@ export function CodeEditorPanel({
           },
         }}
         theme="vs"
-        loading={
-          <div className="flex items-center justify-center h-full text-[#909399]">
-            <div className="animate-pulse">{/* Loading state */}</div>
-          </div>
-        }
+        loading={<EditorLoading />}
       />
     </div>
   )

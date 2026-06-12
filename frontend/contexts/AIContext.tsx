@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, use, useState, useCallback, type ReactNode } from 'react'
+import { createContext, use, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { getStoredToken } from '@/lib/api'
 import { getChoiceAnalysis, getChoiceExplanation, type ChoiceAnalysisRequest, type ChoiceExplanationRequest } from '@/lib/ai-api'
 
@@ -210,8 +210,8 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     }
   }, [currentExercise])
 
-  return (
-    <AIContext.Provider value={{
+  const value = useMemo(
+    () => ({
       currentExercise,
       setCurrentExercise,
       hintLoading,
@@ -231,7 +231,31 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
       knowledgePanelSpawnPos,
       openKnowledgePanel,
       closeKnowledgePanel,
-    }}>
+    }),
+    [
+      currentExercise,
+      hintLoading,
+      hintResult,
+      analysisLoading,
+      analysisResult,
+      triggerHint,
+      triggerAnalysis,
+      clearResults,
+      activeQuestion,
+      isPanelOpen,
+      panelSpawnPos,
+      openPanel,
+      closePanel,
+      activeKnowledgeQuestion,
+      isKnowledgePanelOpen,
+      knowledgePanelSpawnPos,
+      openKnowledgePanel,
+      closeKnowledgePanel,
+    ]
+  )
+
+  return (
+    <AIContext.Provider value={value}>
       {children}
     </AIContext.Provider>
   )

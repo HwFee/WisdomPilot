@@ -1,0 +1,6 @@
+packages:
+  - '.'
+
+# Security hardening for package installation
+minimumReleaseAge: 10080 # 7 days in minutes
+trustPolicy: no-downgrade
