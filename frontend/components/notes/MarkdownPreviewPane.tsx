@@ -22,13 +22,13 @@ export function MarkdownPreviewPane({ content, lang, variant }: MarkdownPreviewP
   if (variant === 'fullPage') {
     return (
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+        <div className="flex items-center justify-center px-6 py-3 text-sm text-muted-foreground border-b border-border">
           <div className="flex items-center gap-2">
-            <Eye className="size-4" />
+            <Eye className="size-4" strokeWidth={1.5} />
             <span>{translate(lang, '实时预览', 'Live Preview')}</span>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
+        <div className="flex-1 overflow-y-auto p-6">
           <div className={`${proseClass} dark:prose-invert max-w-none`}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
@@ -88,11 +88,11 @@ export function MarkdownPreviewPane({ content, lang, variant }: MarkdownPreviewP
     <div className="flex-1 flex flex-col min-w-0">
       <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
-          <Eye className="size-4" />
+          <Eye className="size-4" strokeWidth={1.5} />
           <span>{translate(lang, '预览', 'Preview')}</span>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 rounded-xl border border-border bg-muted/30">
+      <div className="flex-1 overflow-y-auto p-4 border border-border">
         <div className={`${proseClass} dark:prose-invert max-w-none`}>
           <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]}>
             {content || translate(lang, '暂无内容', 'No content yet')}

@@ -18,10 +18,10 @@ export function MarkdownEditorPane({
 }: MarkdownEditorPaneProps) {
   if (variant === 'fullPage') {
     return (
-      <div className="flex-1 flex flex-col min-w-0 border-r">
-        <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+      <div className="flex-1 flex flex-col min-w-0 border-r border-border">
+        <div className="flex items-center justify-center px-6 py-3 text-sm text-muted-foreground border-b border-border">
           <div className="flex items-center gap-2">
-            <Edit3 className="size-4" />
+            <Edit3 className="size-4" strokeWidth={1.5} />
             <span>{translate(lang, 'Markdown 编辑器', 'Markdown Editor')}</span>
           </div>
         </div>
@@ -44,7 +44,7 @@ export function MarkdownEditorPane({
     <div className="flex-1 flex flex-col min-w-0">
       <div className="flex items-center justify-center mb-2 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
-          <Edit3 className="size-4" />
+          <Edit3 className="size-4" strokeWidth={1.5} />
           <span>{translate(lang, '编辑', 'Edit')}</span>
         </div>
       </div>
@@ -53,7 +53,7 @@ export function MarkdownEditorPane({
         onChange={(e) => onContentChange(e.target.value)}
         placeholder={translate(lang, '使用 Markdown 编写...', 'Write in Markdown...')}
         aria-label={translate(lang, '笔记内容', 'Note content')}
-        className="flex-1 w-full p-4 resize-none rounded-xl border border-border bg-muted/30 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
+        className="flex-1 w-full p-4 resize-none bg-background border border-border font-mono text-sm leading-relaxed focus:outline-none focus:border-foreground"
       />
     </div>
   )
