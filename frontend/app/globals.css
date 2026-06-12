@@ -802,94 +802,8 @@ body {
 .running-dots span:nth-child(3) { animation: running-dots 1s infinite 0.4s; }
 
 /* ============================================
-   洛谷风格测试点表格
+   状态标签 - 洛谷配色 (.status-pending 保留中)
    ============================================ */
-
-.luogu-test-table {
-  width: 100%;
-  border: 1px solid #E4E7ED;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #FFFFFF;
-  border-collapse: collapse;
-}
-
-.luogu-test-table thead {
-  background: #F5F7FA;
-}
-
-.luogu-test-table th {
-  padding: 12px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #606266;
-  text-align: left;
-  border-bottom: 1px solid #E4E7ED;
-}
-
-.luogu-test-table tbody tr {
-  border-bottom: 1px solid #EBEEF5;
-  transition: background 0.15s;
-}
-
-.luogu-test-table tbody tr:hover {
-  background: #F5F7FA;
-}
-
-.luogu-test-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.luogu-test-table td {
-  padding: 12px 16px;
-  font-size: 13px;
-  color: #303133;
-}
-
-/* 状态标签 - 洛谷配色 */
-.status-ac {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: rgba(82, 196, 26, 0.1);
-  color: #52C41A;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 12px;
-}
-
-.status-wa {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: rgba(231, 76, 60, 0.1);
-  color: #E74C3C;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 12px;
-}
-
-.status-tle, .status-mle {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: rgba(5, 34, 66, 0.1);
-  color: #052242;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 12px;
-}
-
-.status-re {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: rgba(156, 39, 176, 0.1);
-  color: #9C27B0;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 12px;
-}
 
 .status-pending {
   display: inline-flex;
@@ -921,41 +835,6 @@ body {
 .luogu-status-header.wrong {
   background: linear-gradient(135deg, rgba(231, 76, 60, 0.08) 0%, rgba(192, 57, 43, 0.05) 100%);
   border-bottom-color: rgba(231, 76, 60, 0.2);
-}
-
-/* ============================================
-   样例输入输出卡片样式 - 浅色主题
-   ============================================ */
-
-.sample-io-card {
-  background: #FFFFFF;
-  border: 1px solid #E4E7ED;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-
-.sample-io-card:hover {
-  border-color: rgba(52, 152, 219, 0.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.sample-code-block {
-  background: #FAFBFC;
-  border: 1px solid #E4E7ED;
-  border-radius: 6px;
-  padding: 12px;
-  position: relative;
-  overflow-x: auto;
-}
-
-.sample-code-block.output {
-  background: rgba(82, 196, 26, 0.03);
-  border-color: rgba(82, 196, 26, 0.15);
-}
-
-.sample-code-block::before {
-  display: none;
 }
 
 /* ============================================
@@ -1030,59 +909,6 @@ body {
   padding: 12px;
   background: #F5F7FA;
   border-radius: 8px;
-}
-
-/* ============================================
-   自定义测试输入样式 - 浅色主题
-   ============================================ */
-
-.custom-test-input {
-  background: #FFFFFF;
-  border: 1px solid #E4E7ED;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.test-output-display {
-  background: #FAFBFC;
-  border: 1px solid #E4E7ED;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.test-output-display.running {
-  background: rgba(52, 152, 219, 0.03);
-  border-color: rgba(52, 152, 219, 0.2);
-}
-
-.test-output-display.passed {
-  background: rgba(82, 196, 26, 0.03);
-  border-color: rgba(82, 196, 26, 0.2);
-}
-
-.test-output-display.failed {
-  background: rgba(231, 76, 60, 0.03);
-  border-color: rgba(231, 76, 60, 0.2);
-}
-
-.test-output-display.error {
-  background: rgba(231, 76, 60, 0.03);
-  border-color: rgba(231, 76, 60, 0.3);
-}
-
-.test-output-display .status-bar {
-  padding: 10px 12px;
-  border-bottom: 1px solid #E4E7ED;
-}
-
-.test-output-display .status-bar.accepted {
-  background: rgba(82, 196, 26, 0.08);
-  border-bottom-color: rgba(82, 196, 26, 0.2);
-}
-
-.test-output-display .status-bar.wrong {
-  background: rgba(231, 76, 60, 0.08);
-  border-bottom-color: rgba(231, 76, 60, 0.2);
 }
 
 /* ============================================
@@ -1209,12 +1035,6 @@ body {
   .ide-editor-panel {
     width: 100% !important;
     height: 50vh;
-  }
-}
-
-@media (max-width: 768px) {
-  .luogu-test-table {
-    font-size: 12px;
   }
 }
 

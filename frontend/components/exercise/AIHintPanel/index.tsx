@@ -5,10 +5,8 @@ import 'highlight.js/styles/github-dark.css'
 
 import { HintHistory } from './HintHistory'
 import { HintBubble, type ExerciseHintData } from './HintBubble'
-import { LegacyAIHintPanel } from './LegacyAIHint'
 
 export type { ExerciseHintData } from './HintBubble'
-export { LegacyAIHintPanel }
 
 // ========================================
 // StreamHintPanel - top-level AI hint panel
