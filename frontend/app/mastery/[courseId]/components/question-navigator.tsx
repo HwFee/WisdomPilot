@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import type { BaseQuestionResponse } from "@/types/api";
 
 const MAX_VISIBLE_QUESTIONS = 5;
@@ -44,8 +45,9 @@ export function QuestionNavigator({
         const isCurrent = globalIndex === currentQuestionIndex;
 
         return (
-          <button
-            type="button"
+          <Button
+            variant={isCurrent ? "default" : "ghost"}
+            size="icon"
             key={question.id}
             onClick={() => {
               if (completedQuestionsMap.has(question.id) || globalIndex <= currentQuestionIndex) {
@@ -62,18 +64,18 @@ export function QuestionNavigator({
             title={`第 ${globalIndex + 1} 题`}
             className={`rounded-lg text-xs font-bold transition-all ${
               isCurrent
-                ? "size-10 bg-primary text-primary-foreground"
+                ? "size-10"
                 : isCompleted
                   ? wasCorrect
-                    ? "size-8 bg-muted text-emerald-600 border-2 border-emerald-600"
-                    : "size-8 bg-muted text-red-600 border-2 border-red-600"
+                    ? "size-8 bg-muted text-emerald-600 border-2 border-emerald-600 hover:bg-muted"
+                    : "size-8 bg-muted text-red-600 border-2 border-red-600 hover:bg-muted"
                   : globalIndex <= currentQuestionIndex
                     ? "size-8 bg-muted text-muted-foreground border border-border hover:border-primary"
                     : "size-8 bg-muted text-muted-foreground/50 border border-border cursor-not-allowed"
             }`}
           >
             {globalIndex + 1}
-          </button>
+          </Button>
         );
       })}
     </div>

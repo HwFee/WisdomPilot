@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/layout";
 import { QuestionNavigator } from "./question-navigator";
 import type { BaseQuestionResponse } from "@/types/api";
@@ -29,14 +30,15 @@ export function QuizHeader({
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
       <PageContainer className="h-14 flex items-center justify-between">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onBackToChapters}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" strokeWidth={1.5} />
           <span className="text-sm">退出</span>
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
           <BookOpen className="size-5 text-amber-600" strokeWidth={1.5} />
           <span className="font-semibold">{selectedChapterTitle}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { BaseQuestionResponse } from "@/types/api";
 import { getQuestionType } from "../types";
 
@@ -32,8 +33,8 @@ export function AnswerArea({
                 currentQuestion.correct_answer?.toUpperCase() === optionLabel;
 
               return (
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
                   key={optionLabel}
                   onClick={() =>
                     !submitted &&
@@ -42,7 +43,7 @@ export function AnswerArea({
                     )
                   }
                   disabled={submitted}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                  className={`w-full p-4 rounded-lg border-2 text-left transition-all h-auto justify-start ${
                     submitted
                       ? isSelected
                         ? isCorrect
@@ -80,7 +81,7 @@ export function AnswerArea({
                     </span>
                     <span className="text-foreground">{option}</span>
                   </div>
-                </button>
+                </Button>
               );
             })}
           </div>

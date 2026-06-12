@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, ChevronRight, Loader2, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface SubmittedQuizActionBarProps {
   isCorrect: boolean;
@@ -32,11 +33,11 @@ export function SubmittedQuizActionBar({
           </>
         )}
       </div>
-      <button
-        type="button"
+      <Button
+        size="lg"
         onClick={onNext}
         disabled={baseQuestionLoading}
-        className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+        className="px-8 py-3 inline-flex items-center gap-2"
       >
         {baseQuestionLoading ? (
           <Loader2 className="size-4" strokeWidth={1.5} />
@@ -46,7 +47,7 @@ export function SubmittedQuizActionBar({
             <ChevronRight className="size-4" strokeWidth={1.5} />
           </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }
