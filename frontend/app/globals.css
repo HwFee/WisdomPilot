@@ -151,6 +151,9 @@
   --z-popover: 300;
   --z-toast: 400;
   --z-tooltip: 500;
+
+  /* ── Swiss Precision 容器 ── */
+  --container-max: 1280px;
 }
 
 .dark {
@@ -635,6 +638,12 @@ body {
   margin-right: auto;
   padding-left: var(--space-6);
   padding-right: var(--space-6);
+}
+
+.container-sp {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: 48px;
 }
 
 /* ============================================
