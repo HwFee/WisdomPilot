@@ -1,12 +1,7 @@
 'use client'
 
 import { Panel } from '@/components/layout'
-import { NoteEditorToolbar } from './NoteEditorToolbar'
-import { NoteTagSelector } from './NoteTagSelector'
-import { NoteTitleInput } from './NoteTitleInput'
-import { MarkdownEditorPane } from './MarkdownEditorPane'
-import { MarkdownPreviewPane } from './MarkdownPreviewPane'
-import { NoteEditorFooter } from './NoteEditorFooter'
+import { NoteEditorBody } from './NoteEditorBody'
 import type { NoteResponse, NoteTagResponse } from '@/types/api'
 
 interface NoteEditorFullPageProps {
@@ -52,42 +47,25 @@ export function NoteEditorFullPage({
 }: NoteEditorFullPageProps) {
   return (
     <Panel className="h-full flex flex-col overflow-hidden">
-      <NoteEditorToolbar
+      <NoteEditorBody
         note={note}
-        lang={lang}
-        showTagSelector={showTagSelector}
-        onToggleTagSelector={onToggleTagSelector}
-        onClose={onClose}
-        variant="fullPage"
-      />
-      {showTagSelector && (
-        <NoteTagSelector
-          selectedTags={selectedTags}
-          selectedTagSet={selectedTagSet}
-          availableTags={availableTags}
-          newTagName={newTagName}
-          lang={lang}
-          onNewTagNameChange={onNewTagNameChange}
-          onCreateTag={onCreateTag}
-          onToggleTag={onToggleTag}
-          variant="fullPage"
-        />
-      )}
-      <NoteTitleInput title={title} lang={lang} onTitleChange={onTitleChange} variant="fullPage" />
-      <div className="flex-1 flex min-h-0">
-        <MarkdownEditorPane
-          content={content}
-          lang={lang}
-          onContentChange={onContentChange}
-          variant="fullPage"
-        />
-        <MarkdownPreviewPane content={content} lang={lang} variant="fullPage" />
-      </div>
-      <NoteEditorFooter
-        isSaving={isSaving}
+        title={title}
         content={content}
+        selectedTags={selectedTags}
+        selectedTagSet={selectedTagSet}
+        availableTags={availableTags}
+        newTagName={newTagName}
+        showTagSelector={showTagSelector}
+        isSaving={isSaving}
         lang={lang}
+        onTitleChange={onTitleChange}
+        onContentChange={onContentChange}
+        onNewTagNameChange={onNewTagNameChange}
+        onCreateTag={onCreateTag}
+        onToggleTag={onToggleTag}
+        onToggleTagSelector={onToggleTagSelector}
         onSave={onSave}
+        onCancel={onClose}
         variant="fullPage"
       />
     </Panel>

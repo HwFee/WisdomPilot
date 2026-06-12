@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import { FileText, Edit, Trash2, Download, Calendar, Tag, ExternalLink, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Panel, PanelHeader } from '@/components/layout'
 import { getStoredToken } from '@/lib/api'
 import { deleteNote, exportNote } from '@/lib/api/notes'
 import type { NoteResponse } from '@/types/api'
@@ -133,7 +134,7 @@ export function NoteCard({
 
   return (
     <>
-      <div className={`bg-card rounded-2xl border p-6 hover:shadow-lg transition-all ${isProcessing ? 'opacity-80' : ''}`}>
+      <Panel className={`p-6 hover:border-foreground/50 transition-colors ${isProcessing ? 'opacity-80' : ''}`}>
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1 min-w-0">
@@ -164,48 +165,48 @@ export function NoteCard({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <Button
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setShowPreview(true)}
               title={translate(lang, '预览', 'Preview')}
+              aria-label={translate(lang, '预览', 'Preview')}
             >
-              <FileText className="size-4 mr-1.5" strokeWidth={1.5} />
-              {translate(lang, '预览', 'Preview')}
+              <FileText className="size-4" strokeWidth={1.5} />
             </Button>
             <Button
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => onEdit?.(note)}
               title={translate(lang, '编辑', 'Edit')}
+              aria-label={translate(lang, '编辑', 'Edit')}
             >
-              <Edit className="size-4 mr-1.5" strokeWidth={1.5} />
-              {translate(lang, '编辑', 'Edit')}
+              <Edit className="size-4" strokeWidth={1.5} />
             </Button>
             <Button
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={handleExport}
               title={translate(lang, '导出', 'Export')}
+              aria-label={translate(lang, '导出', 'Export')}
             >
-              <Download className="size-4 mr-1.5" strokeWidth={1.5} />
-              {translate(lang, '导出', 'Export')}
+              <Download className="size-4" strokeWidth={1.5} />
             </Button>
             <Button
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={handleDelete}
               disabled={isDeleting || deleted}
-              className="text-destructive hover:text-destructive"
+              className="text-red-500 hover:text-red-600"
               title={translate(lang, '删除', 'Delete')}
+              aria-label={translate(lang, '删除', 'Delete')}
             >
-              <Trash2 className="size-4 mr-1.5" strokeWidth={1.5} />
-              {translate(lang, '删除', 'Delete')}
+              <Trash2 className="size-4" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -236,9 +237,9 @@ export function NoteCard({
             {note.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full flex items-center gap-1.5"
+                className="inline-flex items-center gap-1.5 border border-border px-3 py-1 text-sm text-foreground"
               >
-                <Tag className="size-3.5" />
+                <Tag className="size-3.5" strokeWidth={1.5} />
                 {tag}
               </span>
             ))}
@@ -251,51 +252,53 @@ export function NoteCard({
             {note.knowledge_points.map((kp) => (
               <span
                 key={kp}
-                className="px-3 py-1 bg-muted text-muted-foreground text-sm rounded-full"
+                className="border border-border px-3 py-1 text-sm text-muted-foreground"
               >
                 {kp}
               </span>
             ))}
           </div>
         )}
-      </div>
+      </Panel>
 
       {/* Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-card rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-3">
-                <h2 className="font-semibold">{note.title || translate(lang, '笔记预览', 'Note Preview')}</h2>
-                {note.exercise_id && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Panel className="w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+            <PanelHeader
+              title={note.title || translate(lang, '笔记预览', 'Note Preview')}
+              action={
+                <div className="flex items-center gap-2">
+                  {note.exercise_id && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleGoToExercise}
+                      className="h-7 px-2 gap-1"
+                    >
+                      <ExternalLink className="size-3" />
+                      {translate(lang, '跳转到题目', 'Go to exercise')}
+                    </Button>
+                  )}
+                  {isProcessing && (
+                    <span className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-500/10 text-amber-600 rounded-md">
+                      <Loader2 className="size-3 animate-spin" />
+                      {translate(lang, '处理中', 'Processing')}
+                    </span>
+                  )}
                   <Button
                     type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleGoToExercise}
-                    className="h-7 px-2 gap-1"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPreview(false)}
+                    aria-label={translate(lang, '关闭', 'Close')}
                   >
-                    <ExternalLink className="size-3" />
-                    {translate(lang, '跳转到题目', 'Go to exercise')}
+                    <X className="size-4" strokeWidth={1.5} />
                   </Button>
-                )}
-                {isProcessing && (
-                  <span className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-500/10 text-amber-600 rounded-md">
-                    <Loader2 className="size-3 animate-spin" />
-                    {translate(lang, '处理中', 'Processing')}
-                  </span>
-                )}
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowPreview(false)}
-                aria-label={translate(lang, '关闭', 'Close')}
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
+                </div>
+              }
+            />
             <div className={`flex-1 overflow-y-auto p-6 prose prose-sm dark:prose-invert max-w-none ${isProcessing ? 'blur-sm' : ''}`}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -305,12 +308,12 @@ export function NoteCard({
               </ReactMarkdown>
             </div>
             {isProcessing && (
-              <div className="p-4 border-t bg-amber-500/5 flex items-center justify-center gap-2 text-amber-600">
+              <div className="p-4 border-t border-border bg-amber-500/5 flex items-center justify-center gap-2 text-amber-600">
                 <Loader2 className="size-4 animate-spin" />
                 <span className="text-sm">{translate(lang, '笔记正在处理中，请稍后刷新查看...', 'Note is being processed, please refresh later...')}</span>
               </div>
             )}
-          </div>
+          </Panel>
         </div>
       )}
     </>
