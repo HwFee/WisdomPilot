@@ -13,6 +13,8 @@ function EditorLoading() {
   )
 }
 
+const editorLoadingElement = <EditorLoading />
+
 interface CodeEditorPanelProps {
   value: string
   onChange: (value: string) => void
@@ -1183,7 +1185,7 @@ export function CodeEditorPanel({
           },
         }}
         theme="vs"
-        loading={<EditorLoading />}
+        loading={editorLoadingElement}
       />
     </div>
   )

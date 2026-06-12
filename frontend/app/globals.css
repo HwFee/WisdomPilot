@@ -113,9 +113,9 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── 字体 ── Swiss Precision ── */
-  --font-sans: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  --font-sans: var(--font-inter), var(--font-noto-sans-sc), system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
-  --font-display: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-noto-sans-sc), system-ui, sans-serif;
 
   /* ── 新增：组件专属颜色 ── */
   --button-gradient-start: 217 91% 60%;

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,20 +31,25 @@ export default function AdminDashboardPage() {
   const [status, setStatus] = useState({ isLoading: true, error: '' })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token:v1') : null
-  const currentUser = typeof window !== 'undefined'
-    ? JSON.parse(localStorage.getItem('user:v1') || 'null')
-    : null
+  const getAuthToken = () => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('token:v1')
+  }
 
-  useEffect(() => {
-    if (!token || !currentUser?.is_admin) {
-      push('/login')
-      return
+  const getCurrentUser = () => {
+    if (typeof window === 'undefined') return null
+    try {
+      return JSON.parse(localStorage.getItem('user:v1') || 'null')
+    } catch {
+      return null
     }
-    fetchUsers()
-  }, [])
+  }
 
-  const fetchUsers = async () => {
+  const currentUser = getCurrentUser()
+
+  const fetchUsers = useCallback(async () => {
+    const token = getAuthToken()
+    if (!token) return
     try {
       setStatus(prev => ({ ...prev, isLoading: true }))
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users`, {
@@ -58,9 +63,21 @@ export default function AdminDashboardPage() {
     } finally {
       setStatus(prev => ({ ...prev, isLoading: false }))
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    const token = getAuthToken()
+    const currentUser = getCurrentUser()
+    if (!token || !currentUser?.is_admin) {
+      push('/login')
+      return
+    }
+    fetchUsers()
+  }, [push, fetchUsers])
 
   const fetchOnlineUsers = async () => {
+    const token = getAuthToken()
+    if (!token) return
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users/online`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -74,13 +91,15 @@ export default function AdminDashboardPage() {
   }
 
   const deleteUser = async (userId: string) => {
+    const token = getAuthToken()
+    if (!token) return
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Failed to delete user')
-      setUsers(users.filter(u => u.id !== userId))
+      setUsers(prev => prev.filter(u => u.id !== userId))
       setDeleteConfirm(null)
     } catch (err) {
       setStatus(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Error deleting user' }))

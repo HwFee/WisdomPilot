@@ -28,6 +28,20 @@ export function ConfigCard({
   onTest,
   children,
 }: ConfigCardProps) {
+  const testButtonVariant = isTesting
+    ? { icon: Loader2, iconClassName: 'animate-spin', label: '测试中...' }
+    : { icon: Zap, iconClassName: '', label: '测试连接' }
+
+  const saveButtonVariant = isSaving
+    ? { icon: Loader2, iconClassName: 'animate-spin', label: '保存中...' }
+    : { icon: Save, iconClassName: '', label: '保存配置' }
+
+  const resultVariant = testResult
+    ? testResult.success
+      ? { icon: CheckCircle, className: 'text-emerald-600', message: testResult.message }
+      : { icon: AlertCircle, className: 'text-red-500', message: testResult.message }
+    : null
+
   return (
     <div className="bg-card rounded-lg shadow p-6 flex flex-col gap-y-5">
       <div className="flex items-center gap-3">
@@ -45,25 +59,14 @@ export function ConfigCard({
             disabled={isTesting}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-primary text-primary rounded-lg hover:bg-primary/10 disabled:opacity-50 transition-colors"
           >
-            {isTesting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Zap className="size-4" />
-            )}
-            {isTesting ? '测试中...' : '测试连接'}
+            <testButtonVariant.icon className={cn('size-4', testButtonVariant.iconClassName)} />
+            {testButtonVariant.label}
           </button>
-          {testResult && (
-            <div className={cn(
-              'flex items-center gap-2 text-sm',
-              testResult.success ? 'text-emerald-600' : 'text-red-500'
-            )}>
-              {testResult.success ? (
-                <CheckCircle className="size-4" />
-              ) : (
-                <AlertCircle className="size-4" />
-              )}
-              <span>{testResult.message}</span>
-              {testResult.latency_ms !== undefined && (
+          {resultVariant && (
+            <div className={cn('flex items-center gap-2 text-sm', resultVariant.className)}>
+              <resultVariant.icon className="size-4" />
+              <span>{resultVariant.message}</span>
+              {testResult?.latency_ms !== undefined && (
                 <span className="text-xs text-muted-foreground">({testResult.latency_ms}ms)</span>
               )}
             </div>
@@ -75,8 +78,8 @@ export function ConfigCard({
         disabled={isSaving}
         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
       >
-        {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-        {isSaving ? '保存中...' : '保存配置'}
+        <saveButtonVariant.icon className={cn('size-4', saveButtonVariant.iconClassName)} />
+        {saveButtonVariant.label}
       </button>
     </div>
   )
