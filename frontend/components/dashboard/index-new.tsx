@@ -534,7 +534,6 @@ export default function DashboardPage() {
             solarTerm={checkinDetails?.solar_term_str?.split(' (')[0]}
             holiday={checkinDetails?.holiday_str?.split(' (')[0]}
             streakMultiplier={checkinDetails?.streak_multiplier ?? 1.0}
-            nextTierDays={checkinStats?.next_tier_days ?? null}
           />
         </section>
 
@@ -564,9 +563,6 @@ export default function DashboardPage() {
               <div className="flex-[6] min-h-0">
                 <CurrentLearningPanel
                   courses={coursesProgress}
-                  currentCourseId={currentCourseId}
-                  onSwitchCourse={handleSwitchCourse}
-                  recentExercises={recentExercises}
                   lang={lang}
                 />
               </div>
