@@ -24,6 +24,8 @@ const QUOTES = [
   { content: '好的代码本身就是最好的文档。', author: 'Steve McConnell' },
 ]
 
+const QUOTE_ROTATION_INTERVAL_MS = 30_000
+
 export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
   const [quote, setQuote] = useState<{ content: string; author: string } | null>(null)
@@ -40,7 +42,7 @@ export function WelcomeSection({ user, lang = 'zh' }: WelcomeSectionProps) {
       const next = (quoteIndexRef.current + 1) % QUOTES.length
       quoteIndexRef.current = next
       setQuote(QUOTES[next])
-    }, 30000)
+    }, QUOTE_ROTATION_INTERVAL_MS)
     return () => clearInterval(interval)
   }, [])
 

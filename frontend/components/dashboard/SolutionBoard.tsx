@@ -8,6 +8,15 @@ import { getStoredToken, getStoredUser } from '@/lib/api/auth'
 
 type TabType = 'hot' | 'new' | 'pinned' | 'announcement'
 
+const SOLUTION_FETCH_LIMIT = 50
+const MS_PER_HOUR = 1000 * 60 * 60
+
+const TIME_THRESHOLDS = {
+  HOUR: 1,
+  DAY: 24,
+  WEEK: 7,
+} as const
+
 interface SolutionBoardProps {
   lang?: 'zh' | 'en'
   compact?: boolean
@@ -48,7 +57,7 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
         setLoading(false)
         return
       }
-      const data = await getSolutionSummary(token, 50)
+      const data = await getSolutionSummary(token, SOLUTION_FETCH_LIMIT)
       setSolutions(data)
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('加载失败', 'Failed to load')
@@ -86,36 +95,31 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
     const date = new Date(dateStr)
     const now = new Date()
     const diff = now.getTime() - date.getTime()
-    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const hours = Math.floor(diff / MS_PER_HOUR)
     const days = Math.floor(hours / 24)
 
-    if (hours < 1) return t('刚刚', 'Just now')
-    if (hours < 24) return `${hours}${t('小时前', 'h ago')}`
-    if (days < 7) return `${days}${t('天前', 'd ago')}`
+    if (hours < TIME_THRESHOLDS.HOUR) return t('刚刚', 'Just now')
+    if (hours < TIME_THRESHOLDS.DAY) return `${hours}${t('小时前', 'h ago')}`
+    if (days < TIME_THRESHOLDS.WEEK) return `${days}${t('天前', 'd ago')}`
     return date.toLocaleDateString('zh-CN')
   }
 
   const getSortedSolutions = () => {
     let filtered = [...solutions]
 
-    // Filter by tab
     if (activeTab === 'announcement') {
       filtered = filtered.filter(s => s.is_announcement)
     } else if (activeTab === 'pinned') {
       filtered = filtered.filter(s => s.is_pinned)
     }
 
-    // Sort: announcements first (if not in announcement tab), then pinned, then by sort type
     filtered.sort((a, b) => {
-      // Announcements always at top (unless in announcement tab)
       if (activeTab !== 'announcement') {
         if (a.is_announcement && !b.is_announcement) return -1
         if (!a.is_announcement && b.is_announcement) return 1
       }
-      // Then pinned
       if (a.is_pinned && !b.is_pinned) return -1
       if (!a.is_pinned && b.is_pinned) return 1
-      // Then by sort type
       if (activeTab === 'hot') return b.hot_score - a.hot_score
       if (activeTab === 'new' || activeTab === 'announcement') {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -135,24 +139,24 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
         tabIndex={0}
         onClick={() => handleItemClick(solution.id)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleItemClick(solution.id) } }}
-        className={`group p-3 rounded-xl hover:bg-muted transition-colors cursor-pointer ${
-          isAnnouncementItem ? 'bg-amber-50/50 border border-amber-200 hover:bg-amber-100/50 dark:bg-amber-950/20 dark:border-amber-800' : 'bg-muted/50'
+        className={`group p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer ${
+          isAnnouncementItem
+            ? 'bg-[#FFFBEB] border border-[#FDE68A] hover:bg-[#FEF3C7] dark:bg-amber-950 dark:border-amber-800 dark:hover:bg-amber-900'
+            : 'bg-muted'
         }`}
       >
-        {/* Title row with indicators */}
         <div className="flex items-start gap-2">
           {solution.is_pinned && (
-            <Pin className="size-3.5 text-primary flex-shrink-0 mt-0.5" />
+            <Pin className="size-3.5 text-primary flex-shrink-0 mt-0.5" strokeWidth={1.5} />
           )}
           {isAnnouncementItem && (
-            <Megaphone className="size-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <Megaphone className="size-3.5 text-amber-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
           )}
           <h4 className={`font-medium text-sm flex-1 line-clamp-2 ${isAnnouncementItem ? 'text-amber-800 dark:text-amber-300' : 'text-foreground'}`}>
             {solution.title}
           </h4>
         </div>
 
-        {/* Meta row */}
         <div className={`flex items-center justify-between mt-2 text-xs ${
           isAnnouncementItem ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
         }`}>
@@ -163,11 +167,11 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
               className="flex items-center gap-1 hover:text-red-500 transition-colors"
               title={t('点赞', 'Like')}
             >
-              <Heart className="size-3.5" />
+              <Heart className="size-3.5" strokeWidth={1.5} />
               {solution.like_count}
             </button>
             <span className="flex items-center gap-1">
-              <Eye className="size-3.5" />
+              <Eye className="size-3.5" strokeWidth={1.5} />
               {solution.view_count}
             </span>
             <span>{formatTime(solution.created_at)}</span>
@@ -178,23 +182,21 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-6 h-full flex flex-col overflow-hidden">
-      {/* Header */}
+    <div className="bg-card rounded-lg border border-border p-6 h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <MessageSquare className="size-5 text-primary" />
+          <MessageSquare className="size-5 text-primary" strokeWidth={1.5} />
           {t('讨论区', 'Discussion')}
         </h3>
         <button type="button"
           onClick={handleEnterSolutions}
-          className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-primary rounded-lg text-sm font-medium hover:bg-muted transition-colors"
         >
           {t('进入', 'Enter')}
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-4" strokeWidth={1.5} />
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-shrink-0">
         {(Object.keys(tabMap) as TabType[]).map(tab => (
           <button type="button"
@@ -211,7 +213,6 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
         ))}
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -219,18 +220,18 @@ export function SolutionBoard({ lang = 'zh', compact = false }: SolutionBoardPro
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full text-destructive">
-            <AlertCircle className="size-10 mb-2" />
+            <AlertCircle className="size-10 mb-2" strokeWidth={1.5} />
             <p className="text-sm mb-3">{error}</p>
             <button type="button"
               onClick={fetchSolutions}
-              className="px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-muted/80 transition-colors"
+              className="px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-secondary transition-colors"
             >
               {t('重试', 'Retry')}
             </button>
           </div>
         ) : getSortedSolutions().length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <MessageSquare className="size-10 mb-2 opacity-50" />
+            <MessageSquare className="size-10 mb-2 opacity-50" strokeWidth={1.5} />
             <p className="text-sm">{t('暂无内容', 'No content yet')}</p>
           </div>
         ) : (
