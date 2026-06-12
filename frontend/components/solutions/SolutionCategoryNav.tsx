@@ -1,6 +1,7 @@
 'use client'
 
 import { Flame, Clock, Pin, Megaphone } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 type CategoryType = 'hot' | 'new' | 'pinned' | 'announcement'
 
@@ -31,18 +32,18 @@ export function SolutionCategoryNav({ activeCategory, onCategoryChange, lang = '
           const isActive = activeCategory === cat.key
 
           return (
-            <button type="button"
+            <Button
+              type="button"
               key={cat.key}
+              variant={isActive ? 'default' : 'ghost'}
               onClick={() => onCategoryChange(cat.key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                isActive
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              className={`w-full justify-start gap-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
+                isActive ? 'shadow-sm' : 'text-muted-foreground'
               }`}
             >
               <Icon className="size-4" />
               <span>{t(cat.zh, cat.en)}</span>
-            </button>
+            </Button>
           )
         })}
       </div>

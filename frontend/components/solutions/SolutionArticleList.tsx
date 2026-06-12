@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { Eye, Heart, Pin, Megaphone, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { SolutionSummary } from '@/lib/api/solutions'
 
 type CategoryType = 'hot' | 'new' | 'pinned' | 'announcement'
@@ -102,10 +103,11 @@ export function SolutionArticleList({
                 isAnnouncementItem ? 'bg-amber-50/50' : ''
               }`}
             >
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => onArticleClick(solution.id)}
-                className="absolute inset-0 z-0"
+                className="absolute inset-0 z-0 h-full w-full"
                 aria-label={t(`打开题解：${solution.title}`, `Open solution: ${solution.title}`)}
               />
               {/* ID badge */}
@@ -135,16 +137,19 @@ export function SolutionArticleList({
                 <span>{solution.username}</span>
                 <div className="flex items-center gap-4">
                   {onLike && (
-                    <button type="button"
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
                         onLike(solution.id)
                       }}
-                      className="flex items-center gap-1 hover:text-red-500 transition-colors"
+                      className="h-auto p-0 hover:text-red-500"
                     >
                       <Heart className="size-4" />
                       {solution.like_count}
-                    </button>
+                    </Button>
                   )}
                   {!onLike && (
                     <span className="flex items-center gap-1">
@@ -158,15 +163,19 @@ export function SolutionArticleList({
                   </span>
                   <span>{formatTime(solution.created_at)}</span>
                   {currentUserId === solution.user_id && onDelete && (
-                    <button type="button"
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation()
                         onDelete(solution.id)
                       }}
-                      className="flex items-center gap-1 hover:text-red-500 transition-colors"
+                      className="size-7 hover:text-red-500"
+                      aria-label={t('删除题解', 'Delete solution')}
                     >
                       <Trash2 className="size-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

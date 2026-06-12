@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Eye, Edit3, Save, Megaphone } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -153,14 +154,15 @@ export function SolutionEditor({
             </div>
             {/* Save button in preview footer */}
             <div className="px-6 py-3 border-t border-border bg-muted/30">
-              <button type="button"
+              <Button
+                type="button"
                 onClick={handleSave}
                 disabled={isSaving || !title.trim()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="w-full"
               >
-                <Save className="size-4" />
+                <Save className="size-4 mr-2" strokeWidth={1.5} />
                 {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -177,9 +179,15 @@ export function SolutionEditor({
           <h2 className="text-xl font-semibold">
             {initialTitle ? t('编辑题解', 'Edit Solution') : t('发布题解', 'New Solution')}
           </h2>
-          <button type="button" onClick={onCancel} className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onCancel}
+            aria-label={t('关闭', 'Close')}
+          >
             <X className="size-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Announcement toggle - admin only */}
@@ -281,20 +289,21 @@ export function SolutionEditor({
             {t('支持 Markdown 格式，支持数学公式 $...$ 和 $$...$$，支持代码高亮', 'Supports Markdown, math formulas $...$ and $$...$$, code highlighting')}
           </div>
           <div className="flex gap-3">
-            <button type="button"
+            <Button
+              type="button"
+              variant="outline"
               onClick={onCancel}
-              className="px-5 py-2.5 text-sm border-2 rounded-xl hover:bg-muted transition-colors"
             >
               {t('取消', 'Cancel')}
-            </button>
-            <button type="button"
+            </Button>
+            <Button
+              type="button"
               onClick={handleSave}
               disabled={isSaving || !title.trim()}
-              className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
-              <Save className="size-4" />
+              <Save className="size-4 mr-2" strokeWidth={1.5} />
               {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
