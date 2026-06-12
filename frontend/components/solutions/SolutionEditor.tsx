@@ -58,7 +58,7 @@ export function SolutionEditor({
   // Full page mode - no modal, no fixed overlay
   if (isFullPage) {
     return (
-      <div className="bg-card rounded-2xl border border-border overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-card border border-border overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Announcement toggle - admin only */}
         {isAdmin && (
           <div className="px-6 py-4 border-b bg-muted/30">
@@ -67,9 +67,9 @@ export function SolutionEditor({
                 type="checkbox"
                 checked={isAnnouncement}
                 onChange={e => setIsAnnouncement(e.target.checked)}
-                className="size-5 rounded border-amber-400 text-amber-500 focus:ring-amber-500"
+                className="size-4 border-border"
               />
-              <Megaphone className="size-5 text-amber-500" />
+              <Megaphone className="size-4" strokeWidth={1.5} />
               <span className="text-sm font-medium">{t('发布为公告', 'Post as Announcement')}</span>
             </label>
           </div>
@@ -83,7 +83,7 @@ export function SolutionEditor({
             onChange={e => setTitle(e.target.value)}
             placeholder={t('输入题解标题...', 'Enter solution title...')}
             aria-label={t('题解标题', 'Solution title')}
-            className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
+            className="w-full h-12 px-3 bg-background border border-border text-xl font-medium focus:outline-none focus:border-foreground"
             maxLength={200}
           />
         </div>
@@ -173,10 +173,10 @@ export function SolutionEditor({
   // Modal mode (original)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] flex flex-col overflow-hidden">
+      <div className="bg-card border border-border w-full max-w-6xl max-h-[95vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b">
-          <h2 className="text-xl font-semibold">
+        <div className="flex items-center justify-between px-8 py-6 border-b">
+          <h2 className="text-[13px] font-semibold uppercase tracking-[1.5px]">
             {initialTitle ? t('编辑题解', 'Edit Solution') : t('发布题解', 'New Solution')}
           </h2>
           <Button
@@ -186,7 +186,7 @@ export function SolutionEditor({
             onClick={onCancel}
             aria-label={t('关闭', 'Close')}
           >
-            <X className="size-5" />
+            <X className="size-5" strokeWidth={1.5} />
           </Button>
         </div>
 
@@ -198,9 +198,9 @@ export function SolutionEditor({
                 type="checkbox"
                 checked={isAnnouncement}
                 onChange={e => setIsAnnouncement(e.target.checked)}
-                className="size-4 rounded border-amber-400 text-amber-500 focus:ring-amber-500"
+                className="size-4 border-border"
               />
-              <Megaphone className="size-4 text-amber-500" />
+              <Megaphone className="size-4" strokeWidth={1.5} />
               <span className="text-sm">{t('发布为公告', 'Post as Announcement')}</span>
             </label>
           </div>
@@ -214,7 +214,7 @@ export function SolutionEditor({
             onChange={e => setTitle(e.target.value)}
             placeholder={t('输入题解标题...', 'Enter solution title...')}
             aria-label={t('题解标题', 'Solution title')}
-            className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
+            className="w-full h-12 px-3 bg-background border border-border text-xl font-medium focus:outline-none focus:border-foreground"
             maxLength={200}
           />
         </div>

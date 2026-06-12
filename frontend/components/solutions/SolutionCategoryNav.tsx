@@ -2,6 +2,7 @@
 
 import { Flame, Clock, Pin, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Panel, PanelHeader } from '@/components/layout'
 
 type CategoryType = 'hot' | 'new' | 'pinned' | 'announcement'
 
@@ -22,31 +23,26 @@ export function SolutionCategoryNav({ activeCategory, onCategoryChange, lang = '
   const t = (zh: string, en: string) => lang === 'zh' ? zh : en
 
   return (
-    <nav className="bg-card rounded-2xl border border-border p-4 sticky top-24">
-      <h2 className="text-sm font-medium text-muted-foreground mb-3 px-3">
-        {t('分类', 'Categories')}
-      </h2>
-      <div className="flex flex-col gap-y-1">
+    <Panel>
+      <PanelHeader title={t('分类', 'Categories')} />
+      <div className="p-2 flex flex-col gap-y-1">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon
           const isActive = activeCategory === cat.key
 
           return (
             <Button
-              type="button"
               key={cat.key}
               variant={isActive ? 'default' : 'ghost'}
               onClick={() => onCategoryChange(cat.key)}
-              className={`w-full justify-start gap-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
-                isActive ? 'shadow-sm' : 'text-muted-foreground'
-              }`}
+              className="w-full justify-start gap-3"
             >
-              <Icon className="size-4" />
+              <Icon className="size-4" strokeWidth={1.5} />
               <span>{t(cat.zh, cat.en)}</span>
             </Button>
           )
         })}
       </div>
-    </nav>
+    </Panel>
   )
 }
