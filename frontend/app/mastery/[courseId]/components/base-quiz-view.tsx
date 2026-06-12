@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, BookOpen, CheckCircle, XCircle, ChevronRight, PartyPopper } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle, XCircle, ChevronRight, PartyPopper, Loader2 } from "lucide-react";
 import type { BaseQuestionResponse } from "@/types/api";
 import type { NoteResponse } from "@/types/api";
 import { FavoriteButton } from "@/components/exercise/FavoriteButton";
@@ -51,17 +51,17 @@ export function BaseQuizView(props: BaseQuizViewProps) {
 
   return (
     <div className="min-h-screen bg-background">
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         <button type="button"
           onClick={onBackToChapters}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-4" strokeWidth={1.5} />
           <span className="text-sm">退出</span>
         </button>
         <div className="flex items-center gap-2">
-          <BookOpen className="size-5 text-amber-500" />
+          <BookOpen className="size-5 text-amber-600" strokeWidth={1.5} />
           <span className="font-semibold">{selectedChapterTitle}</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -110,14 +110,14 @@ export function BaseQuizView(props: BaseQuizViewProps) {
                   title={`第 ${globalIndex + 1} 题`}
                   className={`rounded-lg text-xs font-bold transition-all ${
                     isCurrent
-                      ? "size-10 bg-primary text-primary-foreground scale-110 shadow-lg z-10"
+                      ? "size-10 bg-primary text-primary-foreground"
                       : isCompleted
                         ? wasCorrect
-                          ? "size-8 bg-emerald-100 text-emerald-700 border-2 border-emerald-400"
-                          : "size-8 bg-red-100 text-red-700 border-2 border-red-400"
+                          ? "size-8 bg-muted text-emerald-600 border-2 border-emerald-600"
+                          : "size-8 bg-muted text-red-600 border-2 border-red-600"
                         : globalIndex <= currentQuestionIndex
                           ? "size-8 bg-muted text-muted-foreground border border-border hover:border-primary"
-                          : "size-8 bg-muted/50 text-muted-foreground/50 border border-border cursor-not-allowed"
+                          : "size-8 bg-muted text-muted-foreground/50 border border-border cursor-not-allowed"
                   }`}
                 >
                   {globalIndex + 1}
@@ -134,7 +134,7 @@ export function BaseQuizView(props: BaseQuizViewProps) {
         {/* Question header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium">
+            <span className="px-3 py-1 bg-muted text-amber-600 rounded-lg text-sm font-medium">
               {currentQuestionIndex + 1} / {baseQuestions.length}
             </span>
             <span
@@ -177,14 +177,14 @@ export function BaseQuizView(props: BaseQuizViewProps) {
 
         {/* Question type indicator */}
         <div className="mb-4">
-          <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium">
+          <span className="px-3 py-1 bg-muted text-primary rounded-lg text-xs font-medium">
             {getQuestionType(currentQuestion) === "choice" ? "选择题" : "填空题"}
           </span>
         </div>
 
         {/* Question */}
         <div
-          className="bg-card rounded-2xl border border-border p-6 mb-6"
+          className="bg-card rounded-lg border border-border p-6 mb-6"
           data-question-context
           data-question-type={getQuestionType(currentQuestion)}
           data-question-id={currentQuestion.id}
@@ -201,7 +201,7 @@ export function BaseQuizView(props: BaseQuizViewProps) {
               {currentQuestion.knowledge_points.map((kp) => (
                 <span
                   key={kp}
-                  className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                  className="px-2 py-1 bg-secondary text-primary text-xs rounded-full"
                 >
                   {kp}
                 </span>
@@ -233,18 +233,18 @@ export function BaseQuizView(props: BaseQuizViewProps) {
                       )
                     }
                     disabled={submitted}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                    className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                       submitted
                         ? isSelected
                           ? isCorrect
-                            ? "border-emerald-500 bg-emerald-500/10"
-                            : "border-red-500 bg-red-500/10"
+                            ? "border-emerald-600 bg-muted"
+                            : "border-red-600 bg-muted"
                           : isCorrectOption
-                            ? "border-emerald-500 bg-emerald-500/5"
+                            ? "border-emerald-600 bg-muted"
                             : "border-border opacity-50"
                         : isSelected
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-muted hover:bg-muted/30"
+                          ? "border-primary bg-muted"
+                          : "border-border hover:border-muted hover:bg-muted"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -252,11 +252,11 @@ export function BaseQuizView(props: BaseQuizViewProps) {
                         className={`size-8 rounded-lg flex items-center justify-center text-sm font-medium ${
                           submitted
                             ? isSelected && isCorrect
-                              ? "bg-emerald-500 text-white"
+                              ? "bg-emerald-600 text-primary-foreground"
                               : isSelected && !isCorrect
-                                ? "bg-red-500 text-white"
+                                ? "bg-red-600 text-primary-foreground"
                                 : isCorrectOption
-                                  ? "bg-emerald-500 text-white"
+                                  ? "bg-emerald-600 text-primary-foreground"
                                   : "bg-muted text-muted-foreground"
                             : isSelected
                               ? "bg-primary text-primary-foreground"
@@ -264,7 +264,7 @@ export function BaseQuizView(props: BaseQuizViewProps) {
                         }`}
                       >
                         {submitted && isCorrectOption ? (
-                          <CheckCircle className="size-4" />
+                          <CheckCircle className="size-4" strokeWidth={1.5} />
                         ) : (
                           optLabel
                         )}
@@ -280,7 +280,7 @@ export function BaseQuizView(props: BaseQuizViewProps) {
         {/* Fill Blank Input */}
         {getQuestionType(currentQuestion) === "fill_blank" && (
           <div className="flex flex-col gap-y-4">
-            <div className="bg-card rounded-xl border border-border p-4">
+            <div className="bg-card rounded-lg border border-border p-4">
               <label htmlFor="fill-blank-answer" className="block text-sm font-medium text-foreground mb-2">
                 请输入答案：
               </label>
@@ -296,36 +296,36 @@ export function BaseQuizView(props: BaseQuizViewProps) {
                 }
                 disabled={submitted}
                 placeholder="在此输入您的答案..."
-                className={`w-full p-4 rounded-xl border-2 bg-background text-foreground transition-all ${
+                className={`w-full p-4 rounded-lg border-2 bg-background text-foreground transition-all ${
                   submitted
                     ? isCorrect
-                      ? "border-emerald-500 bg-emerald-500/10"
-                      : "border-red-500 bg-red-500/10"
-                    : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      ? "border-emerald-600 bg-muted"
+                      : "border-red-600 bg-muted"
+                    : "border-border focus:border-primary focus:outline-none"
                 } disabled:opacity-70`}
               />
             </div>
 
             {submitted && (
               <div
-                className={`p-4 rounded-xl ${isCorrect ? "bg-emerald-500/10" : "bg-red-500/10"}`}
+                className={`p-4 rounded-lg ${isCorrect ? "bg-muted" : "bg-muted"}`}
               >
                 <p className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
                   {isCorrect ? (
                     <>
-                      <CheckCircle className="size-4 text-emerald-500" />
+                      <CheckCircle className="size-4 text-emerald-600" strokeWidth={1.5} />
                       正确！
                     </>
                   ) : (
                     <>
-                      <XCircle className="size-4 text-red-500" />
+                      <XCircle className="size-4 text-red-600" strokeWidth={1.5} />
                       错误
                     </>
                   )}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   正确答案：
-                  <span className="font-medium text-emerald-500">
+                  <span className="font-medium text-emerald-600">
                     {currentQuestion.correct_answer}
                   </span>
                 </p>
@@ -337,7 +337,7 @@ export function BaseQuizView(props: BaseQuizViewProps) {
         {/* Explanation after submission */}
         {submitted && currentQuestion.explanation && (
           <div
-            className={`mt-6 p-4 rounded-xl ${isCorrect ? "bg-emerald-500/10" : "bg-blue-500/10"}`}
+            className={`mt-6 p-4 rounded-lg bg-muted`}
           >
             <p className="text-sm font-medium text-foreground mb-2">解析</p>
             <p className="text-sm text-muted-foreground">
@@ -353,8 +353,8 @@ export function BaseQuizView(props: BaseQuizViewProps) {
       className={`fixed bottom-0 left-0 right-0 border-t transition-colors ${
         submitted
           ? isCorrect
-            ? "bg-emerald-500/10 border-emerald-500/30"
-            : "bg-red-500/10 border-red-500/20"
+            ? "bg-muted border-emerald-600/30"
+            : "bg-muted border-red-600/20"
           : "bg-card border-border"
       }`}
     >
@@ -362,8 +362,8 @@ export function BaseQuizView(props: BaseQuizViewProps) {
         {/* 进度提示 */}
         <div className="text-center text-sm text-muted-foreground mb-3">
           {isLastQuestion ? (
-            <span className="text-amber-500 font-medium flex items-center justify-center gap-1">
-              <PartyPopper className="size-4" />
+            <span className="text-amber-600 font-medium flex items-center justify-center gap-1">
+              <PartyPopper className="size-4" strokeWidth={1.5} />
               完成本题即可获得经验奖励！
             </span>
           ) : (
@@ -375,29 +375,29 @@ export function BaseQuizView(props: BaseQuizViewProps) {
             <div className="flex items-center gap-3">
               {isCorrect ? (
                 <>
-                  <CheckCircle className="size-6 text-emerald-500" />
-                  <span className="font-medium text-emerald-500">
+                  <CheckCircle className="size-6 text-emerald-600" strokeWidth={1.5} />
+                  <span className="font-medium text-emerald-600">
                     正确！
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle className="size-6 text-red-400" />
-                  <span className="font-medium text-red-400">错误</span>
+                  <XCircle className="size-6 text-red-600" strokeWidth={1.5} />
+                  <span className="font-medium text-red-600">错误</span>
                 </>
               )}
             </div>
             <button type="button"
               onClick={onNext}
               disabled={baseQuestionLoading}
-              className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+              className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
             >
               {baseQuestionLoading ? (
-                <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <Loader2 className="size-4" strokeWidth={1.5} />
               ) : (
                 <>
                   {isLastQuestion ? "查看结果" : "下一题"}
-                  <ChevronRight className="size-4" />
+                  <ChevronRight className="size-4" strokeWidth={1.5} />
                 </>
               )}
             </button>
@@ -406,7 +406,7 @@ export function BaseQuizView(props: BaseQuizViewProps) {
           <button type="button"
             onClick={onSubmit}
             disabled={!baseAnswers.get(currentQuestion.id)}
-            className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             提交答案
           </button>

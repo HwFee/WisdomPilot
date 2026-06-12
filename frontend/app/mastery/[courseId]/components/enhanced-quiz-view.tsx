@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Zap, CheckCircle } from "lucide-react";
+import { ArrowLeft, Zap, CheckCircle, Loader2 } from "lucide-react";
 import type { EnhancedQuizQuestion } from "@/types/api";
 import { DIFFICULTY_COLORS } from "../types";
 
@@ -31,26 +31,26 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
 
   return (
     <div className="min-h-screen bg-background">
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         <button type="button"
           onClick={onBackToChapters}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-4" strokeWidth={1.5} />
           <span className="text-sm">退出</span>
         </button>
         <div className="flex items-center gap-2">
-          <Zap className="size-5 text-amber-500" />
+          <Zap className="size-5 text-amber-600" strokeWidth={1.5} />
           <span className="font-semibold">强化测试</span>
         </div>
         <div className="flex items-center gap-1">
           {enhancedQuestions.map((q, i) => (
             <div
               key={q.id}
-              className={`size-2 rounded-full transition-colors ${
+              className={`size-2 rounded-lg transition-colors ${
                 i < currentQuestionIndex
-                  ? "bg-emerald-400"
+                  ? "bg-emerald-600"
                   : i === currentQuestionIndex
                     ? "bg-primary"
                     : "bg-muted"
@@ -65,7 +65,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
       <div className="max-w-2xl mx-auto">
         {/* Question header */}
         <div className="flex items-center gap-3 mb-6">
-          <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-sm font-medium">
+          <span className="px-3 py-1 bg-secondary text-amber-600 rounded-lg text-sm font-medium">
             {currentQuestionIndex + 1} / {enhancedQuestions.length}
           </span>
           <span
@@ -77,7 +77,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
         </div>
 
         {/* Question */}
-        <div className="bg-card rounded-2xl border border-border p-6 mb-6">
+        <div className="bg-card rounded-lg border border-border p-6 mb-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">
             {currentQuestion.text}
           </h2>
@@ -87,7 +87,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
               {currentQuestion.knowledge_points.map((kp) => (
                 <span
                   key={kp}
-                  className="px-2 py-1 bg-orange-500/10 text-orange-400 text-xs rounded-full"
+                  className="px-2 py-1 bg-muted text-foreground text-xs rounded-lg"
                 >
                   {kp}
                 </span>
@@ -114,18 +114,18 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                     )
                   }
                   disabled={submitted}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                  className={`w-full p-4 rounded-lg border text-left transition-colors ${
                     submitted
                       ? isSelected
                         ? isCorrect
-                          ? "border-emerald-500 bg-emerald-500/10"
-                          : "border-red-500 bg-red-500/10"
+                          ? "border-emerald-600 bg-emerald-600/10"
+                          : "border-red-600 bg-red-600/10"
                         : isCorrectOption
-                          ? "border-emerald-500 bg-emerald-500/5"
+                          ? "border-emerald-600 bg-emerald-600/10"
                           : "border-border opacity-50"
                       : isSelected
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted hover:bg-muted/30"
+                        ? "border-primary bg-secondary"
+                        : "border-border hover:border-primary hover:bg-muted"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -133,11 +133,11 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                       className={`size-8 rounded-lg flex items-center justify-center text-sm font-medium ${
                         submitted
                           ? isSelected && isCorrect
-                            ? "bg-emerald-500 text-white"
+                            ? "bg-emerald-600 text-white"
                             : isSelected && !isCorrect
-                              ? "bg-red-500 text-white"
+                              ? "bg-red-600 text-white"
                               : isCorrectOption
-                                ? "bg-emerald-500 text-white"
+                                ? "bg-emerald-600 text-white"
                                 : "bg-muted text-muted-foreground"
                           : isSelected
                             ? "bg-primary text-primary-foreground"
@@ -145,7 +145,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                       }`}
                     >
                       {submitted && isCorrectOption ? (
-                        <CheckCircle className="size-4" />
+                        <CheckCircle className="size-4" strokeWidth={1.5} />
                       ) : (
                         optLabel
                       )}
@@ -172,11 +172,11 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
           disabled={
             !enhancedAnswers.get(currentQuestion.id) || enhancedLoading || (submitted && isLastQuestion && generationStatus !== "completed" && enhancedQuestions.length < generationProgress.total)
           }
-          className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {enhancedLoading ? (
             <span className="flex items-center justify-center gap-2">
-              <div className="size-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <Loader2 className="size-5" strokeWidth={1.5} />
               提交中...
             </span>
           ) : submitted ? (
@@ -185,7 +185,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                 "完成测试"
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <Loader2 className="size-4" strokeWidth={1.5} />
                   正在生成更多题目...
                 </span>
               )

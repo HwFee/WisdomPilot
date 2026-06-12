@@ -33,17 +33,17 @@ export function ChapterListView(props: ChapterListViewProps) {
 
   return (
   <div className="min-h-screen bg-background">
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
     <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
       <Link
         href={getStoredToken() ? "/dashboard" : "/"}
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-4" />
+        <ArrowLeft className="size-4" strokeWidth={1.5} />
         <span className="text-sm">返回</span>
       </Link>
       <div className="flex items-center gap-2">
-        <Trophy className="size-5 text-amber-500" />
+        <Trophy className="size-5 text-amber-600" strokeWidth={1.5} />
         <span className="font-semibold">精进之路</span>
       </div>
       <div className="w-20"></div>
@@ -83,11 +83,11 @@ export function ChapterListView(props: ChapterListViewProps) {
                 onClick={() =>
                   onSelectChapter(chapterId, title)
                 }
-                className="w-full p-4 rounded-xl border text-left transition-all border-border hover:border-amber-500/50 hover:bg-amber-500/5"
+                className="w-full p-4 rounded-lg border text-left transition-colors border-border hover:border-primary hover:bg-muted"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="size-10 rounded-lg flex items-center justify-center font-medium bg-amber-500/20 text-amber-600"
+                    <div className="size-10 rounded-lg flex items-center justify-center font-medium bg-secondary text-amber-600"
                     >
                       {orderIndex}
                     </div>
@@ -111,14 +111,14 @@ export function ChapterListView(props: ChapterListViewProps) {
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="size-5 text-muted-foreground" />
+                  <ChevronRight className="size-5 text-muted-foreground" strokeWidth={1.5} />
                 </div>
 
                 {/* Progress bar - 仅登录时显示 */}
                 {masteryLevel && (
-                  <div className="mt-3 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="mt-3 h-1.5 bg-muted rounded-lg overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all"
+                      className="h-full bg-primary rounded-lg transition-all"
                       style={{ width: `${masteryPercent}%` }}
                     />
                   </div>
@@ -128,9 +128,9 @@ export function ChapterListView(props: ChapterListViewProps) {
           })}
         </div>
       ) : (
-        <div className="text-center py-16 bg-card rounded-2xl border border-border">
-          <div className="size-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <BookOpen className="size-8 text-muted-foreground" />
+        <div className="text-center py-16 bg-card rounded-lg border border-border">
+          <div className="size-16 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="size-8 text-muted-foreground" strokeWidth={1.5} />
           </div>
           <p className="text-muted-foreground">暂无章节内容</p>
         </div>

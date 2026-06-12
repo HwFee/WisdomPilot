@@ -840,15 +840,11 @@ function MasteryPathContent() {
       <LazyMotion features={domAnimation}>
       <div className="min-h-screen bg-background flex items-center justify-center">
         <m.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="text-center"
         >
-          <m.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="size-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
-          />
+          <Loader2 className="size-16 text-primary mx-auto mb-4" strokeWidth={1.5} />
           <p className="text-muted-foreground">加载中...</p>
         </m.div>
       </div>
@@ -977,7 +973,7 @@ export default function MasteryPathPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="size-8 animate-spin text-primary" />
+        <Loader2 className="size-8 text-primary" strokeWidth={1.5} />
       </div>
     }>
       <MasteryPathContent />

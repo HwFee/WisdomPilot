@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Clock, BookOpen, CheckCircle, Play, Loader2, ArrowRight, Crosshair } from 'lucide-react'
 import { CodeRunner } from '@/components/mastery/CodeRunner'
 import { getSection, saveSectionProgress, type SectionDetail, type KnowledgePointDetail } from '@/lib/api/sections'
 import { getStoredToken } from '@/lib/api'
@@ -108,7 +108,7 @@ export default function SectionLearningPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <Loader2 strokeWidth={1.5} className="size-8 text-muted-foreground" />
       </div>
     )
   }
@@ -117,7 +117,7 @@ export default function SectionLearningPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error || '未找到小节'}</p>
+          <p className="text-red-600 mb-4">{error || '未找到小节'}</p>
           <button type="button" onClick={handleBack} className="text-primary hover:underline">
             返回
           </button>
@@ -129,7 +129,7 @@ export default function SectionLearningPage() {
   return (
     <div className={cn("min-h-screen bg-background", activeRunnerKpId !== null && "h-screen flex flex-col overflow-hidden")}>
       {/* Header */}
-      <header className={cn("sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b", activeRunnerKpId !== null && "flex-shrink-0")}>
+      <header className={cn("sticky top-0 z-50 bg-background border-b", activeRunnerKpId !== null && "flex-shrink-0")}>
         <div className={cn(
           "p-4",
           activeRunnerKpId !== null ? "w-full" : "max-w-4xl mx-auto"
@@ -139,7 +139,7 @@ export default function SectionLearningPage() {
               onClick={handleBack}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
-              <ArrowLeft className="size-5" />
+              <ArrowLeft strokeWidth={1.5} className="size-5" />
             </button>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-semibold text-foreground truncate">
@@ -147,12 +147,12 @@ export default function SectionLearningPage() {
               </h1>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <Clock className="size-3.5" />
+                  <Clock strokeWidth={1.5} className="size-3.5" />
                   {section.estimated_minutes} 分钟
                 </span>
                 {section.is_completed && (
-                  <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                    <CheckCircle className="size-3.5" />
+                  <span className="flex items-center gap-1 text-emerald-600">
+                    <CheckCircle strokeWidth={1.5} className="size-3.5" />
                     已完成
                   </span>
                 )}
@@ -165,22 +165,22 @@ export default function SectionLearningPage() {
       {/* Content */}
       <div className={cn(activeRunnerKpId !== null && "flex flex-1 overflow-hidden")}>
         <main className={cn(
-          "transition-all duration-300 ease-in-out",
+          "transition-[width] duration-300 ease-in-out",
           activeRunnerKpId !== null
             ? "w-2/5 overflow-y-auto p-4"
             : "max-w-4xl mx-auto px-4 py-6 pb-32"
         )}>
         {/* Learning Objectives */}
         {section.learning_objectives && section.learning_objectives.length > 0 && (
-          <div className="bg-primary/5 rounded-xl border border-primary/20 p-4 mb-6">
+          <div className="bg-muted rounded-lg border p-4 mb-6">
             <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <BookOpen className="size-4 text-primary" />
+              <BookOpen strokeWidth={1.5} className="size-4 text-primary" />
               学习目标
             </h2>
             <ul className="space-y-2">
               {section.learning_objectives.map((objective) => (
                 <li key={`obj-${section.id}-${objective}`} className="flex items-start gap-2 text-sm">
-                  <CheckCircle className="size-4 text-primary flex-shrink-0 mt-0.5" />
+                  <CheckCircle strokeWidth={1.5} className="size-4 text-primary flex-shrink-0 mt-0.5" />
                   <span>{objective}</span>
                 </li>
               ))}
@@ -200,11 +200,11 @@ export default function SectionLearningPage() {
           <div className="flex flex-col gap-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-foreground flex items-center gap-2">
-                <BookOpen className="size-5 text-primary" />
+                <BookOpen strokeWidth={1.5} className="size-5 text-primary" />
                 知识点 ({section.knowledge_points.length})
               </h2>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m11.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/></svg>
+                <Crosshair strokeWidth={1.5} className="size-3.5" />
                 拖拽 AI 助手到知识点上可针对性提问
               </span>
             </div>
@@ -242,7 +242,7 @@ export default function SectionLearningPage() {
               </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
-                <BookOpen className="size-12 mx-auto mb-4 opacity-50" />
+                <BookOpen strokeWidth={1.5} className="size-12 mx-auto mb-4 opacity-50" />
                 <p>内容正在编写中...</p>
               </div>
             )}
@@ -256,10 +256,6 @@ export default function SectionLearningPage() {
         {activeRunnerKpId !== null && section?.knowledge_points && (
           <m.div
             key="runner-panel"
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 100, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="w-3/5 p-4 flex flex-col"
           >
             {(() => {
@@ -307,20 +303,20 @@ export default function SectionLearningPage() {
 
       {/* Bottom Action Bar */}
       {activeRunnerKpId === null && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t">
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t">
           <div className="max-w-4xl mx-auto p-4">
             <button type="button"
               onClick={handleStartQuiz}
               disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-primary to-primary/80 text-white hover:shadow-lg transition-all disabled:opacity-70"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-70"
             >
               {saving ? (
-                <Loader2 className="size-5 animate-spin" />
+                <Loader2 strokeWidth={1.5} className="size-5" />
               ) : (
                 <>
-                  <Play className="size-5" />
+                  <Play strokeWidth={1.5} className="size-5" />
                   小节测试
-                  <ArrowRight className="size-4" />
+                  <ArrowRight strokeWidth={1.5} className="size-4" />
                 </>
               )}
             </button>

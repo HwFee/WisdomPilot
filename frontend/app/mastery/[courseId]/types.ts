@@ -14,9 +14,9 @@ export const getQuestionType = (
 };
 
 export const DIFFICULTY_COLORS: Record<number, string> = {
-  1: "bg-green-500/20 text-green-400 border-green-500/30",
-  2: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  3: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  4: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  5: "bg-red-500/20 text-red-400 border-red-500/30",
+  1: "bg-muted text-emerald-600 border-emerald-600",
+  2: "bg-muted text-emerald-600 border-emerald-600",
+  3: "bg-muted text-amber-600 border-amber-600",
+  4: "bg-muted text-amber-600 border-amber-600",
+  5: "bg-muted text-red-600 border-red-600",
 };

@@ -20,6 +20,15 @@ interface KnowledgePointCardProps {
   onOpenRunner: (kpId: number, initialCode: string, languageId: number) => void
 }
 
+const difficultyStyles = [
+  'bg-secondary text-emerald-600',
+  'bg-secondary text-primary',
+  'bg-secondary text-amber-600',
+  'bg-muted text-red-600',
+  'bg-muted text-red-600',
+]
+const difficultyLabels = ['入门', '基础', '中等', '进阶', '困难']
+
 export function KnowledgePointCard({
   kp,
   index,
@@ -28,15 +37,6 @@ export function KnowledgePointCard({
   onToggle,
   onOpenRunner,
 }: KnowledgePointCardProps) {
-  const difficultyColors = [
-    'bg-green-100 text-green-800',
-    'bg-blue-100 text-blue-800',
-    'bg-yellow-100 text-yellow-800',
-    'bg-orange-100 text-orange-800',
-    'bg-red-100 text-red-800',
-  ]
-  const difficultyLabels = ['入门', '基础', '中等', '进阶', '困难']
-
   // 构建相邻知识点列表
   const adjacentPoints: Array<{ id: string; title: string }> = []
   if (sectionKnowledgePoints) {
@@ -54,7 +54,7 @@ export function KnowledgePointCard({
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200 hover:shadow-md knowledge-point-zone"
+      className="bg-card rounded-lg border overflow-hidden transition-colors hover:border-primary knowledge-point-zone"
       data-knowledge-point
       data-knowledge-point-id={String(kp.id)}
       data-knowledge-point-title={kp.name}
@@ -68,10 +68,10 @@ export function KnowledgePointCard({
       <button
         type="button"
         onClick={() => onToggle(kp.id)}
-        className="w-full p-4 flex items-center gap-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        className="w-full p-4 flex items-center gap-4 text-left hover:bg-muted transition-colors"
       >
         {/* 序号 */}
-        <div className="flex-shrink-0 size-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
+        <div className="flex-shrink-0 size-8 rounded-lg bg-secondary text-primary font-bold flex items-center justify-center text-sm">
           {index + 1}
         </div>
 
@@ -85,8 +85,8 @@ export function KnowledgePointCard({
 
         {/* 难度标签 */}
         <span
-          className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-            difficultyColors[kp.difficulty - 1] || difficultyColors[0]
+          className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+            difficultyStyles[kp.difficulty - 1] || difficultyStyles[0]
           }`}
         >
           {difficultyLabels[kp.difficulty - 1] || '入门'}
@@ -94,18 +94,18 @@ export function KnowledgePointCard({
 
         {/* 展开/收起图标 */}
         <div className="flex-shrink-0 text-muted-foreground">
-          {isExpanded ? <ChevronUp className="size-5" /> : <ChevronDown className="size-5" />}
+          {isExpanded ? <ChevronUp strokeWidth={1.5} className="size-5" /> : <ChevronDown strokeWidth={1.5} className="size-5" />}
         </div>
       </button>
 
       {/* 展开内容 */}
       {isExpanded && (
-        <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="px-4 pb-4 border-t border-border">
           {/* 详细讲解 */}
           {kp.content && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="size-4 text-primary" />
+                <BookOpen strokeWidth={1.5} className="size-4 text-primary" />
                 <span className="font-medium text-foreground">讲解</span>
               </div>
               <div className="text-muted-foreground leading-relaxed pl-6 markdown-content">
@@ -118,7 +118,7 @@ export function KnowledgePointCard({
                       if (isInline) {
                         return (
                           <code
-                            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-sm font-mono"
+                            className="bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono"
                             {...props}
                           >
                             {children}
@@ -142,7 +142,7 @@ export function KnowledgePointCard({
                         return <>{children}</>
                       }
                       return (
-                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose">
+                        <pre className="bg-secondary text-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose">
                           {children}
                         </pre>
                       )
@@ -157,14 +157,14 @@ export function KnowledgePointCard({
                     blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/30 pl-4 italic my-2">{children}</blockquote>,
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-3">
-                        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">{children}</table>
+                        <table className="min-w-full border-collapse border border-border">{children}</table>
                       </div>
                     ),
-                    thead: ({ children }) => <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>,
+                    thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
                     tbody: ({ children }) => <tbody>{children}</tbody>,
-                    tr: ({ children }) => <tr className="border-b border-gray-200 dark:border-gray-700">{children}</tr>,
-                    th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">{children}</th>,
-                    td: ({ children }) => <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{children}</td>,
+                    tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+                    th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-foreground">{children}</th>,
+                    td: ({ children }) => <td className="px-3 py-2 text-sm text-muted-foreground">{children}</td>,
                   }}
                 >
                   {kp.content}
@@ -177,7 +177,7 @@ export function KnowledgePointCard({
           {kp.code_example && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
-                <Code className="size-4 text-primary" />
+                <Code strokeWidth={1.5} className="size-4 text-primary" />
                 <span className="font-medium text-foreground">代码示例</span>
               </div>
               <div className="pl-6">
@@ -186,7 +186,7 @@ export function KnowledgePointCard({
                   components={{
                     pre({ children }) {
                       return (
-                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto my-0">
+                        <pre className="bg-secondary text-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto my-0">
                           {children}
                         </pre>
                       )
@@ -214,9 +214,9 @@ export function KnowledgePointCard({
                     const langId = getLanguageId(kp.code_language)
                     onOpenRunner(kp.id, kp.code_example || '', langId)
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg hover:bg-primary/20 transition-colors border border-primary/20"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-primary text-sm rounded-lg hover:bg-muted transition-colors border border-border"
                 >
-                  <Terminal className="size-3.5" />
+                  <Terminal strokeWidth={1.5} className="size-3.5" />
                   在线运行
                 </button>
               </div>
@@ -227,13 +227,13 @@ export function KnowledgePointCard({
           {kp.tips && kp.tips.length > 0 && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="size-4 text-amber-500" />
+                <Lightbulb strokeWidth={1.5} className="size-4 text-amber-600" />
                 <span className="font-medium text-foreground">学习提示</span>
               </div>
               <ul className="space-y-1 pl-6">
                 {kp.tips.map((tip) => (
                   <li key={`tip-${kp.id}-${tip}`} className="text-sm text-muted-foreground flex items-start gap-2">
-                    <span className="text-amber-500 mt-1">•</span>
+                    <span className="text-amber-600 mt-1">•</span>
                     <span>{tip}</span>
                   </li>
                 ))}
@@ -245,13 +245,13 @@ export function KnowledgePointCard({
           {kp.common_mistakes && kp.common_mistakes.length > 0 && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="size-4 text-red-500" />
+                <AlertTriangle strokeWidth={1.5} className="size-4 text-red-600" />
                 <span className="font-medium text-foreground">常见错误</span>
               </div>
               <ul className="space-y-1 pl-6">
                 {kp.common_mistakes.map((mistake) => (
                   <li key={`mistake-${kp.id}-${mistake}`} className="text-sm text-muted-foreground flex items-start gap-2">
-                    <span className="text-red-500 mt-1">•</span>
+                    <span className="text-red-600 mt-1">•</span>
                     <span>{mistake}</span>
                   </li>
                 ))}
