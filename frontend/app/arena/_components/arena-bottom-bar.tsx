@@ -11,6 +11,7 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { LuoguTestCasesSummary } from "@/components/exercise/LuoguTestCaseTable";
 import { TIER_COLORS } from "@/lib/api";
@@ -35,6 +36,12 @@ export interface ArenaBottomBarProps {
   onShowOutput: () => void;
 }
 
+const FOOTER_STYLES: Record<FeedbackState, string> = {
+  idle: "bg-card border-t border-border",
+  correct: "bg-emerald-50 border-t-2 border-emerald-500",
+  wrong: "bg-red-50 border-t-2 border-red-500",
+};
+
 export function ArenaBottomBar({
   feedbackState,
   tierInfo,
@@ -47,15 +54,7 @@ export function ArenaBottomBar({
   onShowOutput,
 }: ArenaBottomBarProps) {
   return (
-    <div
-      className={`ide-action-bar ${
-        feedbackState === "correct"
-          ? "ide-action-bar-success"
-          : feedbackState === "wrong"
-            ? "ide-action-bar-error"
-            : "ide-action-bar-idle"
-      }`}
-    >
+    <footer className={cn(FOOTER_STYLES[feedbackState])}>
       <div className="px-6 py-4">
         {feedbackState === "idle" ? (
           <div className="flex items-center justify-between">
@@ -118,7 +117,7 @@ export function ArenaBottomBar({
         ) : feedbackState === "correct" ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="size-10 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-500 success-pulse">
+              <div className="size-10 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-500">
                 <CheckCircle className="size-6 text-emerald-600" strokeWidth={1.5} />
               </div>
               <div>
@@ -151,7 +150,7 @@ export function ArenaBottomBar({
         ) : (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="size-10 bg-red-50 rounded-lg flex items-center justify-center border border-red-500 error-shake">
+              <div className="size-10 bg-red-50 rounded-lg flex items-center justify-center border border-red-500">
                 <XCircle className="size-6 text-red-600" strokeWidth={1.5} />
               </div>
               <div>
@@ -194,6 +193,6 @@ export function ArenaBottomBar({
           </div>
         )}
       </div>
-    </div>
+    </footer>
   );
 }
