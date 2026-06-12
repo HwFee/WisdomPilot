@@ -33,12 +33,14 @@ interface StatCardProps {
 
 function StatCard({ icon, value, label, guide, trend, onClick }: StatCardProps) {
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        "flex flex-col justify-between h-full",
-        onClick && "cursor-pointer"
+        "flex flex-col justify-between h-full w-full text-left",
+        !onClick && "cursor-default"
       )}
       onClick={onClick}
+      disabled={!onClick}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="w-10 h-10 rounded-lg bg-secondary border border-border flex items-center justify-center">
@@ -73,7 +75,7 @@ function StatCard({ icon, value, label, guide, trend, onClick }: StatCardProps) 
           </p>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 

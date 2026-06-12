@@ -279,18 +279,16 @@ export function ExerciseListModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-overlay-enter"
-      onClick={onClose}
-      role="button"
-      tabIndex={0}
-      aria-label="关闭"
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-overlay-enter">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/50"
+        aria-label="关闭"
+        onClick={onClose}
+      />
       <div
         className="relative max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden rounded-lg flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        role="presentation"
       >
         <Panel className="h-full flex flex-col">
         <div className="flex justify-between items-center px-6 py-4 border-b border-border">

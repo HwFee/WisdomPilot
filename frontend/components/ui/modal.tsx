@@ -169,17 +169,17 @@ interface ModalFooterProps {
   align?: 'left' | 'center' | 'right'
 }
 
-function ModalFooter({ children, className, align = 'right' }: ModalFooterProps) {
-  const alignClasses = {
-    left: 'justify-start',
-    center: 'justify-center',
-    right: 'justify-end',
-  }
+const ALIGN_CLASSES = {
+  left: 'justify-start',
+  center: 'justify-center',
+  right: 'justify-end',
+}
 
+function ModalFooter({ children, className, align = 'right' }: ModalFooterProps) {
   return (
     <div className={cn(
       "flex items-center gap-3 px-6 py-4 border-t border-border/50 bg-muted/30",
-      alignClasses[align],
+      ALIGN_CLASSES[align],
       className
     )}>
       {children}

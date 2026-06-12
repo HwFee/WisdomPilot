@@ -13,6 +13,11 @@ import { CoreTransactionItem } from "./components/transaction-item";
 import { useCoresData } from "./hooks/use-cores-data";
 import { useTodayStats } from "./hooks/use-today-stats";
 
+export const metadata = {
+  title: "智核明细 - 智码领航",
+  description: "查看智核交易记录",
+};
+
 export default function CoresPage() {
   const {
     balance,

@@ -13,6 +13,11 @@ import { useXpData } from "./hooks/use-xp-data";
 import { useXpTodayStats } from "./hooks/use-xp-today-stats";
 import { getLevelColor } from "./lib/xp-utils";
 
+export const metadata = {
+  title: "经验明细 - 智码领航",
+  description: "查看精进之路经验记录",
+};
+
 export default function XpPage() {
   const {
     balance,

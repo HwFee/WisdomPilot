@@ -95,6 +95,7 @@ export function ResultView({ finalResult, onBackToChapters }: ResultViewProps) {
 
                 <div className="p-6 border-t border-border">
                   <button
+                    type="button"
                     onClick={onBackToChapters}
                     className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
                   >

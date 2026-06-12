@@ -128,16 +128,18 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
     return (
       <div
         key={solution.id}
-        role="button"
-        tabIndex={0}
-        onClick={() => handleItemClick(solution.id)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleItemClick(solution.id) } }}
-        className={`group px-8 py-4 hover:bg-muted transition-colors cursor-pointer ${
+        className={`relative group px-8 py-4 hover:bg-muted transition-colors ${
           isAnnouncementItem
             ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-950 dark:hover:bg-amber-900'
             : ''
         }`}
       >
+        <button
+          type="button"
+          onClick={() => handleItemClick(solution.id)}
+          className="absolute inset-0 z-0"
+          aria-label={t(`查看题解：${solution.title}`, `View solution: ${solution.title}`)}
+        />
         <div className="flex items-start gap-2">
           {solution.is_pinned && (
             <Pin className="size-3.5 text-primary flex-shrink-0 mt-0.5" strokeWidth={1.5} />
@@ -157,7 +159,7 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
           <div className="flex items-center gap-3">
             <button type="button"
               onClick={(e) => handleLike(solution.id, e)}
-              className="flex items-center gap-1 hover:text-red-500 transition-colors"
+              className="relative z-10 flex items-center gap-1 hover:text-red-500 transition-colors"
               title={t('点赞', 'Like')}
             >
               <Heart className="size-3.5" strokeWidth={1.5} />

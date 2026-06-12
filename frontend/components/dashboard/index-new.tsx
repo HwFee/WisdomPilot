@@ -306,7 +306,8 @@ export default function DashboardPage() {
                 <span className="text-xs text-muted-foreground hidden lg:block ml-2">{user?.username}</span>
                 <button type="button" onClick={handleLogout}
                   className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                  title={t('退出登录', 'Logout')}>
+                  title={t('退出登录', 'Logout')}
+                  aria-label={t('退出登录', 'Logout')}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
                 </button>
               </div>

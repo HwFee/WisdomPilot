@@ -74,6 +74,12 @@ import {
 import { ResultModal, ExerciseNavigation, ExerciseListModal, TierProgressBar } from "./components"
 import { useArenaSession } from "./use-arena-session"
 import { useCodeRunner } from "./use-code-runner"
+
+export const metadata = {
+  title: '竞技场 - 智码领航',
+  description: '挑战之路编程竞技场',
+}
+
 function ArenaContent() {
   const session = useArenaSession()
   const runner = useCodeRunner()

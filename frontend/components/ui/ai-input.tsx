@@ -26,18 +26,19 @@ interface OrbProps {
   }
 }
 
+const COLOR_ORB_FALLBACK = {
+  accent1: "#c084fc",
+  accent2: "#60a5fa",
+  accent3: "#a78bfa",
+  glow: "rgba(139, 92, 246, 0.5)",
+}
+
 const ColorOrb: React.FC<OrbProps> = ({
   dimension = "192px",
   className,
   tones,
 }) => {
-  const fallback = {
-    accent1: "#c084fc",
-    accent2: "#60a5fa",
-    accent3: "#a78bfa",
-    glow: "rgba(139, 92, 246, 0.5)",
-  }
-  const p = { ...fallback, ...tones }
+  const p = { ...COLOR_ORB_FALLBACK, ...tones }
 
   return (
     <div
@@ -441,16 +442,15 @@ export function MorphPanel({ className }: AIChatPanelProps) {
       >
         {/* Collapsed: just the ColorOrb orb — click to expand, drag to find questions */}
         {isCollapsed && (
-          <div
-            className="w-full h-full flex items-center justify-center rounded-full overflow-hidden"
+          <button
+            type="button"
+            className="w-full h-full flex items-center justify-center rounded-full overflow-hidden border-none bg-transparent p-0"
             style={{
               boxShadow: "0 0 0 2px rgba(37, 99, 235, 0.3), 0 4px 20px rgba(37, 99, 235, 0.25), 0 8px 30px rgba(0, 0, 0, 0.12)",
             }}
             onPointerDown={handlePointerDown}
             onClick={handleOrbClick}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOrbClick() } }}
-            role="button"
-            tabIndex={0}
             aria-label="AI 输入"
             data-drag-handle
           >
@@ -460,7 +460,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
               accent3: "#a78bfa",
               glow: "rgba(37, 99, 235, 0.4)",
             }} />
-          </div>
+          </button>
         )}
 
         {/* Expanded: full chat panel */}
@@ -568,6 +568,7 @@ export function MorphPanel({ className }: AIChatPanelProps) {
                     onChange={e => setChatState(prev => ({ ...prev, inputValue: e.target.value }))}
                     onKeyDown={handleKeyDown}
                     placeholder="问我任何事..."
+                    aria-label="输入消息"
                     rows={2}
                     className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     disabled={isStreaming}

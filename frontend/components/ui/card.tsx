@@ -118,22 +118,22 @@ const CardFooter = ({ className, ref, ...props }: React.HTMLAttributes<HTMLDivEl
 CardFooter.displayName = "CardFooter"
 
 // CardImage - 卡片图片（可选）
+const ASPECT_CLASSES = {
+  video: 'aspect-video',
+  square: 'aspect-square',
+  portrait: 'aspect-[3/4]',
+}
+
 const CardImage = ({ className, src, alt, aspectRatio = 'video', ref, ...props }: React.HTMLAttributes<HTMLDivElement> & {
   src: string
   alt: string
   aspectRatio?: 'video' | 'square' | 'portrait'
   ref?: React.Ref<HTMLDivElement>
 }) => {
-  const aspectClasses = {
-    video: 'aspect-video',
-    square: 'aspect-square',
-    portrait: 'aspect-[3/4]',
-  }
-
   return (
     <div
       ref={ref}
-      className={cn("overflow-hidden rounded-t-2xl relative", aspectClasses[aspectRatio], className)}
+      className={cn("overflow-hidden rounded-t-2xl relative", ASPECT_CLASSES[aspectRatio], className)}
       {...props}
     >
       <Image

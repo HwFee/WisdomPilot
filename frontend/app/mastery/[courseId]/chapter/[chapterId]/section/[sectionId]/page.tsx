@@ -14,6 +14,11 @@ import { useLearningSession } from './hooks/use-learning-session'
 import { KnowledgePointCard } from './components/knowledge-point-card'
 import { PageContainer, Grid, Panel, PanelHeader } from '@/components/layout'
 
+export const metadata = {
+  title: '小节学习 - 智码领航',
+  description: '学习知识点与小节测试',
+}
+
 export default function SectionLearningPage() {
   const params = useParams()
   const { push } = useRouter()

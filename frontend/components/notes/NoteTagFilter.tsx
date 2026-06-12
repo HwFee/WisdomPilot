@@ -160,6 +160,7 @@ export function NoteTagFilter({
           onChange={(e) => setNewTagName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
           placeholder={translate(lang, '新建标签...', 'New tag...')}
+          aria-label={translate(lang, '新建标签', 'New tag')}
           className="flex-1 px-4 py-2 text-sm border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
         />
         <button type="button"

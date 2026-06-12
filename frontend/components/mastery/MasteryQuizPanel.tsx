@@ -246,26 +246,26 @@ export function MasteryQuizPanel({
   )
 }
 
+const DIFFICULTY_COLORS = {
+  1: 'bg-green-100 text-green-700',
+  2: 'bg-blue-100 text-blue-700',
+  3: 'bg-yellow-100 text-yellow-700',
+  4: 'bg-orange-100 text-orange-700',
+  5: 'bg-red-100 text-red-700',
+}
+
+const DIFFICULTY_LABELS = {
+  1: '入门',
+  2: '基础',
+  3: '中等',
+  4: '较难',
+  5: '困难',
+}
+
 function DifficultyBadge({ difficulty }: { difficulty: number }) {
-  const colors = {
-    1: 'bg-green-100 text-green-700',
-    2: 'bg-blue-100 text-blue-700',
-    3: 'bg-yellow-100 text-yellow-700',
-    4: 'bg-orange-100 text-orange-700',
-    5: 'bg-red-100 text-red-700',
-  }
-
-  const labels = {
-    1: '入门',
-    2: '基础',
-    3: '中等',
-    4: '较难',
-    5: '困难',
-  }
-
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[difficulty as keyof typeof colors] || colors[1]}`}>
-      {labels[difficulty as keyof typeof labels] || '入门'}
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${DIFFICULTY_COLORS[difficulty as keyof typeof DIFFICULTY_COLORS] || DIFFICULTY_COLORS[1]}`}>
+      {DIFFICULTY_LABELS[difficulty as keyof typeof DIFFICULTY_LABELS] || '入门'}
     </span>
   )
 }

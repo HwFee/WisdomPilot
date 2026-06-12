@@ -81,6 +81,7 @@ export function SolutionEditor({
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder={t('输入题解标题...', 'Enter solution title...')}
+            aria-label={t('题解标题', 'Solution title')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
             maxLength={200}
           />
@@ -100,6 +101,7 @@ export function SolutionEditor({
               value={content}
               onChange={e => setContent(e.target.value)}
               placeholder={t('使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
+              aria-label={t('题解内容', 'Solution content')}
               className="flex-1 w-full p-6 resize-none bg-background font-mono text-base leading-relaxed focus:outline-none"
             />
           </div>
@@ -203,6 +205,7 @@ export function SolutionEditor({
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder={t('输入题解标题...', 'Enter solution title...')}
+            aria-label={t('题解标题', 'Solution title')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
             maxLength={200}
           />
@@ -222,6 +225,7 @@ export function SolutionEditor({
               value={content}
               onChange={e => setContent(e.target.value)}
               placeholder={t('使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
+              aria-label={t('题解内容', 'Solution content')}
               className="flex-1 w-full p-4 resize-none rounded-xl border border-border bg-muted/30 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

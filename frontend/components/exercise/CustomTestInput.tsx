@@ -89,6 +89,7 @@ export function CustomTestInput({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('输入测试数据...', 'Enter test input...')}
+          aria-label={t('测试输入', 'Test input')}
           className="w-full h-24 px-3 py-2 bg-[#FAFBFC] border border-[#E4E7ED] rounded-lg text-sm font-mono text-[#303133] placeholder-[#C0C4CC] focus:outline-none focus:border-[#3498DB] focus:ring-1 focus:ring-[#3498DB]/20 resize-none"
           spellCheck={false}
         />

@@ -60,6 +60,7 @@ export function SearchInput({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="flex-1 min-w-0 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-400"
       />
       {value ? (

@@ -219,6 +219,11 @@ export function useScrollAnimation(threshold: number = 0.1) {
 /**
  * 悬停动画状态
  */
+const HOVER_VARIANTS = {
+  rest: { scale: 1 },
+  hover: { scale: 1.02 },
+}
+
 export function useHoverAnimation() {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -227,15 +232,10 @@ export function useHoverAnimation() {
     onMouseLeave: () => setIsHovered(false),
   }
 
-  const hoverVariants = {
-    rest: { scale: 1 },
-    hover: { scale: 1.02 },
-  }
-
   return {
     isHovered,
     hoverProps,
-    hoverVariants,
+    hoverVariants: HOVER_VARIANTS,
     animate: isHovered ? 'hover' : 'rest',
   }
 }
@@ -243,6 +243,11 @@ export function useHoverAnimation() {
 /**
  * 点击动画状态
  */
+const TAP_VARIANTS = {
+  untapped: { scale: 1 },
+  tapped: { scale: 0.98 },
+}
+
 export function useTapAnimation() {
   const [isTapped, setIsTapped] = useState(false)
 
@@ -252,15 +257,10 @@ export function useTapAnimation() {
     onMouseLeave: () => setIsTapped(false),
   }
 
-  const tapVariants = {
-    untapped: { scale: 1 },
-    tapped: { scale: 0.98 },
-  }
-
   return {
     isTapped,
     tapProps,
-    tapVariants,
+    tapVariants: TAP_VARIANTS,
     animate: isTapped ? 'tapped' : 'untapped',
   }
 }

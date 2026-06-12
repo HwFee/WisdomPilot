@@ -106,13 +106,11 @@ export function MyCoursesGrid({ courses, recommendedCourses = EMPTY_COURSE_ARRAY
       <div className="flex-1 overflow-auto">
         <div className={`grid ${compact ? 'grid-cols-1 gap-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'}`}>
           {courses.map((course) => (
-            <div
+            <button
+              type="button"
               key={course.id}
-              role="button"
-              tabIndex={0}
               onClick={() => onSelectCourse(course.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectCourse(course.id) } }}
-              className="group p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-primary/30 cursor-pointer transition-all"
+              className="group p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-primary/30 text-left transition-all w-full"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div
@@ -146,7 +144,7 @@ export function MyCoursesGrid({ courses, recommendedCourses = EMPTY_COURSE_ARRAY
                   <ArrowRight className="size-3" />
                 </span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>

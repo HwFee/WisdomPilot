@@ -14,6 +14,11 @@ import { MasteryProgressBar } from '@/components/mastery/MasteryComponents'
 import { useChapterData } from './hooks/use-chapter-data'
 import { PageContainer, Grid, Panel, PanelHeader } from '@/components/layout'
 
+export const metadata = {
+  title: '章节小节 - 智码领航',
+  description: '查看章节小节与学习进度',
+}
+
 export default function ChapterSectionsPage() {
   const params = useParams()
   const courseId = parseInt(params.courseId as string)

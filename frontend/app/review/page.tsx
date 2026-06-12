@@ -15,6 +15,11 @@ import {
 import { useReviewData } from './hooks/use-review-data'
 import { getQuestionTitle, getSourceInfo, getReviewUrl } from './lib/review-utils'
 
+export const metadata = {
+  title: '错题本 - 智码领航',
+  description: '复习错题',
+}
+
 export default function ReviewPage() {
   return (
     <Suspense fallback={<ReviewLoading />}>

@@ -17,6 +17,7 @@ export function LocalFirstToggle({ checked, onChange }: LocalFirstToggleProps) {
       <button
         type="button"
         onClick={() => onChange(!checked)}
+        aria-label="本地优先模式开关"
         className={cn(
           'relative w-11 h-6 rounded-full transition-colors',
           checked ? 'bg-primary' : 'bg-muted-foreground/30'

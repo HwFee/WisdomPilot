@@ -59,6 +59,7 @@ export function NoteSearch({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder || t('搜索笔记...', 'Search notes...')}
+        aria-label={placeholder || t('搜索笔记', 'Search notes')}
         className="w-full pl-11 pr-11 py-3 text-base border-2 rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
       />
       {query && (

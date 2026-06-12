@@ -56,7 +56,10 @@ import { useMasterySession } from "./use-mastery-session";
 import { useBaseQuiz } from "./use-base-quiz";
 import { useEnhancedQuiz } from "./use-enhanced-quiz";
 
-
+export const metadata = {
+  title: '精进之路 - 智码领航',
+  description: '课程精进学习与测试',
+}
 
 function MasteryPathContent() {
   const params = useParams();

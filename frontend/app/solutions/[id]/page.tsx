@@ -6,6 +6,11 @@ import { SolutionMarkdown } from '@/components/solutions/SolutionMarkdown'
 import { SolutionEditor } from '@/components/solutions/SolutionEditor'
 import { useSolutionDetail } from '../hooks/use-solution-detail'
 
+export const metadata = {
+  title: '题解详情 - 智码领航',
+  description: '查看题解内容',
+}
+
 export default function SolutionDetailPage() {
   const params = useParams()
   const solutionId = parseInt(params.id as string)

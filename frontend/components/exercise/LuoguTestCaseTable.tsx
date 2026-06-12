@@ -20,6 +20,16 @@ interface LuoguTestCaseTableProps {
   isRunning?: boolean
 }
 
+function formatMemory(memory?: number) {
+  if (!memory) return '-'
+  return `${(memory / 1024).toFixed(2)} MB`
+}
+
+function formatTime(time?: number) {
+  if (!time) return '-'
+  return `${time} ms`
+}
+
 export function LuoguTestCaseTable({
   results,
   passedCount,
@@ -64,16 +74,6 @@ export function LuoguTestCaseTable({
         {config.label}
       </span>
     )
-  }
-
-  const formatMemory = (memory?: number) => {
-    if (!memory) return '-'
-    return `${(memory / 1024).toFixed(2)} MB`
-  }
-
-  const formatTime = (time?: number) => {
-    if (!time) return '-'
-    return `${time} ms`
   }
 
   const allPassed = passedCount === totalCount && totalCount > 0

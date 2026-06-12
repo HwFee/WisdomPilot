@@ -10,6 +10,18 @@ import {
 } from "@/lib/api/favorites";
 import type { FavoriteCreate } from "@/types/api";
 
+const SIZE_CLASSES = {
+  sm: "size-6",
+  md: "size-8",
+  lg: "size-10",
+};
+
+const ICON_SIZES = {
+  sm: "size-3.5",
+  md: "size-4",
+  lg: "size-5",
+};
+
 interface FavoriteButtonProps {
   /** 题目标识 (格式: mastery-{courseId}-{chapterId}-{exerciseId} 或 arena-{courseId}-{exerciseId} 或 enhanced-{courseId}-{sectionId}-{exerciseId}) */
   exerciseKey?: string;
@@ -161,18 +173,6 @@ export function FavoriteButton({
     onFavoriteChange,
   ]);
 
-  const sizeClasses = {
-    sm: "size-6",
-    md: "size-8",
-    lg: "size-10",
-  };
-
-  const iconSizes = {
-    sm: "size-3.5",
-    md: "size-4",
-    lg: "size-5",
-  };
-
   return (
     <button type="button"
       onClick={(e) => {
@@ -182,7 +182,7 @@ export function FavoriteButton({
       disabled={isPending}
       className={`
         flex items-center justify-center rounded-lg transition-all duration-200
-        ${showLabel ? "px-2.5 gap-1" : sizeClasses[size]}
+        ${showLabel ? "px-2.5 gap-1" : SIZE_CLASSES[size]}
         ${
           isFavorited
             ? "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30"
@@ -197,7 +197,7 @@ export function FavoriteButton({
       }
     >
       <Star
-        className={`${iconSizes[size]} ${isFavorited ? "fill-yellow-500 text-yellow-500" : ""}`}
+        className={`${ICON_SIZES[size]} ${isFavorited ? "fill-yellow-500 text-yellow-500" : ""}`}
       />
       {showLabel && (
         <span className="text-sm">

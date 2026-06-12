@@ -25,6 +25,12 @@ interface MasteryProgressBarProps {
   animated?: boolean
 }
 
+const HEIGHT_MAP = {
+  sm: 'h-1.5',
+  md: 'h-2.5',
+  lg: 'h-4',
+}
+
 export function MasteryProgressBar({
   score,
   showLabel = true,
@@ -34,18 +40,12 @@ export function MasteryProgressBar({
   const normalizedScore = Math.min(100, Math.max(0, score))
   const { textColor, label, progressColor } = getMasteryLevel(normalizedScore)
 
-  const heightMap = {
-    sm: 'h-1.5',
-    md: 'h-2.5',
-    lg: 'h-4',
-  }
-
   return (
     <LazyMotion features={domAnimation}>
       <div className="w-full">
-        <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full ${heightMap[size]} overflow-hidden`}>
+        <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full ${HEIGHT_MAP[size]} overflow-hidden`}>
           <m.div
-            className={`${heightMap[size]} rounded-full ${progressColor}`}
+            className={`${HEIGHT_MAP[size]} rounded-full ${progressColor}`}
             initial={animated ? { width: 0 } : { width: `${normalizedScore}%` }}
             animate={{ width: `${normalizedScore}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}

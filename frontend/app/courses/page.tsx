@@ -7,6 +7,11 @@ import { PageContainer, SectionHeader } from '@/components/layout'
 import { CourseCard } from '../components/course-card'
 import { useCoursesData } from './hooks/use-courses-data'
 
+export const metadata = {
+  title: '选择课程 - 智码领航',
+  description: '浏览全部课程',
+}
+
 export default function CoursesPage() {
   const { mounted, courses, isLoading } = useCoursesData()
 

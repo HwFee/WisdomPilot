@@ -5,6 +5,11 @@ import { ArrowLeft, Star, CheckSquare } from 'lucide-react'
 import { useFavorites } from './hooks/use-favorites'
 import { FavoriteCard } from './components/favorite-card'
 
+export const metadata = {
+  title: '收藏夹 - 智码领航',
+  description: '管理收藏的练习题',
+}
+
 export default function FavoritesPage() {
   const { back } = useRouter()
   const {

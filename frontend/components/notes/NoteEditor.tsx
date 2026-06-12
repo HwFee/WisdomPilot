@@ -207,6 +207,7 @@ export function NoteEditor({
                 onChange={(e) => setTagUi(prev => ({ ...prev, newTagName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                 placeholder={translate(lang, '输入新标签名', 'New tag name')}
+                aria-label={translate(lang, '新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
               />
               <button type="button"
@@ -242,6 +243,7 @@ export function NoteEditor({
             value={noteState.title}
             onChange={(e) => setNoteState(prev => ({ ...prev, title: e.target.value }))}
             placeholder={translate(lang, '笔记标题（可选）', 'Note title (optional)')}
+            aria-label={translate(lang, '笔记标题', 'Note title')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
           />
         </div>
@@ -260,6 +262,7 @@ export function NoteEditor({
               value={noteState.content}
               onChange={(e) => setNoteState(prev => ({ ...prev, content: e.target.value }))}
               placeholder={translate(lang, '使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
+              aria-label={translate(lang, '笔记内容', 'Note content')}
               className="flex-1 w-full p-6 resize-none bg-background font-mono text-base leading-relaxed focus:outline-none"
             />
           </div>
@@ -376,6 +379,7 @@ export function NoteEditor({
                 onChange={(e) => setTagUi(prev => ({ ...prev, newTagName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                 placeholder={translate(lang, '输入新标签名', 'New tag name')}
+                aria-label={translate(lang, '新标签名', 'New tag name')}
                 className="flex-1 px-4 py-2 text-sm border rounded-lg bg-background"
               />
               <button type="button"
@@ -414,6 +418,7 @@ export function NoteEditor({
             value={noteState.title}
             onChange={(e) => setNoteState(prev => ({ ...prev, title: e.target.value }))}
             placeholder={translate(lang, '笔记标题（可选）', 'Note title (optional)')}
+            aria-label={translate(lang, '笔记标题', 'Note title')}
             className="w-full px-4 py-3 text-xl font-medium border-2 rounded-xl bg-background focus:border-primary focus:outline-none transition-colors"
           />
         </div>
@@ -432,6 +437,7 @@ export function NoteEditor({
               value={noteState.content}
               onChange={(e) => setNoteState(prev => ({ ...prev, content: e.target.value }))}
               placeholder={translate(lang, '使用 Markdown 编写...', 'Write in Markdown...')}
+              aria-label={translate(lang, '笔记内容', 'Note content')}
               className="flex-1 w-full p-4 resize-none rounded-xl border border-border bg-muted/30 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

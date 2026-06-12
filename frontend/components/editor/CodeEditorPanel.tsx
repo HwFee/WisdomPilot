@@ -56,6 +56,33 @@ const LANGUAGES = [
   { id: 54, name: 'C++' },
 ]
 
+function getStatusColor(statusId: number) {
+  switch (statusId) {
+    case 3: return 'text-green-400' // Accepted
+    case 4: return 'text-red-400' // Wrong Answer
+    case 5: return 'text-red-500' // Compilation Error
+    case 8: return 'text-yellow-400' // Time Limit Exceeded
+    case 9: return 'text-yellow-500' // Memory Limit Exceeded
+    case 6:
+    case 7:
+    case 10:
+    case 11: return 'text-orange-400' // Runtime Error
+    case 12:
+    case 13: return 'text-red-500' // System Error
+    default: return 'text-gray-400'
+  }
+}
+
+function getOutputColor(outputData: CodeExecutionResponse) {
+  const statusId = outputData.status_id
+  if (statusId === 3) return 'text-green-400' // Accepted
+  if (statusId === 5 || statusId === 12 || statusId === 13) return 'text-red-400' // Error
+  if (statusId === 8 || statusId === 9) return 'text-yellow-400' // Warning
+  if (statusId >= 6 && statusId <= 11) return 'text-orange-400' // Runtime Error
+  if (outputData.message) return 'text-red-400'
+  return 'text-green-400'
+}
+
 const CodeEditorPanel = ({
   defaultCode = '',
   defaultLanguage = 71,
@@ -234,33 +261,6 @@ const CodeEditorPanel = ({
     }, [chapterId, subsectionIndex, code, language])
 
     const selectedLanguageLabel = LANGUAGE_CONFIG[language]?.label || 'Python'
-
-    const getStatusColor = (statusId: number) => {
-      switch (statusId) {
-        case 3: return 'text-green-400' // Accepted
-        case 4: return 'text-red-400' // Wrong Answer
-        case 5: return 'text-red-500' // Compilation Error
-        case 8: return 'text-yellow-400' // Time Limit Exceeded
-        case 9: return 'text-yellow-500' // Memory Limit Exceeded
-        case 6:
-        case 7:
-        case 10:
-        case 11: return 'text-orange-400' // Runtime Error
-        case 12:
-        case 13: return 'text-red-500' // System Error
-        default: return 'text-gray-400'
-      }
-    }
-
-    const getOutputColor = (outputData: CodeExecutionResponse) => {
-      const statusId = outputData.status_id
-      if (statusId === 3) return 'text-green-400' // Accepted
-      if (statusId === 5 || statusId === 12 || statusId === 13) return 'text-red-400' // Error
-      if (statusId === 8 || statusId === 9) return 'text-yellow-400' // Warning
-      if (statusId >= 6 && statusId <= 11) return 'text-orange-400' // Runtime Error
-      if (outputData.message) return 'text-red-400'
-      return 'text-green-400'
-    }
 
     return (
       <div

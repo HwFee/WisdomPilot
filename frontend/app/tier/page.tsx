@@ -11,6 +11,11 @@ import { TierTransactionItem } from "./components/transaction-item";
 import { useTierData } from "./hooks/use-tier-data";
 import { useTierTodayStats } from "./hooks/use-tier-today-stats";
 
+export const metadata = {
+  title: "段位明细 - 智码领航",
+  description: "查看段位变化记录",
+};
+
 export default function TierPage() {
   const {
     transactions,

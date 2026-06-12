@@ -22,6 +22,32 @@ interface LeaderboardTabsProps {
   onViewAll?: (tab: 'mastery' | 'arena') => void
 }
 
+function getRankStyle(rank: number) {
+  switch (rank) {
+    case 1:
+      return 'bg-gradient-to-r from-yellow-500/20 via-yellow-500/10 to-transparent border-yellow-500/30'
+    case 2:
+      return 'bg-gradient-to-r from-gray-400/20 via-gray-400/10 to-transparent border-gray-400/30'
+    case 3:
+      return 'bg-gradient-to-r from-amber-600/20 via-amber-600/10 to-transparent border-amber-600/30'
+    default:
+      return 'bg-card border-border'
+  }
+}
+
+function getRankIcon(rank: number) {
+  switch (rank) {
+    case 1:
+      return <Crown className="size-5 text-yellow-500" />
+    case 2:
+      return <Medal className="size-5 text-gray-400" />
+    case 3:
+      return <Medal className="size-5 text-amber-600" />
+    default:
+      return <span className="text-sm font-bold text-muted-foreground">{rank}</span>
+  }
+}
+
 export function LeaderboardTabs({
   courseId,
   initialTab = 'mastery',
@@ -74,32 +100,6 @@ export function LeaderboardTabs({
 
     fetchData()
   }, [courseId, activeTab, limit])
-
-  const getRankStyle = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'bg-gradient-to-r from-yellow-500/20 via-yellow-500/10 to-transparent border-yellow-500/30'
-      case 2:
-        return 'bg-gradient-to-r from-gray-400/20 via-gray-400/10 to-transparent border-gray-400/30'
-      case 3:
-        return 'bg-gradient-to-r from-amber-600/20 via-amber-600/10 to-transparent border-amber-600/30'
-      default:
-        return 'bg-card border-border'
-    }
-  }
-
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="size-5 text-yellow-500" />
-      case 2:
-        return <Medal className="size-5 text-gray-400" />
-      case 3:
-        return <Medal className="size-5 text-amber-600" />
-      default:
-        return <span className="text-sm font-bold text-muted-foreground">{rank}</span>
-    }
-  }
 
   return (
     <div className="bg-card rounded-2xl border border-border overflow-hidden">

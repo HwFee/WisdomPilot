@@ -7,6 +7,11 @@ import { validateEmail } from '@/lib/utils/validation'
 import { Sparkles, Mail, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { CharacterGroup } from '@/components/ui/animated-characters'
 
+export const metadata = {
+  title: '找回密码 - 智码领航',
+  description: '重置账户密码',
+}
+
 export default function ForgotPasswordPage() {
   const [isPending, startTransition] = useTransition()
   const [emailState, setEmailState] = useState({

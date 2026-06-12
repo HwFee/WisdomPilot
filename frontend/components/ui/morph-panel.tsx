@@ -143,7 +143,7 @@ export function MorphPanel() {
   const { activeQuestion, isPanelOpen, panelSpawnPos, openPanel, closePanel } = useAIContext()
 
   // Orb state
-  const orbRef = useRef<HTMLDivElement>(null)
+  const orbRef = useRef<HTMLButtonElement>(null)
   const [orbState, setOrbState] = useState({ isHovered: false, isDraggingOrb: false, orbVisible: true })
   const targetedQuestionRef = useRef<QuestionCtx | null>(null)
   const panelOpenedRef = useRef(false)
@@ -227,7 +227,7 @@ export function MorphPanel() {
   }, [orbState.isDraggingOrb, openPanel])
 
   // ── Orb: drag start ────────────────────────────────────
-  const handleOrbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handleOrbPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return
     e.preventDefault()
     e.stopPropagation()
@@ -275,10 +275,10 @@ export function MorphPanel() {
       }
     }, 80)
 
-    ;(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId)
+    ;(e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId)
   }, [])
 
-  const handleOrbPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handleOrbPointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (!isDraggingOrb) return
     const orbEl = orbRef.current
     if (!orbEl) return
@@ -291,7 +291,7 @@ export function MorphPanel() {
     })
   }, [orbState.isDraggingOrb])
 
-  const handleOrbPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handleOrbPointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (!isDraggingOrb) return
     e.preventDefault()
     stopHit()
@@ -513,7 +513,8 @@ export function MorphPanel() {
     <>
       {/* ── Orb (always visible when not panel open) ── */}
       {orbVisible && createPortal(
-        <div
+        <button
+          type="button"
           ref={orbRef}
           onPointerDown={handleOrbPointerDown}
           onPointerMove={handleOrbPointerMove}
@@ -523,10 +524,8 @@ export function MorphPanel() {
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOrbClick(e as any) } }}
           onMouseEnter={() => setOrbState(prev => ({ ...prev, isHovered: true }))}
           onMouseLeave={() => !orbState.isDraggingOrb && setOrbState(prev => ({ ...prev, isHovered: false }))}
-          role="button"
-          tabIndex={0}
           aria-label="AI 助手"
-          className={"fixed right-6 bottom-6 select-none z-[9999] animate-orb-bob flex items-center justify-center pointer-events-auto transition-colors transition-shadow duration-200 " + (isDraggingOrb ? "transition-none " : "")}
+          className={"fixed right-6 bottom-6 select-none z-[9999] animate-orb-bob flex items-center justify-center pointer-events-auto border-none bg-transparent p-0 transition-colors transition-shadow duration-200 " + (isDraggingOrb ? "transition-none " : "")}
           style={{
             width: ORB_SIZE,
             height: ORB_SIZE,
@@ -554,7 +553,7 @@ export function MorphPanel() {
               <path d="M2 2 Q7 9 12 2" fill="none" stroke="rgba(14, 165, 233, 0.7)" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
           </div>
-        </div>,
+        </button>,
         document.body
       )}
 
@@ -594,6 +593,7 @@ export function MorphPanel() {
             </div>
             <button type="button"
               onClick={handleClose}
+              aria-label="关闭"
               className="size-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
               style={{ color: "hsl(var(--muted-foreground))" }}
             >
@@ -769,6 +769,7 @@ export function MorphPanel() {
                 onChange={e => setChatState(prev => ({ ...prev, inputValue: e.target.value }))}
                 onKeyDown={handleKeyDown}
                 placeholder="针对这道题继续提问..."
+                aria-label="提问输入"
                 rows={3}
                 className="flex-1 resize-none rounded-xl border px-3 py-2 text-xs focus:outline-none focus:ring-2"
                 style={{
@@ -782,6 +783,7 @@ export function MorphPanel() {
                 type="button"
                 disabled={!chatState.inputValue.trim() || streamState.isStreaming}
                 onClick={sendMessage}
+                aria-label="发送"
                 className="size-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
               >

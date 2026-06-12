@@ -149,7 +149,6 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
           <div className="relative w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl bg-card/95 backdrop-blur-sm animate-modal-enter"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
-            role="dialog"
             aria-modal="true"
             tabIndex={-1}
           >
@@ -425,14 +424,14 @@ export function StreamHintModal({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent z-10" />
 
       {/* 可拖动的标题栏 */}
-      <div
-        className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent rounded-t-2xl cursor-grab active:cursor-grabbing"
-        onMouseDown={handleMouseDown}
-        role="button"
-        tabIndex={0}
-        aria-label="拖动"
-      >
-        <div className="flex items-center gap-3">
+      <div className="relative flex items-center justify-between px-5 py-4 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent rounded-t-2xl cursor-grab active:cursor-grabbing">
+        <button
+          type="button"
+          className="absolute inset-0 z-0"
+          aria-label="拖动"
+          onMouseDown={handleMouseDown}
+        />
+        <div className="relative z-10 flex items-center gap-3">
           <div className={`p-2 rounded-lg ${config.bgColor}`}>
             <Icon className={`size-5 ${config.color}`} />
           </div>
@@ -451,7 +450,7 @@ export function StreamHintModal({
             <Loader2 className={`size-4 ${config.color} animate-spin ml-2`} />
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="relative z-10 flex items-center gap-2">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <GripVertical className="size-4" />
             <span>拖动</span>

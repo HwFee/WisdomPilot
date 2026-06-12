@@ -8,6 +8,11 @@ import { useLeaderboard } from './hooks/use-leaderboard'
 import { CurrentUserCard } from './components/current-user-card'
 import { LeaderboardEntryItem } from './components/leaderboard-entry-item'
 
+export const metadata = {
+  title: '排行榜 - 智码领航',
+  description: '查看精进榜与竞技榜',
+}
+
 function LeaderboardContent() {
   const {
     activeTab, offset, loading,

@@ -10,6 +10,11 @@ import { useNotesData } from './hooks/use-notes-data'
 import { useNoteEditor } from './hooks/use-note-editor'
 import { exportAllNotes } from './lib/notes-export'
 
+export const metadata = {
+  title: '我的笔记 - 智码领航',
+  description: '管理与搜索学习笔记',
+}
+
 export default function NotesPage() {
   const {
     notes,

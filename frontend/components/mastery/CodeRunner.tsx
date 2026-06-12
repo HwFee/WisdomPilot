@@ -25,6 +25,14 @@ const LANGUAGES = [
   { id: 54, name: 'C++' },
 ]
 
+function getStatusColor(statusId: number) {
+  if (statusId === 3) return 'text-green-400'
+  if (statusId === 5 || statusId === -1) return 'text-red-400'
+  if (statusId === 8 || statusId === 9) return 'text-yellow-400'
+  if (statusId >= 6 && statusId <= 11) return 'text-orange-400'
+  return 'text-gray-400'
+}
+
 export function CodeRunner({
   initialCode,
   initialLanguageId,
@@ -100,14 +108,6 @@ export function CodeRunner({
   }, [code, languageId, stdin])
 
   const selectedLabel = LANGUAGE_CONFIG[languageId]?.label || 'Python'
-
-  const getStatusColor = (statusId: number) => {
-    if (statusId === 3) return 'text-green-400'
-    if (statusId === 5 || statusId === -1) return 'text-red-400'
-    if (statusId === 8 || statusId === 9) return 'text-yellow-400'
-    if (statusId >= 6 && statusId <= 11) return 'text-orange-400'
-    return 'text-gray-400'
-  }
 
   return (
     <div className="flex flex-col h-full bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
@@ -198,6 +198,7 @@ export function CodeRunner({
           value={stdin}
           onChange={(e) => setUiState(prev => ({ ...prev, stdin: e.target.value }))}
           placeholder="在此输入程序运行时需要的数据，每行对应一次输入..."
+          aria-label="标准输入"
           className="w-full h-16 px-3 py-1.5 bg-transparent text-gray-300 text-xs font-mono resize-none focus:outline-none placeholder-gray-600"
           spellCheck={false}
         />

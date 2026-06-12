@@ -98,14 +98,16 @@ export function SolutionArticleList({
           return (
             <article
               key={solution.id}
-              role="link"
-              tabIndex={0}
-              onClick={() => onArticleClick(solution.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onArticleClick(solution.id) } }}
-              className={`p-5 hover:bg-muted/50 transition-colors cursor-pointer ${
+              className={`relative p-5 hover:bg-muted/50 transition-colors ${
                 isAnnouncementItem ? 'bg-amber-50/50' : ''
               }`}
             >
+              <button
+                type="button"
+                onClick={() => onArticleClick(solution.id)}
+                className="absolute inset-0 z-0"
+                aria-label={t(`打开题解：${solution.title}`, `Open solution: ${solution.title}`)}
+              />
               {/* ID badge */}
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-2 py-0.5 text-xs font-mono bg-muted text-muted-foreground rounded">

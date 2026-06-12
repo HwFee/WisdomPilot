@@ -5,6 +5,18 @@ import { FileText, Loader2 } from 'lucide-react'
 import { getStoredToken } from '@/lib/api'
 import { getNotes, type NoteResponse } from '@/lib/api/notes'
 
+const SIZE_CLASSES = {
+  sm: 'size-6',
+  md: 'size-8',
+  lg: 'size-10',
+}
+
+const ICON_SIZES = {
+  sm: 'size-3.5',
+  md: 'size-4',
+  lg: 'size-5',
+}
+
 interface NoteButtonProps {
   /** 课程ID */
   courseId: number
@@ -96,18 +108,6 @@ export function NoteButton({
     onClick?.(existingNoteRef.current)
   }, [onClick])
 
-  const sizeClasses = {
-    sm: 'size-6',
-    md: 'size-8',
-    lg: 'size-10',
-  }
-
-  const iconSizes = {
-    sm: 'size-3.5',
-    md: 'size-4',
-    lg: 'size-5',
-  }
-
   return (
     <button type="button"
       onClick={(e) => {
@@ -117,7 +117,7 @@ export function NoteButton({
       disabled={isPending}
       className={`
         flex items-center justify-center rounded-lg transition-all duration-200
-        ${showLabel ? 'px-2.5 gap-1' : sizeClasses[size]}
+        ${showLabel ? 'px-2.5 gap-1' : SIZE_CLASSES[size]}
         ${
           hasNote
             ? 'bg-primary/20 text-primary hover:bg-primary/30'
@@ -128,9 +128,9 @@ export function NoteButton({
       title={hasNote ? t('查看/编辑笔记', 'View/Edit Note') : t('记笔记', 'Add Note')}
     >
       {isPending ? (
-        <Loader2 className={`${iconSizes[size]} animate-spin`} />
+        <Loader2 className={`${ICON_SIZES[size]} animate-spin`} />
       ) : (
-        <FileText className={iconSizes[size]} />
+        <FileText className={ICON_SIZES[size]} />
       )}
       {showLabel && (
         <span className="text-sm">

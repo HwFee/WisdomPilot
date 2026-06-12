@@ -150,6 +150,7 @@ export default function AdminAISettingsPage() {
                 type="range" min="0" max="1" step="0.1"
                 value={ctx.deepseekTemp}
                 onChange={e => ctx.setDeepseekTemp(parseFloat(e.target.value))}
+                aria-label="温度参数"
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -162,6 +163,7 @@ export default function AdminAISettingsPage() {
                 value={ctx.deepseekUrl}
                 onChange={e => ctx.setDeepseekUrl(e.target.value)}
                 placeholder="https://api.deepseek.com"
+                aria-label="Base URL（可选）"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </Field>
@@ -202,6 +204,7 @@ export default function AdminAISettingsPage() {
                 value={ctx.minimaxUrl}
                 onChange={e => ctx.setMinimaxUrl(e.target.value)}
                 placeholder="https://api.minimaxi.com/anthropic"
+                aria-label="Base URL"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </Field>
@@ -222,6 +225,7 @@ export default function AdminAISettingsPage() {
                 type="range" min="0" max="1" step="0.1"
                 value={ctx.minimaxTemp}
                 onChange={e => ctx.setMinimaxTemp(parseFloat(e.target.value))}
+                aria-label="温度参数"
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">

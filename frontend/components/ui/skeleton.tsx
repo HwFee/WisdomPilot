@@ -39,24 +39,24 @@ interface TextSkeletonProps {
   lineHeight?: 'sm' | 'md' | 'lg'
 }
 
+const LINE_HEIGHTS = {
+  sm: 'h-3',
+  md: 'h-4',
+  lg: 'h-5',
+}
+
 function TextSkeleton({
   lines = 3,
   className,
   lineHeight = 'md'
 }: TextSkeletonProps) {
-  const heights = {
-    sm: 'h-3',
-    md: 'h-4',
-    lg: 'h-5',
-  }
-
   return (
     <div className={cn("flex flex-col gap-y-2", className)}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={`skeleton-${i}`}
           className={cn(
-            heights[lineHeight],
+            LINE_HEIGHTS[lineHeight],
             i === lines - 1 && "w-4/5"
           )}
         />

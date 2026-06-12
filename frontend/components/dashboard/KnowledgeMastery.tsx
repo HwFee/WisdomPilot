@@ -16,20 +16,19 @@ interface KnowledgeMasteryProps {
   compact?: boolean
 }
 
+function getProgressGradient(mastery: number) {
+  if (mastery >= 80) return 'from-emerald-500 to-emerald-600'
+  if (mastery >= 60) return 'from-blue-500 to-blue-600'
+  if (mastery >= 40) return 'from-yellow-500 to-yellow-600'
+  if (mastery >= 20) return 'from-orange-500 to-orange-600'
+  return 'from-red-500 to-red-600'
+}
+
 export function KnowledgeMastery({ courseName, knowledgePoints, onLearnClick, lang = 'zh', compact = false }: KnowledgeMasteryProps) {
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   // 按掌握度排序（从高到低）
   const sortedPoints = knowledgePoints.toSorted((a, b) => b.mastery - a.mastery)
-
-  // 统一的主色渐变进度条
-  const getProgressGradient = (mastery: number) => {
-    if (mastery >= 80) return 'from-emerald-500 to-emerald-600'
-    if (mastery >= 60) return 'from-blue-500 to-blue-600'
-    if (mastery >= 40) return 'from-yellow-500 to-yellow-600'
-    if (mastery >= 20) return 'from-orange-500 to-orange-600'
-    return 'from-red-500 to-red-600'
-  }
 
   return (
     <div className={`bg-card rounded-2xl border border-border p-6 h-full flex flex-col ${compact ? 'overflow-hidden' : ''}`}>

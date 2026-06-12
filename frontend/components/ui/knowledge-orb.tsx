@@ -251,7 +251,7 @@ export function KnowledgeOrb({
   } = useAIContext()
 
   // Orb state
-  const orbRef = useRef<HTMLDivElement>(null)
+  const orbRef = useRef<HTMLButtonElement>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [isDraggingOrb, setIsDraggingOrb] = useState(false)
   const targetedKnowledgeRef = useRef<KnowledgePointContext | null>(null)
@@ -368,7 +368,7 @@ export function KnowledgeOrb({
   }, [openKnowledgePanel])
 
   // ── Orb: drag start ────────────────────────────────────
-  const handleOrbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handleOrbPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return
     e.preventDefault()
     e.stopPropagation()
@@ -432,10 +432,10 @@ export function KnowledgeOrb({
       }
     }, 80)
 
-    ;(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId)
+    ;(e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId)
   }, [])
 
-  const handleOrbPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handleOrbPointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (!isDraggingOrb) return
     const orbEl = orbRef.current
     if (!orbEl) return
@@ -449,7 +449,7 @@ export function KnowledgeOrb({
     })
   }, [isDraggingOrb])
 
-  const handleOrbPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handleOrbPointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (!isDraggingOrb) return
     e.preventDefault()
     stopHit()
@@ -750,7 +750,8 @@ ${kp.title}${optsStr}
 
       {/* ── Orb (always visible when not panel open) ── */}
       {orbVisible && createPortal(
-        <div
+        <button
+          type="button"
           ref={orbRef}
           onPointerDown={handleOrbPointerDown}
           onPointerMove={handleOrbPointerMove}
@@ -760,10 +761,8 @@ ${kp.title}${optsStr}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOrbClick(e as any) } }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => !isDraggingOrb && setIsHovered(false)}
-          role="button"
-          tabIndex={0}
           aria-label="AI 助手"
-          className={"fixed right-6 bottom-6 select-none z-[9999] animate-orb-bob flex items-center justify-center touch-none pointer-events-auto transition-colors transition-shadow duration-200 " + (isDraggingOrb ? "transition-none " : "")}
+          className={"fixed right-6 bottom-6 select-none z-[9999] animate-orb-bob flex items-center justify-center touch-none pointer-events-auto border-none bg-transparent p-0 transition-colors transition-shadow duration-200 " + (isDraggingOrb ? "transition-none " : "")}
           style={{
             width: ORB_SIZE,
             height: ORB_SIZE,
@@ -791,7 +790,7 @@ ${kp.title}${optsStr}
               AI
             </span>
           </div>
-        </div>,
+        </button>,
         document.body
       )}
 
@@ -834,6 +833,7 @@ ${kp.title}${optsStr}
             </div>
             <button type="button"
               onClick={handleClose}
+              aria-label="关闭"
               className="size-7 flex items-center justify-center rounded-lg transition-colors hover:bg-black/5"
               style={{ color: "hsl(var(--muted-foreground))" }}
             >
@@ -1013,6 +1013,7 @@ ${kp.title}${optsStr}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={contextMode === "question" ? "针对题目继续提问..." : "针对知识点继续提问..."}
+                aria-label="提问输入"
                 rows={3}
                 className="flex-1 resize-none rounded-xl border px-3 py-2 text-xs focus:outline-none focus:ring-2"
                 style={{
@@ -1026,6 +1027,7 @@ ${kp.title}${optsStr}
                 type="button"
                 disabled={!inputValue.trim() || isStreaming}
                 onClick={sendMessage}
+                aria-label="发送"
                 className="size-8 flex items-center justify-center rounded-xl transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
               >
