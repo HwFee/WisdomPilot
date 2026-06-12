@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { Component as LoginPage } from '../components/ui/animated-characters-login-page'
+import LoginPage from '../app/login/page-client'
 
 // Mock next/navigation
 const mockPush = jest.fn()
