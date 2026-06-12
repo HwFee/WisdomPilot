@@ -2093,27 +2093,27 @@ Expected: 5 波 + 收尾 ≈ 15+ commits，按 Wave 顺序排列
 ## Self-Review Checklist
 
 - [x] **Spec coverage:**
-  - [ ] D1 EmptyState 组件 → Task 1.1
-  - [ ] D2 按钮迁移 6 模式 → Task 1.5-1.9
-  - [ ] D3 头部分两类 → Task 1.4, 2.1, 3.2-3.5
-  - [ ] D4 audit subagent per wave → Task 1.11, 2.12, 3.9, 4.8, 5.8
-  - [ ] Wave 1 流水页 → Task 1.2
-  - [ ] Wave 2 notes → Task 2.1-2.10
-  - [ ] Wave 3 auth/solutions → Task 3.1-3.7
-  - [ ] Wave 4 arena+mastery+css → Task 4.1-4.6
-  - [ ] Wave 5 exercise+mastery+admin → Task 5.1-5.6
-  - [ ] AIHintPanel 拆分 < 200 → Task 5.1
-  - [ ] MasteryComponents 拆分 < 100 → Task 5.2
-  - [ ] globals.css 减重 30% → Task 4.6
-  - [ ] Element-style 颜色清零 → Task 5.3 + 5.5
-  - [ ] react-doctor 100 不退步 → Task 6.3
+  - [x] D1 EmptyState 组件 → Task 1.1
+  - [x] D2 按钮迁移 6 模式 → Task 1.5-1.9
+  - [x] D3 头部分两类 → Task 1.4, 2.1, 3.2-3.5
+  - [x] D4 audit subagent per wave → Task 1.11, 2.12, 3.9, 4.8, 5.8
+  - [x] Wave 1 流水页 → Task 1.2
+  - [x] Wave 2 notes → Task 2.1-2.10
+  - [x] Wave 3 auth/solutions → Task 3.1-3.7
+  - [x] Wave 4 arena+mastery+css → Task 4.1-4.6
+  - [x] Wave 5 exercise+mastery+admin → Task 5.1-5.6
+  - [x] AIHintPanel 拆分 < 200 → Task 5.1
+  - [x] MasteryComponents 拆分 < 100 → Task 5.2
+  - [x] globals.css 减重 30% → Task 4.6
+  - [x] Element-style 颜色清零 → Task 5.3 + 5.5
+  - [x] react-doctor 100 不退步 → Task 6.3
 
 - [x] **Placeholder scan:** 无 TBD/TODO/"implement later"；每个 Task 有具体代码或命令
 
 - [x] **Type consistency:**
-  - [ ] `EmptyState` 组件签名（`icon: LucideIcon, title, description, primaryAction?, secondaryAction?`）全 plan 一致
-  - [ ] `Button` variant 名（`default | ghost | secondary | outline | success | warning`）与 button.tsx 一致
-  - [ ] `Panel` `PanelHeader` `PageContainer` 来自 `components/layout`
+  - [x] `EmptyState` 组件签名（`icon: LucideIcon, title, description, primaryAction?, secondaryAction?`）全 plan 一致
+  - [x] `Button` variant 名（`default | ghost | secondary | outline | success | warning`）与 button.tsx 一致
+  - [x] `Panel` `PanelHeader` `PageContainer` 来自 `components/layout`
 
 - [x] **File paths:** 全部用项目根目录相对路径（如 `frontend/app/...`）
 
