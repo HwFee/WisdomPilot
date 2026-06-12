@@ -33,6 +33,7 @@ export function CurrentLearningPanel({
               name={course.course_name}
               chapter={course.current_chapter || course.current_section || t('准备开始', 'Ready to start')}
               percent={Math.round(course.progress)}
+              href={`/mastery/${course.course_id}`}
             />
           ))
         )}

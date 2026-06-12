@@ -58,6 +58,7 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
   }, [lang])
 
   useEffect(() => {
+    // react-doctor-disable-next-line no-derived-state, react-doctor/no-derived-state — error is fetched from async API, not derivable from props/state
     fetchSolutions()
   }, [fetchSolutions])
 
