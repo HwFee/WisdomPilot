@@ -427,7 +427,7 @@ function ArenaContent() {
       <header className="fixed top-0 left-0 right-0 z-50 h-[50px] ide-header">
         <div className="h-full px-4 flex items-center justify-between">
           <button type="button" onClick={() => handleExit(code, language)} className="ide-header-back">
-            <X className="size-4" />
+            <X className="size-4" strokeWidth={1.5} />
             <span className="text-sm">退出挑战</span>
           </button>
 
@@ -442,7 +442,7 @@ function ArenaContent() {
             {/* 题目列表按钮 */}
             <button type="button"
               onClick={() => setShowExerciseList(true)}
-              className="px-3 py-1.5 bg-white border border-[#E4E7ED] rounded-lg text-xs text-[#606266] hover:border-[#3498DB] hover:text-[#3498DB] transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <span>题目列表</span>
             </button>
@@ -454,7 +454,7 @@ function ArenaContent() {
       <main className="flex-1 flex pt-[50px] h-[calc(100vh-50px)] overflow-hidden">
         {/* Left: Problem Panel */}
         <div
-          className="w-[40%] ide-problem-panel bg-white flex-shrink-0"
+          className="w-[40%] ide-problem-panel bg-card flex-shrink-0"
           style={{
             maxHeight: "calc(100vh - 50px)",
             overflowY: "auto",
@@ -471,9 +471,9 @@ function ArenaContent() {
                     {DIFFICULTY_NAMES[currentExercise.difficulty] ||
                       `难度 ${currentExercise.difficulty}`}
                   </span>
-                  <span className="text-base font-medium text-[#303133]">
+                  <span className="text-base font-medium text-foreground">
                     {currentExercise.z_id && (
-                      <span className="text-[#909399] mr-2 font-normal">{currentExercise.z_id}</span>
+                      <span className="text-muted-foreground mr-2 font-normal">{currentExercise.z_id}</span>
                     )}
                     {currentExercise.content.title || `题目 ${currentIndex + 1}`}
                   </span>
@@ -496,46 +496,46 @@ function ArenaContent() {
               </div>
 
               {contentLoadingMap[currentExercise.id] ? (
-                <div className="mb-6 p-4 bg-[#F5F7FA] rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-[#909399]">
-                    <Loader2 className="size-4 animate-spin" />
+                <div className="mb-6 p-4 bg-secondary rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
                     正在加载题面...
                   </div>
                 </div>
               ) : contentErrorMap[currentExercise.id] ? (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-center gap-2 text-sm text-red-600 mb-2">
-                    <AlertTriangle className="size-4" />
+                    <AlertTriangle className="size-4" strokeWidth={1.5} />
                     题面加载失败
                   </div>
-                  <p className="text-xs text-red-500 mb-3">{contentErrorMap[currentExercise.id]}</p>
+                  <p className="text-xs text-red-600 mb-3">{contentErrorMap[currentExercise.id]}</p>
                   <button
                     type="button"
                     onClick={() => loadExerciseContent(currentExercise.id, currentIndex, language)}
-                    className="px-3 py-1.5 bg-white border border-red-300 text-red-600 text-xs rounded-md hover:bg-red-50 transition-colors"
+                    className="px-3 py-1.5 bg-card border border-red-500 text-red-600 text-xs rounded-md hover:bg-red-50 transition-colors"
                   >
                     重试
                   </button>
                 </div>
               ) : currentExercise.content.description ? (
-                <div className="text-[#606266] leading-relaxed mb-6">
+                <div className="text-muted-foreground leading-relaxed mb-6">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeKatex]}
                     components={{
-                      h1: ({ children }) => <h1 className="text-xl font-semibold text-[#303133] mb-2 mt-4">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-lg font-semibold text-[#303133] mt-4 mb-2 border-b border-[#E4E7ED] pb-2">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-base font-semibold text-[#303133] mt-3 mb-2">{children}</h3>,
-                      p: ({ children }) => <p className="text-[#606266] mb-2 leading-relaxed">{children}</p>,
+                      h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mt-4 mb-2 border-b border-border pb-2">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-base font-semibold text-foreground mt-3 mb-2">{children}</h3>,
+                      p: ({ children }) => <p className="text-muted-foreground mb-2 leading-relaxed">{children}</p>,
                       ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
                       ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
-                      li: ({ children }) => <li className="text-[#606266]">{children}</li>,
-                      blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/20 pl-4 italic my-2 text-[#606266]">{children}</blockquote>,
-                      strong: ({ children }) => <strong className="font-semibold text-[#303133]">{children}</strong>,
+                      li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+                      blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/20 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
+                      strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
                       code: ({ className, children, ...props }) => {
                         const isInline = !className;
                         return isInline ? (
-                          <code className="bg-[#F5F7FA] px-1.5 py-0.5 rounded text-sm text-[#E74C3C] font-mono border border-[#E4E7ED]" {...props}>
+                          <code className="bg-secondary px-1.5 py-0.5 rounded text-sm text-red-600 font-mono border border-border" {...props}>
                             {children}
                           </code>
                         ) : (
@@ -544,20 +544,19 @@ function ArenaContent() {
                       },
                       pre: ({ children }) => (
                         <pre
-                          className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3"
-                          style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' }}
+                          className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 bg-slate-900 text-slate-100 border border-slate-700"
                         >
                           {children}
                         </pre>
                       ),
                       table: ({ children }) => (
                         <div className="overflow-x-auto my-3">
-                          <table className="min-w-full border-collapse border border-[#E4E7ED]">{children}</table>
+                          <table className="min-w-full border-collapse border border-border">{children}</table>
                         </div>
                       ),
-                      thead: ({ children }) => <thead className="bg-[#F5F7FA]">{children}</thead>,
-                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-[#303133] border border-[#E4E7ED]">{children}</th>,
-                      td: ({ children }) => <td className="px-3 py-2 text-sm text-[#606266] border border-[#E4E7ED]">{children}</td>,
+                      thead: ({ children }) => <thead className="bg-secondary">{children}</thead>,
+                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-foreground border border-border">{children}</th>,
+                      td: ({ children }) => <td className="px-3 py-2 text-sm text-muted-foreground border border-border">{children}</td>,
                     }}
                   >
                     {currentExercise.content.description}
@@ -603,7 +602,7 @@ function ArenaContent() {
                   {currentExercise.knowledge_points.map((kp) => (
                     <span
                       key={`arena-${currentExercise.id}-${kp}`}
-                      className="knowledge-tag px-3 py-1.5 text-[#3498DB] text-xs rounded-lg font-medium"
+                      className="knowledge-tag px-3 py-1.5 text-primary text-xs rounded-lg font-medium"
                     >
                       {kp}
                     </span>
@@ -649,7 +648,7 @@ function ArenaContent() {
 
         {/* Right: Code Editor + Test Panel */}
         <div
-          className="w-[60%] flex flex-col ide-editor-panel bg-white flex-shrink-0"
+          className="w-[60%] flex flex-col ide-editor-panel bg-card flex-shrink-0"
           style={{ maxHeight: "calc(100vh - 50px)", overflow: "hidden" }}
         >
           {/* Tab Header */}
@@ -659,7 +658,7 @@ function ArenaContent() {
                 onClick={() => setRightPanelTab("code")}
                 className={`panel-tab ${rightPanelTab !== "output" ? "active" : ""}`}
               >
-                <Code2 className="size-4 inline mr-1.5" />
+                <Code2 className="size-4 inline mr-1.5" strokeWidth={1.5} />
                 代码
               </button>
               {testResults.length > 0 && (
@@ -667,7 +666,7 @@ function ArenaContent() {
                   onClick={() => setRightPanelTab("output")}
                   className={`panel-tab ${rightPanelTab === "output" ? "active" : ""}`}
                 >
-                  <CheckCircle className="size-4 inline mr-1.5" />
+                  <CheckCircle className="size-4 inline mr-1.5" strokeWidth={1.5} />
                   结果
                 </button>
               )}
@@ -676,7 +675,7 @@ function ArenaContent() {
               <select
                 value={language}
                 onChange={(e) => handleLanguageChange(e.target.value)}
-                className="px-2 py-1 text-xs font-medium text-[#606266] bg-white border border-[#E4E7ED] rounded-md focus:outline-none focus:border-[#3498DB] cursor-pointer"
+                className="px-2 py-1 text-xs font-medium text-muted-foreground bg-card border border-border rounded-md focus:outline-none focus:border-primary cursor-pointer"
               >
                 {LANGUAGE_OPTIONS.map((lang) => (
                   <option key={lang.key} value={lang.key}>
@@ -690,7 +689,7 @@ function ArenaContent() {
           {/* Content: code + test stacked, or output tab */}
           <div className="flex-1 overflow-hidden">
             {rightPanelTab === "output" && testResults.length > 0 ? (
-              <div className="h-full overflow-y-auto p-4 bg-[#FAFBFC]">
+              <div className="h-full overflow-y-auto p-4 bg-background">
                 <LuoguTestCaseTable
                   results={testResults}
                   passedCount={testResults.filter(r => r.passed).length}
@@ -709,7 +708,7 @@ function ArenaContent() {
                   />
                 </div>
                 {/* Test panel - below code */}
-                <div className="h-[220px] flex-shrink-0 border-t border-[#E4E7ED] bg-[#FAFBFC] overflow-y-auto">
+                <div className="h-[220px] flex-shrink-0 border-t border-border bg-background overflow-y-auto">
                   <CustomTestInput
                     onRun={(input) => handleCustomRun(input, false)}
                     isRunning={isCustomRunning}
@@ -748,21 +747,21 @@ function ArenaContent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="size-10 bg-[#3498DB]/10 rounded-lg flex items-center justify-center border border-[#3498DB]/20">
-                    <Zap className="size-5 text-[#F39C11]" />
+                  <div className="size-10 bg-primary-50 rounded-lg flex items-center justify-center border border-primary/20">
+                    <Zap className="size-5 text-amber-600" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <p className="text-sm text-[#303133] font-medium">
+                    <p className="text-sm text-foreground font-medium">
                       挑战之路
                     </p>
-                    <p className="text-xs text-[#909399]">
+                    <p className="text-xs text-muted-foreground">
                       {tierInfo ? (
                         <>
                           当前段位{" "}
                           <span className="font-medium" style={{ color: TIER_COLORS[tierInfo.tier as keyof typeof TIER_COLORS] || '#CD7F32' }}>
                             {tierInfo.full_name}
                           </span>
-                          {" "}<span className="text-yellow-500 flex items-center inline-flex"><Star className="size-3.5 fill-yellow-500" />{tierInfo.stars}</span>
+                          {" "}<span className="text-amber-600 flex items-center inline-flex"><Star className="size-3.5 fill-amber-500" strokeWidth={1.5} />{tierInfo.stars}</span>
                         </>
                       ) : (
                         "加载中..."
@@ -773,7 +772,7 @@ function ArenaContent() {
 
                 {testResults.length > 0 && (
                   <>
-                    <div className="h-6 w-px bg-[#E4E7ED]" />
+                    <div className="h-6 w-px bg-border" />
                     <LuoguTestCasesSummary
                       passedCount={testResults.filter(r => r.passed).length}
                       totalCount={testResults.length}
@@ -790,12 +789,12 @@ function ArenaContent() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" />
+                      <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
                       提交中...
                     </>
                   ) : (
                     <>
-                      <Send className="size-4" />
+                      <Send className="size-4" strokeWidth={1.5} />
                       提交
                     </>
                   )}
@@ -805,19 +804,19 @@ function ArenaContent() {
           ) : feedbackState === "correct" ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-10 bg-[#52C41A]/10 rounded-lg flex items-center justify-center border border-[#52C41A]/20 success-pulse">
-                  <CheckCircle className="size-6 text-[#52C41A]" />
+                <div className="size-10 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-500 success-pulse">
+                  <CheckCircle className="size-6 text-emerald-600" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <p className="font-semibold text-[#52C41A]">
+                  <p className="font-semibold text-emerald-600">
                     太棒了！全部通过
                   </p>
-                  <p className="text-sm text-[#52C41A]/70">继续挑战下一题</p>
+                  <p className="text-sm text-emerald-600/70">继续挑战下一题</p>
                 </div>
               </div>
               <div className="action-buttons-group">
                 <button type="button" onClick={handleRetry} className="btn-action btn-reset">
-                  <RotateCcw className="size-4" />
+                  <RotateCcw className="size-4" strokeWidth={1.5} />
                   重新作答
                 </button>
                 {canGoNext && (
@@ -826,7 +825,7 @@ function ArenaContent() {
                     className="btn-action btn-success"
                   >
                     下一题
-                    <ArrowRight className="size-5" />
+                    <ArrowRight className="size-5" strokeWidth={1.5} />
                   </button>
                 )}
               </div>
@@ -834,13 +833,13 @@ function ArenaContent() {
           ) : (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-10 bg-[#E74C3C]/10 rounded-lg flex items-center justify-center border border-[#E74C3C]/20 error-shake">
-                  <XCircle className="size-6 text-[#E74C3C]" />
+                <div className="size-10 bg-red-50 rounded-lg flex items-center justify-center border border-red-500 error-shake">
+                  <XCircle className="size-6 text-red-600" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <p className="font-semibold text-[#E74C3C]">答案错误</p>
+                  <p className="font-semibold text-red-600">答案错误</p>
                   {testResults.length > 0 && (
-                    <p className="text-sm text-[#E74C3C]/70">
+                    <p className="text-sm text-red-600/70">
                       通过 {testResults.filter(r => r.passed).length}/{testResults.length} 个测试点 ·
                       修改后重新提交
                     </p>
@@ -849,7 +848,7 @@ function ArenaContent() {
               </div>
               <div className="action-buttons-group">
                 <button type="button" onClick={handleRetry} className="btn-action btn-reset">
-                  <RotateCcw className="size-4" />
+                  <RotateCcw className="size-4" strokeWidth={1.5} />
                   重新作答
                 </button>
                 {testResults.length > 0 && (
@@ -866,7 +865,7 @@ function ArenaContent() {
                     className="btn-action btn-success"
                   >
                     下一题
-                    <ArrowRight className="size-5" />
+                    <ArrowRight className="size-5" strokeWidth={1.5} />
                   </button>
                 )}
               </div>
@@ -908,8 +907,8 @@ function ArenaContent() {
 export default function ArenaPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary" strokeWidth={1.5} />
       </div>
     }>
       <ArenaContent />

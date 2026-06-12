@@ -11,6 +11,13 @@ import {
 import type { ExerciseProgress } from "./types";
 
 // ========================================
+// Constants
+// ========================================
+
+const NAV_MAX_VISIBLE = 5;
+const NAV_CENTER_INDEX = 2;
+
+// ========================================
 // Result Modal Component
 // ========================================
 
@@ -42,59 +49,59 @@ export function ResultModal({
   canGoNext,
 }: ResultModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div
-        className={`bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all ${
-          isCorrect ? "border-2 border-[#52C41A]" : "border-2 border-[#E74C3C]"
+        className={`bg-card rounded-lg p-8 max-w-md w-full mx-4 border-2 ${
+          isCorrect ? "border-emerald-500" : "border-red-500"
         }`}
       >
         <div className="text-center">
           {isCorrect ? (
             <>
-              <CheckCircle className="size-20 text-[#52C41A] mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-[#52C41A] mb-2">
+              <CheckCircle className="size-20 text-emerald-600 mx-auto mb-4" strokeWidth={1.5} />
+              <h2 className="text-2xl font-semibold text-emerald-600 mb-2">
                 太棒了！全部通过
               </h2>
-              <p className="text-[#606266] mb-2">
+              <p className="text-muted-foreground mb-2">
                 {firstTimeCorrect && starsEarned > 0 ? (
-                  <span className="text-yellow-500 font-medium flex items-center justify-center gap-1">
-                    <Star className="size-5 fill-yellow-500" />
+                  <span className="text-amber-600 font-medium flex items-center justify-center gap-1">
+                    <Star className="size-5 fill-amber-500" strokeWidth={1.5} />
                     +{starsEarned}
                   </span>
                 ) : (
-                  <span className="text-[#909399]">已获得星星</span>
+                  <span className="text-muted-foreground">已获得星星</span>
                 )}
               </p>
               {promoted && (
-                <p className="text-[#E6A23C] font-bold mb-4 flex items-center justify-center gap-1">
-                  <PartyPopper className="size-5" />
+                <p className="text-amber-600 font-bold mb-4 flex items-center justify-center gap-1">
+                  <PartyPopper className="size-5" strokeWidth={1.5} />
                   恭喜晋级！
                 </p>
               )}
               {!promoted && (
-                <p className="text-[#909399] mb-4">
+                <p className="text-muted-foreground mb-4">
                   继续挑战下一题
                 </p>
               )}
             </>
           ) : (
             <>
-              <XCircle className="size-20 text-[#E74C3C] mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-[#E74C3C] mb-2">
+              <XCircle className="size-20 text-red-600 mx-auto mb-4" strokeWidth={1.5} />
+              <h2 className="text-2xl font-semibold text-red-600 mb-2">
                 答案错误
               </h2>
-              <p className="text-[#606266] mb-6">
+              <p className="text-muted-foreground mb-6">
                 通过 {passedCount}/{totalCount} 个测试点
                 {firstTimeWrong && starsEarned < 0 && (
-                  <span className="text-red-500 ml-2 flex items-center">
-                    <Star className="size-4 text-red-400" />
+                  <span className="text-red-600 ml-2 flex items-center">
+                    <Star className="size-4 text-red-600" strokeWidth={1.5} />
                     {starsEarned}
                   </span>
                 )}
               </p>
               {demoted && (
-                <p className="text-[#E74C3C] font-bold mb-4 flex items-center justify-center gap-1">
-                  <Frown className="size-5" />
+                <p className="text-red-600 font-bold mb-4 flex items-center justify-center gap-1">
+                  <Frown className="size-5" strokeWidth={1.5} />
                   段位下降...
                 </p>
               )}
@@ -104,17 +111,17 @@ export function ResultModal({
           <div className="flex gap-3 justify-center">
             <button type="button"
               onClick={onStay}
-              className="px-6 py-3 bg-white border border-[#E4E7ED] rounded-xl font-medium text-[#303133] hover:bg-[#F5F7FA] transition-colors"
+              className="px-6 py-3 bg-card border border-border rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
             >
               留在本题
             </button>
             {canGoNext && (
               <button type="button"
                 onClick={onNext}
-                className="px-6 py-3 bg-gradient-to-r from-[#3498DB] to-[#2980B9] text-white rounded-xl font-medium hover:shadow-lg transition-all flex items-center gap-2"
+                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center gap-2"
               >
                 下一题
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4" strokeWidth={1.5} />
               </button>
             )}
           </div>
@@ -139,20 +146,17 @@ export function ExerciseNavigation({
   currentIndex,
   onSwitch,
 }: ExerciseNavigationProps) {
-  const MAX_VISIBLE = 5;
-  const CENTER_INDEX = 2;
-
-  let start = currentIndex - CENTER_INDEX;
-  let end = start + MAX_VISIBLE;
+  let start = currentIndex - NAV_CENTER_INDEX;
+  let end = start + NAV_MAX_VISIBLE;
 
   if (start < 0) {
     start = 0;
-    end = Math.min(exercises.length, MAX_VISIBLE);
+    end = Math.min(exercises.length, NAV_MAX_VISIBLE);
   }
 
   if (end > exercises.length) {
     end = exercises.length;
-    start = Math.max(0, end - MAX_VISIBLE);
+    start = Math.max(0, end - NAV_MAX_VISIBLE);
   }
 
   const visibleExercises = exercises.slice(start, end);
@@ -169,16 +173,16 @@ export function ExerciseNavigation({
             onClick={() => ex.is_unlocked && onSwitch(globalIndex)}
             disabled={!ex.is_unlocked}
             title={`第 ${globalIndex + 1} 题: ${ex.title || "未命名"}`}
-            className={`rounded-lg text-xs font-bold transition-all duration-300 ease-out ${
+            className={`rounded-lg text-xs font-bold transition-colors duration-300 ease-out ${
               isCurrent
-                ? "size-10 bg-[#3498DB] text-white scale-110 shadow-lg z-10"
+                ? "size-10 bg-primary text-primary-foreground z-10"
                 : ex.is_correct
-                  ? "size-8 bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]"
+                  ? "size-8 bg-emerald-50 text-emerald-700 border-2 border-emerald-500"
                   : ex.is_completed
-                    ? "size-8 bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]"
+                    ? "size-8 bg-red-50 text-red-700 border-2 border-red-500"
                     : ex.is_unlocked
-                      ? "size-8 bg-white text-[#606266] border border-[#E4E7ED] hover:border-[#3498DB]"
-                      : "size-8 bg-[#F5F7FA] text-[#C0C4CC] border border-[#E4E7ED] cursor-not-allowed"
+                      ? "size-8 bg-card text-muted-foreground border border-border hover:border-primary"
+                      : "size-8 bg-muted text-muted-foreground border border-border cursor-not-allowed"
             }`}
           >
             {globalIndex + 1}
@@ -219,7 +223,7 @@ export function ExerciseListModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={onClose}
       role="button"
       tabIndex={0}
@@ -227,19 +231,19 @@ export function ExerciseListModal({
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden flex flex-col"
+        className="bg-card rounded-lg p-6 max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-[#303133]">题目列表</h3>
+          <h3 className="text-lg font-semibold text-foreground">题目列表</h3>
           <button type="button"
             onClick={onClose}
-            className="text-[#909399] hover:text-[#606266]"
+            className="text-muted-foreground hover:text-foreground"
           >
-            <X className="size-5" />
+            <X className="size-5" strokeWidth={1.5} />
           </button>
         </div>
 
@@ -249,38 +253,43 @@ export function ExerciseListModal({
               key={ex.exercise_id}
               onClick={() => handleSwitch(index)}
               disabled={!ex.is_unlocked}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${
+              className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
                 index === currentIndex
-                  ? "bg-[#3498DB]/10 border border-[#3498DB]"
+                  ? "bg-primary/10 border border-primary"
                   : ex.is_unlocked
-                    ? "hover:bg-[#F5F7FA] border border-transparent"
+                    ? "hover:bg-secondary border border-transparent"
                     : "opacity-50 cursor-not-allowed border border-transparent"
               }`}
             >
               <span
                 className={`size-8 rounded-lg flex items-center justify-center text-xs font-bold ${
                   index === currentIndex
-                    ? "bg-[#3498DB] text-white"
+                    ? "bg-primary text-primary-foreground"
                     : ex.is_correct
-                      ? "bg-[#D4EDDA] text-[#155724] border-2 border-[#28A745]"
+                      ? "bg-emerald-50 text-emerald-700 border-2 border-emerald-500"
                       : ex.is_completed
-                        ? "bg-[#F8D7DA] text-[#721C24] border-2 border-[#DC3545]"
+                        ? "bg-red-50 text-red-700 border-2 border-red-500"
                         : ex.is_unlocked
-                          ? "bg-[#E4E7ED] text-[#606266]"
-                          : "bg-[#F5F7FA] text-[#C0C4CC]"
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-muted text-muted-foreground"
                 }`}
               >
                 {index + 1}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-[#303133] truncate">
+                <div className="font-medium text-foreground truncate">
                   {ex.title || `第 ${index + 1} 题`}
                 </div>
-                <div className="text-xs text-[#909399]">
-                  难度: {"★".repeat(ex.difficulty || 1)}
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span>难度:</span>
+                  <span className="flex items-center gap-0.5">
+                    {Array.from({ length: ex.difficulty || 1 }).map((_, i) => (
+                      <Star key={i} className="size-3 fill-amber-500 text-amber-500" strokeWidth={1.5} />
+                    ))}
+                  </span>
                   {ex.is_completed && (
                     <span
-                      className={`ml-2 ${ex.is_correct ? "text-[#52C41A]" : "text-[#E74C3C]"}`}
+                      className={`ml-2 ${ex.is_correct ? "text-emerald-600" : "text-red-600"}`}
                     >
                       {ex.is_correct ? "已答对" : "已答错"}
                     </span>
@@ -288,8 +297,8 @@ export function ExerciseListModal({
                 </div>
               </div>
               {!ex.is_unlocked && (
-                <span className="text-xs text-[#C0C4CC] flex items-center gap-1">
-                  <Lock className="size-3" />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Lock className="size-3" strokeWidth={1.5} />
                   未解锁
                 </span>
               )}
@@ -297,7 +306,7 @@ export function ExerciseListModal({
           ))}
         </div>
 
-        <div className="mt-4 pt-4 border-t border-[#E4E7ED] text-center text-sm text-[#909399]">
+        <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
           已完成 {exercises.filter((e) => e.is_completed).length} 题
         </div>
       </div>
