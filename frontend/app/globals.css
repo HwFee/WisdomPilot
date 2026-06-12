@@ -659,16 +659,15 @@ body {
    IDE 美化样式 - 洛谷风格浅色主题
    ============================================ */
 
-/* IDE 主容器 - 浅色渐变背景 */
+/* IDE 主容器 - Swiss Precision */
 .ide-container {
-  background: linear-gradient(135deg, #FFFFFF 0%, #F7F8FA 100%);
+  background: hsl(var(--background));
 }
 
-/* IDE 问题面板 - 白色背景，独立滚动 */
+/* IDE 问题面板 - 卡片背景，独立滚动 */
 .ide-problem-panel {
-  background: #FFFFFF;
-  border-right: 1px solid #E4E7ED;
-  box-shadow: 1px 0 4px rgba(0, 0, 0, 0.05);
+  background: hsl(var(--card));
+  border-right: 1px solid hsl(var(--border));
   overflow-y: auto;
   overflow-x: hidden;
   /* 关键：创建独立的滚动上下文 */
@@ -677,87 +676,71 @@ body {
 }
 
 .ide-problem-header {
-  background: linear-gradient(135deg, #F5F7FA 0%, #FFFFFF 100%);
+  background: hsl(var(--secondary));
 }
 
-/* 难度标签 - 洛谷风格 8级体系 */
+/* 难度标签 - Swiss Precision 8级体系（纯色） */
 .difficulty-badge {
   position: relative;
   overflow: hidden;
 }
 
-.difficulty-badge::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%);
-  pointer-events: none;
-}
-
 /* 1级 - 入门 (红色) */
 .difficulty-1 {
-  background: linear-gradient(135deg, #FE4C61 0%, #E74C3C 100%);
-  box-shadow: 0 2px 6px rgba(254, 76, 97, 0.25);
+  background: hsl(0 84% 60%);
 }
 
 /* 2级 - 普及- (橙色) */
 .difficulty-2 {
-  background: linear-gradient(135deg, #F39C11 0%, #E67E22 100%);
-  box-shadow: 0 2px 6px rgba(243, 156, 17, 0.25);
+  background: hsl(24 95% 53%);
 }
 
 /* 3级 - 普及/提高- (黄色) */
 .difficulty-3 {
-  background: linear-gradient(135deg, #FFC116 0%, #F1C40F 100%);
-  box-shadow: 0 2px 6px rgba(255, 193, 22, 0.25);
+  background: hsl(48 96% 53%);
 }
 
 /* 4级 - 普及+/提高 (绿色) */
 .difficulty-4 {
-  background: linear-gradient(135deg, #52C41A 0%, #27AE60 100%);
-  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.25);
+  background: hsl(160 84% 39%);
 }
 
 /* 5级 - 提高+/省选- (蓝色) */
 .difficulty-5 {
-  background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
-  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.25);
+  background: hsl(217 91% 60%);
 }
 
 /* 6级 - 省选/NOI- (紫色) */
 .difficulty-6 {
-  background: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%);
-  box-shadow: 0 2px 6px rgba(155, 89, 182, 0.25);
+  background: hsl(258 90% 66%);
 }
 
 /* 7级 - NOI (深蓝) */
 .difficulty-7 {
-  background: linear-gradient(135deg, #34495E 0%, #2C3E50 100%);
-  box-shadow: 0 2px 6px rgba(52, 73, 94, 0.25);
+  background: hsl(215 19% 35%);
 }
 
 /* 8级 - NOI+/CTSC (黑色) */
 .difficulty-8 {
-  background: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
-  box-shadow: 0 2px 6px rgba(44, 62, 80, 0.35);
+  background: hsl(222 47% 11%);
 }
 
-/* 知识点胶囊标签 - 浅色风格 */
+/* 知识点胶囊标签 - Swiss Precision */
 .knowledge-tag {
-  background: rgba(52, 152, 219, 0.1);
-  border: 1px solid rgba(52, 152, 219, 0.3);
-  color: #3498DB;
-  transition: all 0.2s ease;
+  background: hsl(var(--primary-50));
+  border: 1px solid hsl(var(--primary-200));
+  color: hsl(var(--primary));
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .knowledge-tag:hover {
-  background: rgba(52, 152, 219, 0.15);
-  border-color: rgba(52, 152, 219, 0.5);
+  background: hsl(var(--primary-100));
+  border-color: hsl(var(--primary));
 }
 
 /* IDE 代码编辑器区域，独立滚动 */
 .ide-editor-panel {
-  background: #FFFFFF;
+  background: hsl(var(--card));
   position: relative;
   overflow: hidden;
   /* 关键：创建独立的滚动上下文 */
@@ -771,72 +754,64 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.3), transparent);
+  background: hsl(var(--border));
 }
 
-/* IDE 底部操作栏 */
+/* IDE 底部操作栏 - Swiss Precision */
 .ide-action-bar {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: hsl(var(--card));
 }
 
 .ide-action-bar-success {
-  background: rgba(82, 196, 26, 0.08);
-  border-top: 2px solid #52C41A;
+  background: hsl(142 76% 95%);
+  border-top: 2px solid hsl(160 84% 39%);
 }
 
 .ide-action-bar-error {
-  background: rgba(231, 76, 60, 0.08);
-  border-top: 2px solid #E74C3C;
+  background: hsl(0 84% 95%);
+  border-top: 2px solid hsl(0 84% 60%);
 }
 
 .ide-action-bar-idle {
-  background: #FFFFFF;
-  border-top: 1px solid #E4E7ED;
+  background: hsl(var(--card));
+  border-top: 1px solid hsl(var(--border));
 }
 
-/* 提交按钮 - 洛谷蓝色风格 */
+/* 提交按钮 - Swiss Precision */
 .btn-submit {
-  background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
-  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
-  transition: all 0.2s ease;
-  color: white;
+  background: hsl(var(--primary));
+  transition: background-color 0.15s ease;
+  color: hsl(var(--primary-foreground));
 }
 
 .btn-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
+  background: hsl(var(--primary-600));
 }
 
 .btn-submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* 成功按钮 - 绿色 */
+/* 成功按钮 - Swiss Precision */
 .btn-success {
-  background: linear-gradient(135deg, #52C41A 0%, #27AE60 100%);
-  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.3);
-  transition: all 0.2s ease;
-  color: white;
+  background: hsl(var(--success));
+  transition: background-color 0.15s ease;
+  color: hsl(var(--success-foreground));
 }
 
 .btn-success:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(82, 196, 26, 0.4);
+  background: hsl(160 84% 33%);
 }
 
-/* 错误重试按钮 */
+/* 错误重试按钮 - Swiss Precision */
 .btn-error {
-  background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
-  box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
-  transition: all 0.2s ease;
+  background: hsl(var(--error));
+  transition: background-color 0.15s ease;
 }
 
 .btn-error:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4);
+  background: hsl(0 72% 45%);
 }
 
 /* 进度点动画 */
@@ -1261,64 +1236,62 @@ body {
 }
 
 .btn-submit {
-  background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
-  color: white;
-  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.25);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
 }
 
 .btn-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(52, 152, 219, 0.35);
+  background: hsl(var(--primary-600));
 }
 
 .btn-reset {
-  background: #FFFFFF;
-  color: #606266;
-  border: 1px solid #DCDFE6;
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  border: 1px solid hsl(var(--border));
 }
 
 .btn-reset:hover {
-  color: #3498DB;
-  border-color: #3498DB;
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  background: hsl(var(--secondary));
 }
 
 .btn-action:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 /* ============================================
-   右侧面板标签页样式 - 浅色主题
+   右侧面板标签页样式 - Swiss Precision
    ============================================ */
 
 .panel-tabs {
   display: flex;
-  background: #F5F7FA;
-  border-bottom: 1px solid #E4E7ED;
+  background: hsl(var(--secondary));
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .panel-tab {
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: #606266;
+  color: hsl(var(--muted-foreground));
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-bottom-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
 }
 
 .panel-tab:hover {
-  color: #303133;
-  background: rgba(52, 152, 219, 0.05);
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
 }
 
 .panel-tab.active {
-  color: #3498DB;
-  border-bottom-color: #3498DB;
-  background: rgba(52, 152, 219, 0.08);
+  color: hsl(var(--primary));
+  border-bottom-color: hsl(var(--primary));
+  background: hsl(var(--primary-50));
 }
 
 /* ============================================
@@ -1348,18 +1321,17 @@ body {
    ============================================ */
 
 .ide-header {
-  background: #FFFFFF;
-  border-bottom: 1px solid #E4E7ED;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .ide-header-back {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #606266;
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
-  transition: color 0.2s;
+  transition: color 0.15s ease, background-color 0.15s ease;
   cursor: pointer;
   background: none;
   border: none;
@@ -1368,12 +1340,12 @@ body {
 }
 
 .ide-header-back:hover {
-  color: #3498DB;
-  background: rgba(52, 152, 219, 0.05);
+  color: hsl(var(--primary));
+  background: hsl(var(--primary-50));
 }
 
 .ide-header-title {
-  color: #303133;
+  color: hsl(var(--foreground));
   font-weight: 600;
 }
 
