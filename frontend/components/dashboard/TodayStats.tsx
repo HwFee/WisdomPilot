@@ -2,6 +2,7 @@
 
 import { Target, CheckCircle, Clock, Flame, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatsGrid, StatCell } from "@/components/layout";
 
 interface TodayStatsProps {
   stats: {
@@ -34,9 +35,8 @@ function StatCard({ icon, value, label, guide, trend, onClick }: StatCardProps) 
   return (
     <div
       className={cn(
-        "bg-card border border-border p-6 transition-colors duration-150",
-        "min-h-[120px] flex flex-col",
-        onClick && "cursor-pointer hover:border-border-hover hover:bg-secondary/50"
+        "flex flex-col justify-between h-full",
+        onClick && "cursor-pointer"
       )}
       onClick={onClick}
     >
@@ -91,7 +91,7 @@ export function TodayStats({
     {
       icon: <Target className="w-5 h-5 text-foreground" strokeWidth={1.5} />,
       value: stats.exercisesToday,
-      label: t("今日做题", "Exercises"),
+      label: t("今日做题（挑战之路）", "Exercises (Challenge Path)"),
       guide: stats.exercisesToday === 0 ? t("目标：10题 →", "Goal: 10") : undefined,
       trend: trend?.exercises,
       onClick: onExercisesClick,
@@ -99,7 +99,7 @@ export function TodayStats({
     {
       icon: <CheckCircle className="w-5 h-5 text-foreground" strokeWidth={1.5} />,
       value: `${stats.accuracy}%`,
-      label: t("正确率", "Accuracy"),
+      label: t("正确率（挑战之路）", "Accuracy (Challenge Path)"),
       guide: stats.accuracy === 0 ? t("保持专注 →", "Stay focused!") : undefined,
       trend: trend?.accuracy,
       onClick: onAccuracyClick,
@@ -107,7 +107,7 @@ export function TodayStats({
     {
       icon: <Clock className="w-5 h-5 text-foreground" strokeWidth={1.5} />,
       value: t(`${stats.learningMinutes}分钟`, `${stats.learningMinutes}min`),
-      label: t("学习时长", "Time"),
+      label: t("学习时长（双路径总计）", "Time (All Paths)"),
       guide: stats.learningMinutes === 0 ? t("目标：30分钟 →", "Goal: 30min") : undefined,
       trend: trend?.time,
       onClick: onTimeClick,
@@ -121,10 +121,12 @@ export function TodayStats({
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1px] bg-border">
+    <StatsGrid>
       {statCards.map((card) => (
-        <StatCard key={card.label} {...card} />
+        <StatCell key={card.label}>
+          <StatCard {...card} />
+        </StatCell>
       ))}
-    </div>
+    </StatsGrid>
   );
 }
