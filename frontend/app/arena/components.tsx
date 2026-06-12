@@ -105,7 +105,7 @@ export function ResultModal({
   canGoNext,
 }: ResultModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-overlay-enter">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <Panel
         className={`relative max-w-md w-full mx-4 rounded-lg overflow-hidden border-t-4 ${
           isCorrect ? "border-t-emerald-500" : "border-t-red-500"
@@ -284,7 +284,7 @@ export function ExerciseListModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center animate-overlay-enter">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <Button
         type="button"
         variant="ghost"
