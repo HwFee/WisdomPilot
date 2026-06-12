@@ -1,11 +1,13 @@
 'use client'
 
-import { Plus, Download, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, Download, ArrowLeft, FileText } from 'lucide-react'
 import { NoteEditor } from '@/components/notes/NoteEditor'
 import { NoteCard } from '@/components/notes/NoteCard'
 import { NoteSearch } from '@/components/notes/NoteSearch'
 import { NoteTagFilter } from '@/components/notes/NoteTagFilter'
 import { Button } from '@/components/ui/button'
+import { EmptyState, PageContainer, Panel, PanelHeader } from '@/components/layout'
 import { useNotesData } from './hooks/use-notes-data'
 import { useNoteEditor } from './hooks/use-note-editor'
 import { exportAllNotes } from './lib/notes-export'
@@ -45,79 +47,86 @@ export default function NotesClient() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border/50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => back()} aria-label="返回">
-            <ArrowLeft className="size-5" strokeWidth={1.5} />
+      <header className="h-14 border-b bg-card">
+        <div className="max-w-[1280px] mx-auto px-6 h-full flex items-center gap-3">
+          <Button asChild variant="ghost" size="icon" aria-label="返回">
+            <Link href="/dashboard"><ArrowLeft className="size-5" strokeWidth={1.5} /></Link>
           </Button>
-          <h1 className="text-xl font-semibold">我的笔记</h1>
-          <span className="ml-auto text-base text-muted-foreground">{notes.length} 条</span>
+          <h1 className="text-sm font-semibold uppercase tracking-[2px]">我的笔记</h1>
+          <span className="ml-auto text-sm text-muted-foreground">{notes.length} 条</span>
           <Button variant="ghost" onClick={handleExportAll} disabled={notes.length === 0} title="导出全部">
-            <Download className="size-5 mr-2" strokeWidth={1.5} />
+            <Download className="size-4 mr-2" strokeWidth={1.5} />
             导出
           </Button>
-          <Button onClick={() => openEditor()} size="lg" className="gap-2">
-            <Plus className="size-5" />
+          <Button onClick={() => openEditor()} className="gap-2">
+            <Plus className="size-4" strokeWidth={1.5} />
             新建笔记
           </Button>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="lg:w-72 shrink-0 flex flex-col gap-y-6">
-            <NoteSearch
-              onResults={handleSearchResults}
-              placeholder="搜索笔记..."
-            />
-
-            <div className="bg-card rounded-2xl border p-5">
-              <h3 className="font-semibold text-lg mb-4">标签筛选</h3>
-              <NoteTagFilter
-                selectedTags={selectedTags}
-                onTagsChange={setSelectedTags}
+      <main className="bg-background">
+        <PageContainer className="py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar */}
+            <aside className="lg:w-72 shrink-0 flex flex-col gap-y-6">
+              <NoteSearch
+                onResults={handleSearchResults}
+                placeholder="搜索笔记..."
               />
-            </div>
-          </aside>
 
-          {/* Main content */}
-          <div className="flex-1">
-            {filteredNotes.length === 0 ? (
-              <div className="text-center py-20 bg-card rounded-2xl border border-dashed">
-                <div className="size-20 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-6">
-                  <span className="text-4xl">📝</span>
-                </div>
-                <p className="text-lg text-muted-foreground mb-2">
-                  {searchQuery || selectedTags.length > 0
-                    ? '没有找到匹配的笔记'
-                    : '暂无笔记'}
-                </p>
-                {!searchQuery && selectedTags.length === 0 && (
-                  <>
-                    <p className="text-base text-muted-foreground mb-6">
-                      在学习过程中可以添加笔记记录心得
-                    </p>
-                    <Button onClick={() => openEditor()} size="lg">
-                      创建第一条笔记
-                    </Button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-y-4">
-                {filteredNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onEdit={openEditor}
-                    onDelete={handleDelete}
+              <Panel>
+                <PanelHeader title="标签筛选" />
+                <div className="p-5">
+                  <NoteTagFilter
+                    selectedTags={selectedTags}
+                    onTagsChange={setSelectedTags}
                   />
-                ))}
-              </div>
-            )}
+                </div>
+              </Panel>
+            </aside>
+
+            {/* Main content */}
+            <div className="flex-1">
+              {filteredNotes.length === 0 ? (
+                searchQuery || selectedTags.length > 0 ? (
+                  <EmptyState
+                    icon={FileText}
+                    title="没有找到匹配的笔记"
+                    description="尝试更换关键词或清除标签筛选。"
+                  />
+                ) : (
+                  <Panel>
+                    <div className="flex flex-col items-center justify-center text-center px-8 py-16">
+                      <div className="size-12 border border-border flex items-center justify-center mb-6">
+                        <FileText className="size-6 text-muted-foreground" strokeWidth={1.5} />
+                      </div>
+                      <h2 className="text-lg font-semibold text-foreground mb-2">还没有笔记</h2>
+                      <p className="text-sm text-muted-foreground max-w-md leading-relaxed mb-8">
+                        开始记录你的学习心得。每道题、每个知识点都可以创建笔记。
+                      </p>
+                      <Button onClick={() => openEditor()}>
+                        <Plus className="size-4 mr-2" strokeWidth={1.5} />
+                        创建第一条笔记
+                      </Button>
+                    </div>
+                  </Panel>
+                )
+              ) : (
+                <div className="flex flex-col gap-y-4">
+                  {filteredNotes.map((note) => (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      onEdit={openEditor}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </PageContainer>
       </main>
 
       {/* Note Editor - Full Page Mode */}
