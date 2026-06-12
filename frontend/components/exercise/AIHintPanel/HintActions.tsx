@@ -3,6 +3,7 @@
 import { X, AlertCircle } from 'lucide-react'
 import { Gem } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import type { HintLevel } from './HintMessage'
 import { HINT_CONFIG } from './HintMessage'
 
@@ -17,14 +18,16 @@ interface CloseButtonProps {
 
 export function CloseButton({ onClick, ariaLabel = '关闭' }: CloseButtonProps) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       onClick={onClick}
-      className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border transition-all group"
       aria-label={ariaLabel}
+      className="size-8 rounded-lg bg-muted/50 hover:bg-muted border border-border/50 hover:border-border group"
     >
       <X className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-    </button>
+    </Button>
   )
 }
 
@@ -41,13 +44,15 @@ interface ModalFooterActionProps {
 export function ModalFooterAction({ isStreaming, isCached, onClose }: ModalFooterActionProps) {
   const label = isStreaming && !isCached ? '关闭' : '知道了'
   return (
-    <button
+    <Button
       type="button"
+      variant="default"
+      size="sm"
       onClick={onClose}
-      className="px-5 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-primary to-primary-600 text-primary-foreground hover:from-primary-600 hover:to-primary-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+      className="h-9 px-5 text-sm font-medium"
     >
       {label}
-    </button>
+    </Button>
   )
 }
 
@@ -100,9 +105,16 @@ export function ErrorToast({ message, onDismiss, className }: ErrorToastProps) {
     >
       <AlertCircle className="size-4" />
       {message}
-      <button type="button" onClick={onDismiss} className="ml-2" aria-label="关闭错误提示">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onDismiss}
+        className="ml-2 size-7 hover:bg-white/10"
+        aria-label="关闭错误提示"
+      >
         <X className="size-4" />
-      </button>
+      </Button>
     </div>
   )
 }

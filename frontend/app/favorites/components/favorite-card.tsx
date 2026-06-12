@@ -1,8 +1,9 @@
 'use client'
 
 import { useRouter } from "next/navigation"
-import { Star, Trash2, CheckSquare, Square } from "lucide-react"
+import { Star, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import type { FavoriteResponse } from "@/types/api"
 import { getTypeLabel, getSourceType, getSourceLabel, getQuestionTitle } from "../lib/favorite-utils"
 import { ClientDate } from "./client-date"
@@ -50,18 +51,12 @@ export function FavoriteCard({ fav, isSelectMode, isSelected, onToggleSelect, on
   return (
     <article className="px-6 py-4 flex items-center gap-4 hover:bg-muted/30">
       {isSelectMode && (
-        <button
-          type="button"
-          onClick={() => onToggleSelect(fav.id)}
-          className="flex items-center justify-center"
-          aria-label={isSelected ? '取消选择' : '选择'}
-        >
-          {isSelected ? (
-            <CheckSquare className="size-5 text-foreground" strokeWidth={1.5} />
-          ) : (
-            <Square className="size-5 text-muted-foreground" strokeWidth={1.5} />
-          )}
-        </button>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggleSelect(fav.id)}
+          aria-label="选择收藏"
+          className="size-5"
+        />
       )}
       {!isSelectMode && (
         <Star className="size-4 text-yellow-500 fill-yellow-500 flex-shrink-0" strokeWidth={1.5} />

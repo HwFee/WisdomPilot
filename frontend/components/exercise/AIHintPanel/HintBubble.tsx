@@ -268,10 +268,10 @@ function StreamHintModal({
       )}
     >
       {/* Top accent */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent z-10" />
+      <div className="absolute inset-x-0 top-0 h-px bg-primary/30 z-10" />
 
       {/* Draggable header */}
-      <div className="relative flex items-center justify-between px-5 py-4 border-b border-border/50 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent rounded-t-2xl cursor-grab active:cursor-grabbing">
+      <div className="relative flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30 rounded-t-2xl cursor-grab active:cursor-grabbing">
         <button
           type="button"
           className="absolute inset-0 z-0"

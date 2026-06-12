@@ -39,7 +39,8 @@ export default function AdminDashboardPage() {
   const { push } = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [onlineUsers, setOnlineUsers] = useState<User[]>([])
-  const [status, setStatus] = useState({ isLoading: true, error: '' })
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   const currentUser = getCurrentUser()
@@ -48,7 +49,7 @@ export default function AdminDashboardPage() {
     const token = getAuthToken()
     if (!token) return
     try {
-      setStatus(prev => ({ ...prev, isLoading: true }))
+      setIsLoading(true)
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -56,9 +57,9 @@ export default function AdminDashboardPage() {
       const data = await res.json()
       setUsers(data)
     } catch (err) {
-      setStatus(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Error fetching users' }))
+      setError(err instanceof Error ? err.message : 'Error fetching users')
     } finally {
-      setStatus(prev => ({ ...prev, isLoading: false }))
+      setIsLoading(false)
     }
   }, [])
 
@@ -83,7 +84,7 @@ export default function AdminDashboardPage() {
       const data = await res.json()
       setOnlineUsers(data)
     } catch (err) {
-      setStatus(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Error fetching online users' }))
+      setError(err instanceof Error ? err.message : 'Error fetching online users')
     }
   }
 
@@ -99,7 +100,7 @@ export default function AdminDashboardPage() {
       setUsers(prev => prev.filter(u => u.id !== userId))
       setDeleteConfirm(null)
     } catch (err) {
-      setStatus(prev => ({ ...prev, error: err instanceof Error ? err.message : 'Error deleting user' }))
+      setError(err instanceof Error ? err.message : 'Error deleting user')
     }
   }
 
@@ -109,7 +110,7 @@ export default function AdminDashboardPage() {
     push('/login')
   }
 
-  if (status.isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -140,9 +141,9 @@ export default function AdminDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {status.error && (
+        {error && (
           <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
-            {status.error}
+            {error}
           </div>
         )}
 
