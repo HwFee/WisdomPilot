@@ -7,7 +7,9 @@ import {
   PartyPopper,
   Frown,
   Lock,
+  Trophy,
 } from "lucide-react";
+import { Panel } from "@/components/layout";
 import type { ExerciseProgress } from "./types";
 
 // ========================================
@@ -16,6 +18,59 @@ import type { ExerciseProgress } from "./types";
 
 const NAV_MAX_VISIBLE = 5;
 const NAV_CENTER_INDEX = 2;
+
+// Mirrors backend/app/core/tier_config.py: stars_per_tier for each rank.
+const TIER_STARS_CONFIG: Record<string, { name: string; starsNeeded: number }> = {
+  bronze: { name: "青铜", starsNeeded: 3 },
+  silver: { name: "白银", starsNeeded: 3 },
+  gold: { name: "黄金", starsNeeded: 4 },
+  platinum: { name: "铂金", starsNeeded: 4 },
+  diamond: { name: "钻石", starsNeeded: 5 },
+  master: { name: "星耀", starsNeeded: 5 },
+  king: { name: "王者", starsNeeded: 0 },
+};
+
+// ========================================
+// Tier Progress Bar Component
+// ========================================
+
+interface TierProgressBarProps {
+  tier: string;
+  subTier: number;
+  stars: number;
+  fullName: string;
+}
+
+export function TierProgressBar({ tier, subTier, stars, fullName }: TierProgressBarProps) {
+  const config = TIER_STARS_CONFIG[tier] || { name: fullName || "未知", starsNeeded: 3 };
+  const isKing = tier === "king";
+  const starsNeeded = isKing ? Math.max(stars, 1) : config.starsNeeded;
+  const progress = isKing ? 100 : Math.min(100, Math.max(0, (stars / starsNeeded) * 100));
+
+  return (
+    <div className="flex items-center gap-4 px-4 py-2 bg-card border-b border-border">
+      <div className="flex items-center gap-2 shrink-0">
+        <Trophy className="size-4 text-muted-foreground" strokeWidth={1.5} />
+        <span className="text-xs font-medium text-foreground">{fullName || config.name}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Star className="size-3.5 fill-amber-500 text-amber-500" strokeWidth={1.5} />
+        <span className="text-xs font-medium text-foreground">
+          {stars}
+          {!isKing && <span className="text-muted-foreground">/{starsNeeded}</span>}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 // ========================================
 // Result Modal Component
@@ -49,84 +104,86 @@ export function ResultModal({
   canGoNext,
 }: ResultModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div
-        className={`bg-card rounded-lg p-8 max-w-md w-full mx-4 border-2 ${
-          isCorrect ? "border-emerald-500" : "border-red-500"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-overlay-enter">
+      <Panel
+        className={`relative max-w-md w-full mx-4 rounded-lg overflow-hidden border-t-4 ${
+          isCorrect ? "border-t-emerald-500" : "border-t-red-500"
         }`}
       >
-        <div className="text-center">
-          {isCorrect ? (
-            <>
-              <CheckCircle className="size-20 text-emerald-600 mx-auto mb-4" strokeWidth={1.5} />
-              <h2 className="text-2xl font-semibold text-emerald-600 mb-2">
-                太棒了！全部通过
-              </h2>
-              <p className="text-muted-foreground mb-2">
-                {firstTimeCorrect && starsEarned > 0 ? (
-                  <span className="text-amber-600 font-medium flex items-center justify-center gap-1">
-                    <Star className="size-5 fill-amber-500" strokeWidth={1.5} />
-                    +{starsEarned}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">已获得星星</span>
+        <div className="p-8">
+          <div className="text-center">
+            {isCorrect ? (
+              <>
+                <CheckCircle className="size-20 text-emerald-600 mx-auto mb-4" strokeWidth={1.5} />
+                <h2 className="text-2xl font-semibold text-emerald-600 mb-2">
+                  太棒了！全部通过
+                </h2>
+                <p className="text-muted-foreground mb-2">
+                  {firstTimeCorrect && starsEarned > 0 ? (
+                    <span className="text-amber-600 font-medium flex items-center justify-center gap-1">
+                      <Star className="size-5 fill-amber-500" strokeWidth={1.5} />
+                      +{starsEarned}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">已获得星星</span>
+                  )}
+                </p>
+                {promoted && (
+                  <p className="text-amber-600 font-bold mb-4 flex items-center justify-center gap-1">
+                    <PartyPopper className="size-5" strokeWidth={1.5} />
+                    恭喜晋级！
+                  </p>
                 )}
-              </p>
-              {promoted && (
-                <p className="text-amber-600 font-bold mb-4 flex items-center justify-center gap-1">
-                  <PartyPopper className="size-5" strokeWidth={1.5} />
-                  恭喜晋级！
-                </p>
-              )}
-              {!promoted && (
-                <p className="text-muted-foreground mb-4">
-                  继续挑战下一题
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              <XCircle className="size-20 text-red-600 mx-auto mb-4" strokeWidth={1.5} />
-              <h2 className="text-2xl font-semibold text-red-600 mb-2">
-                答案错误
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                通过 {passedCount}/{totalCount} 个测试点
-                {firstTimeWrong && starsEarned < 0 && (
-                  <span className="text-red-600 ml-2 flex items-center">
-                    <Star className="size-4 text-red-600" strokeWidth={1.5} />
-                    {starsEarned}
-                  </span>
+                {!promoted && (
+                  <p className="text-muted-foreground mb-4">
+                    继续挑战下一题
+                  </p>
                 )}
-              </p>
-              {demoted && (
-                <p className="text-red-600 font-bold mb-4 flex items-center justify-center gap-1">
-                  <Frown className="size-5" strokeWidth={1.5} />
-                  段位下降...
+              </>
+            ) : (
+              <>
+                <XCircle className="size-20 text-red-600 mx-auto mb-4" strokeWidth={1.5} />
+                <h2 className="text-2xl font-semibold text-red-600 mb-2">
+                  答案错误
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  通过 {passedCount}/{totalCount} 个测试点
+                  {firstTimeWrong && starsEarned < 0 && (
+                    <span className="text-red-600 ml-2 flex items-center">
+                      <Star className="size-4 text-red-600" strokeWidth={1.5} />
+                      {starsEarned}
+                    </span>
+                  )}
                 </p>
-              )}
-            </>
-          )}
-
-          <div className="flex gap-3 justify-center">
-            <button type="button"
-              onClick={onStay}
-              className="px-6 py-3 bg-card border border-border rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
-            >
-              留在本题
-            </button>
-            {canGoNext && (
-              <button type="button"
-                onClick={onNext}
-                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center gap-2"
-              >
-                下一题
-                <ArrowRight className="size-4" strokeWidth={1.5} />
-              </button>
+                {demoted && (
+                  <p className="text-red-600 font-bold mb-4 flex items-center justify-center gap-1">
+                    <Frown className="size-5" strokeWidth={1.5} />
+                    段位下降...
+                  </p>
+                )}
+              </>
             )}
+
+            <div className="flex gap-3 justify-center">
+              <button type="button"
+                onClick={onStay}
+                className="px-6 py-3 bg-card border border-border rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                留在本题
+              </button>
+              {canGoNext && (
+                <button type="button"
+                  onClick={onNext}
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center gap-2"
+                >
+                  下一题
+                  <ArrowRight className="size-4" strokeWidth={1.5} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }
@@ -223,7 +280,7 @@ export function ExerciseListModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-overlay-enter"
       onClick={onClose}
       role="button"
       tabIndex={0}
@@ -231,13 +288,12 @@ export function ExerciseListModal({
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
     >
       <div
-        className="bg-card rounded-lg p-6 max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden flex flex-col"
+        className="relative max-w-lg w-full mx-4 max-h-[70vh] overflow-hidden rounded-lg flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
+        role="presentation"
       >
-        <div className="flex justify-between items-center mb-4">
+        <Panel className="h-full flex flex-col">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
           <h3 className="text-lg font-semibold text-foreground">题目列表</h3>
           <button type="button"
             onClick={onClose}
@@ -247,7 +303,7 @@ export function ExerciseListModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 gap-y-2">
+        <div className="overflow-y-auto flex-1 p-2 gap-y-2">
           {exercises.map((ex, index) => (
             <button type="button"
               key={ex.exercise_id}
@@ -306,9 +362,10 @@ export function ExerciseListModal({
           ))}
         </div>
 
-        <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
+        <div className="px-6 py-4 border-t border-border text-center text-sm text-muted-foreground">
           已完成 {exercises.filter((e) => e.is_completed).length} 题
         </div>
+      </Panel>
       </div>
     </div>
   );

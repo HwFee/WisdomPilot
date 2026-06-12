@@ -15,10 +15,6 @@ import {
   Code2,
   Send,
   Star,
-  PartyPopper,
-  Frown,
-  Lock,
-  Trophy,
   AlertTriangle,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -75,7 +71,7 @@ import {
   LANGUAGE_OPTIONS,
   DIFFICULTY_NAMES,
 } from "./types"
-import { ResultModal, ExerciseNavigation, ExerciseListModal } from "./components"
+import { ResultModal, ExerciseNavigation, ExerciseListModal, TierProgressBar } from "./components"
 import { useArenaSession } from "./use-arena-session"
 import { useCodeRunner } from "./use-code-runner"
 function ArenaContent() {
@@ -139,6 +135,8 @@ function ArenaContent() {
     handleCustomRun,
     handleSampleRun,
   } = runner
+
+  const [mobileTab, setMobileTab] = useState<"problem" | "code" | "output">("problem")
 
   const currentExercise = exercises[currentIndex]
   const currentProgress = exerciseProgress[currentIndex]
@@ -421,64 +419,224 @@ function ArenaContent() {
 
   const canGoNext = currentIndex < exercises.length - 1
 
-  return (
-    <div className="min-h-screen ide-container flex flex-col">
-      {/* Top Bar */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-[50px] ide-header">
-        <div className="h-full px-4 flex items-center justify-between">
-          <button type="button" onClick={() => handleExit(code, language)} className="ide-header-back">
-            <X className="size-4" strokeWidth={1.5} />
-            <span className="text-sm">退出挑战</span>
-          </button>
-
-          <div className="flex items-center gap-4">
-            {/* Exercise Navigation */}
-            <ExerciseNavigation
-              exercises={exerciseProgress}
-              currentIndex={currentIndex}
-              onSwitch={(idx: number) => switchToExercise(idx, language, (newCode: string) => { setCode(newCode); reset(); setRightPanelTab("code"); })}
-            />
-
-            {/* 题目列表按钮 */}
-            <button type="button"
-              onClick={() => setShowExerciseList(true)}
-              className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
-            >
-              <span>题目列表</span>
-            </button>
+  const problemContent = currentExercise ? (
+    <div className="p-6">
+      {contentLoadingMap[currentExercise.id] ? (
+        <div className="mb-6 p-4 bg-secondary rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
+            正在加载题面...
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 flex pt-[50px] h-[calc(100vh-50px)] overflow-hidden">
-        {/* Left: Problem Panel */}
-        <div
-          className="w-[40%] ide-problem-panel bg-card flex-shrink-0"
-          style={{
-            maxHeight: "calc(100vh - 50px)",
-            overflowY: "auto",
-            overflowX: "hidden",
-          }}
-        >
-          {currentExercise && (
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`px-3 py-1 rounded-lg text-xs font-bold text-white difficulty-badge difficulty-${currentExercise.difficulty}`}
-                  >
-                    {DIFFICULTY_NAMES[currentExercise.difficulty] ||
-                      `难度 ${currentExercise.difficulty}`}
-                  </span>
-                  <span className="text-base font-medium text-foreground">
-                    {currentExercise.z_id && (
-                      <span className="text-muted-foreground mr-2 font-normal">{currentExercise.z_id}</span>
-                    )}
-                    {currentExercise.content.title || `题目 ${currentIndex + 1}`}
-                  </span>
+      ) : contentErrorMap[currentExercise.id] ? (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-red-600 mb-2">
+            <AlertTriangle className="size-4" strokeWidth={1.5} />
+            题面加载失败
+          </div>
+          <p className="text-xs text-red-600 mb-3">{contentErrorMap[currentExercise.id]}</p>
+          <button
+            type="button"
+            onClick={() => loadExerciseContent(currentExercise.id, currentIndex, language)}
+            className="px-3 py-1.5 bg-card border border-red-500 text-red-600 text-xs rounded-md hover:bg-red-50 transition-colors"
+          >
+            重试
+          </button>
+        </div>
+      ) : currentExercise.content.description ? (
+        <div className="text-muted-foreground leading-relaxed mb-6">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+              h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mt-4 mb-2 border-b border-border pb-2">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-base font-semibold text-foreground mt-3 mb-2">{children}</h3>,
+              p: ({ children }) => <p className="text-muted-foreground mb-2 leading-relaxed">{children}</p>,
+              ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+              li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+              blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/20 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
+              strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+              code: ({ className, children, ...props }) => {
+                const isInline = !className;
+                return isInline ? (
+                  <code className="bg-secondary px-1.5 py-0.5 rounded text-sm text-red-600 font-mono border border-border" {...props}>
+                    {children}
+                  </code>
+                ) : (
+                  <code className={className} {...props}>{children}</code>
+                );
+              },
+              pre: ({ children }) => (
+                <pre
+                  className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 bg-slate-900 text-slate-100 border border-slate-700"
+                >
+                  {children}
+                </pre>
+              ),
+              table: ({ children }) => (
+                <div className="overflow-x-auto my-3">
+                  <table className="min-w-full border-collapse border border-border">{children}</table>
                 </div>
-                {/* 收藏按钮 */}
+              ),
+              thead: ({ children }) => <thead className="bg-secondary">{children}</thead>,
+              th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-foreground border border-border">{children}</th>,
+              td: ({ children }) => <td className="px-3 py-2 text-sm text-muted-foreground border border-border">{children}</td>,
+            }}
+          >
+            {currentExercise.content.description}
+          </ReactMarkdown>
+        </div>
+      ) : null}
+
+      {/* Sample I/O */}
+      {currentExercise.content.samples &&
+      currentExercise.content.samples.length > 0 ? (
+        <div className="mb-6">
+          <SampleIOCard
+            input={currentExercise.content.samples[0].input}
+            output={currentExercise.content.samples[0].output}
+            onRun={(input) =>
+              handleSampleRun(
+                input,
+                currentExercise.content.samples![0].output,
+              )
+            }
+            isRunning={isCustomRunning}
+          />
+        </div>
+      ) : currentExercise.content.sample_input ||
+        currentExercise.content.sample_output ? (
+        <div className="mb-6">
+          <SampleIOCard
+            input={currentExercise.content.sample_input || ""}
+            output={currentExercise.content.sample_output || ""}
+            onRun={(input) =>
+              handleSampleRun(
+                input,
+                currentExercise.content.sample_output,
+              )
+            }
+            isRunning={isCustomRunning}
+          />
+        </div>
+      ) : null}
+
+      {currentExercise.knowledge_points.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {currentExercise.knowledge_points.map((kp) => (
+            <span
+              key={`arena-${currentExercise.id}-${kp}`}
+              className="knowledge-tag px-3 py-1.5 text-primary text-xs rounded-lg font-medium"
+            >
+              {kp}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* AI Hint Panel */}
+      <div className="mt-6">
+        <StreamHintPanel
+          exerciseData={{
+            exercise_id: String(currentExercise.id),
+            exercise_title: currentExercise.content.title || `题目 #${currentExercise.id}`,
+            exercise_description: currentExercise.content.description || currentExercise.content.text || "",
+            difficulty: currentExercise.difficulty,
+            knowledge_points: currentExercise.knowledge_points || [],
+            code_template: currentExercise.content.code_template,
+            sample_input: currentExercise.content.sample_input,
+            sample_output: currentExercise.content.sample_output,
+          }}
+          token={getStoredToken() || ""}
+          onBalanceChange={async () => {
+            const token = getStoredToken();
+            if (token) {
+              try {
+                const { getCoreBalance } = await import("@/lib/api/core");
+                const balanceData = await getCoreBalance();
+                setCoreBalance(balanceData.balance);
+              } catch {
+                // 忽略刷新失败
+              }
+            }
+          }}
+          currentBalance={coreBalance}
+          disabled={isSubmitting}
+        />
+      </div>
+    </div>
+  ) : null
+
+  const codeEditor = (
+    <CodeEditorPanel
+      value={code}
+      onChange={setCode}
+      language={LANGUAGE_MAP[language]?.monaco || "python"}
+    />
+  )
+
+  const outputContent = rightPanelTab === "output" && testResults.length > 0 ? (
+    <div className="p-4 bg-background">
+      <LuoguTestCaseTable
+        results={testResults}
+        passedCount={testResults.filter(r => r.passed).length}
+        totalCount={testResults.length}
+        isRunning={isSubmitting}
+      />
+    </div>
+  ) : (
+    <div>
+      <CustomTestInput
+        onRun={(input) => handleCustomRun(input, false)}
+        isRunning={isCustomRunning}
+        defaultInput={customTestInput}
+      />
+      {customTestOutput && (
+        <div className="px-4 pb-4">
+          <TestOutputDisplay
+            output={customTestOutput.output}
+            expected={customTestOutput.expected}
+            passed={customTestOutput.passed}
+            isRunning={isCustomRunning}
+            error={customTestOutput.error}
+          />
+        </div>
+      )}
+    </div>
+  )
+
+  return (
+    <div className="h-screen ide-container flex flex-col">
+      {/* Top Bar */}
+      <header className="flex-shrink-0 z-50 bg-card border-b border-border">
+        <TierProgressBar
+          tier={tierInfo?.tier || ""}
+          subTier={tierInfo?.sub_tier || 1}
+          stars={tierInfo?.stars || 0}
+          fullName={tierInfo?.full_name || "加载中..."}
+        />
+        <div className="px-4 py-2 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <button type="button" onClick={() => handleExit(code, language)} className="shrink-0 ide-header-back">
+              <X className="size-4" strokeWidth={1.5} />
+              <span className="text-sm hidden sm:inline">退出挑战</span>
+            </button>
+            {currentExercise && (
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold text-white difficulty-badge difficulty-${currentExercise.difficulty} shrink-0`}
+                >
+                  {DIFFICULTY_NAMES[currentExercise.difficulty] ||
+                    `难度 ${currentExercise.difficulty}`}
+                </span>
+                <span className="text-sm font-medium text-foreground truncate">
+                  {currentExercise.z_id && (
+                    <span className="text-muted-foreground mr-2 font-normal">{currentExercise.z_id}</span>
+                  )}
+                  {currentExercise.content.title || `题目 ${currentIndex + 1}`}
+                </span>
                 <FavoriteButton
                   exerciseKey={`arena-global-${currentExercise.id}`}
                   exerciseId={currentExercise.id}
@@ -490,188 +648,45 @@ function ArenaContent() {
                   exerciseType={currentExercise.type}
                   exerciseDifficulty={currentExercise.difficulty}
                   knowledgePoints={currentExercise.knowledge_points}
-                  size="md"
-                  showLabel
+                  size="sm"
+                  showLabel={false}
                 />
               </div>
+            )}
+          </div>
 
-              {contentLoadingMap[currentExercise.id] ? (
-                <div className="mb-6 p-4 bg-secondary rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="size-4 animate-spin" strokeWidth={1.5} />
-                    正在加载题面...
-                  </div>
-                </div>
-              ) : contentErrorMap[currentExercise.id] ? (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-red-600 mb-2">
-                    <AlertTriangle className="size-4" strokeWidth={1.5} />
-                    题面加载失败
-                  </div>
-                  <p className="text-xs text-red-600 mb-3">{contentErrorMap[currentExercise.id]}</p>
-                  <button
-                    type="button"
-                    onClick={() => loadExerciseContent(currentExercise.id, currentIndex, language)}
-                    className="px-3 py-1.5 bg-card border border-red-500 text-red-600 text-xs rounded-md hover:bg-red-50 transition-colors"
-                  >
-                    重试
-                  </button>
-                </div>
-              ) : currentExercise.content.description ? (
-                <div className="text-muted-foreground leading-relaxed mb-6">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex]}
-                    components={{
-                      h1: ({ children }) => <h1 className="text-xl font-semibold text-foreground mb-2 mt-4">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-lg font-semibold text-foreground mt-4 mb-2 border-b border-border pb-2">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-base font-semibold text-foreground mt-3 mb-2">{children}</h3>,
-                      p: ({ children }) => <p className="text-muted-foreground mb-2 leading-relaxed">{children}</p>,
-                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
-                      li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
-                      blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/20 pl-4 italic my-2 text-muted-foreground">{children}</blockquote>,
-                      strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-                      code: ({ className, children, ...props }) => {
-                        const isInline = !className;
-                        return isInline ? (
-                          <code className="bg-secondary px-1.5 py-0.5 rounded text-sm text-red-600 font-mono border border-border" {...props}>
-                            {children}
-                          </code>
-                        ) : (
-                          <code className={className} {...props}>{children}</code>
-                        );
-                      },
-                      pre: ({ children }) => (
-                        <pre
-                          className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 bg-slate-900 text-slate-100 border border-slate-700"
-                        >
-                          {children}
-                        </pre>
-                      ),
-                      table: ({ children }) => (
-                        <div className="overflow-x-auto my-3">
-                          <table className="min-w-full border-collapse border border-border">{children}</table>
-                        </div>
-                      ),
-                      thead: ({ children }) => <thead className="bg-secondary">{children}</thead>,
-                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-foreground border border-border">{children}</th>,
-                      td: ({ children }) => <td className="px-3 py-2 text-sm text-muted-foreground border border-border">{children}</td>,
-                    }}
-                  >
-                    {currentExercise.content.description}
-                  </ReactMarkdown>
-                </div>
-              ) : null}
-
-              {/* Sample I/O */}
-              {currentExercise.content.samples &&
-              currentExercise.content.samples.length > 0 ? (
-                <div className="mb-6">
-                  <SampleIOCard
-                    input={currentExercise.content.samples[0].input}
-                    output={currentExercise.content.samples[0].output}
-                    onRun={(input) =>
-                      handleSampleRun(
-                        input,
-                        currentExercise.content.samples![0].output,
-                      )
-                    }
-                    isRunning={isCustomRunning}
-                  />
-                </div>
-              ) : currentExercise.content.sample_input ||
-                currentExercise.content.sample_output ? (
-                <div className="mb-6">
-                  <SampleIOCard
-                    input={currentExercise.content.sample_input || ""}
-                    output={currentExercise.content.sample_output || ""}
-                    onRun={(input) =>
-                      handleSampleRun(
-                        input,
-                        currentExercise.content.sample_output,
-                      )
-                    }
-                    isRunning={isCustomRunning}
-                  />
-                </div>
-              ) : null}
-
-              {currentExercise.knowledge_points.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {currentExercise.knowledge_points.map((kp) => (
-                    <span
-                      key={`arena-${currentExercise.id}-${kp}`}
-                      className="knowledge-tag px-3 py-1.5 text-primary text-xs rounded-lg font-medium"
-                    >
-                      {kp}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* AI Hint Panel */}
-              <div className="mt-6">
-                <StreamHintPanel
-                  exerciseData={{
-                    exercise_id: String(currentExercise.id),  // 使用题目 ID 作为唯一标识
-                    exercise_title: currentExercise.content.title || `题目 #${currentExercise.id}`,
-                    exercise_description: currentExercise.content.description || currentExercise.content.text || "",
-                    difficulty: currentExercise.difficulty,
-                    knowledge_points: currentExercise.knowledge_points || [],
-                    code_template: currentExercise.content.code_template,
-                    sample_input: currentExercise.content.sample_input,
-                    sample_output: currentExercise.content.sample_output,
-                  }}
-                  token={getStoredToken() || ""}
-                  onBalanceChange={async () => {
-                    // 刷新智核余额
-                    const token = getStoredToken();
-                    if (token) {
-                      try {
-                        const { getCoreBalance } = await import("@/lib/api/core");
-                        const balanceData = await getCoreBalance();
-                        setCoreBalance(balanceData.balance);
-                      } catch {
-                        // 忽略刷新失败
-                      }
-                    }
-                  }}
-                  currentBalance={coreBalance}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-            </div>
-          )}
+          <div className="flex items-center gap-3 shrink-0">
+            <ExerciseNavigation
+              exercises={exerciseProgress}
+              currentIndex={currentIndex}
+              onSwitch={(idx: number) => switchToExercise(idx, language, (newCode: string) => { setCode(newCode); reset(); setRightPanelTab("code"); })}
+            />
+            <button type="button"
+              onClick={() => setShowExerciseList(true)}
+              className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <span>题目列表</span>
+            </button>
+          </div>
         </div>
+      </header>
 
-        {/* Right: Code Editor + Test Panel */}
-        <div
-          className="w-[60%] flex flex-col ide-editor-panel bg-card flex-shrink-0"
-          style={{ maxHeight: "calc(100vh - 50px)", overflow: "hidden" }}
-        >
-          {/* Tab Header */}
-          <div className="panel-tabs flex-shrink-0 flex items-center justify-between">
-            <div className="flex">
-              <button type="button"
-                onClick={() => setRightPanelTab("code")}
-                className={`panel-tab ${rightPanelTab !== "output" ? "active" : ""}`}
-              >
-                <Code2 className="size-4 inline mr-1.5" strokeWidth={1.5} />
+      {/* Main Content */}
+      <main className="flex-1 min-h-0 overflow-hidden">
+        {/* Desktop: 3-column grid */}
+        <div className="h-full hidden lg:grid grid-cols-12 gap-0">
+          {/* Problem */}
+          <div className="col-span-4 ide-problem-panel">
+            {problemContent}
+          </div>
+
+          {/* Code Editor */}
+          <div className="col-span-5 ide-editor-panel flex flex-col">
+            <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-border bg-card">
+              <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Code2 className="size-4" strokeWidth={1.5} />
                 代码
-              </button>
-              {testResults.length > 0 && (
-                <button type="button"
-                  onClick={() => setRightPanelTab("output")}
-                  className={`panel-tab ${rightPanelTab === "output" ? "active" : ""}`}
-                >
-                  <CheckCircle className="size-4 inline mr-1.5" strokeWidth={1.5} />
-                  结果
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 pr-3">
+              </span>
               <select
                 value={language}
                 onChange={(e) => handleLanguageChange(e.target.value)}
@@ -684,48 +699,92 @@ function ArenaContent() {
                 ))}
               </select>
             </div>
+            <div className="flex-1 min-h-0">
+              {codeEditor}
+            </div>
           </div>
 
-          {/* Content: code + test stacked, or output tab */}
-          <div className="flex-1 overflow-hidden">
-            {rightPanelTab === "output" && testResults.length > 0 ? (
-              <div className="h-full overflow-y-auto p-4 bg-background">
-                <LuoguTestCaseTable
-                  results={testResults}
-                  passedCount={testResults.filter(r => r.passed).length}
-                  totalCount={testResults.length}
-                  isRunning={isSubmitting}
-                />
+          {/* Output / Tests */}
+          <div className="col-span-3 bg-card border-l border-border flex flex-col">
+            <div className="panel-tabs flex-shrink-0 flex items-center">
+              <button type="button"
+                onClick={() => setRightPanelTab("code")}
+                className={`panel-tab ${rightPanelTab !== "output" ? "active" : ""}`}
+              >
+                <Code2 className="size-4 inline mr-1.5" strokeWidth={1.5} />
+                测试
+              </button>
+              {testResults.length > 0 && (
+                <button type="button"
+                  onClick={() => setRightPanelTab("output")}
+                  className={`panel-tab ${rightPanelTab === "output" ? "active" : ""}`}
+                >
+                  <CheckCircle className="size-4 inline mr-1.5" strokeWidth={1.5} />
+                  结果
+                </button>
+              )}
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {outputContent}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile/Tablet: tabs */}
+        <div className="h-full flex flex-col lg:hidden">
+          <div className="flex border-b border-border bg-card">
+            <button type="button"
+              onClick={() => setMobileTab("problem")}
+              className={`flex-1 px-4 py-3 text-xs font-medium transition-colors ${mobileTab === "problem" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              题目
+            </button>
+            <button type="button"
+              onClick={() => setMobileTab("code")}
+              className={`flex-1 px-4 py-3 text-xs font-medium transition-colors ${mobileTab === "code" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              代码
+            </button>
+            <button type="button"
+              onClick={() => setMobileTab("output")}
+              className={`flex-1 px-4 py-3 text-xs font-medium transition-colors ${mobileTab === "output" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              输出
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {mobileTab === "problem" && (
+              <div className="h-full ide-problem-panel overflow-y-auto">
+                {problemContent}
               </div>
-            ) : (
-              <div className="h-full flex flex-col">
-                {/* Code editor - upper part */}
+            )}
+            {mobileTab === "code" && (
+              <div className="h-full flex flex-col ide-editor-panel">
+                <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-border bg-card">
+                  <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Code2 className="size-4" strokeWidth={1.5} />
+                    代码
+                  </span>
+                  <select
+                    value={language}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
+                    className="px-2 py-1 text-xs font-medium text-muted-foreground bg-card border border-border rounded-md focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    {LANGUAGE_OPTIONS.map((lang) => (
+                      <option key={lang.key} value={lang.key}>
+                        {lang.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex-1 min-h-0">
-                  <CodeEditorPanel
-                    value={code}
-                    onChange={setCode}
-                    language={LANGUAGE_MAP[language]?.monaco || "python"}
-                  />
+                  {codeEditor}
                 </div>
-                {/* Test panel - below code */}
-                <div className="h-[220px] flex-shrink-0 border-t border-border bg-background overflow-y-auto">
-                  <CustomTestInput
-                    onRun={(input) => handleCustomRun(input, false)}
-                    isRunning={isCustomRunning}
-                    defaultInput={customTestInput}
-                  />
-                  {customTestOutput && (
-                    <div className="px-4 pb-4">
-                      <TestOutputDisplay
-                        output={customTestOutput.output}
-                        expected={customTestOutput.expected}
-                        passed={customTestOutput.passed}
-                        isRunning={isCustomRunning}
-                        error={customTestOutput.error}
-                      />
-                    </div>
-                  )}
-                </div>
+              </div>
+            )}
+            {mobileTab === "output" && (
+              <div className="h-full bg-card overflow-y-auto">
+                {outputContent}
               </div>
             )}
           </div>
