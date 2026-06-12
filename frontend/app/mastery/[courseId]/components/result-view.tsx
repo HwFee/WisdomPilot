@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, Trophy, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { EnhancedQuizSubmitResponse } from "@/types/api";
 import { PageContainer, Grid, Panel, StatsGrid, StatCell } from "@/components/layout";
 
@@ -94,13 +95,13 @@ export function ResultView({ finalResult, onBackToChapters }: ResultViewProps) {
                 )}
 
                 <div className="p-6 border-t border-border">
-                  <button
+                  <Button
                     type="button"
                     onClick={onBackToChapters}
-                    className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                    className="w-full"
                   >
                     返回章节列表
-                  </button>
+                  </Button>
                 </div>
               </Panel>
             </div>

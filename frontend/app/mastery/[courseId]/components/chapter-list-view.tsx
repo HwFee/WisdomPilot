@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Trophy, BookOpen, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import type { MasteryOverviewResponse, CourseDetailResponse, BaseQuestionResponse, MasteryLevel, NoteResponse } from "@/types/api";
 
 import { NoteEditor } from "@/components/notes/NoteEditor";
@@ -90,11 +91,12 @@ export function ChapterListView(props: ChapterListViewProps) {
                   : null;
 
                 return (
-                  <button
+                  <Button
                     type="button"
                     key={chapterId}
                     onClick={() => onSelectChapter(chapterId, title)}
-                    className={`w-full grid ${GRID_TEMPLATE} items-center gap-5 px-8 py-5 border-b border-border last:border-b-0 text-left hover:bg-muted/30 transition-colors`}
+                    variant="ghost"
+                    className={`w-full h-auto grid ${GRID_TEMPLATE} items-center gap-5 px-8 py-5 border-b border-border last:border-b-0 text-left hover:bg-muted/30 transition-colors rounded-none`}
                   >
                     <div className="size-10 rounded-lg flex items-center justify-center font-medium bg-secondary text-amber-600">
                       {orderIndex}
@@ -130,7 +132,7 @@ export function ChapterListView(props: ChapterListViewProps) {
                     <div className="w-10 flex justify-end">
                       <ChevronRight className="size-5 text-muted-foreground" strokeWidth={1.5} />
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
