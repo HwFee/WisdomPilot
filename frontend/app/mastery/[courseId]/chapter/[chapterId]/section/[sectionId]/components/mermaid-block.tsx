@@ -1,5 +1,7 @@
 'use client'
 
+/* react-doctor-disable no-danger */
+
 import { useRef, useState, useEffect } from 'react'
 import mermaid from 'mermaid'
 
@@ -9,7 +11,6 @@ interface MermaidDiagramProps {
 }
 
 function MermaidDiagram({ svg, className }: MermaidDiagramProps) {
-  // react-doctor-disable-next-line no-danger
   return <div className={className} dangerouslySetInnerHTML={{ __html: svg }} /* eslint-disable-line react/no-danger */ />
 }
 
