@@ -101,7 +101,7 @@ export function ArenaProblemPanel({
               },
               pre: ({ children }) => (
                 <pre
-                  className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 bg-slate-900 text-slate-100 border border-slate-700"
+                  className="rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 bg-zinc-900 text-zinc-100 border border-zinc-700/50"
                 >
                   {children}
                 </pre>
@@ -159,7 +159,7 @@ export function ArenaProblemPanel({
           {currentExercise.knowledge_points.map((kp) => (
             <span
               key={`arena-${currentExercise.id}-${kp}`}
-              className="knowledge-tag px-3 py-1.5 text-primary text-xs rounded-lg font-medium"
+              className="bg-primary-50 border border-primary-200 px-3 py-1.5 text-primary text-xs rounded-lg font-medium"
             >
               {kp}
             </span>

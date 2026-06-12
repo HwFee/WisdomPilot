@@ -57,7 +57,7 @@ export function ArenaTopBar({
           {currentExercise && (
             <div className="flex items-center gap-3 min-w-0">
               <span
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold text-white difficulty-badge difficulty-${currentExercise.difficulty} shrink-0`}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold text-white overflow-hidden difficulty-${currentExercise.difficulty} shrink-0`}
               >
                 {DIFFICULTY_NAMES[currentExercise.difficulty] ||
                   `难度 ${currentExercise.difficulty}`}
