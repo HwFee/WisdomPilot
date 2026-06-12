@@ -34,10 +34,10 @@ export function SubmittedQuizActionBar({
         )}
       </div>
       <Button
+        type="button"
         size="lg"
         onClick={onNext}
         disabled={baseQuestionLoading}
-        className="px-8 py-3 inline-flex items-center gap-2"
       >
         {baseQuestionLoading ? (
           <Loader2 className="size-4" strokeWidth={1.5} />

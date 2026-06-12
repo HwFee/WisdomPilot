@@ -1,6 +1,7 @@
 "use client";
 
 import { PartyPopper } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { PageContainer } from "@/components/layout";
 import type { BaseQuestionResponse } from "@/types/api";
 import { SubmittedQuizActionBar } from "./submitted-quiz-action-bar";
@@ -19,6 +20,12 @@ interface QuizActionBarProps {
   onNext: () => void;
 }
 
+const FOOTER_STYLES = {
+  idle: "bg-card border-border",
+  correct: "bg-muted border-emerald-600/30",
+  wrong: "bg-muted border-red-600/20",
+} as const;
+
 export function QuizActionBar({
   submitted,
   isCorrect,
@@ -31,15 +38,14 @@ export function QuizActionBar({
   onSubmit,
   onNext,
 }: QuizActionBarProps) {
+  const state = submitted ? (isCorrect ? "correct" : "wrong") : "idle";
+
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 border-t transition-colors ${
-        submitted
-          ? isCorrect
-            ? "bg-muted border-emerald-600/30"
-            : "bg-muted border-red-600/20"
-          : "bg-card border-border"
-      }`}
+      className={cn(
+        "fixed bottom-0 left-0 right-0 border-t transition-colors",
+        FOOTER_STYLES[state],
+      )}
     >
       <PageContainer className="p-4">
         <div className="text-center text-sm text-muted-foreground mb-3">

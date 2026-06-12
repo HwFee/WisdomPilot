@@ -16,10 +16,11 @@ export function UnsubmittedQuizActionBar({
 }: UnsubmittedQuizActionBarProps) {
   return (
     <Button
+      type="button"
       size="lg"
       onClick={onSubmit}
       disabled={!baseAnswers.get(currentQuestion.id)}
-      className="w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full py-4"
     >
       提交答案
     </Button>
