@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { MessageSquare, Pin, Eye, Heart, ArrowRight, Megaphone, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Panel, PanelHeader } from '@/components/layout'
 import { getSolutionSummary, likeSolution, SolutionSummary } from '@/lib/api/solutions'
 import { getStoredToken } from '@/lib/api/auth'
@@ -136,10 +137,12 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
             : ''
         }`}
       >
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => handleItemClick(solution.id)}
-          className="absolute inset-0 z-0"
+          className="absolute inset-0 z-0 h-full w-full rounded-none p-0"
           aria-label={t(`查看题解：${solution.title}`, `View solution: ${solution.title}`)}
         />
         <div className="flex items-start gap-2">
@@ -159,14 +162,16 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
         }`}>
           <span>{solution.username}</span>
           <div className="flex items-center gap-3">
-            <button type="button"
+            <Button type="button"
+              variant="ghost"
+              size="sm"
               onClick={(e) => handleLike(solution.id, e)}
-              className="relative z-10 flex items-center gap-1 hover:text-red-500 transition-colors"
+              className="relative z-10 h-auto p-1 px-2 text-xs hover:text-red-500"
               title={t('点赞', 'Like')}
             >
               <Heart className="size-3.5" strokeWidth={1.5} />
               {solution.like_count}
-            </button>
+            </Button>
             <span className="flex items-center gap-1">
               <Eye className="size-3.5" strokeWidth={1.5} />
               {solution.view_count}
@@ -184,29 +189,33 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
         title={t('题解广场', 'Solutions')}
         count={t(`${solutions.length} 篇`, `${solutions.length}`)}
         action={
-          <button type="button"
+          <Button type="button"
+            variant="secondary"
+            size="sm"
             onClick={handleEnterSolutions}
-            className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-foreground rounded-lg text-xs font-medium hover:bg-muted transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
             {t('进入', 'Enter')}
             <ArrowRight className="size-4" strokeWidth={1.5} />
-          </button>
+          </Button>
         }
       />
 
       <div className="flex gap-2 px-8 py-4 border-b border-border flex-shrink-0">
         {(Object.keys(tabMap) as TabType[]).map(tab => (
-          <button type="button"
+          <Button type="button"
+            variant={activeTab === tab ? "default" : "ghost"}
+            size="sm"
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-1 rounded-lg text-sm font-medium ${
               activeTab === tab
-                ? 'bg-foreground text-background'
+                ? ''
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
             {tabMap[tab]}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -219,12 +228,14 @@ export function SolutionBoard({ lang = 'zh' }: SolutionBoardProps) {
           <div className="flex flex-col items-center justify-center h-full text-destructive">
             <AlertCircle className="size-10 mb-2" strokeWidth={1.5} />
             <p className="text-sm mb-3">{error}</p>
-            <button type="button"
+            <Button type="button"
+              variant="secondary"
+              size="sm"
               onClick={fetchSolutions}
-              className="px-3 py-1.5 bg-muted rounded-lg text-sm hover:bg-secondary transition-colors"
+              className="px-3 py-1.5 rounded-lg text-sm hover:bg-secondary"
             >
               {t('重试', 'Retry')}
-            </button>
+            </Button>
           </div>
         ) : getSortedSolutions().length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
