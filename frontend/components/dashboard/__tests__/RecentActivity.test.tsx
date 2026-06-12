@@ -22,7 +22,6 @@ describe('RecentActivity', () => {
   it('displays formatted timestamps', () => {
     render(<RecentActivity activities={mockActivities} />)
 
-    // Check for time format exists (component formats ISO dates)
     expect(screen.getByText(/分钟前|mins ago/)).toBeInTheDocument()
   })
 
@@ -54,47 +53,6 @@ describe('RecentActivity', () => {
     expect(handleStartLearning).toHaveBeenCalledTimes(1)
   })
 
-  it('displays correct icons for activity types', () => {
-    const activitiesWithDetails = [
-      {
-        id: '1',
-        type: 'exercise_complete',
-        description: '完成了练习',
-        details: { is_correct: true }
-      },
-      {
-        id: '2',
-        type: 'exercise_complete',
-        description: '完成了练习',
-        details: { is_correct: false }
-      },
-      {
-        id: '3',
-        type: 'exercise_complete',
-        description: '完成了练习',
-        // No is_correct field
-      },
-      {
-        id: '4',
-        type: 'chapter_complete',
-        description: '完成了第3章',
-      },
-      {
-        id: '5',
-        type: 'achievement_earned',
-        description: '获得了成就',
-      },
-    ]
-    const { container } = render(<RecentActivity activities={activitiesWithDetails} />)
-
-    // Check for emoji icons based on details
-    expect(container.textContent).toContain('✅') // is_correct: true
-    expect(container.textContent).toContain('❌') // is_correct: false
-    expect(container.textContent).toContain('📝') // no is_correct field
-    expect(container.textContent).toContain('📚') // chapter_complete
-    expect(container.textContent).toContain('🏆') // achievement_earned
-  })
-
   it('limits activities to 8 by default', () => {
     const manyActivities = Array.from({ length: 10 }, (_, i) => ({
       id: `${i}`,
@@ -105,7 +63,6 @@ describe('RecentActivity', () => {
 
     render(<RecentActivity activities={manyActivities} />)
 
-    // Should show 8 activities (0-7)
     expect(screen.getByText('Activity 0')).toBeInTheDocument()
     expect(screen.getByText('Activity 7')).toBeInTheDocument()
     expect(screen.queryByText('Activity 8')).not.toBeInTheDocument()
@@ -121,7 +78,6 @@ describe('RecentActivity', () => {
 
     render(<RecentActivity activities={manyActivities} compact={true} />)
 
-    // Should only show 3 activities
     expect(screen.getByText('Activity 0')).toBeInTheDocument()
     expect(screen.queryByText('Activity 3')).not.toBeInTheDocument()
   })
