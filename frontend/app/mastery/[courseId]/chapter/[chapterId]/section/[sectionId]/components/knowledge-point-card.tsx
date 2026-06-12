@@ -142,7 +142,7 @@ export function KnowledgePointCard({
                         return <>{children}</>
                       }
                       return (
-                        <pre className="bg-secondary text-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose">
+                        <pre className="bg-zinc-900 text-zinc-100 rounded-lg p-4 font-mono text-sm overflow-x-auto my-3 not-prose border border-zinc-700/50">
                           {children}
                         </pre>
                       )
@@ -186,7 +186,7 @@ export function KnowledgePointCard({
                   components={{
                     pre({ children }) {
                       return (
-                        <pre className="bg-secondary text-foreground rounded-lg p-4 font-mono text-sm overflow-x-auto my-0">
+                        <pre className="bg-zinc-900 text-zinc-100 rounded-lg p-4 font-mono text-sm overflow-x-auto my-0 border border-zinc-700/50">
                           {children}
                         </pre>
                       )

@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, Target, Zap, AlertTriangle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { BaseAnswersSubmitResponse } from "@/types/api";
 import { PageContainer, Grid, Panel, PanelHeader, StatsGrid, StatCell } from "@/components/layout";
 
@@ -21,23 +22,27 @@ export function AnalysisView(props: AnalysisViewProps) {
     <div className="min-h-screen bg-background">
       <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
         <PageContainer className="h-14 flex items-center justify-between">
-          <button type="button"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={onViewQuestions}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="size-4" strokeWidth={1.5} />
-            <span className="text-sm">查看题目</span>
-          </button>
+            <ArrowLeft className="size-4 mr-2" strokeWidth={1.5} />
+            查看题目
+          </Button>
           <div className="flex items-center gap-2">
             <Target className="size-5 text-amber-600" strokeWidth={1.5} />
             <span className="font-semibold">学习分析</span>
           </div>
-          <button type="button"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={onBackToChapters}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             退出
-          </button>
+          </Button>
         </PageContainer>
       </header>
 
@@ -108,30 +113,35 @@ export function AnalysisView(props: AnalysisViewProps) {
               )}
 
               {/* Actions */}
-              <button type="button"
+              <Button
+                type="button"
+                size="lg"
                 onClick={onStartEnhancedQuiz}
                 disabled={enhancedLoading}
-                className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                className="w-full"
               >
                 {enhancedLoading ? (
                   <>
-                    <Loader2 className="size-5" strokeWidth={1.5} />
+                    <Loader2 className="size-5 mr-2 animate-spin" strokeWidth={1.5} />
                     生成强化测试...
                   </>
                 ) : (
                   <>
-                    <Zap className="size-5" strokeWidth={1.5} />
+                    <Zap className="size-5 mr-2" strokeWidth={1.5} />
                     开始强化测试
                   </>
                 )}
-              </button>
+              </Button>
 
-              <button type="button"
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
                 onClick={onBackToChapters}
-                className="w-full py-3 bg-card border border-border rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="w-full"
               >
                 暂时跳过，返回章节
-              </button>
+              </Button>
             </div>
           </Grid>
         </PageContainer>

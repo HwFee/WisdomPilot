@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, Zap, CheckCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { EnhancedQuizQuestion } from "@/types/api";
 import { PageContainer, Grid } from "@/components/layout";
 import { DIFFICULTY_COLORS } from "../types";
@@ -34,13 +35,15 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
     <div className="min-h-screen bg-background">
       <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
         <PageContainer className="h-14 flex items-center justify-between">
-          <button type="button"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={onBackToChapters}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="size-4" strokeWidth={1.5} />
-            <span className="text-sm">退出</span>
-          </button>
+            <ArrowLeft className="size-4 mr-2" strokeWidth={1.5} />
+            退出
+          </Button>
           <div className="flex items-center gap-2">
             <Zap className="size-5 text-amber-600" strokeWidth={1.5} />
             <span className="font-semibold">强化测试</span>
@@ -109,8 +112,10 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                     const isCorrectOption = currentQuestion.correct_answer?.toUpperCase() === optLabel;
 
                     return (
-                      <button type="button"
+                      <Button
+                        type="button"
                         key={optLabel}
+                        variant="outline"
                         onClick={() =>
                           !submitted &&
                           setEnhancedAnswers((prev) =>
@@ -118,7 +123,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                           )
                         }
                         disabled={submitted}
-                        className={`w-full p-4 rounded-lg border text-left transition-colors ${
+                        className={`w-full h-auto p-4 rounded-lg border text-left justify-start transition-colors ${
                           submitted
                             ? isSelected
                               ? isCorrect
@@ -156,7 +161,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                           </span>
                           <span className="text-foreground">{opt}</span>
                         </div>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -169,7 +174,9 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
       {/* Bottom action bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
         <PageContainer className="p-4">
-          <button type="button"
+          <Button
+            type="button"
+            size="lg"
             onClick={
               submitted
                 ? onNext
@@ -178,11 +185,11 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
             disabled={
               !enhancedAnswers.get(currentQuestion.id) || enhancedLoading || (submitted && isLastQuestion && generationStatus !== "completed" && enhancedQuestions.length < generationProgress.total)
             }
-            className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full"
           >
             {enhancedLoading ? (
               <span className="flex items-center justify-center gap-2">
-                <Loader2 className="size-5" strokeWidth={1.5} />
+                <Loader2 className="size-5 mr-2 animate-spin" strokeWidth={1.5} />
                 提交中...
               </span>
             ) : submitted ? (
@@ -191,7 +198,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
                   "完成测试"
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="size-4" strokeWidth={1.5} />
+                    <Loader2 className="size-4 mr-2 animate-spin" strokeWidth={1.5} />
                     正在生成更多题目...
                   </span>
                 )
@@ -201,7 +208,7 @@ export function EnhancedQuizView(props: EnhancedQuizViewProps) {
             ) : (
               "提交答案"
             )}
-          </button>
+          </Button>
         </PageContainer>
       </div>
     </div>
