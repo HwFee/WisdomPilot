@@ -142,7 +142,7 @@ const DiscreteMathIcon = ({ className }: { className?: string }) => (
 )
 
 // 课程图标配置
-export const COURSE_ICONS: Record<string, CourseIconConfig> = {
+const COURSE_ICONS: Record<string, CourseIconConfig> = {
   c: {
     id: 'c',
     name: 'C语言程序设计',
@@ -182,21 +182,21 @@ export function getCourseConfig(courseId: string): CourseIconConfig | undefined 
 /**
  * 获取课程颜色类名
  */
-export function getCourseColor(courseId: string): string {
+function getCourseColor(courseId: string): string {
   return COURSE_ICONS[courseId]?.color ?? 'text-gray-500'
 }
 
 /**
  * 获取课程背景色类名
  */
-export function getCourseBgColor(courseId: string): string {
+function getCourseBgColor(courseId: string): string {
   return COURSE_ICONS[courseId]?.bgColor ?? 'bg-gray-500/10'
 }
 
 /**
  * 获取课程渐变类名
  */
-export function getCourseGradient(courseId: string): string {
+function getCourseGradient(courseId: string): string {
   return COURSE_ICONS[courseId]?.gradient ?? 'from-gray-500 to-gray-600'
 }
 

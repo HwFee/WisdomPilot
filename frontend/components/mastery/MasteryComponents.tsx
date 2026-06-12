@@ -72,7 +72,7 @@ interface KnowledgePointMasteryProps {
   isMastered: boolean
 }
 
-export function KnowledgePointMasteryCard({
+function KnowledgePointMasteryCard({
   name,
   pL,
   totalAttempts,
@@ -124,7 +124,7 @@ interface SectionMasteryCardProps {
   onClick?: () => void
 }
 
-export function SectionMasteryCard({
+function SectionMasteryCard({
   title,
   masteryScore,
   knowledgePointsCount,
@@ -183,7 +183,7 @@ interface ChapterMasteryCardProps {
   onClick?: () => void
 }
 
-export function ChapterMasteryCard({
+function ChapterMasteryCard({
   title,
   masteryScore,
   sectionsCount,
@@ -242,7 +242,7 @@ interface CourseMasteryOverviewProps {
   onChapterClick?: (chapterId: number) => void
 }
 
-export function CourseMasteryOverview({
+function CourseMasteryOverview({
   courseName,
   masteryScore,
   progressPercentage,

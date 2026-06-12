@@ -55,7 +55,7 @@ export async function collectWrongQuestion(
  *
  * 当用户答对曾经错过的题目时调用此函数。
  */
-export async function resolveWrongQuestion(
+async function resolveWrongQuestion(
   token: string,
   exerciseId: number
 ): Promise<{ success: boolean; message: string }> {

@@ -164,7 +164,7 @@ export async function saveSectionProgress(
 /**
  * 获取用户当前学习位置
  */
-export async function getCurrentPosition(
+async function getCurrentPosition(
   courseId: number,
   token?: string
 ): Promise<CurrentPositionResponse | null> {

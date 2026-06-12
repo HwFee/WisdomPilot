@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import type { FavoriteResponse } from '@/types/api'
 
 // 题目类型中文映射 - 完全参照错题本
-export const TYPE_LABELS: Record<string, string> = {
+const TYPE_LABELS: Record<string, string> = {
   choice: '选择题',
   code: '编程题',
   programming: '编程题',
@@ -27,7 +27,7 @@ export function getSourceType(exerciseKey?: string): string {
 }
 
 // 来源类型中文映射
-export const SOURCE_LABELS: Record<string, string> = {
+const SOURCE_LABELS: Record<string, string> = {
   mastery: '精进之路',
   arena: '挑战之路',
   unknown: '未知来源',

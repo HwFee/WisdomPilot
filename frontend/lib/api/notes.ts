@@ -70,7 +70,7 @@ export async function searchNotes(
   return get<NoteSearchResponse>(`/api/notes/search?${params.toString()}`, token)
 }
 
-export async function getNote(
+async function getNote(
   token: string,
   noteId: string
 ): Promise<NoteResponse> {
@@ -145,7 +145,7 @@ export async function getNoteTags(
   return get<NoteTagListResponse>('/api/note-tags', token)
 }
 
-export async function updateNoteTag(
+async function updateNoteTag(
   token: string,
   tagId: string,
   data: NoteTagUpdate

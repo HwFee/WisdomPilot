@@ -291,7 +291,7 @@ export async function getGenerationStatus(
 /**
  * Get all exercises from a generation session (polling for stream)
  */
-export async function getSessionExercises(
+async function getSessionExercises(
   sessionId: string,
   token: string
 ): Promise<{
@@ -691,7 +691,7 @@ export async function saveMasteryExerciseProgress(
 /**
  * 获取精进之路章节进度
  */
-export async function getMasteryChapterProgress(
+async function getMasteryChapterProgress(
   courseId: number,
   chapterId: number,
   token: string
@@ -719,7 +719,7 @@ export async function completeMasteryQuiz(
 /**
  * 根据exercise_key获取做题进度（用于错题本跳转定位）
  */
-export async function getMasteryProgressByKey(
+async function getMasteryProgressByKey(
   exerciseKey: string,
   token: string
 ): Promise<MasteryProgressByKeyResponse> {

@@ -26,7 +26,7 @@ export interface TierIconConfig {
 // 大师：使用Crown皇冠
 // 王者：使用Swords代表竞技/权力
 
-export const TIER_ICONS: Record<string, TierIconConfig> = {
+const TIER_ICONS: Record<string, TierIconConfig> = {
   bronze: {
     id: 'bronze',
     name: '青铜',
@@ -107,7 +107,7 @@ export const TIER_ICONS: Record<string, TierIconConfig> = {
 } as const
 
 // 段位顺序
-export const TIER_ORDER = [
+const TIER_ORDER = [
   'bronze',
   'silver',
   'gold',
@@ -120,7 +120,7 @@ export const TIER_ORDER = [
 /**
  * 根据XP获取段位
  */
-export function getTierByXP(xp: number): TierIconConfig {
+function getTierByXP(xp: number): TierIconConfig {
   for (const tierId of TIER_ORDER) {
     const tier = TIER_ICONS[tierId]
     if (xp >= tier.minXP && xp <= tier.maxXP) {
@@ -140,7 +140,7 @@ export function getTierConfig(tierId: string): TierIconConfig | undefined {
 /**
  * 获取下一个段位
  */
-export function getNextTier(currentTierId: string): TierIconConfig | undefined {
+function getNextTier(currentTierId: string): TierIconConfig | undefined {
   const currentIndex = TIER_ORDER.indexOf(currentTierId as any)
   if (currentIndex === -1 || currentIndex === TIER_ORDER.length - 1) {
     return undefined
@@ -151,7 +151,7 @@ export function getNextTier(currentTierId: string): TierIconConfig | undefined {
 /**
  * 计算升级进度
  */
-export function calculateTierProgress(xp: number): {
+function calculateTierProgress(xp: number): {
   current: TierIconConfig
   next?: TierIconConfig
   progress: number
@@ -179,13 +179,4 @@ export function calculateTierProgress(xp: number): {
   }
 }
 
-// 导出图标组件供直接使用
-export {
-  Medal,
-  Gem,
-  Crown,
-  Swords,
-  Shield,
-  Zap,
-}
 

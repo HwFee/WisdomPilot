@@ -60,7 +60,7 @@ export async function createSolution(token: string, data: SolutionCreate): Promi
   return post<SolutionResponse>('/api/solutions', token, data)
 }
 
-export async function getSolutions(token: string, params?: {
+async function getSolutions(token: string, params?: {
   page?: number
   limit?: number
   sort?: 'hot' | 'new' | 'pinned'
@@ -93,6 +93,6 @@ export async function likeSolution(token: string, id: number): Promise<SolutionR
   return post<SolutionResponse>(`/api/solutions/${id}/like`, token, {})
 }
 
-export async function pinSolution(token: string, id: number): Promise<SolutionResponse> {
+async function pinSolution(token: string, id: number): Promise<SolutionResponse> {
   return post<SolutionResponse>(`/api/solutions/${id}/pin`, token, {})
 }

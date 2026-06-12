@@ -81,7 +81,7 @@ interface AIHintButtonProps {
   currentBalance?: number;
 }
 
-export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIHintButtonProps) {
+function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIHintButtonProps) {
   const [loading, setLoading] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -260,7 +260,7 @@ export function AIHintButton({ level, onGetHint, disabled, currentBalance }: AIH
 // AI Hint Panel - 包含三个级别的提示按钮
 // ========================================
 
-export function AIHintPanel({ onGetHint, currentBalance, disabled }: AIHintPanelProps) {
+function AIHintPanel({ onGetHint, currentBalance, disabled }: AIHintPanelProps) {
   return (
     <div className="bg-card rounded-xl border p-4">
       <div className="flex items-center justify-between mb-3">
@@ -313,7 +313,7 @@ interface StreamHintModalProps {
   isCached?: boolean;  // 是否为缓存内容
 }
 
-export function StreamHintModal({
+function StreamHintModal({
   isOpen,
   onClose,
   level,
@@ -568,7 +568,7 @@ interface StreamHintButtonProps {
   disabled?: boolean;
 }
 
-export function StreamHintButton({
+function StreamHintButton({
   level,
   exerciseData,
   token,

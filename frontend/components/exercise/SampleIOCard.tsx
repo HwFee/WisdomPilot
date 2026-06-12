@@ -137,7 +137,7 @@ interface SampleIOListProps {
   lang?: 'zh' | 'en'
 }
 
-export function SampleIOList({
+function SampleIOList({
   samples,
   onRun,
   isRunning = false,

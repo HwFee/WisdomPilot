@@ -23,21 +23,21 @@ export interface TransactionListResponse {
   total: number
 }
 
-export const CATEGORY_NAMES: Record<string, string> = {
+const CATEGORY_NAMES: Record<string, string> = {
   base_test: '基础测试答题',
   mastery_quiz: '精进测验完成',
   achievement: '成就奖励',
   bonus: '系统奖励',
 }
 
-export const CATEGORY_COLORS: Record<string, string> = {
+const CATEGORY_COLORS: Record<string, string> = {
   base_test: 'text-blue-600 bg-blue-50',
   mastery_quiz: 'text-purple-600 bg-purple-50',
   achievement: 'text-amber-600 bg-amber-50',
   bonus: 'text-green-600 bg-green-50',
 }
 
-export const LEVEL_COLORS: Record<string, string> = {
+const LEVEL_COLORS: Record<string, string> = {
   入门: 'text-gray-600 bg-gray-100',
   学习: 'text-blue-600 bg-blue-100',
   练习: 'text-green-600 bg-green-100',

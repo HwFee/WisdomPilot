@@ -104,7 +104,7 @@ export async function getWrongQuestions(
   return get<WrongQuestionListResponse>(url, token)
 }
 
-export async function getWrongQuestion(
+async function getWrongQuestion(
   wrongQuestionId: string,
   token: string
 ): Promise<WrongQuestionResponse> {
@@ -125,7 +125,7 @@ export async function deleteWrongQuestion(
 // Analysis API Functions
 // ========================================
 
-export async function getWeakPointsAnalysis(
+async function getWeakPointsAnalysis(
   token: string,
   courseId?: number,
   limit: number = 20
@@ -140,7 +140,7 @@ export async function getWeakPointsAnalysis(
 // Enhanced Practice API Functions
 // ========================================
 
-export async function getEnhancedTargetPractice(
+async function getEnhancedTargetPractice(
   request: EnhancedTargetPracticeRequest,
   token: string
 ): Promise<EnhancedTargetPracticeResponse> {
@@ -151,7 +151,7 @@ export async function getEnhancedTargetPractice(
 // Review Reminder API Functions
 // ========================================
 
-export async function getReviewReminders(
+async function getReviewReminders(
   token: string
 ): Promise<ReviewReminderResponse> {
   return get<ReviewReminderResponse>('/api/review/reminders', token)

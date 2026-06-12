@@ -1,6 +1,6 @@
 import type { WrongQuestionResponse as WrongQuestion } from '@/lib/api/review'
 
-export function getTypeLabel(type: string): string {
+function getTypeLabel(type: string): string {
   switch (type) {
     case 'choice':
       return '选择题'

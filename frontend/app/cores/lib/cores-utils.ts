@@ -25,7 +25,7 @@ export interface TransactionListResponse {
 }
 
 // 分类名称映射
-export const CATEGORY_NAMES: Record<string, string> = {
+const CATEGORY_NAMES: Record<string, string> = {
   mastery: '精进之路答题',
   arena: '挑战之路答题',
   checkin: '每日签到',
@@ -39,7 +39,7 @@ export const CATEGORY_NAMES: Record<string, string> = {
 }
 
 // 分类颜色映射
-export const CATEGORY_COLORS: Record<string, string> = {
+const CATEGORY_COLORS: Record<string, string> = {
   mastery: 'text-amber-600 bg-amber-50',
   arena: 'text-blue-600 bg-blue-50',
   checkin: 'text-green-600 bg-green-50',

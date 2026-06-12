@@ -59,7 +59,7 @@ interface ExerciseSkeletonListProps {
   startIndex?: number;
 }
 
-export function ExerciseSkeletonList({ count, startIndex = 0 }: ExerciseSkeletonListProps) {
+function ExerciseSkeletonList({ count, startIndex = 0 }: ExerciseSkeletonListProps) {
   return (
     <div className="flex flex-col gap-y-4">
       {Array.from({ length: count }).map((_, i) => (
@@ -102,4 +102,3 @@ export function GeneratingIndicator({ progress, total }: { progress: number; tot
   );
 }
 
-export default ExerciseSkeleton;

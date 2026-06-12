@@ -144,7 +144,7 @@ export const TIER_COLORS: Record<TierRank, string> = {
 /**
  * 段位图标映射（使用emoji作为简单图标）
  */
-export const TIER_ICONS: Record<TierRank, string> = {
+const TIER_ICONS: Record<TierRank, string> = {
   bronze: '🥉',
   silver: '🥈',
   gold: '🥇',
@@ -157,7 +157,7 @@ export const TIER_ICONS: Record<TierRank, string> = {
 /**
  * 获取完整段位名称
  */
-export function getFullTierName(tier: TierRank, subTier: number): string {
+function getFullTierName(tier: TierRank, subTier: number): string {
   if (tier === 'king') {
     return '王者'
   }
@@ -169,7 +169,7 @@ export function getFullTierName(tier: TierRank, subTier: number): string {
 /**
  * 获取小段位罗马数字名称
  */
-export function getSubTierName(subTier: number): string {
+function getSubTierName(subTier: number): string {
   const roman: Record<number, string> = {
     1: 'I',
     2: 'II',
@@ -183,7 +183,7 @@ export function getSubTierName(subTier: number): string {
 /**
  * 获取段位顺序（用于比较）
  */
-export function getTierOrder(tier: TierRank): number {
+function getTierOrder(tier: TierRank): number {
   const order: Record<TierRank, number> = {
     bronze: 0,
     silver: 1,

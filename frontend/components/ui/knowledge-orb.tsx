@@ -1044,4 +1044,4 @@ ${kp.title}${optsStr}
   )
 }
 
-export default KnowledgeOrb
+

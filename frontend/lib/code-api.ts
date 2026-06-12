@@ -73,7 +73,7 @@ export async function executeCode(
   return response.json()
 }
 
-export async function getSupportedLanguages(
+async function getSupportedLanguages(
   token: string
 ): Promise<SupportedLanguage[]> {
   const response = await fetchWithAuth(`${API_BASE_URL}/api/code/languages`, token)

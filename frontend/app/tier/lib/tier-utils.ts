@@ -22,7 +22,7 @@ export interface TransactionListResponse {
   total: number
 }
 
-export const TIER_NAMES: Record<string, string> = {
+const TIER_NAMES: Record<string, string> = {
   bronze: '青铜',
   silver: '白银',
   gold: '黄金',

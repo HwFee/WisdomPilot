@@ -24,21 +24,21 @@ export const slideUp: Variants = {
 }
 
 /** 从上方滑入 */
-export const slideDown: Variants = {
+const slideDown: Variants = {
   initial: { opacity: 0, y: -20 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 20 },
 }
 
 /** 从右侧滑入 */
-export const slideInFromRight: Variants = {
+const slideInFromRight: Variants = {
   initial: { opacity: 0, x: 20 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: -20 },
 }
 
 /** 从左侧滑入 */
-export const slideInFromLeft: Variants = {
+const slideInFromLeft: Variants = {
   initial: { opacity: 0, x: -20 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: 20 },
@@ -52,7 +52,7 @@ export const scaleIn: Variants = {
 }
 
 /** 缩放弹出 */
-export const popIn: Variants = {
+const popIn: Variants = {
   initial: { opacity: 0, scale: 0.8 },
   animate: {
     opacity: 1,
@@ -67,7 +67,7 @@ export const popIn: Variants = {
 }
 
 /** 弹跳效果 */
-export const bounce: Variants = {
+const bounce: Variants = {
   initial: { scale: 0.3, opacity: 0 },
   animate: {
     scale: 1,
@@ -81,7 +81,7 @@ export const bounce: Variants = {
 }
 
 /** 无动画（仅可见性） */
-export const visible: Variants = {
+const visible: Variants = {
   initial: { opacity: 1 },
   animate: { opacity: 1 },
   exit: { opacity: 0 },
@@ -105,7 +105,7 @@ export const staggerItem: Variants = {
 }
 
 /** 快速交错 */
-export const staggerContainerFast: Variants = {
+const staggerContainerFast: Variants = {
   animate: {
     transition: {
       staggerChildren: 0.02,
@@ -114,7 +114,7 @@ export const staggerContainerFast: Variants = {
 }
 
 /** 慢速交错 */
-export const staggerContainerSlow: Variants = {
+const staggerContainerSlow: Variants = {
   animate: {
     transition: {
       staggerChildren: 0.1,
@@ -124,18 +124,18 @@ export const staggerContainerSlow: Variants = {
 
 // ── 默认过渡配置 ──
 
-export const defaultTransition: Transition = {
+const defaultTransition: Transition = {
   duration: 0.3,
   ease: [0.4, 0, 0.2, 1],
 }
 
-export const springTransition: Transition = {
+const springTransition: Transition = {
   type: 'spring',
   stiffness: 300,
   damping: 20,
 }
 
-export const slowTransition: Transition = {
+const slowTransition: Transition = {
   duration: 0.5,
   ease: [0.4, 0, 0.2, 1],
 }
@@ -145,7 +145,7 @@ export const slowTransition: Transition = {
 /**
  * 数字计数动画
  */
-export function useCountUp(
+function useCountUp(
   end: number,
   duration: number = 1000,
   start: number = 0,
@@ -182,7 +182,7 @@ export function useCountUp(
 /**
  * 滚动触发动画
  */
-export function useScrollAnimation(threshold: number = 0.1) {
+function useScrollAnimation(threshold: number = 0.1) {
   const [isVisible, setIsVisible] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const thresholdRef = useRef(threshold)
@@ -224,7 +224,7 @@ const HOVER_VARIANTS = {
   hover: { scale: 1.02 },
 }
 
-export function useHoverAnimation() {
+function useHoverAnimation() {
   const [isHovered, setIsHovered] = useState(false)
 
   const hoverProps = {
@@ -248,7 +248,7 @@ const TAP_VARIANTS = {
   tapped: { scale: 0.98 },
 }
 
-export function useTapAnimation() {
+function useTapAnimation() {
   const [isTapped, setIsTapped] = useState(false)
 
   const tapProps = {
@@ -268,7 +268,7 @@ export function useTapAnimation() {
 /**
  * 打字机效果
  */
-export function useTypewriter(text: string, speed: number = 50) {
+function useTypewriter(text: string, speed: number = 50) {
   const [state, setState] = useState<{ text: string; complete: boolean }>({ text: '', complete: false })
 
   // react-doctor-disable-next-line no-cascading-set-state, react-doctor/no-cascading-set-state
@@ -294,7 +294,7 @@ export function useTypewriter(text: string, speed: number = 50) {
 /**
  * 延迟动画
  */
-export function useDelayedAnimation(delay: number = 300) {
+function useDelayedAnimation(delay: number = 300) {
   const [shouldAnimate, setShouldAnimate] = useState(false)
 
   useEffect(() => {
@@ -311,7 +311,7 @@ export function useDelayedAnimation(delay: number = 300) {
 /**
  * 视差滚动
  */
-export function useParallax(speed: number = 0.5) {
+function useParallax(speed: number = 0.5) {
   const [offset, setOffset] = useState(0)
   const ref = useRef<HTMLElement>(null)
 
@@ -337,7 +337,7 @@ export function useParallax(speed: number = 0.5) {
 /**
  * 创建延迟过渡
  */
-export function createDelayedTransition(delay: number): Transition {
+function createDelayedTransition(delay: number): Transition {
   return {
     ...defaultTransition,
     delay,
@@ -347,14 +347,14 @@ export function createDelayedTransition(delay: number): Transition {
 /**
  * 创建交错延迟
  */
-export function createStaggerDelays(count: number, baseDelay: number = 0.05): number[] {
+function createStaggerDelays(count: number, baseDelay: number = 0.05): number[] {
   return Array.from({ length: count }, (_, i) => i * baseDelay)
 }
 
 /**
  * 减少动画偏好检测
  */
-export function usePrefersReducedMotion() {
+function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
   useEffect(() => {
@@ -375,7 +375,7 @@ export function usePrefersReducedMotion() {
 /**
  * 获取动画变体（考虑减少动画偏好）
  */
-export function getAnimationVariant(
+function getAnimationVariant(
   variant: Variants,
   prefersReducedMotion: boolean
 ): Variants {
