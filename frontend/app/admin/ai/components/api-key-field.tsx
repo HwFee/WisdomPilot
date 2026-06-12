@@ -20,7 +20,6 @@ interface ApiKeyFieldProps {
 export function ApiKeyField({
   label,
   hasKey,
-  preview,
   keyLength,
   value,
   onChange,
@@ -37,7 +36,7 @@ export function ApiKeyField({
       <div className="flex items-center gap-2">
         {hasKey && !replaceMode ? (
           <>
-            <div className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-muted/50 text-muted-foreground font-mono tracking-widest overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-muted text-muted-foreground font-mono tracking-widest overflow-hidden text-ellipsis whitespace-nowrap">
               {maskedPreview}
             </div>
             <Button
@@ -55,7 +54,7 @@ export function ApiKeyField({
               variant="ghost"
               size="icon"
               onClick={onDelete}
-              className="size-auto p-2 text-red-500 hover:bg-red-50 hover:text-red-600 shrink-0"
+              className="size-auto p-2 text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
               aria-label="删除 API 密钥"
             >
               <Trash2 className="size-3.5" />

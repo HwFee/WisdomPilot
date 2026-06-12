@@ -26,10 +26,12 @@ export function LocalFirstToggle({ checked, onChange }: LocalFirstToggleProps) {
           checked ? 'bg-primary hover:bg-primary' : 'bg-muted-foreground/30 hover:bg-muted-foreground/30'
         )}
       >
-        <span className={cn(
-          'absolute top-1 left-1 size-4 bg-white rounded-full transition-transform',
-          checked && 'translate-x-5'
-        )} />
+        <span
+          className={cn(
+            'absolute top-1 left-1 size-4 bg-card rounded-full transition-transform',
+            checked && 'translate-x-5'
+          )}
+        />
       </Button>
     </div>
   )

@@ -3,6 +3,7 @@
 import React from 'react'
 import { Loader2, Save, Zap, CheckCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Panel } from '@/components/layout/Panel'
 import { cn } from '@/lib/utils'
 import type { TestConnectionResponse } from '@/lib/ai-api'
 
@@ -39,12 +40,12 @@ export function ConfigCard({
 
   const resultVariant = testResult
     ? testResult.success
-      ? { icon: CheckCircle, className: 'text-emerald-600', message: testResult.message }
-      : { icon: AlertCircle, className: 'text-red-500', message: testResult.message }
+      ? { icon: CheckCircle, className: 'text-success', message: testResult.message }
+      : { icon: AlertCircle, className: 'text-destructive', message: testResult.message }
     : null
 
   return (
-    <div className="bg-card rounded-lg shadow p-6 flex flex-col gap-y-5">
+    <Panel className="p-6 flex flex-col gap-y-5">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-primary/10 rounded-lg text-primary">{icon}</div>
         <div>
@@ -54,7 +55,7 @@ export function ConfigCard({
       </div>
       <div className="flex flex-col gap-y-5">
         {children}
-        <div className="flex items-center gap-3 pt-2 border-t">
+        <div className="flex items-center gap-3 pt-2 border-t border-border">
           <Button
             type="button"
             variant="outline"
@@ -86,6 +87,6 @@ export function ConfigCard({
         <saveButtonVariant.icon className={cn('size-4 mr-2', saveButtonVariant.iconClassName)} />
         {saveButtonVariant.label}
       </Button>
-    </div>
+    </Panel>
   )
 }

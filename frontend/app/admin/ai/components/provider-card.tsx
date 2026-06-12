@@ -2,6 +2,7 @@
 
 import { Wifi, WifiOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Panel } from '@/components/layout/Panel'
 import type { ProviderStatus } from '@/lib/ai-api'
 
 interface ProviderCardProps {
@@ -11,19 +12,21 @@ interface ProviderCardProps {
 export function ProviderCard({ provider }: ProviderCardProps) {
   const isConnected = provider.status === 'connected'
   const Icon = isConnected ? Wifi : WifiOff
-  const iconColor = isConnected ? 'text-emerald-600' : 'text-red-500'
+  const iconColor = isConnected ? 'text-success' : 'text-destructive'
 
   return (
-    <div className="bg-card rounded-lg shadow p-4 border">
+    <Panel className="p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <Icon className={cn('size-4', iconColor)} />
           <span className="font-medium capitalize">{provider.type === 'lmstudio' ? 'LM Studio' : provider.type}</span>
         </div>
-        <span className={cn(
-          'text-xs px-2 py-0.5 rounded-full',
-          isConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-        )}>
+        <span
+          className={cn(
+            'text-xs px-2 py-0.5 rounded-full',
+            isConnected ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+          )}
+        >
           {isConnected ? '已连接' : '未连接'}
         </span>
       </div>
@@ -52,6 +55,6 @@ export function ProviderCard({ provider }: ProviderCardProps) {
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   )
 }

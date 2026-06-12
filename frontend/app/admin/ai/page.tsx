@@ -3,7 +3,6 @@
 import { useAIAdminConfig } from './use-ai-admin-config'
 import {
   Bot,
-  Save,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -17,6 +16,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Panel } from '@/components/layout/Panel'
 import { cn } from '@/lib/utils'
 import { Field } from './components/field'
 import { ApiKeyField } from './components/api-key-field'
@@ -46,7 +46,7 @@ export default function AdminAISettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card shadow-sm border-b">
+      <header className="bg-card border-b border-border">
         <div className="max-w-4xl mx-auto p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Settings className="size-6 text-primary" />
@@ -66,18 +66,26 @@ export default function AdminAISettingsPage() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Message */}
         {ctx.message && (
-          <div className={cn(
-            'mb-4 p-4 rounded-lg flex items-center gap-2',
-            ctx.message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-          )}>
-            {ctx.message.type === 'success' ? <CheckCircle className="size-5" /> : <AlertCircle className="size-5" />}
+          <div
+            className={cn(
+              'mb-4 p-4 rounded-lg flex items-center gap-2',
+              ctx.message.type === 'success'
+                ? 'bg-success/10 text-success'
+                : 'bg-destructive/10 text-destructive'
+            )}
+          >
+            {ctx.message.type === 'success' ? (
+              <CheckCircle className="size-5" />
+            ) : (
+              <AlertCircle className="size-5" />
+            )}
             <span>{ctx.message.text}</span>
           </div>
         )}
 
         {/* Current Status Banner */}
         {ctx.config && (
-          <div className="mb-6 flex items-center gap-3 p-4 bg-muted rounded-lg">
+          <Panel className="mb-6 p-4 flex items-center gap-3">
             <Bot className="size-5 text-primary" />
             <span className="text-sm font-medium">
               当前: <span className="text-primary">{ctx.config.provider}</span>
@@ -85,12 +93,12 @@ export default function AdminAISettingsPage() {
               <span>{ctx.config.model}</span>
             </span>
             {ctx.config.is_local_first && (
-              <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">本地优先</span>
+              <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">本地优先</span>
             )}
             <span className="ml-auto text-xs text-muted-foreground">
               {ctx.config.is_configured ? '已配置' : '未配置'}
             </span>
-          </div>
+          </Panel>
         )}
 
         {/* Tabs */}
@@ -267,17 +275,17 @@ export default function AdminAISettingsPage() {
               </div>
             ) : ctx.status ? (
               <>
-                <div className="p-4 bg-muted rounded-lg">
+                <Panel className="p-4">
                   <div className="text-sm font-medium mb-2">当前激活</div>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-semibold">{ctx.status.current_provider}</span>
                     <span className="text-muted-foreground">/</span>
                     <span>{ctx.status.current_model}</span>
                     {ctx.status.is_local_first && (
-                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">本地优先</span>
+                      <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">本地优先</span>
                     )}
                   </div>
-                </div>
+                </Panel>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {ctx.status.providers.map(p => (
                     <ProviderCard key={p.type} provider={p} />
@@ -295,4 +303,3 @@ export default function AdminAISettingsPage() {
     </div>
   )
 }
-
