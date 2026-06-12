@@ -7,3 +7,5 @@ export { Grid } from "./Grid";
 export { CourseListItem } from "./CourseListItem";
 export { ToolItem } from "./ToolItem";
 export { ActivityItem } from "./ActivityItem";
+export { EmptyState } from "./EmptyState";
+export type { EmptyStateProps, EmptyStateAction } from "./EmptyState";
