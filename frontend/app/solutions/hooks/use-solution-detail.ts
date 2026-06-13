@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useConfirm } from '@/hooks/use-confirm'
 import { getSolution, deleteSolution, updateSolution } from '@/lib/api/solutions'
 import { getStoredToken } from '@/lib/api/auth'
 import type { SolutionResponse, SolutionUpdate } from '@/lib/api/solutions'
@@ -14,6 +15,7 @@ export function useSolutionDetail(solutionId: number) {
   const [initialized, setInitialized] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const loading = !initialized
+  const { confirm, dialog } = useConfirm()
 
   const fetchSolution = useCallback(async (token: string) => {
     try {
@@ -35,8 +37,15 @@ export function useSolutionDetail(solutionId: number) {
   }, [solutionId, fetchSolution])
 
   const handleDelete = useCallback(
-    async (confirmText: string) => {
-      if (!confirm(confirmText)) return
+    async (_confirmText?: string) => {
+      const confirmed = await confirm({
+        title: '删除题解',
+        description: '确定要删除这篇题解吗？此操作无法撤销。',
+        confirmLabel: '删除',
+        cancelLabel: '取消',
+        variant: 'danger',
+      })
+      if (!confirmed) return
 
       const token = getStoredToken()
       if (!token) return
@@ -48,7 +57,7 @@ export function useSolutionDetail(solutionId: number) {
         console.error('Failed to delete:', error)
       }
     },
-    [solutionId, push],
+    [solutionId, push, confirm],
   )
 
   const handleEditSave = useCallback(
@@ -78,5 +87,6 @@ export function useSolutionDetail(solutionId: number) {
     handleDelete,
     handleEditSave,
     push,
+    dialog,
   }
 }

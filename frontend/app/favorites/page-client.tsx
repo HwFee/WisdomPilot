@@ -21,6 +21,7 @@ export default function FavoritesClient() {
     handleToggleSelect,
     handleBatchDelete,
     handleMoveToFolder,
+    dialog,
   } = useFavorites()
 
   if (isLoading) {
@@ -33,6 +34,7 @@ export default function FavoritesClient() {
 
   return (
     <div className="min-h-screen bg-background">
+      {dialog}
       <header className="h-14 border-b bg-card">
         <div className="max-w-[1280px] mx-auto px-6 h-full flex items-center gap-3">
           <Button asChild variant="ghost" size="icon" aria-label="返回">

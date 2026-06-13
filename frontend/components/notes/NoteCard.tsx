@@ -8,6 +8,7 @@ import rehypeHighlight from 'rehype-highlight'
 import { FileText, Edit, Trash2, Download, Calendar, Tag, ExternalLink, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Panel, PanelHeader } from '@/components/layout'
+import { useConfirm } from '@/hooks/use-confirm'
 import { getStoredToken } from '@/lib/api'
 import { deleteNote, exportNote } from '@/lib/api/notes'
 import type { NoteResponse } from '@/types/api'
@@ -51,6 +52,7 @@ export function NoteCard({
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleted, setDeleted] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const { confirm, dialog } = useConfirm()
 
   // 是否正在处理中
   const isProcessing = note.processing_status === 'pending' || note.processing_status === 'processing'
@@ -58,9 +60,14 @@ export function NoteCard({
   const handleDelete = useCallback(async () => {
     if (deleted || isDeleting) return
 
-    if (!confirm(translate(lang, '确定要删除这条笔记吗？', 'Are you sure you want to delete this note?'))) {
-      return
-    }
+    const confirmed = await confirm({
+      title: translate(lang, '删除笔记', 'Delete Note'),
+      description: translate(lang, '确定要删除这条笔记吗？此操作无法撤销。', 'Are you sure you want to delete this note? This action cannot be undone.'),
+      confirmLabel: translate(lang, '删除', 'Delete'),
+      cancelLabel: translate(lang, '取消', 'Cancel'),
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     const token = getStoredToken()
     if (!token) return
@@ -76,7 +83,7 @@ export function NoteCard({
     } finally {
       setIsDeleting(false)
     }
-  }, [note.id, lang, onDelete, deleted, isDeleting])
+  }, [note.id, lang, onDelete, deleted, isDeleting, confirm])
 
   const handleExport = useCallback(async () => {
     const token = getStoredToken()
@@ -134,6 +141,7 @@ export function NoteCard({
 
   return (
     <>
+      {dialog}
       <Panel className={`p-6 hover:border-foreground/50 transition-colors ${isProcessing ? 'opacity-80' : ''}`}>
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-4">

@@ -11,6 +11,7 @@ import {
   getNotesCount,
   getUserCourseProgress,
   getTodayStats,
+  getGlobalTierInfo,
   getStoredToken,
   API_BASE_URL,
   type Activity,
@@ -19,7 +20,7 @@ import {
   type User,
 } from '@/lib/api'
 import type { ReviewStatsResponse } from '@/types/review'
-import type { UserProfileResponse, CheckinDetailsResponse } from '@/types/api'
+import type { UserProfileResponse, CheckinDetailsResponse, TierInfo } from '@/types/api'
 
 type Language = 'zh' | 'en'
 
@@ -36,6 +37,7 @@ type DashboardState = {
   notesCount: number
   checkinDetails: CheckinDetailsResponse | null
   todayStats: TodayStatsResponse
+  tierInfo: TierInfo | null
 }
 
 const initialState: DashboardState = {
@@ -56,6 +58,7 @@ const initialState: DashboardState = {
     accuracy: 0,
     time_minutes: 0,
   },
+  tierInfo: null,
 }
 
 type DashboardAction =
@@ -188,6 +191,13 @@ export function useDashboardData(): UseDashboardReturn {
         /* ignore */
       }
 
+      let tierData: TierInfo | null = null
+      try {
+        tierData = await getGlobalTierInfo()
+      } catch {
+        /* ignore */
+      }
+
       dispatch({
         type: 'FETCH_SUCCESS',
         payload: {
@@ -200,6 +210,7 @@ export function useDashboardData(): UseDashboardReturn {
           notesCount: notes,
           checkinDetails: details,
           todayStats: todayData,
+          tierInfo: tierData,
         },
       })
     } catch (err) {

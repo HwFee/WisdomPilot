@@ -30,7 +30,7 @@ export function StreamHintPanel({
   disabled,
 }: StreamHintPanelProps) {
   return (
-    <div className="bg-card rounded-xl border p-4">
+    <div className="bg-card rounded-lg border p-4">
       <HintHistory currentBalance={currentBalance} />
       <div className="flex gap-2">
         <HintBubble

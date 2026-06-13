@@ -18,23 +18,20 @@ export function MarkdownEditorPane({
 }: MarkdownEditorPaneProps) {
   if (variant === 'fullPage') {
     return (
-      <div className="flex-1 flex flex-col min-w-0 border-r border-border">
-        <div className="flex items-center justify-center px-6 py-3 text-sm text-muted-foreground border-b border-border">
+      <div className="flex-1 flex flex-col min-w-0 border-r border-border bg-card">
+        <div className="flex items-center justify-between px-4 py-2 text-xs font-medium uppercase tracking-[1.5px] text-muted-foreground border-b border-border bg-muted/20">
           <div className="flex items-center gap-2">
-            <Edit3 className="size-4" strokeWidth={1.5} />
-            <span>{translate(lang, 'Markdown 编辑器', 'Markdown Editor')}</span>
+            <Edit3 className="size-3.5" strokeWidth={1.5} />
+            <span>{translate(lang, '编辑', 'Edit')}</span>
           </div>
+          <span className="text-[10px] normal-case tracking-normal">Markdown</span>
         </div>
         <textarea
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
-          placeholder={translate(
-            lang,
-            '使用 Markdown 编写，支持数学公式和代码高亮...',
-            'Write in Markdown with math and code support...'
-          )}
+          placeholder={translate(lang, '开始编写笔记内容...', 'Start writing note content...')}
           aria-label={translate(lang, '笔记内容', 'Note content')}
-          className="flex-1 w-full p-6 resize-none bg-background font-mono text-base leading-relaxed focus:outline-none"
+          className="flex-1 w-full p-6 resize-none bg-transparent font-mono text-base leading-relaxed focus:outline-none"
         />
       </div>
     )

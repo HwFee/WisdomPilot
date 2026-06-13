@@ -1,15 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Eye, Edit3, Save, Megaphone } from 'lucide-react'
+import { X, Eye, Edit3, Save, Megaphone, ArrowLeft, Type } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import rehypeHighlight from 'rehype-highlight'
-import 'katex/dist/katex.min.css'
-import 'highlight.js/styles/github-dark.css'
+import { MarkdownRenderer } from '@/components/editor/MarkdownRenderer'
 import type { SolutionCreate, SolutionUpdate } from '@/lib/api/solutions'
 
 interface SolutionEditorProps {
@@ -58,10 +52,32 @@ export function SolutionEditor({
   // Full page mode - no modal, no fixed overlay
   if (isFullPage) {
     return (
-      <div className="bg-card border border-border overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-card border border-border flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+        {/* Header */}
+        <header className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={onCancel} aria-label={t('返回', 'Back')} className="shrink-0">
+              <ArrowLeft className="size-5" strokeWidth={1.5} />
+            </Button>
+            <h2 className="text-base font-semibold uppercase tracking-[1.5px] truncate">
+              {initialTitle ? t('编辑题解', 'Edit Solution') : t('发布题解', 'New Solution')}
+            </h2>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={isSaving}>
+              <X className="size-4 mr-1.5" strokeWidth={1.5} />
+              {t('取消', 'Cancel')}
+            </Button>
+            <Button type="button" size="sm" onClick={handleSave} disabled={isSaving || !title.trim()} className="gap-2">
+              <Save className="size-4" strokeWidth={1.5} />
+              {isSaving ? t('保存中...', 'Saving...') : t('发布题解', 'Post Solution')}
+            </Button>
+          </div>
+        </header>
+
         {/* Announcement toggle - admin only */}
         {isAdmin && (
-          <div className="px-6 py-4 border-b bg-muted/30">
+          <div className="px-6 py-3 border-b border-border bg-muted/20">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -69,100 +85,60 @@ export function SolutionEditor({
                 onChange={e => setIsAnnouncement(e.target.checked)}
                 className="size-4 border-border"
               />
-              <Megaphone className="size-4" strokeWidth={1.5} />
+              <Megaphone className="size-4 text-amber-500" strokeWidth={1.5} />
               <span className="text-sm font-medium">{t('发布为公告', 'Post as Announcement')}</span>
             </label>
           </div>
         )}
 
         {/* Title input */}
-        <div className="px-6 py-4 border-b">
-          <input
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder={t('输入题解标题...', 'Enter solution title...')}
-            aria-label={t('题解标题', 'Solution title')}
-            className="w-full h-12 px-3 bg-background border border-border text-xl font-medium focus:outline-none focus:border-foreground"
-            maxLength={200}
-          />
+        <div className="border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3">
+            <Type className="size-5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+            <input
+              type="text"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder={t('输入题解标题...', 'Enter solution title...')}
+              aria-label={t('题解标题', 'Solution title')}
+              className="flex-1 bg-transparent text-xl font-semibold text-foreground placeholder:text-muted-foreground py-1 focus:outline-none"
+              maxLength={200}
+            />
+          </div>
         </div>
 
         {/* Split pane editor */}
-        <div className="flex h-[calc(100%-140px)]">
+        <div className="flex-1 flex min-h-0">
           {/* Left: Editor */}
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+          <div className="flex-1 flex flex-col min-w-0 border-r border-border">
+            <div className="flex items-center justify-between px-4 py-2 text-xs font-medium uppercase tracking-[1.5px] text-muted-foreground border-b border-border bg-muted/20">
               <div className="flex items-center gap-2">
-                <Edit3 className="size-4" />
-                <span>{t('Markdown 编辑器', 'Markdown Editor')}</span>
+                <Edit3 className="size-3.5" strokeWidth={1.5} />
+                <span>{t('编辑', 'Edit')}</span>
               </div>
+              <span className="text-[10px] normal-case tracking-normal">Markdown</span>
             </div>
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder={t('使用 Markdown 编写，支持数学公式和代码高亮...', 'Write in Markdown with math and code support...')}
+              placeholder={t('开始编写题解内容...', 'Start writing solution content...')}
               aria-label={t('题解内容', 'Solution content')}
-              className="flex-1 w-full p-6 resize-none bg-background font-mono text-base leading-relaxed focus:outline-none"
+              className="flex-1 w-full p-6 resize-none bg-transparent font-mono text-base leading-relaxed focus:outline-none"
             />
           </div>
 
-          {/* Divider */}
-          <div className="w-px bg-border" />
-
           {/* Right: Preview */}
           <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex items-center justify-center px-6 py-3 bg-muted/50 text-sm text-muted-foreground border-b border-border">
+            <div className="flex items-center justify-between px-4 py-2 text-xs font-medium uppercase tracking-[1.5px] text-muted-foreground border-b border-border bg-muted/20">
               <div className="flex items-center gap-2">
-                <Eye className="size-4" />
+                <Eye className="size-3.5" strokeWidth={1.5} />
                 <span>{t('预览', 'Preview')}</span>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
+            <div className="flex-1 overflow-y-auto p-6">
               <div className="markdown-body">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeKatex, rehypeHighlight]}
-                  components={{
-                    h1: ({ children }) => <h1 className="text-3xl font-semibold mt-6 mb-3">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-2xl font-semibold mt-5 mb-2">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-xl font-semibold mt-4 mb-2">{children}</h3>,
-                    h4: ({ children }) => <h4 className="text-lg font-semibold mt-3 mb-1">{children}</h4>,
-                    h5: ({ children }) => <h5 className="text-base font-semibold mt-2 mb-1">{children}</h5>,
-                    h6: ({ children }) => <h6 className="text-sm font-semibold mt-2 mb-1 text-muted-foreground">{children}</h6>,
-                    p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
-                    ul: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>,
-                    li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                    blockquote: ({ children }) => <blockquote className="border-l-2 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
-                    code: ({ className, children, ...props }) => {
-                      const isInline = !className
-                      return isInline
-                        ? <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>
-                        : <code className={className} {...props}>{children}</code>
-                    },
-                    pre: ({ children }) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-3">{children}</pre>,
-                    a: ({ href, children }) => <a href={href} className="text-primary underline hover:text-primary/80">{children}</a>,
-                    table: ({ children }) => <table className="w-full border-collapse my-3">{children}</table>,
-                    th: ({ children }) => <th className="border border-border px-3 py-2 bg-muted font-semibold text-left">{children}</th>,
-                    td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-                  }}
-                >
-                  {content}
-                </ReactMarkdown>
+                {content ? <MarkdownRenderer content={content} /> : null}
               </div>
-            </div>
-            {/* Save button in preview footer */}
-            <div className="px-6 py-3 border-t border-border bg-muted/30">
-              <Button
-                type="button"
-                onClick={handleSave}
-                disabled={isSaving || !title.trim()}
-                className="w-full"
-              >
-                <Save className="size-4 mr-2" strokeWidth={1.5} />
-                {isSaving ? t('保存中...', 'Saving...') : t('保存', 'Save')}
-              </Button>
             </div>
           </div>
         </div>
@@ -248,36 +224,7 @@ export function SolutionEditor({
             </div>
             <div className="flex-1 overflow-y-auto p-4 rounded-xl border border-border bg-muted/30">
               <div className="markdown-body">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeKatex, rehypeHighlight]}
-                  components={{
-                    h1: ({ children }) => <h1 className="text-3xl font-semibold mt-6 mb-3">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-2xl font-semibold mt-5 mb-2">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-xl font-semibold mt-4 mb-2">{children}</h3>,
-                    h4: ({ children }) => <h4 className="text-lg font-semibold mt-3 mb-1">{children}</h4>,
-                    h5: ({ children }) => <h5 className="text-base font-semibold mt-2 mb-1">{children}</h5>,
-                    h6: ({ children }) => <h6 className="text-sm font-semibold mt-2 mb-1 text-muted-foreground">{children}</h6>,
-                    p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
-                    ul: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>,
-                    li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                    blockquote: ({ children }) => <blockquote className="border-l-2 border-primary pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
-                    code: ({ className, children, ...props }) => {
-                      const isInline = !className
-                      return isInline
-                        ? <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>
-                        : <code className={className} {...props}>{children}</code>
-                    },
-                    pre: ({ children }) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-3">{children}</pre>,
-                    a: ({ href, children }) => <a href={href} className="text-primary underline hover:text-primary/80">{children}</a>,
-                    table: ({ children }) => <table className="w-full border-collapse my-3">{children}</table>,
-                    th: ({ children }) => <th className="border border-border px-3 py-2 bg-muted font-semibold text-left">{children}</th>,
-                    td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-                  }}
-                >
-                  {content}
-                </ReactMarkdown>
+                <MarkdownRenderer content={content} />
               </div>
             </div>
           </div>

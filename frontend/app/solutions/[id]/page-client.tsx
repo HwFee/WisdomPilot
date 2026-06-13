@@ -24,6 +24,7 @@ export default function SolutionDetailClient() {
     handleDelete,
     handleEditSave,
     push,
+    dialog,
   } = useSolutionDetail(solutionId)
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
@@ -76,6 +77,7 @@ export default function SolutionDetailClient() {
   // View mode
   return (
     <div className="min-h-screen bg-background">
+      {dialog}
       <header className="h-14 border-b bg-card">
         <div className="max-w-[1280px] mx-auto px-6 h-full flex items-center gap-3">
           <Button asChild variant="ghost" size="icon" aria-label="返回首页">
@@ -99,7 +101,7 @@ export default function SolutionDetailClient() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleDelete(t('确定删除这篇题解吗？', 'Delete this solution?'))}
+                onClick={() => handleDelete()}
                 className="text-red-500 hover:text-red-600"
               >
                 <Trash2 className="size-4 mr-1.5" strokeWidth={1.5} />

@@ -256,6 +256,7 @@ export {
 export {
   getTierConfigs,
   getTierInfo,
+  getGlobalTierInfo,
   updateStars,
   TIER_COLORS,
 } from "./tier";

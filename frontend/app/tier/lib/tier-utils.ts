@@ -1,51 +1,36 @@
-export interface TierTransaction {
-  id: string
-  course_id: number
-  tier_before: string
-  sub_tier_before: number
-  stars_before: number
-  tier_after: string
-  sub_tier_after: number
-  stars_after: number
-  stars_change: number
-  promoted: boolean
-  demoted: boolean
-  used_protection: boolean
-  protection_remaining: number
-  source: string
-  description: string | null
-  created_at: string
+import { TIER_NAMES } from '@/lib/api/tier'
+
+const SUB_TIER_ROMAN: Record<number, string> = {
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
 }
 
-export interface TransactionListResponse {
-  transactions: TierTransaction[]
-  total: number
+export function getFullTierName(tier: string, subTier: number): string {
+  if (tier === 'king') return TIER_NAMES['king']
+  const tierName = TIER_NAMES[tier as keyof typeof TIER_NAMES] || tier
+  const subTierName = SUB_TIER_ROMAN[subTier] || String(subTier)
+  return `${tierName}${subTierName}`
 }
 
-const TIER_NAMES: Record<string, string> = {
-  bronze: '青铜',
-  silver: '白银',
-  gold: '黄金',
-  platinum: '铂金',
-  diamond: '钻石',
-  master: '大师',
-  grandmaster: '宗师',
-  king: '王者',
+export const TIER_SOURCE_LABELS: Record<string, string> = {
+  arena_challenge: '挑战之路',
+  test: '测试',
+  admin: '管理员',
 }
 
-export const TIER_COLORS: Record<string, string> = {
-  bronze: 'text-amber-700 bg-amber-100',
-  silver: 'text-gray-600 bg-gray-200',
-  gold: 'text-yellow-600 bg-yellow-100',
-  platinum: 'text-cyan-600 bg-cyan-100',
-  diamond: 'text-blue-600 bg-blue-100',
-  master: 'text-purple-600 bg-purple-100',
-  grandmaster: 'text-red-600 bg-red-100',
-  king: 'text-orange-500 bg-gradient-to-r from-yellow-100 to-orange-100',
+export function formatDateTime(isoString: string): string {
+  const date = new Date(isoString)
+  return date.toLocaleString('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
-const ROMAN_NUMERALS = ['', 'I', 'II', 'III', 'IV', 'V']
-
-export function getTierDisplay(tier: string, subTier: number): string {
-  return `${TIER_NAMES[tier] || tier} ${ROMAN_NUMERALS[subTier] || subTier}`
+export function formatNumber(value: number): string {
+  return value.toLocaleString('zh-CN')
 }

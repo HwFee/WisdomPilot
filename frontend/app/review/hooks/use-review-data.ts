@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useConfirm } from '@/hooks/use-confirm'
 import {
   getWrongQuestions,
   deleteWrongQuestion,
@@ -14,6 +15,7 @@ export function useReviewData() {
   const [initialized, setInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const loading = !initialized && !error
+  const { confirm, dialog } = useConfirm()
 
   const getToken = useCallback(() => {
     if (typeof window === 'undefined') return null
@@ -48,7 +50,14 @@ export function useReviewData() {
 
   const handleDelete = useCallback(
     async (wrongQuestionId: string) => {
-      if (!confirm('确定要删除这条错题记录吗？')) return
+      const confirmed = await confirm({
+        title: '删除错题',
+        description: '确定要删除这条错题记录吗？此操作无法撤销。',
+        confirmLabel: '删除',
+        cancelLabel: '取消',
+        variant: 'danger',
+      })
+      if (!confirmed) return
 
       const token = getToken()
       if (!token) return
@@ -60,7 +69,7 @@ export function useReviewData() {
         alert('删除失败，请稍后重试')
       }
     },
-    [getToken],
+    [getToken, confirm],
   )
 
   const clearError = useCallback(() => {
@@ -75,5 +84,6 @@ export function useReviewData() {
     handleDelete,
     clearError,
     push,
+    dialog,
   }
 }

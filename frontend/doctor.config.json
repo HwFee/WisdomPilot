@@ -1,0 +1,7 @@
+{
+  "ignore": {
+    "files": [
+      "app/mastery/**/mermaid-block.tsx"
+    ]
+  }
+}

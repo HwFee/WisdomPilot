@@ -263,16 +263,13 @@ function StreamHintModal({
     <div
       style={modalStyle}
       className={cn(
-        'w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col rounded-2xl',
-        'bg-card/95 backdrop-blur-sm border border-white/10 shadow-2xl',
+        'w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col rounded-lg',
+        'bg-card border border-border shadow-lg',
         isDragging ? 'select-none' : ''
       )}
     >
-      {/* Top accent */}
-      <div className="absolute inset-x-0 top-0 h-px bg-primary/30 z-10" />
-
       {/* Draggable header */}
-      <div className="relative flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/30 rounded-t-2xl cursor-grab active:cursor-grabbing">
+      <div className="relative flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30 rounded-t-lg cursor-grab active:cursor-grabbing">
         <button
           type="button"
           className="absolute inset-0 z-0"
@@ -314,10 +311,10 @@ function StreamHintModal({
           emptyState={
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <div className="relative">
-                <div className="size-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <div className="size-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
                   <Sparkles className="size-6 text-purple-500" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 size-5 rounded-full bg-card flex items-center justify-center shadow border border-border/50">
+                <div className="absolute -bottom-1 -right-1 size-5 rounded-md bg-card flex items-center justify-center shadow border border-border">
                   <Loader2 className="size-3 text-purple-500 animate-spin" />
                 </div>
               </div>
@@ -328,7 +325,7 @@ function StreamHintModal({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-border/50 bg-muted/30 rounded-b-2xl">
+      <div className="px-5 py-4 border-t border-border bg-muted/30 rounded-b-lg">
         <div className="flex items-center justify-between">
           <CostLabel level={level} isCached={isCached} />
           <ModalFooterAction

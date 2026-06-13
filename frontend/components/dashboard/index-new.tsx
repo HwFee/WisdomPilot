@@ -164,7 +164,9 @@ export default function DashboardPage() {
             <ContentGrid>
               <CurrentLearningPanel
                 courses={state.coursesProgress}
+                tierInfo={state.tierInfo}
                 lang={state.lang}
+                onEnterArena={() => push('/arena')}
               />
               <QuickTools
                 wrongCount={state.reviewStats?.wrong_count ?? 0}

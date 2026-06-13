@@ -69,7 +69,7 @@ export default function NotesClient() {
         <PageContainer className="py-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar */}
-            <aside className="lg:w-72 shrink-0 flex flex-col gap-y-6">
+            <aside className="lg:w-80 shrink-0 flex flex-col gap-y-6">
               <NoteSearch
                 onResults={handleSearchResults}
                 placeholder="搜索笔记..."

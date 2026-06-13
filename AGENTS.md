@@ -150,6 +150,10 @@ boss
 - **前端**：启动 Next.js 开发服务器，确认无编译错误、页面正常渲染。
 - **测试**：运行相关测试套件，确认无新增失败。
 - **验证顺序**：启动服务 → 观察日志 → 无报错则继续；有报错则立即修复，修复后再继续下一步重构。
+- **前端补充：完整校验不止 `tsc --noEmit`**。`react-doctor` 分数和裸 `tsc` **不能**替代真实构建验证：
+  - Next.js App Router 特有约束（`"use client"` + `export const metadata`、`page.tsx` 缺 `export default`、动态路由参数等）只有在 `next dev` / `next build` 触发 `.next/types/validator.ts` 后才会被 tsc 检出。
+  - 子代理/AI 重构后必须**实际跑一次 `next dev` 并请求一次受影响的路由**（看 `Compiled /` + `GET / 200`），不能只看 `tsc` 输出。
+  - 严禁在删除被 linter 标为"dead"的 export / 文件后，不先 `grep` 全仓库 + 跑 `next dev` 就宣告完成——这些 symbol 很可能被未读到的分支或动态导入使用。
 
 ### Rule 9：DRY — 优先复用，禁止复制粘贴
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/hooks/use-confirm'
 import { getStoredToken } from '@/lib/api'
 import { getNoteTags, createNoteTag, deleteNoteTag } from '@/lib/api/notes'
 import type { NoteTagResponse } from '@/types/api'
@@ -25,6 +26,7 @@ export function NoteTagFilter({
   const [tags, setTags] = useState<NoteTagResponse[]>([])
   const [newTagName, setNewTagName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const { confirm, dialog } = useConfirm()
 
   const selectedTagSet = new Set(selectedTags)
 
@@ -68,9 +70,14 @@ export function NoteTagFilter({
   }, [newTagName])
 
   const handleDeleteTag = useCallback(async (tagId: string, tagName: string) => {
-    if (!confirm(translate(lang, '确定要删除这个标签吗？', 'Are you sure you want to delete this tag?'))) {
-      return
-    }
+    const confirmed = await confirm({
+      title: translate(lang, '删除标签', 'Delete tag'),
+      description: translate(lang, `确定要删除标签「${tagName}」吗？已添加该标签的笔记不会受影响。`, `Are you sure you want to delete the tag "${tagName}"? Notes with this tag will not be affected.`),
+      confirmLabel: translate(lang, '删除', 'Delete'),
+      cancelLabel: translate(lang, '取消', 'Cancel'),
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     const token = getStoredToken()
     if (!token) return
@@ -82,7 +89,7 @@ export function NoteTagFilter({
     } catch (error) {
       console.error('[标签] 删除失败:', error)
     }
-  }, [selectedTags, lang, onTagsChange])
+  }, [selectedTags, lang, onTagsChange, confirm])
 
   const toggleTag = useCallback((tagName: string) => {
     onTagsChange(
@@ -94,6 +101,7 @@ export function NoteTagFilter({
 
   return (
     <div className="flex flex-col gap-y-4">
+      {dialog}
       {/* Selected tags */}
       {selectedTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -131,47 +139,53 @@ export function NoteTagFilter({
       )}
 
       {/* Available tags */}
-      <div className="flex flex-wrap gap-2">
-        {(() => {
-          const items = []
-          for (const tag of tags) {
-            if (selectedTagSet.has(tag.name)) continue
-            items.push(
-              <span
-                key={tag.id}
-                className="group inline-flex items-center gap-1 border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
-                style={{ borderColor: tag.color }}
-              >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleTag(tag.name)}
-                  className="h-auto p-0 gap-1"
+      {tags.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {translate(lang, '暂无标签', 'No tags yet')}
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {(() => {
+            const items = []
+            for (const tag of tags) {
+              if (selectedTagSet.has(tag.name)) continue
+              items.push(
+                <span
+                  key={tag.id}
+                  className="group inline-flex items-center gap-1 border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
+                  style={{ borderColor: tag.color }}
                 >
-                  <Plus className="size-3.5" strokeWidth={1.5} />
-                  {tag.name}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteTag(tag.id, tag.name)}
-                  className="ml-1 size-5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                  title={translate(lang, '删除标签', 'Delete tag')}
-                  aria-label={translate(lang, '删除标签', 'Delete tag')}
-                >
-                  <X className="size-3.5" strokeWidth={1.5} />
-                </Button>
-              </span>
-            )
-          }
-          return items
-        })()}
-      </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleTag(tag.name)}
+                    className="h-auto p-0 gap-1"
+                  >
+                    <Plus className="size-3.5" strokeWidth={1.5} />
+                    {tag.name}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteTag(tag.id, tag.name)}
+                    className="ml-1 size-5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                    title={translate(lang, '删除标签', 'Delete tag')}
+                    aria-label={translate(lang, '删除标签', 'Delete tag')}
+                  >
+                    <X className="size-3.5" strokeWidth={1.5} />
+                  </Button>
+                </span>
+              )
+            }
+            return items
+          })()}
+        </div>
+      )}
 
       {/* Create new tag */}
-      <div className="flex gap-3 pt-3 border-t border-border">
+      <div className="flex flex-col gap-2 pt-3 border-t border-border">
         <input
           type="text"
           value={newTagName}
@@ -179,15 +193,17 @@ export function NoteTagFilter({
           onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
           placeholder={translate(lang, '新建标签...', 'New tag...')}
           aria-label={translate(lang, '新建标签', 'New tag')}
-          className="flex-1 h-9 px-3 text-sm bg-background border border-border focus:outline-none focus:border-foreground transition-colors"
+          className="w-full h-9 px-3 text-sm bg-background border border-border focus:outline-none focus:border-foreground transition-colors"
         />
         <Button
           type="button"
           onClick={handleCreateTag}
           disabled={isCreating || !newTagName.trim()}
           size="sm"
+          className="w-full"
         >
-          {translate(lang, '添加', 'Add')}
+          <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
+          {translate(lang, '添加标签', 'Add tag')}
         </Button>
       </div>
     </div>

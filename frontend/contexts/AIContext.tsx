@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, use, useState, useCallback, useMemo, type ReactNode } from 'react'
+import { createContext, use, useReducer, useCallback, useMemo, type ReactNode } from 'react'
 import { getStoredToken } from '@/lib/api'
 import { getChoiceAnalysis, getChoiceExplanation, type ChoiceAnalysisRequest, type ChoiceExplanationRequest } from '@/lib/ai-api'
 
@@ -99,156 +99,194 @@ export function useAIContext(): AIContextState {
 }
 
 // ========================================
+// State & reducer
+// ========================================
+
+interface AIState {
+  currentExercise: CurrentExerciseContext | null
+  hintLoading: boolean
+  hintResult: string | null
+  analysisLoading: boolean
+  analysisResult: AIAnalysisResult | null
+  activeQuestion: CurrentExerciseContext | null
+  isPanelOpen: boolean
+  panelSpawnPos: { x: number; y: number } | null
+  activeKnowledgeQuestion: ActiveKnowledgeQuestion | null
+  isKnowledgePanelOpen: boolean
+  knowledgePanelSpawnPos: { x: number; y: number } | null
+}
+
+const initialState: AIState = {
+  currentExercise: null,
+  hintLoading: false,
+  hintResult: null,
+  analysisLoading: false,
+  analysisResult: null,
+  activeQuestion: null,
+  isPanelOpen: false,
+  panelSpawnPos: null,
+  activeKnowledgeQuestion: null,
+  isKnowledgePanelOpen: false,
+  knowledgePanelSpawnPos: null,
+}
+
+type AIAction =
+  | { type: 'SET_CURRENT_EXERCISE'; payload: CurrentExerciseContext | null }
+  | { type: 'HINT_START' }
+  | { type: 'HINT_SET'; payload: string | null }
+  | { type: 'ANALYSIS_START' }
+  | { type: 'ANALYSIS_SET'; payload: AIAnalysisResult | null }
+  | { type: 'OPEN_PANEL'; payload: { question: CurrentExerciseContext; spawnPos?: { x: number; y: number } } }
+  | { type: 'CLOSE_PANEL' }
+  | { type: 'OPEN_KNOWLEDGE_PANEL'; payload: { question: ActiveKnowledgeQuestion; spawnPos?: { x: number; y: number } } }
+  | { type: 'CLOSE_KNOWLEDGE_PANEL' }
+  | { type: 'CLEAR_RESULTS' }
+
+function aiReducer(state: AIState, action: AIAction): AIState {
+  switch (action.type) {
+    case 'SET_CURRENT_EXERCISE':
+      return { ...state, currentExercise: action.payload }
+    case 'HINT_START':
+      return { ...state, hintLoading: true, hintResult: null }
+    case 'HINT_SET':
+      return { ...state, hintLoading: false, hintResult: action.payload }
+    case 'ANALYSIS_START':
+      return { ...state, analysisLoading: true, analysisResult: null }
+    case 'ANALYSIS_SET':
+      return { ...state, analysisLoading: false, analysisResult: action.payload }
+    case 'OPEN_PANEL':
+      return { ...state, activeQuestion: { ...action.payload.question }, isPanelOpen: true, panelSpawnPos: action.payload.spawnPos ?? null }
+    case 'CLOSE_PANEL':
+      return { ...state, isPanelOpen: false }
+    case 'OPEN_KNOWLEDGE_PANEL':
+      return { ...state, activeKnowledgeQuestion: { ...action.payload.question }, isKnowledgePanelOpen: true, knowledgePanelSpawnPos: action.payload.spawnPos ?? null }
+    case 'CLOSE_KNOWLEDGE_PANEL':
+      return { ...state, isKnowledgePanelOpen: false }
+    case 'CLEAR_RESULTS':
+      return { ...state, hintResult: null, analysisResult: null }
+    default:
+      return state
+  }
+}
+
+// ========================================
 // Provider
 // ========================================
 
 export function AIContextProvider({ children }: { children: ReactNode }) {
-  const [currentExercise, setCurrentExercise] = useState<CurrentExerciseContext | null>(null)
-  const [hintLoading, setHintLoading] = useState(false)
-  const [hintResult, setHintResult] = useState<string | null>(null)
-  const [analysisLoading, setAnalysisLoading] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null)
+  const [state, dispatch] = useReducer(aiReducer, initialState)
 
-  // Question panel state (for exercise pages - choice/fill_blank questions)
-  const [activeQuestion, setActiveQuestion] = useState<CurrentExerciseContext | null>(null)
-  const [isPanelOpen, setIsPanelOpen] = useState(false)
-  const [panelSpawnPos, setPanelSpawnPos] = useState<{ x: number; y: number } | null>(null)
-
-  // Knowledge panel state (for mastery pages - knowledge points)
-  const [activeKnowledgeQuestion, setActiveKnowledgeQuestion] = useState<ActiveKnowledgeQuestion | null>(null)
-  const [isKnowledgePanelOpen, setIsKnowledgePanelOpen] = useState(false)
-  const [knowledgePanelSpawnPos, setKnowledgePanelSpawnPos] = useState<{ x: number; y: number } | null>(null)
+  const setCurrentExercise = useCallback((ctx: CurrentExerciseContext | null) => {
+    dispatch({ type: 'SET_CURRENT_EXERCISE', payload: ctx })
+  }, [])
 
   const openPanel = useCallback((question: CurrentExerciseContext, spawnPos?: { x: number; y: number }) => {
-    setActiveQuestion({ ...question })
-    setIsPanelOpen(true)
-    setPanelSpawnPos(spawnPos ?? null)
+    dispatch({ type: 'OPEN_PANEL', payload: { question, spawnPos } })
   }, [])
 
   const closePanel = useCallback(() => {
-    setIsPanelOpen(false)
+    dispatch({ type: 'CLOSE_PANEL' })
   }, [])
 
   const openKnowledgePanel = useCallback((question: ActiveKnowledgeQuestion, spawnPos?: { x: number; y: number }) => {
-    setActiveKnowledgeQuestion({ ...question })
-    setIsKnowledgePanelOpen(true)
-    setKnowledgePanelSpawnPos(spawnPos ?? null)
+    dispatch({ type: 'OPEN_KNOWLEDGE_PANEL', payload: { question, spawnPos } })
   }, [])
 
   const closeKnowledgePanel = useCallback(() => {
-    setIsKnowledgePanelOpen(false)
+    dispatch({ type: 'CLOSE_KNOWLEDGE_PANEL' })
   }, [])
 
   const clearResults = useCallback(() => {
-    setHintResult(null)
-    setAnalysisResult(null)
+    dispatch({ type: 'CLEAR_RESULTS' })
   }, [])
 
   const triggerHint = useCallback(async () => {
-    if (!currentExercise || currentExercise.type !== 'choice') return
+    if (!state.currentExercise || state.currentExercise.type !== 'choice') return
 
-    setHintLoading(true)
-    setHintResult(null)
+    dispatch({ type: 'HINT_START' })
 
     const token = getStoredToken()
     if (!token) {
-      setHintLoading(false)
+      dispatch({ type: 'HINT_SET', payload: null })
       return
     }
 
     try {
       const request: ChoiceExplanationRequest = {
-        chapter_id: currentExercise.chapterId,
-        subsection_index: currentExercise.subsectionIndex,
-        exercise_id: currentExercise.exerciseId,
-        question: currentExercise.question || '',
-        options: currentExercise.options || [],
-        user_selected_index: currentExercise.selectedAnswer ?? -1,
-        correct_index: currentExercise.correctAnswer ?? -1,
+        chapter_id: state.currentExercise.chapterId,
+        subsection_index: state.currentExercise.subsectionIndex,
+        exercise_id: state.currentExercise.exerciseId,
+        question: state.currentExercise.question || '',
+        options: state.currentExercise.options || [],
+        user_selected_index: state.currentExercise.selectedAnswer ?? -1,
+        correct_index: state.currentExercise.correctAnswer ?? -1,
       }
       const response = await getChoiceExplanation(token, request)
-      setHintResult(response.explanation)
+      dispatch({ type: 'HINT_SET', payload: response.explanation })
     } catch (error) {
       console.error('[AI] 获取提示失败:', error)
-      setHintResult('获取 AI 提示失败，请重试。')
-    } finally {
-      setHintLoading(false)
+      dispatch({ type: 'HINT_SET', payload: '获取 AI 提示失败，请重试。' })
     }
-  }, [currentExercise])
+  }, [state.currentExercise])
 
   const triggerAnalysis = useCallback(async () => {
-    if (!currentExercise || currentExercise.type !== 'choice') return
+    if (!state.currentExercise || state.currentExercise.type !== 'choice') return
 
-    setAnalysisLoading(true)
-    setAnalysisResult(null)
+    dispatch({ type: 'ANALYSIS_START' })
 
     const token = getStoredToken()
     if (!token) {
-      setAnalysisLoading(false)
+      dispatch({ type: 'ANALYSIS_SET', payload: null })
       return
     }
 
     try {
       const request: ChoiceAnalysisRequest = {
-        question_text: currentExercise.question || '',
-        options: currentExercise.options || [],
-        user_selected: currentExercise.selectedAnswer ?? -1,
-        correct_answer: currentExercise.correctAnswer ?? -1,
-        chapter_id: currentExercise.chapterId,
-        exercise_id: String(currentExercise.exerciseId),
+        question_text: state.currentExercise.question || '',
+        options: state.currentExercise.options || [],
+        user_selected: state.currentExercise.selectedAnswer ?? -1,
+        correct_answer: state.currentExercise.correctAnswer ?? -1,
+        chapter_id: state.currentExercise.chapterId,
+        exercise_id: String(state.currentExercise.exerciseId),
       }
       const response = await getChoiceAnalysis(token, request)
-      setAnalysisResult({
-        analysis: response.analysis,
-        is_correct: response.is_correct,
-      })
+      dispatch({ type: 'ANALYSIS_SET', payload: { analysis: response.analysis, is_correct: response.is_correct } })
     } catch (error) {
       console.error('[AI] 获取分析失败:', error)
-      setAnalysisResult({ analysis: '获取 AI 分析失败，请重试。', is_correct: false })
-    } finally {
-      setAnalysisLoading(false)
+      dispatch({ type: 'ANALYSIS_SET', payload: { analysis: '获取 AI 分析失败，请重试。', is_correct: false } })
     }
-  }, [currentExercise])
+  }, [state.currentExercise])
 
   const value = useMemo(
     () => ({
-      currentExercise,
+      currentExercise: state.currentExercise,
       setCurrentExercise,
-      hintLoading,
-      hintResult,
-      analysisLoading,
-      analysisResult,
+      hintLoading: state.hintLoading,
+      hintResult: state.hintResult,
+      analysisLoading: state.analysisLoading,
+      analysisResult: state.analysisResult,
       triggerHint,
       triggerAnalysis,
       clearResults,
-      activeQuestion,
-      isPanelOpen,
-      panelSpawnPos,
+      activeQuestion: state.activeQuestion,
+      isPanelOpen: state.isPanelOpen,
+      panelSpawnPos: state.panelSpawnPos,
       openPanel,
       closePanel,
-      activeKnowledgeQuestion,
-      isKnowledgePanelOpen,
-      knowledgePanelSpawnPos,
+      activeKnowledgeQuestion: state.activeKnowledgeQuestion,
+      isKnowledgePanelOpen: state.isKnowledgePanelOpen,
+      knowledgePanelSpawnPos: state.knowledgePanelSpawnPos,
       openKnowledgePanel,
       closeKnowledgePanel,
     }),
     [
-      currentExercise,
-      hintLoading,
-      hintResult,
-      analysisLoading,
-      analysisResult,
+      state,
+      setCurrentExercise,
       triggerHint,
       triggerAnalysis,
       clearResults,
-      activeQuestion,
-      isPanelOpen,
-      panelSpawnPos,
       openPanel,
       closePanel,
-      activeKnowledgeQuestion,
-      isKnowledgePanelOpen,
-      knowledgePanelSpawnPos,
       openKnowledgePanel,
       closeKnowledgePanel,
     ]

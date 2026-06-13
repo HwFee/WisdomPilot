@@ -2,6 +2,7 @@
 change: frontend-layout-redesign
 design-doc: docs/superpowers/specs/2026-06-12-inner-pages-redesign-design.md
 base-ref: 0d9050b6ec2155e13f3fe63ef77f676912a12f0b
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 # 内部页面与按钮补完重构 — Implementation Plan
@@ -14,6 +15,7 @@ base-ref: 0d9050b6ec2155e13f3fe63ef77f676912a12f0b
 
 **Tech Stack:** Next.js 15.5.18 + React 19 + TypeScript 5 + Tailwind CSS v4 + shadcn/ui（`Button` 共享组件）+ lucide-react（图标）+ react-doctor（验收）
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## File Map
@@ -87,6 +89,7 @@ base-ref: 0d9050b6ec2155e13f3fe63ef77f676912a12f0b
 - 新增路由/页面/功能
 - 3 流水页真实账本数据流
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## 通用模式：按钮迁移（D2 规则）
@@ -105,6 +108,7 @@ base-ref: 0d9050b6ec2155e13f3fe63ef77f676912a12f0b
 
 完整 Button 组件位置：`frontend/components/ui/button.tsx`。若发现 Button 不支持所需 variant，**先扩展 Button.tsx**（加 `success` / `warning` variant），再迁移；不要在 page 层级做 className override 模拟变体。
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## Wave 1: 基础设施 + 按钮迁移 + 流水页（Phase 9）
@@ -674,6 +678,7 @@ git add openspec/changes/frontend-layout-redesign/tasks.md
 git commit -m "chore(tasks): mark Phase 9 (Wave 1) done"
 ```
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## Wave 2: Notes 模块（Phase 10）
@@ -1112,6 +1117,7 @@ git add openspec/changes/frontend-layout-redesign/tasks.md
 git commit -m "chore(tasks): mark Phase 10 (Wave 2 - notes module) done"
 ```
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## Wave 3: Auth + 收藏 + 复习 + 题解（Phase 11）
@@ -1542,6 +1548,7 @@ git add openspec/changes/frontend-layout-redesign/tasks.md
 git commit -m "chore(tasks): mark Phase 11 (Wave 3 - auth + favorites + review + solutions) done"
 ```
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## Wave 4: Arena + Mastery 内部页 + globals.css 清理（Phase 12）
@@ -1716,6 +1723,7 @@ git add openspec/changes/frontend-layout-redesign/tasks.md
 git commit -m "chore(tasks): mark Phase 12 (Wave 4 - arena + mastery internal + CSS) done"
 ```
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## Wave 5: Exercise + Mastery 共享 + Admin（Phase 13）
@@ -1995,6 +2003,7 @@ git add openspec/changes/frontend-layout-redesign/tasks.md
 git commit -m "chore(tasks): mark Phase 13 (Wave 5 - exercise + mastery + admin) done"
 ```
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## Final Verification (Phase 14)
@@ -2088,6 +2097,7 @@ Expected: 5 波 + 收尾 ≈ 15+ commits，按 Wave 顺序排列
 
 进入 /comet-verify 阶段
 
+archived-with: 2026-06-12-frontend-layout-redesign
 ---
 
 ## Self-Review Checklist

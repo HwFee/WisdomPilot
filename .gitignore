@@ -107,3 +107,10 @@ openspec/
 
 # Backup files
 *.bak
+
+# Superpowers brainstorm artifacts
+.superpowers/
+
+# Empty accidental file
+EOF
+

@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Tags, Minimize2 } from 'lucide-react'
+import { X, Tags, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from './note-translate'
 import type { NoteResponse } from '@/types/api'
@@ -24,36 +24,31 @@ export function NoteEditorToolbar({
 }: NoteEditorToolbarProps) {
   const title = note ? translate(lang, '编辑笔记', 'Edit Note') : translate(lang, '新建笔记', 'New Note')
 
-  if (variant === 'fullPage') {
-    return (
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onToggleTagSelector}>
-            <Tags className="size-4 mr-1.5" strokeWidth={1.5} />
-            {translate(lang, '标签', 'Tags')}
-          </Button>
-          {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} aria-label={translate(lang, '关闭', 'Close')}>
-              <Minimize2 className="size-4" strokeWidth={1.5} />
-            </Button>
-          )}
-        </div>
-      </header>
-    )
-  }
-
   return (
-    <header className="flex items-center justify-between border-b border-border px-6 py-4">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={onToggleTagSelector}>
-          <Tags className="size-4 mr-1.5" strokeWidth={1.5} />
+    <header className="flex items-center justify-between border-b border-border px-6 py-4 bg-card">
+      <div className="flex items-center gap-3 min-w-0">
+        {variant === 'fullPage' && onClose && (
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={translate(lang, '返回', 'Back')} className="shrink-0">
+            <ArrowLeft className="size-5" strokeWidth={1.5} />
+          </Button>
+        )}
+        <h2 className="text-base font-semibold uppercase tracking-[1.5px] truncate">{title}</h2>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <Button
+          variant={showTagSelector ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={onToggleTagSelector}
+          className="gap-1.5"
+        >
+          <Tags className="size-4" strokeWidth={1.5} />
           {translate(lang, '标签', 'Tags')}
         </Button>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label={translate(lang, '关闭', 'Close')}>
-          <X className="size-4" strokeWidth={1.5} />
-        </Button>
+        {variant === 'modal' && onClose && (
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={translate(lang, '关闭', 'Close')}>
+            <X className="size-5" strokeWidth={1.5} />
+          </Button>
+        )}
       </div>
     </header>
   )

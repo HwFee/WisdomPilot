@@ -1,84 +1,133 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getStoredToken } from '@/lib/api'
-import type { XpBalance, XpTransaction, TransactionListResponse } from '../lib/xp-utils'
+import { getStoredToken, logout } from '@/lib/api'
+import { getXpBalance, getXpTransactions, type XpTransaction } from '@/lib/api/xp'
+import type { TransactionFilterOption } from '@/components/transactions/transaction-list'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+export type XpFilterType = 'all' | 'earn'
+
 const PAGE_SIZE = 20
 
-export function useXpData() {
-  const { push, back } = useRouter()
-  const [balance, setBalance] = useState<XpBalance | null>(null)
-  const [transactions, setTransactions] = useState<XpTransaction[]>([])
-  const pageRef = useRef(0)
-  const [total, setTotal] = useState(0)
-  const [loadingState, setLoadingState] = useState({ main: true, more: false })
+const FILTER_OPTIONS: TransactionFilterOption[] = [
+  { value: 'all', label: '全部' },
+  { value: 'earn', label: '获得' },
+]
 
-  const fetchData = useCallback(
-    async (pageNum: number = 0, append: boolean = false) => {
-      const token = getStoredToken()
-      if (!token) {
-        push('/login')
+interface XpDataState {
+  balance: { balance: number; level: string } | null
+  transactions: XpTransaction[]
+  filter: XpFilterType
+  isLoading: boolean
+  isLoadingMore: boolean
+  error: string | null
+  hasMore: boolean
+}
+
+export function useXpData() {
+  const { push } = useRouter()
+  const [state, setState] = useState<XpDataState>({
+    balance: null,
+    transactions: [],
+    filter: 'all',
+    isLoading: true,
+    isLoadingMore: false,
+    error: null,
+    hasMore: true,
+  })
+  const hasFetched = useRef(false)
+
+  const handleAuthError = useCallback(() => {
+    logout()
+    push('/login')
+  }, [push])
+
+  const fetchBalance = useCallback(async () => {
+    try {
+      const data = await getXpBalance()
+      setState((prev) => ({ ...prev, balance: data }))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '加载失败'
+      if (message.includes('登录')) {
+        handleAuthError()
         return
       }
+      setState((prev) => ({ ...prev, error: message, isLoading: false }))
+    }
+  }, [handleAuthError])
 
-      setLoadingState((prev) => ({
-        ...prev,
-        [append ? 'more' : 'main']: true,
-      }))
-
+  const fetchTransactions = useCallback(
+    async (offset: number, reset: boolean, filter: XpFilterType) => {
       try {
-        const [balanceRes, transactionsRes] = await Promise.all([
-          fetch(`${API_URL}/api/xp/balance`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(
-            `${API_URL}/api/xp/transactions?limit=${PAGE_SIZE}&offset=${pageNum * PAGE_SIZE}`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          ),
-        ])
+        const data = await getXpTransactions(PAGE_SIZE, offset)
+        const filtered =
+          filter === 'all'
+            ? data.transactions
+            : data.transactions.filter((t) => t.type === 'earn')
 
-        if (balanceRes.ok) {
-          setBalance(await balanceRes.json())
+        setState((prev) => ({
+          ...prev,
+          transactions: reset ? filtered : [...prev.transactions, ...filtered],
+          hasMore: data.transactions.length === PAGE_SIZE,
+          isLoading: offset === 0 ? false : prev.isLoading,
+          isLoadingMore: false,
+        }))
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '加载失败'
+        if (message.includes('登录')) {
+          handleAuthError()
+          return
         }
-
-        if (transactionsRes.ok) {
-          const data: TransactionListResponse = await transactionsRes.json()
-          setTransactions((prev) =>
-            append ? [...prev, ...data.transactions] : data.transactions,
-          )
-          setTotal(data.total)
-          pageRef.current = pageNum
-        }
-      } catch (error) {
-        console.error('Failed to fetch data:', error)
-      } finally {
-        setLoadingState({ main: false, more: false })
+        setState((prev) => ({
+          ...prev,
+          error: message,
+          isLoading: false,
+          isLoadingMore: false,
+        }))
       }
     },
-    [push],
+    [handleAuthError],
   )
 
   useEffect(() => {
-    fetchData(0)
-  }, [fetchData])
+    if (hasFetched.current) return
+    hasFetched.current = true
+
+    const token = getStoredToken()
+    if (!token) {
+      handleAuthError()
+      return
+    }
+
+    fetchBalance()
+    fetchTransactions(0, true, 'all')
+  }, [handleAuthError, fetchBalance, fetchTransactions])
+
+  const setFilter = useCallback(
+    (filter: XpFilterType) => {
+      setState((prev) => ({
+        ...prev,
+        filter,
+        transactions: [],
+        hasMore: true,
+        isLoading: true,
+      }))
+      fetchTransactions(0, true, filter)
+    },
+    [fetchTransactions],
+  )
 
   const loadMore = useCallback(() => {
-    if (!loadingState.more && transactions.length < total) {
-      fetchData(pageRef.current + 1, true)
-    }
-  }, [loadingState.more, transactions.length, total, fetchData])
+    if (state.isLoadingMore || !state.hasMore) return
+    setState((prev) => ({ ...prev, isLoadingMore: true }))
+    fetchTransactions(state.transactions.length, false, state.filter)
+  }, [state.isLoadingMore, state.hasMore, state.transactions.length, state.filter, fetchTransactions])
 
   return {
-    balance,
-    transactions,
-    total,
-    loadingState,
-    fetchData,
+    ...state,
+    filterOptions: FILTER_OPTIONS,
+    setFilter,
     loadMore,
-    back,
-    push,
   }
 }

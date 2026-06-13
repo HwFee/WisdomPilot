@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useConfirm } from '@/hooks/use-confirm'
 import {
   getSolutionSummary,
   deleteSolution,
@@ -15,6 +16,8 @@ export function useSolutionsData() {
   const { currentUser, isAdmin, lang, push } = useSolutionsAuth()
   const [solutions, setSolutions] = useState<SolutionSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const hasFetched = useRef(false)
+  const { confirm, dialog } = useConfirm()
 
   const fetchSolutions = useCallback(async (token: string) => {
     try {
@@ -28,9 +31,28 @@ export function useSolutionsData() {
     }
   }, [])
 
+  // Initial load
+  useEffect(() => {
+    if (hasFetched.current) return
+    const token = getStoredToken()
+    if (!token) {
+      setLoading(false)
+      return
+    }
+    hasFetched.current = true
+    fetchSolutions(token)
+  }, [fetchSolutions])
+
   const handleDelete = useCallback(
-    async (id: number, confirmText: string) => {
-      if (!confirm(confirmText)) return
+    async (id: number, _confirmText?: string) => {
+      const confirmed = await confirm({
+        title: '删除题解',
+        description: '确定要删除这篇题解吗？此操作无法撤销。',
+        confirmLabel: '删除',
+        cancelLabel: '取消',
+        variant: 'danger',
+      })
+      if (!confirmed) return
 
       const token = getStoredToken()
       if (!token) return
@@ -42,7 +64,7 @@ export function useSolutionsData() {
         console.error('Failed to delete:', error)
       }
     },
-    [fetchSolutions],
+    [fetchSolutions, confirm],
   )
 
   const handleLike = useCallback(async (id: number) => {
@@ -70,6 +92,8 @@ export function useSolutionsData() {
         fetchSolutions(token)
       } catch (error) {
         console.error('Failed to save:', error)
+        const message = error instanceof Error ? error.message : '保存失败'
+        alert(message)
       }
     },
     [fetchSolutions],
@@ -85,5 +109,6 @@ export function useSolutionsData() {
     handleLike,
     handleSave,
     push,
+    dialog,
   }
 }

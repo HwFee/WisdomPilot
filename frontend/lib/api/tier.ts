@@ -115,6 +115,67 @@ export async function updateStars(
   return response.json()
 }
 
+export interface TierTransaction {
+  id: string
+  course_id?: number
+  tier_before: string
+  sub_tier_before: number
+  stars_before: number
+  tier_after: string
+  sub_tier_after: number
+  stars_after: number
+  stars_change: number
+  promoted: boolean
+  demoted: boolean
+  used_protection: boolean
+  protection_remaining: number
+  source: string
+  reference_id?: string
+  description?: string
+  created_at: string
+}
+
+export interface TierTransactionList {
+  transactions: TierTransaction[]
+  total: number
+}
+
+/**
+ * 获取段位变化历史
+ */
+export async function getTierTransactions(
+  courseId?: number,
+  limit: number = 20,
+  offset: number = 0,
+): Promise<TierTransactionList> {
+  const token = getStoredToken()
+  if (!token) {
+    throw new Error('未登录')
+  }
+
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+  })
+  if (courseId !== undefined) {
+    params.append('course_id', courseId.toString())
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/tier/transactions?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(error.detail || '获取段位流水失败')
+  }
+
+  return response.json()
+}
+
 /**
  * 段位名称映射
  */

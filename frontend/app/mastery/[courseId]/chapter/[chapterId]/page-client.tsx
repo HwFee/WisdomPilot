@@ -111,7 +111,7 @@ export default function MasteryChapterClient() {
                       onClick={() => handleSelectSection(section.id)}
                       className="w-full h-auto px-6 py-5 rounded-none border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors text-left justify-start group"
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex w-full min-w-0 items-start gap-4">
                         <div className={`flex-shrink-0 size-10 rounded-lg flex items-center justify-center text-sm font-medium ${
                           section.is_completed
                             ? 'bg-secondary text-emerald-600 dark:text-emerald-400'
@@ -125,18 +125,16 @@ export default function MasteryChapterClient() {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+                          <div className="flex min-w-0 items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
                                 {section.title}
                               </h3>
-                              {section.description && (
-                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                  {section.description}
-                                </p>
-                              )}
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2 min-h-[2.5rem]">
+                                {section.description || '\u00A0'}
+                              </p>
                             </div>
-                            <Play strokeWidth={1.5} className="size-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
+                            <Play strokeWidth={1.5} className="size-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                           </div>
 
                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">

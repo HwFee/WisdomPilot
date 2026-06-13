@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useMemo } from 'react'
+import { Suspense, useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { MessageSquare, Plus, ArrowLeft, Home, Search, X, Inbox } from 'lucide-react'
@@ -24,13 +24,21 @@ function SolutionsContent() {
     handleLike,
     handleSave,
     push,
+    dialog,
   } = useSolutionsData()
 
-  const [pageMode, setPageMode] = useState<PageMode>('list')
+  const action = searchParams.get('action')
+  const [pageMode, setPageMode] = useState<PageMode>(action === 'create' ? 'create' : 'list')
   const [searchQuery, setSearchQuery] = useState('')
   const { currentUser, isAdmin, lang } = userState
 
   const activeCategory = (searchParams.get('tab') as CategoryType) || 'hot'
+
+  useEffect(() => {
+    if (action === 'create') {
+      setPageMode('create')
+    }
+  }, [action])
 
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
@@ -48,16 +56,25 @@ function SolutionsContent() {
   }
 
   const handleSaveWrapper = async (data: SolutionCreate | SolutionUpdate) => {
-    await handleSave(data, () => setPageMode('list'))
+    await handleSave(data, () => {
+      setPageMode('list')
+      push('/solutions')
+    })
+  }
+
+  const handleCancelCreate = () => {
+    setPageMode('list')
+    push('/solutions')
   }
 
   return (
     <div className="min-h-screen bg-background">
+      {dialog}
       <header className="h-14 border-b bg-card">
         <div className="max-w-[1280px] mx-auto px-6 h-full flex items-center gap-3">
           {pageMode === 'create' ? (
             <>
-              <Button variant="ghost" onClick={() => setPageMode('list')}>
+              <Button variant="ghost" onClick={handleCancelCreate}>
                 <ArrowLeft className="size-5 mr-2" strokeWidth={1.5} />
                 {t('取消发布', 'Cancel')}
               </Button>
@@ -92,7 +109,7 @@ function SolutionsContent() {
           {pageMode === 'create' ? (
             <SolutionEditor
               onSave={handleSaveWrapper}
-              onCancel={() => setPageMode('list')}
+              onCancel={handleCancelCreate}
               isAdmin={isAdmin}
               lang={lang}
               isFullPage

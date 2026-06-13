@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface CourseListItemProps {
@@ -5,12 +6,13 @@ interface CourseListItemProps {
   name: string;
   chapter: string;
   percent: number;
+  href?: string;
   className?: string;
 }
 
-export function CourseListItem({ num, name, chapter, percent, className }: CourseListItemProps) {
-  return (
-    <div className={cn("grid grid-cols-[auto_1fr_auto_auto] items-center gap-5 px-8 py-5 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors", className)}>
+export function CourseListItem({ num, name, chapter, percent, href, className }: CourseListItemProps) {
+  const content = (
+    <>
       <span className="font-mono text-[11px] text-muted-foreground w-6">{num}</span>
       <div>
         <div className="text-[15px] font-medium">{name}</div>
@@ -23,6 +25,21 @@ export function CourseListItem({ num, name, chapter, percent, className }: Cours
         />
       </div>
       <span className="font-mono text-[13px] font-semibold w-10 text-right">{percent}%</span>
-    </div>
+    </>
   );
+
+  const baseClass = cn(
+    "grid grid-cols-[auto_1fr_auto_auto] items-center gap-5 px-8 py-5 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors",
+    className,
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={cn(baseClass, "cursor-pointer")}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={baseClass}>{content}</div>;
 }

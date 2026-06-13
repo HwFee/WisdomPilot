@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 interface PanelProps {
   children: React.ReactNode;
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
 interface PanelHeaderProps {
@@ -13,9 +14,14 @@ interface PanelHeaderProps {
   className?: string;
 }
 
-export function Panel({ children, className }: PanelProps) {
+export function Panel({ children, className, onClick }: PanelProps) {
   return (
-    <div className={cn("bg-card border border-border", className)}>
+    <div
+      className={cn("bg-card border border-border", className)}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
       {children}
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useConfirm } from '@/hooks/use-confirm'
 import { getStoredToken, logout, getFavorites, removeFavorite, getFavoriteFolders, updateFavorite, batchRemoveFavorites } from '@/lib/api'
 import type { FavoriteResponse, FavoriteFolderResponse } from '@/types/api'
 
@@ -23,6 +24,7 @@ export function useFavorites() {
   const { selectedFolder, selectedIds, isSelectMode } = selectionState
   const [isLoading, setIsLoading] = useState(true)
   const hasFetched = useRef(false)
+  const { confirm, dialog } = useConfirm()
 
   const fetchData = useCallback(async (token: string, folder?: string) => {
     try {
@@ -67,6 +69,15 @@ export function useFavorites() {
   }
 
   const handleRemove = async (favoriteId: string) => {
+    const confirmed = await confirm({
+      title: '删除收藏',
+      description: '确定要删除这道收藏题吗？此操作无法撤销。',
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+      variant: 'danger',
+    })
+    if (!confirmed) return
+
     const token = getStoredToken()
     if (!token) return
 
@@ -92,6 +103,16 @@ export function useFavorites() {
 
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return
+
+    const confirmed = await confirm({
+      title: '批量删除收藏',
+      description: `确定要删除选中的 ${selectedIds.size} 道收藏题吗？此操作无法撤销。`,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+      variant: 'danger',
+    })
+    if (!confirmed) return
+
     const token = getStoredToken()
     if (!token) return
 
@@ -137,5 +158,6 @@ export function useFavorites() {
     handleToggleSelect,
     handleBatchDelete,
     handleMoveToFolder,
+    dialog,
   }
 }
