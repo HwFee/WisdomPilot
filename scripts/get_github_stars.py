@@ -5,7 +5,7 @@ without hitting the API rate limit.
 
 Usage:
     python get_github_stars.py owner/repo [owner/repo2 ...]
-    python get_github_stars.py obra/superpowers github/spec-kit rpamis/comet
+    python get_github_stars.py facebook/react vuejs/core angular/angular
 """
 
 import sys

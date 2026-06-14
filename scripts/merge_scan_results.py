@@ -3,9 +3,9 @@ import json
 from collections import Counter
 from pathlib import Path
 
-with open('docs/superpowers/plans/python-issues.json', 'r', encoding='utf-8') as f:
+with open('reports/python-issues.json', 'r', encoding='utf-8') as f:
     py = json.load(f)
-with open('docs/superpowers/plans/ts-issues.json', 'r', encoding='utf-8') as f:
+with open('reports/ts-issues.json', 'r', encoding='utf-8') as f:
     ts = json.load(f)
 
 merged = {
@@ -37,7 +37,7 @@ merged['top_critical_files'] = [
     for f, c in crit_files.most_common(20)
 ]
 
-out_path = Path('docs/superpowers/plans/refactor-agents-compliance-issues.md')
+out_path = Path('reports/refactor-agents-compliance-issues.md')
 with open(out_path, 'w', encoding='utf-8') as f:
     f.write('# 重构问题清单\n\n')
     f.write('> 由 scan_python_structure.py + scan_ts_structure.py 自动生成\n\n')
@@ -55,8 +55,8 @@ with open(out_path, 'w', encoding='utf-8') as f:
         f.write(f"| `{fname}` | {item['critical_issues']} |\n")
     f.write('\n')
     f.write('## 详细数据\n\n')
-    f.write('- 原始 Backend 扫描结果: docs/superpowers/plans/python-issues.json\n')
-    f.write('- 原始 Frontend 扫描结果: docs/superpowers/plans/ts-issues.json\n')
+    f.write('- 原始 Backend 扫描结果: reports/python-issues.json\n')
+    f.write('- 原始 Frontend 扫描结果: reports/ts-issues.json\n')
 
 print(f'Issue list written to {out_path}')
 print(f"Combined: {merged['combined']['total_issues']} issues, {merged['combined']['critical']} critical")

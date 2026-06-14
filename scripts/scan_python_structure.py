@@ -213,7 +213,7 @@ def main():
         if count:
             output["summary"]["by_category"][cat] = count
 
-    out_path = Path(__file__).parent.parent / "docs" / "superpowers" / "plans" / "python-issues.json"
+    out_path = Path(__file__).parent.parent / "reports" / "python-issues.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"Scan complete: {len(issues)} issues found")
