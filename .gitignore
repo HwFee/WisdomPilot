@@ -93,8 +93,12 @@ frontend/package-lock.json
 # CodeGraph temp files
 .codegraph/
 
+# Comet local config
+.comet/
+
 # Kimi Code local config
 .kimi-code/
+.kimi/
 
 # Root-level node_modules (if accidentally created)
 /node_modules/
