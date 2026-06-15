@@ -100,6 +100,9 @@ frontend/package-lock.json
 .kimi-code/
 .kimi/
 
+# Continue/caveman local skills
+.continue/
+
 # Root-level node_modules (if accidentally created)
 /node_modules/
 /package-lock.json
