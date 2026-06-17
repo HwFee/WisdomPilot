@@ -12,7 +12,9 @@ from app.services.judge0 import (
     LANGUAGE_C,
     LANGUAGE_CPP,
     LANGUAGE_JAVASCRIPT,
+    LANGUAGE_JAVA,
     LANGUAGE_PYTHON,
+    LANGUAGE_RUST,
     LANGUAGE_TYPESCRIPT,
 )
 
@@ -26,6 +28,8 @@ LANGUAGE_NAME_TO_JUDGE0_ID = {
     "c": LANGUAGE_C,
     "cpp": LANGUAGE_CPP,
     "c++": LANGUAGE_CPP,
+    "java": LANGUAGE_JAVA,
+    "rust": LANGUAGE_RUST,
 }
 
 

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.models.exercise import Exercise
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.user_arena import UserArenaProfile
-from app.services.challenge_path.submission import JudgeUnavailableError
+from app.services.challenge_path.submission import JudgeUnavailableError, run_authoritative_judge
 from app.utils.security import decode_token
 
 
@@ -200,3 +200,71 @@ async def test_programming_exercise_without_backend_test_cases_is_rejected(
     )
     profile = profile_result.scalar_one_or_none()
     assert profile is None or profile.stars == 0
+
+
+class _FakeJudge0Service:
+    """Records the language_id passed to execute_batch and returns a fixed result."""
+
+    def __init__(self, expected_language_id: int | None = None):
+        self.expected_language_id = expected_language_id
+        self.captured_language_id = None
+
+    async def execute_batch(self, code: str, language_id: int, test_cases: list[dict]) -> dict:
+        self.captured_language_id = language_id
+        return {
+            "passed_count": len(test_cases),
+            "total_count": len(test_cases),
+            "results": [
+                {
+                    "passed": True,
+                    "input": tc.get("input", ""),
+                    "expected": tc.get("expected_output", ""),
+                    "actual": tc.get("expected_output", ""),
+                    "message": None,
+                }
+                for tc in test_cases
+            ],
+        }
+
+
+@pytest.mark.asyncio
+async def test_java_submission_uses_judge0_language_id_62():
+    judge0 = _FakeJudge0Service(expected_language_id=62)
+    result = await run_authoritative_judge(
+        code="class Main { public static void main(String[] args) { System.out.println(42); } }",
+        language="java",
+        test_cases=[{"input": "", "output": "42"}],
+        judge0=judge0,
+    )
+
+    assert judge0.captured_language_id == 62
+    assert result["passed_count"] == 1
+    assert result["total_count"] == 1
+    assert result["results"][0]["passed"] is True
+
+
+@pytest.mark.asyncio
+async def test_rust_submission_uses_judge0_language_id_73():
+    judge0 = _FakeJudge0Service(expected_language_id=73)
+    result = await run_authoritative_judge(
+        code="fn main() { println!(\"42\"); }",
+        language="rust",
+        test_cases=[{"input": "", "output": "42"}],
+        judge0=judge0,
+    )
+
+    assert judge0.captured_language_id == 73
+    assert result["passed_count"] == 1
+    assert result["total_count"] == 1
+    assert result["results"][0]["passed"] is True
+
+
+@pytest.mark.asyncio
+async def test_unsupported_language_raises_value_error():
+    with pytest.raises(ValueError, match="Unsupported language for judging: kotlin"):
+        await run_authoritative_judge(
+            code="println(42)",
+            language="kotlin",
+            test_cases=[{"input": "", "output": "42"}],
+            judge0=_FakeJudge0Service(),
+        )
