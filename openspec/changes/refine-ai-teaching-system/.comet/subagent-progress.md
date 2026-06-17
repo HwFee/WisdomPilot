@@ -2,23 +2,23 @@
 
 ## Current Task
 
-- Plan task: "1.1 Add backend characterization tests for challenge progress, save-code, switch, append, and exercise-detail response compatibility."
-- OpenSpec task: "1.1 Add backend characterization tests for challenge progress, save-code, switch, append, and exercise-detail response compatibility."
+- Plan task: "2.1 Write failing forged-result test"
+- OpenSpec task: "1.2 Add backend tests proving challenge rewards/progress are not awarded from forged client-supplied passing results."
 - Stage: done
-- Round: 1
+- Round: 0
 
 ## Evidence
 
-- RED: N/A (characterization tests document existing behavior)
-- GREEN: `pytest tests/test_learning_path_challenge.py -q --tb=short` → 23 passed in 9.20s
-- Commit: `52f09d7`
-- Files changed: `backend/tests/test_learning_path_challenge.py`
+- RED: `pytest tests/test_challenge_authoritative_submission.py -q --tb=short` → 1 failed, `ModuleNotFoundError: No module named 'app.services.challenge_path'`
+- GREEN: N/A (red-commit task)
+- Commit: `584b919`
+- Files changed: `backend/tests/test_challenge_authoritative_submission.py`
 
 ## Reviews
 
-- Spec compliance: ✅ COMPLIANT (round 1)
-- Code quality: ✅ APPROVED (round 1, one MINOR inconsistency accepted)
+- Spec compliance: ✅ COMPLIANT
+- Code quality: ✅ APPROVED
 
 ## Notes
 
-Task 1 complete. Moving to Task 2.
+Task 2 complete. Moving to Task 3.

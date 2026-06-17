@@ -168,7 +168,7 @@ git commit -m "test: characterize challenge path api shapes"
 - Create: `backend/tests/test_challenge_authoritative_submission.py`
 - Later modify: `backend/app/services/challenge_path/submission.py`
 
-- [ ] **Step 1: Write failing forged-result test**
+- [x] **Step 1: Write failing forged-result test**
 
 Create `backend/tests/test_challenge_authoritative_submission.py`:
 
@@ -256,7 +256,7 @@ async def test_forged_client_passing_results_do_not_award_progress(
     assert profile is None or profile.stars == 0
 ```
 
-- [ ] **Step 2: Run it and verify it fails for the right reason**
+- [x] **Step 2: Run it and verify it fails for the right reason**
 
 Run:
 
@@ -267,7 +267,7 @@ pytest tests/test_challenge_authoritative_submission.py -q
 
 Expected before implementation: FAIL because `app.services.challenge_path.submission` does not exist or forged results are still trusted.
 
-- [ ] **Step 3: Commit failing test only if project convention allows red commits**
+- [x] **Step 3: Commit failing test only if project convention allows red commits**
 
 If using strict TDD in one commit, skip commit until implementation passes. If committing red tests is allowed by the executing agent, use:
 
