@@ -1,6 +1,6 @@
 ## 1. Characterization And Safety Tests
 
-- [ ] 1.1 Add backend characterization tests for challenge progress, save-code, switch, append, and exercise-detail response compatibility.
+- [x] 1.1 Add backend characterization tests for challenge progress, save-code, switch, append, and exercise-detail response compatibility.
 - [ ] 1.2 Add backend tests proving challenge rewards/progress are not awarded from forged client-supplied passing results.
 - [ ] 1.3 Add backend tests for AI hint cost, cached hint reuse, insufficient core behavior, and general-chat policy classification.
 - [ ] 1.4 Add frontend tests or focused integration tests for arena submission behavior against the preserved challenge API shape.

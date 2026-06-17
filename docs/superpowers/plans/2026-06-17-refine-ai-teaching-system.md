@@ -88,7 +88,7 @@ Expected frontend files to modify or create:
 **Files:**
 - Modify: `backend/tests/test_learning_path_challenge.py`
 
-- [ ] **Step 1: Inspect current challenge flow with CodeGraph**
+- [x] **Step 1: Inspect current challenge flow with CodeGraph**
 
 Run:
 
@@ -98,7 +98,7 @@ npx codegraph context "learning_path challenge progress submit switch save-code 
 
 Expected: output references `backend/app/routers/learning_path.py` and `backend/app/services/arena_infinite.py`.
 
-- [ ] **Step 2: Add response-shape tests for save/switch/append/detail**
+- [x] **Step 2: Add response-shape tests for save/switch/append/detail**
 
 Append focused assertions to `backend/tests/test_learning_path_challenge.py`. Use existing fixtures (`client`, `auth_headers`, `db_session`) and follow existing async style.
 
@@ -144,7 +144,7 @@ Also add similar tests for:
 - `POST /api/learning-path/challenge/switch` returns compatible progress fields when target index is unlocked.
 - `POST /api/learning-path/challenge/append` returns `new_exercise_ids` and `count`.
 
-- [ ] **Step 3: Run the characterization tests**
+- [x] **Step 3: Run the characterization tests**
 
 Run:
 
@@ -155,7 +155,7 @@ pytest tests/test_learning_path_challenge.py -q
 
 Expected: current tests pass before refactor. If a new characterization assertion fails because current behavior is different, adjust the test to current behavior unless it conflicts with OpenSpec requirements.
 
-- [ ] **Step 4: Commit Task 1**
+- [x] **Step 4: Commit Task 1**
 
 ```powershell
 git add backend/tests/test_learning_path_challenge.py
