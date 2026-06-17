@@ -58,8 +58,7 @@ class TestAuthRateLimitIntegration:
         """Reset limiter state between tests to avoid cross-test pollution."""
         import app.middleware as mw
 
-        mw._auth_limiter._entries.clear()
-        mw._code_limiter._entries.clear()
+        mw.reset_rate_limiters()
         yield
 
     @pytest.mark.asyncio
@@ -141,9 +140,7 @@ class TestCodeExecRateLimitIntegration:
         import app.middleware as mw
 
         importlib.reload(mw)
-        # Reset the global limiters
-        mw._auth_limiter._entries.clear()
-        mw._code_limiter._entries.clear()
+        mw.reset_rate_limiters()
         yield
 
     @pytest.mark.asyncio

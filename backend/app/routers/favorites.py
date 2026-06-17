@@ -96,6 +96,7 @@ async def add_favorite(
         course_id=request.course_id,
         chapter_id=request.chapter_id,
         section_id=request.section_id,
+        challenge_session_id=request.challenge_session_id,
         knowledge_points=request.knowledge_points or [],
         exercise_content=request.exercise_content,
         exercise_type=request.exercise_type or "choice",

@@ -76,6 +76,12 @@ def _get_code_limiter() -> RateLimiter:
     return _code_limiter
 
 
+def reset_rate_limiters() -> None:
+    """Clear limiter state, initializing lazy globals when needed."""
+    _get_auth_limiter()._entries.clear()
+    _get_code_limiter()._entries.clear()
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Starlette middleware that applies rate limiting to specific endpoints.
 

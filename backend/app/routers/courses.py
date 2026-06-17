@@ -372,11 +372,10 @@ async def get_user_course_progress(
     """
     from app.models.user_arena import UserArenaProfile
 
-    # Get active courses (C, CPP, Python)
+    # Get active courses
     courses_result = await db.execute(
         select(Course)
         .where(Course.is_active)
-        .where(Course.code.in_(["C", "CPP", "Python"]))
         .order_by(Course.difficulty_level, Course.code)
     )
     all_courses = courses_result.scalars().all()

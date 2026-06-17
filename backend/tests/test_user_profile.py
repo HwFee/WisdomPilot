@@ -220,6 +220,7 @@ class TestGetUserStats:
             return progress_result
 
         mock_db.execute = mock_execute
+        mock_db.add = MagicMock()
         mock_db.flush = AsyncMock()
 
         stats = await service.get_user_stats("user123", 1)

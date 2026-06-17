@@ -7,7 +7,7 @@ This conftest.py sets up test fixtures with a shared test database.
 import os
 
 # CRITICAL: Set test environment BEFORE any app imports
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-min-32-chars"
 
 import uuid
@@ -15,20 +15,24 @@ import asyncio
 from typing import AsyncGenerator
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import event
+from sqlalchemy.pool import StaticPool
 
 # Import Base and app.database BEFORE app.models or app.main
 from app.database import Base, get_db
 import app.database as app_database
 
 # Create test engine
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
     echo=False,
     future=True,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 
 
@@ -107,26 +111,29 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def setup_database():
     """Setup and teardown database for each test."""
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
 
     yield
 
     async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def db_session(setup_database) -> AsyncSession:
     """Create a new database session for each test."""
     async with TestAsyncSessionLocal() as session:
         yield session
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client(db_session: AsyncSession, setup_database) -> AsyncGenerator[AsyncClient, None]:
     """Create test client with shared database session."""
 
@@ -144,7 +151,7 @@ async def client(db_session: AsyncSession, setup_database) -> AsyncGenerator[Asy
     app.dependency_overrides.pop(get_db, None)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def auth_user(db_session) -> User:
     """Create authenticated user for testing."""
     user = User(
@@ -160,7 +167,7 @@ async def auth_user(db_session) -> User:
     return user
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user(db_session) -> User:
     """Create a test user (alias for auth_user for clarity)."""
     user = User(
@@ -176,14 +183,14 @@ async def test_user(db_session) -> User:
     return user
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def auth_headers(auth_user):
     """Get auth headers for the user."""
     token = create_access_token({"sub": auth_user.id})
     return {"Authorization": f"Bearer {token}"}
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_user(db_session) -> User:
     """Create admin user for testing."""
     user = User(
@@ -200,20 +207,20 @@ async def admin_user(db_session) -> User:
     return user
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_auth_headers(admin_user):
     """Get auth headers for the admin user."""
     token = create_access_token({"sub": admin_user.id})
     return {"Authorization": f"Bearer {token}"}
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user_token(test_user) -> str:
     """Get JWT token for test user."""
     return create_access_token({"sub": test_user.id})
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_token(admin_user) -> str:
     """Get JWT token for admin user."""
     return create_access_token({"sub": admin_user.id})
@@ -223,14 +230,11 @@ async def admin_token(admin_user) -> str:
 def _reset_rate_limiters_between_tests():
     """Reset global rate limiter counters between tests."""
     import app.middleware as mw
-    auth = mw._get_auth_limiter()
-    code = mw._get_code_limiter()
-    auth._entries.clear()
-    code._entries.clear()
+    mw.reset_rate_limiters()
     yield
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def init_courses(db_session):
     """Initialize the 8 courses for testing."""
     courses_data = [

@@ -38,6 +38,7 @@ class UserArenaProfile(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, unique=True)
+    course_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Competitive score
     total_score: Mapped[float] = mapped_column(Float, default=0.0, comment="Total accumulated score")

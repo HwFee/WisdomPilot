@@ -162,6 +162,31 @@ class TestAuthLogin:
         assert data["user"]["email"] == "login@example.com"
 
     @pytest.mark.asyncio
+    async def test_login_success_with_email_field(self, client: AsyncClient):
+        """Test successful login when client sends email instead of username."""
+        await client.post(
+            "/api/auth/register",
+            json={
+                "email": "login-email-field@example.com",
+                "username": "loginemailfield",
+                "password": "password123",
+            },
+        )
+
+        response = await client.post(
+            "/api/auth/login",
+            json={
+                "email": "login-email-field@example.com",
+                "password": "password123",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["user"]["email"] == "login-email-field@example.com"
+
+    @pytest.mark.asyncio
     async def test_login_wrong_password(self, client: AsyncClient):
         """Test login with wrong password fails"""
         # Register first

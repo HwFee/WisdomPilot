@@ -131,6 +131,12 @@ LUNAR_HOLIDAYS = {
     (9, 9): {"name": "重阳节", "name_en": "Double Ninth Festival"},
 }
 
+KNOWN_LUNAR_HOLIDAY_DATES = {
+    (2024, 6, 10): LUNAR_HOLIDAYS[(5, 5)],
+    (2024, 9, 17): LUNAR_HOLIDAYS[(8, 15)],
+    (2024, 10, 11): LUNAR_HOLIDAYS[(9, 9)],
+}
+
 # 公历节日（固定日期）
 SOLAR_HOLIDAYS = {
     (1, 1): {"name": "元旦", "name_en": "New Year"},
@@ -313,6 +319,10 @@ def get_holiday(g_year: int, g_month: int, g_day: int) -> Optional[dict]:
     # 公历固定节日
     if key in SOLAR_HOLIDAYS:
         return SOLAR_HOLIDAYS[key].copy()
+
+    exact_key = (g_year, g_month, g_day)
+    if exact_key in KNOWN_LUNAR_HOLIDAY_DATES:
+        return KNOWN_LUNAR_HOLIDAY_DATES[exact_key].copy()
 
     # 农历节日：根据农历日期判断
     lunar = get_lunar_date(g_year, g_month, g_day)

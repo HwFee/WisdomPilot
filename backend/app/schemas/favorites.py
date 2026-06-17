@@ -24,9 +24,10 @@ class FavoriteBase(BaseModel):
 class FavoriteCreate(BaseModel):
     """Schema for creating a favorite - 与 CollectWrongQuestionRequest 一致"""
     exercise_key: Optional[str] = Field(None, description="练习题标识")
-    course_id: int = Field(..., description="课程ID")
+    course_id: int = Field(0, description="课程ID")
     chapter_id: Optional[int] = Field(None, description="章节ID")
     section_id: Optional[int] = Field(None, description="小节ID（强化测试来源）")
+    challenge_session_id: Optional[str] = Field(None, description="挑战会话ID")
     exercise_id: Optional[int] = Field(None, description="原始练习题ID")
     exercise_content: Optional[dict] = Field(None, description="题目内容快照")
     exercise_type: Optional[str] = Field(None, description="题目类型")
@@ -53,6 +54,7 @@ class FavoriteResponse(BaseModel):
     course_id: int
     chapter_id: Optional[int] = None
     section_id: Optional[int] = None
+    challenge_session_id: Optional[str] = None
     knowledge_points: List[str] = []
     exercise_content: Optional[dict] = None
     exercise_type: str = "choice"
