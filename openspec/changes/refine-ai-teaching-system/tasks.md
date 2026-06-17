@@ -22,10 +22,10 @@
 
 ## 4. Backend-Authoritative Submission
 
-- [ ] 4.1 Add a backend challenge submission service that runs or verifies code through the existing judge/code execution abstraction.
-- [ ] 4.2 Update challenge submit endpoint to use backend-authoritative judge results before changing correctness, unlocks, rewards, wrong-question collection, or leaderboard-affecting state.
-- [ ] 4.3 Keep client-supplied test results as optional display/debug input only, never the sole source of reward-bearing correctness.
-- [ ] 4.4 Add unavailable-judge handling that returns a submission error without awarding correctness-dependent rewards.
+- [x] 4.1 Add a backend challenge submission service that runs or verifies code through the existing judge/code execution abstraction.
+- [x] 4.2 Update challenge submit endpoint to use backend-authoritative judge results before changing correctness, unlocks, rewards, wrong-question collection, or leaderboard-affecting state.
+- [x] 4.3 Keep client-supplied test results as optional display/debug input only, never the sole source of reward-bearing correctness.
+- [x] 4.4 Add unavailable-judge handling that returns a submission error without awarding correctness-dependent rewards.
 
 ## 5. Frontend Arena Cleanup
 

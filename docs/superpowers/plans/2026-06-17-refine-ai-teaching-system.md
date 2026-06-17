@@ -539,7 +539,7 @@ git commit -m "refactor: add challenge path service package"
 - Modify: `backend/app/routers/learning_path.py`
 - Modify: `backend/tests/test_challenge_authoritative_submission.py`
 
-- [ ] **Step 1: Explore code execution service with CodeGraph**
+- [x] **Step 1: Explore code execution service with CodeGraph**
 
 Run:
 
@@ -549,7 +549,7 @@ npx codegraph context "executeCodeBatch backend app routers code judge0 code exe
 
 Expected: identify current backend batch execution endpoint/service and reusable judge abstraction.
 
-- [ ] **Step 2: Implement authoritative judge adapter**
+- [x] **Step 2: Implement authoritative judge adapter**
 
 In `backend/app/services/challenge_path/submission.py`, add a function the tests can monkeypatch:
 
@@ -578,7 +578,7 @@ Expected result shape:
 }
 ```
 
-- [ ] **Step 3: Add submission service orchestration**
+- [x] **Step 3: Add submission service orchestration**
 
 Create `ChallengeSubmissionService.submit_exercise(...)` in `submission.py`. It should:
 
@@ -589,13 +589,13 @@ Create `ChallengeSubmissionService.submit_exercise(...)` in `submission.py`. It 
 
 Keep the old `test_results` request field accepted for compatibility, but do not use it for correctness.
 
-- [ ] **Step 4: Update route to use submission service**
+- [x] **Step 4: Update route to use submission service**
 
 In `backend/app/routers/learning_path.py`, update `submit_challenge_exercise` so it delegates to `ChallengeSubmissionService` or the compatibility facade that uses it.
 
 Preserve request and response field names.
 
-- [ ] **Step 5: Handle judge unavailable**
+- [x] **Step 5: Handle judge unavailable**
 
 If `run_authoritative_judge` raises or returns no valid result, return HTTP 503 or 400 with a clear detail such as `"Judge service unavailable"`. Do not mutate correctness-dependent state.
 
@@ -611,7 +611,7 @@ async def test_unavailable_judge_does_not_award_progress(...):
     assert progress.is_correct is False
 ```
 
-- [ ] **Step 6: Run authoritative submission tests**
+- [x] **Step 6: Run authoritative submission tests**
 
 ```powershell
 cd backend
@@ -620,7 +620,7 @@ pytest tests/test_challenge_authoritative_submission.py tests/test_learning_path
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 5**
+- [x] **Step 7: Commit Task 5**
 
 ```powershell
 git add backend/app/services/challenge_path/submission.py backend/app/services/arena_infinite.py backend/app/routers/learning_path.py backend/tests/test_challenge_authoritative_submission.py
