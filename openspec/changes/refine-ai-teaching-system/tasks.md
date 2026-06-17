@@ -14,8 +14,8 @@
 
 ## 3. Backend Challenge Path Decomposition
 
-- [ ] 3.1 Extract challenge exercise selection and append behavior from `backend/app/services/arena_infinite.py` into a focused service.
-- [ ] 3.2 Extract challenge progress loading, switching, code saving, and unlocking behavior into a focused service.
+- [x] 3.1 Extract challenge exercise selection and append behavior from `backend/app/services/arena_infinite.py` into a focused service.
+- [x] 3.2 Extract challenge progress loading, switching, code saving, and unlocking behavior into a focused service.
 - [ ] 3.3 Extract challenge reward behavior for stars, tiers, cores, tier transactions, profile stats, and wrong-question collection into focused services/helpers.
 - [ ] 3.4 Extract API response mapping for challenge exercises/progress/submission results so route handlers stay thin and compatible.
 - [ ] 3.5 Reduce `backend/app/routers/learning_path.py` challenge endpoints to orchestration-only handlers while preserving current endpoint paths.

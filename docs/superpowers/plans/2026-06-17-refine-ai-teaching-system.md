@@ -635,7 +635,7 @@ git commit -m "fix: make challenge submission backend authoritative"
 - Modify: `backend/app/services/arena_infinite.py`
 - Modify: `backend/app/routers/learning_path.py`
 
-- [ ] **Step 1: Check impact before moving symbols**
+- [x] **Step 1: Check impact before moving symbols**
 
 Run:
 
@@ -646,7 +646,7 @@ npx codegraph context "ChallengePathService get_or_create_challenge_path append_
 
 Expected: understand current callers before moving code.
 
-- [ ] **Step 2: Move selection methods**
+- [x] **Step 2: Move selection methods**
 
 Move these responsibilities from `ChallengePathService` into `ChallengeSelectionService`:
 
@@ -658,7 +658,7 @@ Move these responsibilities from `ChallengePathService` into `ChallengeSelection
 
 Keep a compatibility method on `ChallengePathService` that calls the new service if needed by existing tests/imports.
 
-- [ ] **Step 3: Move progress methods**
+- [x] **Step 3: Move progress methods**
 
 Move these responsibilities into `ChallengeProgressService`:
 
@@ -673,7 +673,7 @@ Move these responsibilities into `ChallengeProgressService`:
 
 Keep signatures compatible. Avoid changing response shapes in the same step.
 
-- [ ] **Step 4: Run challenge tests**
+- [x] **Step 4: Run challenge tests**
 
 ```powershell
 cd backend
@@ -682,7 +682,7 @@ pytest tests/test_learning_path_challenge.py tests/test_challenge_authoritative_
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit Task 6**
+- [x] **Step 5: Commit Task 6**
 
 ```powershell
 git add backend/app/services/challenge_path/selection.py backend/app/services/challenge_path/progress.py backend/app/services/arena_infinite.py backend/app/routers/learning_path.py
