@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -26,10 +26,24 @@ def test_challenge_hint_deep_policy_has_expected_cost():
     assert policy.cost == AI_HINT_COSTS["deep"]
 
 
-def test_cached_challenge_hint_is_free():
-    policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level="deep", cached=True)
+@pytest.mark.parametrize("hint_level", ["light", "medium", "deep"])
+def test_cached_challenge_hint_policy_is_free_for_all_levels(hint_level):
+    policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level=hint_level, cached=True)
     assert policy.cost == 0
     assert policy.cached is True
+
+
+@pytest.mark.parametrize(
+    "hint_level, expected_category",
+    [
+        ("light", "ai_hint_light"),
+        ("medium", "ai_hint_medium"),
+        ("deep", "ai_hint_deep"),
+    ],
+)
+def test_challenge_hint_policy_category_matches_spend_category(hint_level, expected_category):
+    policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level=hint_level)
+    assert policy.category == expected_category
 
 
 def test_general_chat_policy_is_out_of_demo_scope_and_free():
@@ -111,3 +125,58 @@ async def test_hint_router_uses_policy_service_for_cost_lookup(client, auth_head
     mock_get_policy.assert_called_once_with(
         AIFeature.CHALLENGE_HINT, hint_level="light"
     )
+
+
+@pytest.mark.asyncio
+async def test_stream_hint_insufficient_cores_returns_sse_error_and_skips_ai_stream(
+    client, auth_user, auth_headers
+):
+    """Insufficient cores for a new hint emits INSUFFICIENT_CORES SSE and never streams AI."""
+    policy = AIPolicy(
+        feature=AIFeature.CHALLENGE_HINT,
+        cost=7,
+        cached=False,
+        demo_scope="controlled",
+        hint_level="medium",
+    )
+
+    with patch("app.routers.ai.get_ai_policy", return_value=policy) as mock_get_policy:
+        with patch(
+            "app.services.core_service.CoreService.spend_cores",
+            new=AsyncMock(side_effect=ValueError("Insufficient cores. Have 0, need 7")),
+        ) as mock_spend:
+            with patch(
+                "app.routers.ai.ai_service.stream_exercise_hint",
+                new=AsyncMock(),
+            ) as mock_stream:
+                response = await client.post(
+                    "/api/ai/exercise-hint/stream",
+                    json={
+                        "exercise_id": "ex-insufficient",
+                        "exercise_title": "Two Sum",
+                        "exercise_description": "Find two numbers.",
+                        "difficulty": 3,
+                        "knowledge_points": ["hash map"],
+                        "hint_level": "medium",
+                        "code_template": "",
+                        "sample_input": "",
+                        "sample_output": "",
+                    },
+                    headers=auth_headers,
+                )
+
+    assert response.status_code == 200
+    body = response.text
+    assert "INSUFFICIENT_CORES" in body
+    mock_get_policy.assert_called_once_with(
+        AIFeature.CHALLENGE_HINT, hint_level="medium"
+    )
+    mock_spend.assert_awaited_once_with(
+        user_id=auth_user.id,
+        amount=7,
+        category="ai_hint_medium",
+        reference_type="exercise_hint",
+        reference_id="ex-insufficient",
+        description="AI提示 - Two Sum",
+    )
+    mock_stream.assert_not_awaited()

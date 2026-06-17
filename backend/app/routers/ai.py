@@ -31,7 +31,7 @@ from app.schemas.ai import (
     ExerciseHintRequest,
 )
 from app.services.ai import ai_service
-from app.services.ai_policy import AIFeature, get_ai_policy
+from app.services.ai_policy import AIFeature, AIPolicy, get_ai_policy
 from app.config import get_settings
 
 
@@ -347,7 +347,7 @@ async def get_cached_hint(
 async def sse_exercise_hint_generator(
     request: ExerciseHintRequest,
     user_id: str,
-    cost: int,
+    policy: AIPolicy,
     exercise_id: str,
 ) -> AsyncGenerator[bytes, None]:
     """SSE hint generator using independent short-lived DB sessions.
@@ -365,9 +365,11 @@ async def sse_exercise_hint_generator(
     from app.models.ai_hint_cache import AIHintCache
     from app.database import AsyncSessionLocal
 
+    cost = policy.cost
+    category = policy.category
+
     # --- Step 1: Deduct cores in a short, independent transaction ---
     t_step1 = time.time()
-    category = f"ai_hint_{request.hint_level}"
     try:
         async with AsyncSessionLocal() as deduct_db:
             core_service = CoreService(deduct_db)
@@ -562,15 +564,10 @@ async def stream_exercise_hint(
 
     logger.info("[AI Hint] CACHE MISS, generating new hint...")
 
-    # 获取消耗
     policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level=request.hint_level)
-    cost = policy.cost
     logger.info(f"[PERF-ROUTE] Entering SSE generator, elapsed_so_far={(time.time()-t_route_start)*1000:.1f}ms")
 
-    # SSE generator uses independent short-lived DB sessions,
-    # NOT the request's db session, to avoid holding SQLite write locks
-    # during the entire AI streaming duration.
     return StreamingResponse(
-        sse_exercise_hint_generator(request, current_user.id, cost, exercise_id),
+        sse_exercise_hint_generator(request, current_user.id, policy, exercise_id),
         media_type="text/event-stream",
     )
