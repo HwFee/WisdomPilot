@@ -126,9 +126,15 @@ describe('useChallengeSubmit', () => {
       ],
     })
 
+    const backendResults = [
+      { passed: true, input: 'hidden', expected: '10', actual: '10', message: '' },
+      { passed: true, input: 'hidden-2', expected: '11', actual: '11', message: '' },
+      { passed: true, input: 'hidden-3', expected: '12', actual: '12', message: '' },
+    ]
+
     mockSubmitChallengeExercise.mockResolvedValue({
       is_correct: true,
-      test_results: [],
+      test_results: backendResults,
       stars_earned: 1,
       cores_earned: 5,
       next_unlocked: true,
@@ -175,10 +181,17 @@ describe('useChallengeSubmit', () => {
       { passed: true, input: '1 2', expected: '3', actual: '3', message: '' },
       { passed: true, input: '4 5', expected: '9', actual: '9', message: '' },
     ])
+    expect(deps.setTestResults).toHaveBeenLastCalledWith(backendResults)
     expect(deps.setFeedbackState).toHaveBeenCalledWith('correct')
     expect(deps.setShowResultModal).toHaveBeenCalledWith(true)
     expect(deps.setModalResult).toHaveBeenCalledWith(
-      expect.objectContaining({ isCorrect: true, starsEarned: 1, firstTimeCorrect: true }),
+      expect.objectContaining({
+        isCorrect: true,
+        passedCount: 3,
+        totalCount: 3,
+        starsEarned: 1,
+        firstTimeCorrect: true,
+      }),
     )
     expect(deps.setExerciseProgress).toHaveBeenCalled()
   })

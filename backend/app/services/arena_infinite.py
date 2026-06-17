@@ -23,7 +23,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
 from app.models.stats import ActivityLog
-from app.models.user import User
 
 # Import focused services
 from app.services.challenge_path.selection import ChallengeSelectionService
@@ -193,23 +192,10 @@ class ChallengePathService:
         if not progress:
             raise ValueError("Progress record not found")
 
-        user_result = await self.db.execute(select(User).where(User.id == user_id))
-        user = user_result.scalar_one_or_none()
-        is_test_account = user.is_test_account if user else False
-        is_first_three = progress.exercise_index < 3
-
-        if is_test_account and is_first_three:
-            all_passed = True
-            logger.info(
-                "[TEST_ACCOUNT] User %s... is test account, "
-                "exercise_index=%s, auto-passing",
-                user_id[:8], progress.exercise_index,
-            )
-        else:
-            all_passed = self._all_test_cases_passed(test_results)
+        all_passed = self._all_test_cases_passed(test_results)
         now = datetime.utcnow()
 
-        progress.is_completed = True
+        progress.is_completed = all_passed
         progress.is_correct = all_passed
         progress.last_attempt_at = now
         progress.attempt_count += 1
@@ -268,7 +254,7 @@ class ChallengePathService:
             ).order_by(ArenaExerciseProgress.exercise_index).limit(1)
         )
         next_progress = next_result.scalar_one_or_none()
-        if next_progress and not next_progress.is_unlocked:
+        if all_passed and next_progress and not next_progress.is_unlocked:
             next_progress.is_unlocked = True
             next_unlocked = True
 

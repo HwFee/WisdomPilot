@@ -127,6 +127,14 @@ function buildSubmitFailedResult(): TestCaseResult[] {
   }]
 }
 
+function normalizeAuthoritativeResults(
+  backendResults: TestCaseResult[] | undefined,
+  fallbackResults: TestCaseResult[],
+): TestCaseResult[] {
+  if (!backendResults || backendResults.length === 0) return fallbackResults
+  return backendResults
+}
+
 async function appendExercisesIfNeeded(
   exerciseProgress: ExerciseProgress[],
   currentExerciseId: number,
@@ -292,6 +300,11 @@ export function useChallengeSubmit(deps: ChallengeSubmitDeps) {
       )
 
       const finalIsCorrect = submitResult.is_correct
+      const authoritativeResults = normalizeAuthoritativeResults(
+        submitResult.test_results,
+        results,
+      )
+      setTestResults(authoritativeResults)
       setFeedbackState(finalIsCorrect ? 'correct' : 'wrong')
 
       if (submitResult.tier_changed && submitResult.new_tier) {
@@ -317,8 +330,8 @@ export function useChallengeSubmit(deps: ChallengeSubmitDeps) {
       if (finalIsCorrect) {
         setModalResult({
           isCorrect: true,
-          passedCount: batchResult.passed_count,
-          totalCount: batchResult.total_count,
+          passedCount: authoritativeResults.filter((result) => result.passed).length,
+          totalCount: authoritativeResults.length,
           starsEarned: submitResult.stars_earned,
           promoted: submitResult.promoted,
           demoted: submitResult.demoted,

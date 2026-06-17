@@ -31,6 +31,98 @@ async def test_forged_client_passing_results_do_not_award_progress(
         test_cases=[{"input": "", "output": "42"}],
     )
     db_session.add(exercise)
+    next_exercise = Exercise(
+        content={"title": "下一题", "text": "输出 7", "code_template": "print(7)"},
+        type="programming",
+        difficulty=3,
+        is_verified=True,
+        test_cases=[{"input": "", "output": "7"}],
+    )
+    db_session.add(next_exercise)
+    await db_session.commit()
+    await db_session.refresh(exercise)
+    await db_session.refresh(next_exercise)
+
+    user_id = _user_id_from_headers(auth_headers)
+    progress = ArenaExerciseProgress(
+        user_id=user_id,
+        exercise_id=exercise.id,
+        exercise_index=0,
+        is_unlocked=True,
+    )
+    next_progress = ArenaExerciseProgress(
+        user_id=user_id,
+        exercise_id=next_exercise.id,
+        exercise_index=1,
+        is_unlocked=False,
+    )
+    db_session.add(progress)
+    db_session.add(next_progress)
+    await db_session.commit()
+
+    async def fake_backend_judge(*args, **kwargs):
+        return {
+            "passed_count": 0,
+            "total_count": 1,
+            "results": [
+                {"passed": False, "input": "", "expected": "42", "actual": "0", "message": "Wrong Answer"}
+            ],
+        }
+
+    monkeypatch.setattr(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        fake_backend_judge,
+        raising=False,
+    )
+
+    response = await client.post(
+        "/api/learning-path/challenge/submit",
+        headers=auth_headers,
+        json={
+            "exercise_id": exercise.id,
+            "code": "print(0)",
+            "language": "python",
+            "test_results": [
+                {"passed": True, "input": "", "expected": "42", "actual": "42"}
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_correct"] is False
+    assert data["stars_earned"] <= 0
+
+    await db_session.refresh(progress)
+    assert progress.is_correct is False
+    assert progress.is_completed is False
+
+    await db_session.refresh(next_progress)
+    assert next_progress.is_unlocked is False
+
+    profile_result = await db_session.execute(
+        select(UserArenaProfile).where(UserArenaProfile.user_id == user_id)
+    )
+    profile = profile_result.scalar_one_or_none()
+    assert profile is not None
+    assert profile.stars == 0
+
+
+@pytest.mark.asyncio
+async def test_test_account_does_not_override_authoritative_failure(
+    client: AsyncClient,
+    auth_headers: dict,
+    db_session,
+    monkeypatch,
+):
+    exercise = Exercise(
+        content={"title": "测试账号也要权威判题", "text": "输出 42", "code_template": "print(0)"},
+        type="programming",
+        difficulty=3,
+        is_verified=True,
+        test_cases=[{"input": "", "output": "42"}],
+    )
+    db_session.add(exercise)
     await db_session.commit()
     await db_session.refresh(exercise)
 
@@ -73,19 +165,11 @@ async def test_forged_client_passing_results_do_not_award_progress(
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert data["is_correct"] is False
-    assert data["stars_earned"] <= 0
+    assert response.json()["is_correct"] is False
 
     await db_session.refresh(progress)
     assert progress.is_correct is False
-
-    profile_result = await db_session.execute(
-        select(UserArenaProfile).where(UserArenaProfile.user_id == user_id)
-    )
-    profile = profile_result.scalar_one_or_none()
-    assert profile is not None
-    assert profile.stars == 0
+    assert progress.is_completed is False
 
 
 @pytest.mark.asyncio
