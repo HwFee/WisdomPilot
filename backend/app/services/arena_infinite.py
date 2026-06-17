@@ -24,11 +24,6 @@ from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
 from app.models.stats import ActivityLog
 from app.models.user import User
-from app.models.user_arena import UserArenaProfile
-from app.services.wrong_question import wrong_question_service
-from app.services.tier_service import tier_service
-from app.services.core_service import CoreService
-from app.core.tier_config import TierRank, tier_from_string
 
 # Import focused services
 from app.services.challenge_path.selection import ChallengeSelectionService
@@ -37,8 +32,6 @@ from app.services.challenge_path.rewards import ChallengeRewardService
 
 logger = logging.getLogger(__name__)
 
-# Core rewards for challenge path
-CORE_REWARD_CHALLENGE_CORRECT = 3
 DEFAULT_CHALLENGE_LANGUAGE = "python"
 
 
@@ -189,7 +182,7 @@ class ChallengePathService:
         time_spent: Optional[int] = None,
         hint_used: bool = False,
     ) -> dict:
-        """Core submission logic - mutates progress, awards stars, tiers, cores."""
+        """Core submission logic - mutates progress, delegates rewards."""
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
                 ArenaExerciseProgress.user_id == user_id,
@@ -208,8 +201,9 @@ class ChallengePathService:
         if is_test_account and is_first_three:
             all_passed = True
             logger.info(
-                f"[TEST_ACCOUNT] User {user_id[:8]}... is test account, "
-                f"exercise_index={progress.exercise_index}, auto-passing"
+                "[TEST_ACCOUNT] User %s... is test account, "
+                "exercise_index=%s, auto-passing",
+                user_id[:8], progress.exercise_index,
             )
         else:
             all_passed = self._all_test_cases_passed(test_results)
@@ -242,21 +236,6 @@ class ChallengePathService:
             select(Exercise).where(Exercise.id == exercise_id)
         )
         exercise = exercise_result.scalar_one_or_none()
-
-        added_to_wrong_book = False
-        if not all_passed and exercise:
-            exercise_key = f"arena-global-{exercise_id}"
-            await wrong_question_service.collect_wrong_question_by_key(
-                db=self.db,
-                user_id=user_id,
-                exercise_key=exercise_key,
-                user_answer=code,
-                exercise_id=exercise_id,
-                exercise_content=exercise.content,
-                exercise_type=exercise.type,
-                knowledge_points=exercise.knowledge_points,
-            )
-            added_to_wrong_book = True
 
         if exercise:
             exercise_title = (
@@ -293,202 +272,18 @@ class ChallengePathService:
             next_progress.is_unlocked = True
             next_unlocked = True
 
-        stars_earned = 0
-        tier_changed = False
-        new_tier = None
-        new_sub_tier = None
-        new_stars = 0
-        promoted = False
-        demoted = False
-
-        profile_result = await self.db.execute(
-            select(UserArenaProfile).where(
-                UserArenaProfile.user_id == user_id,
-            )
+        # Delegate all reward logic to ChallengeRewardService
+        reward_service = ChallengeRewardService(self.db)
+        reward_fields = await reward_service.apply_submission_rewards(
+            user_id=user_id,
+            exercise=exercise,
+            progress=progress,
+            is_correct=all_passed,
+            code=code,
         )
-        profile = profile_result.scalar_one_or_none()
-
-        if not profile:
-            profile = UserArenaProfile(user_id=user_id)
-            self.db.add(profile)
-            await self.db.flush()
-            logger.info(f"[STARS] Created new profile for user {user_id[:8]}... ")
-
-        current_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE
-        current_sub_tier = profile.sub_tier if profile.sub_tier else 4
-        current_stars = profile.stars if profile.stars else 0
-
-        tier_result = None
-
-        stars_deducted = getattr(progress, "stars_deducted", None)
-        if stars_deducted is None:
-            stars_deducted = abs(min(0, progress.stars_awarded)) if progress.stars_awarded < 0 else 0
-
-        logger.info("[STARS] === Submit Exercise ===")
-        logger.info(f"[STARS] User: {user_id[:8]}...,  Exercise: {exercise_id}")
-        logger.info(
-            f"[STARS] is_correct: {all_passed}, attempt_count: {progress.attempt_count}, "
-            f"difficulty: {exercise.difficulty if exercise else '?'}")
-        logger.info(f"[STARS] stars_awarded: {progress.stars_awarded}, stars_deducted: {stars_deducted}")
-        logger.info(
-            f"[STARS] Current profile - tier: {current_tier.value}, "
-            f"sub_tier: {current_sub_tier}, stars: {current_stars}")
-
-        already_correct = progress.stars_awarded > 0
-
-        if already_correct:
-            new_tier = current_tier
-            new_sub_tier = current_sub_tier
-            new_stars = current_stars
-            logger.info(
-                f"[STARS] Already correct before (stars_awarded={progress.stars_awarded}), no change"
-            )
-        else:
-            if all_passed:
-                base_reward = tier_service.get_base_reward(exercise.difficulty) if exercise else 1
-                stars_earned = base_reward
-                logger.info(f"[STARS] CORRECT! base_reward={base_reward}, total=+{stars_earned}")
-            else:
-                stars_earned = tier_service.calculate_stars_earned(
-                    accuracy=0.0,
-                    difficulty=exercise.difficulty if exercise else 1,
-                    attempt_count=progress.attempt_count,
-                    total_deducted=stars_deducted,
-                )
-                logger.info(
-                    f"[STARS] WRONG. attempt_count={progress.attempt_count}, "
-                    f"stars_deducted={stars_deducted}, result={stars_earned}"
-                )
-
-            progress.stars_awarded = stars_earned
-
-            if stars_earned < 0 and hasattr(progress, "stars_deducted"):
-                progress.stars_deducted = stars_deducted + abs(stars_earned)
-                logger.info(f"[STARS] Updated stars_deducted to {progress.stars_deducted}")
-
-            if stars_earned > 0:
-                tier_result = tier_service.add_stars(
-                    tier=current_tier,
-                    sub_tier=current_sub_tier,
-                    current_stars=current_stars,
-                    stars_earned=stars_earned,
-                )
-                new_tier = tier_result.tier
-                new_sub_tier = tier_result.sub_tier
-                new_stars = tier_result.stars
-                promoted = tier_result.promoted
-                logger.info(
-                    f"[STARS] Add stars result - new_tier: {new_tier.value}, "
-                    f"new_sub_tier: {new_sub_tier}, new_stars: {new_stars}, promoted: {promoted}"
-                )
-            elif stars_earned < 0:
-                tier_result = tier_service.remove_stars(
-                    tier=current_tier,
-                    sub_tier=current_sub_tier,
-                    current_stars=current_stars,
-                    stars_lost=abs(stars_earned),
-                    protection_remaining=profile.protection_remaining or 0,
-                )
-                new_tier = tier_result.tier
-                new_sub_tier = tier_result.sub_tier
-                new_stars = tier_result.stars
-                demoted = tier_result.demoted
-                logger.info(
-                    f"[STARS] Remove stars result - new_tier: {new_tier.value}, "
-                    f"new_sub_tier: {new_sub_tier}, new_stars: {new_stars}, demoted: {demoted}"
-                )
-
-                profile.protection_remaining = tier_result.protection_remaining
-            else:
-                new_tier = current_tier
-                new_sub_tier = current_sub_tier
-                new_stars = current_stars
-                logger.info("[STARS] No stars change (stars_earned == 0)")
-
-            profile.tier = new_tier.value
-            profile.sub_tier = new_sub_tier
-            profile.stars = new_stars
-            logger.info(
-                f"[STARS] Updated profile - tier: {profile.tier}, "
-                f"sub_tier: {profile.sub_tier}, stars: {profile.stars}"
-            )
-
-            if promoted:
-                highest_tier, highest_sub = tier_service.update_highest_tier(
-                    profile.highest_tier,
-                    profile.highest_sub_tier,
-                    new_tier,
-                    new_sub_tier,
-                )
-                profile.highest_tier = highest_tier.value if isinstance(highest_tier, TierRank) else highest_tier
-                profile.highest_sub_tier = highest_sub
-
-            tier_changed = (new_tier != current_tier or new_sub_tier != current_sub_tier)
-            new_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE
-            new_sub_tier = profile.sub_tier if profile.sub_tier else 4
-            new_stars = profile.stars if profile.stars else 0
-
-        try:
-            await self._update_arena_profile_stats(profile, user_id)
-        except Exception as e:
-            logger.warning(f"Failed to update arena profile stats: {e}")
-
-        cores_earned = 0
-        if all_passed and stars_earned > 0:
-            try:
-                core_service = CoreService(self.db)
-                cores_earned = CORE_REWARD_CHALLENGE_CORRECT
-                await core_service.earn_cores(
-                    user_id=user_id,
-                    amount=cores_earned,
-                    category="arena",
-                    reference_type="exercise",
-                    reference_id=str(exercise_id),
-                    description="挑战之路答对题目",
-                )
-                logger.info(
-                    f"[CORE] Awarded {cores_earned} cores to user {user_id[:8]}... "
-                    f"for correct challenge exercise"
-                )
-            except Exception as e:
-                logger.warning(f"Failed to award cores: {e}")
-                cores_earned = 0
-
-        if stars_earned != 0 or promoted or demoted:
-            try:
-                from app.services.tier_transaction_service import TierTransactionService
-                tier_tx_service = TierTransactionService(self.db)
-                used_protection = (
-                    getattr(tier_result, "used_protection", False)
-                    if tier_result and stars_earned < 0 else False
-                )
-                await tier_tx_service.record_transaction(
-                    user_id=user_id,
-                    course_id=None,
-                    tier_before=current_tier.value if current_tier else TierRank.BRONZE.value,
-                    sub_tier_before=current_sub_tier,
-                    stars_before=current_stars,
-                    tier_after=new_tier.value if new_tier else TierRank.BRONZE.value,
-                    sub_tier_after=new_sub_tier,
-                    stars_after=new_stars,
-                    stars_change=stars_earned,
-                    promoted=promoted,
-                    demoted=demoted,
-                    used_protection=used_protection,
-                    protection_remaining=profile.protection_remaining or 0,
-                    source="arena_challenge",
-                    reference_id=str(exercise_id),
-                    description=f"挑战之路答题 - {'答对' if all_passed else '答错'}",
-                )
-                logger.info(
-                    f"[TierTx] Recorded tier transaction for user {user_id[:8]}... "
-                    f"stars_change={stars_earned}"
-                )
-            except Exception as e:
-                logger.warning(f"Failed to record tier transaction: {e}")
 
         await self.db.commit()
-        logger.info(f"[STARS] After commit - profile.stars: {profile.stars}")
+        logger.info("[STARS] After commit - submission committed")
 
         try:
             from app.services.user_profile import UserProfileService
@@ -503,89 +298,21 @@ class ChallengePathService:
                 first_attempt_correct=(progress.attempt_count == 1 and all_passed),
             )
         except Exception as e:
-            logger.warning(f"Failed to update user profile: {e}")
+            logger.warning("Failed to update user profile: %s", e)
 
         logger.info("[STARS] === Returning result ===")
-        logger.info(f"[STARS] stars_earned: {stars_earned}, tier_changed: {tier_changed}")
+        logger.info("[STARS] stars_earned: %s, tier_changed: %s", reward_fields["stars_earned"], reward_fields["tier_changed"])
         logger.info(
-            f"[STARS] new_tier: {new_tier.value if new_tier else None}, "
-            f"new_sub_tier: {new_sub_tier}, new_stars: {new_stars}"
+            "[STARS] new_tier: %s, new_sub_tier: %s, new_stars: %s",
+            reward_fields["new_tier"], reward_fields["new_sub_tier"], reward_fields["new_stars"]
         )
-
-        first_time_correct = all_passed and progress.attempt_count == 1
-        first_time_wrong = not all_passed and progress.attempt_count == 1
 
         return {
             "is_correct": all_passed,
             "test_results": test_results,
-            "stars_earned": stars_earned,
-            "cores_earned": cores_earned,
             "next_unlocked": next_unlocked,
-            "added_to_wrong_book": added_to_wrong_book,
-            "tier_changed": tier_changed,
-            "new_tier": new_tier.value if new_tier else None,
-            "new_sub_tier": new_sub_tier,
-            "new_stars": new_stars,
-            "promoted": promoted,
-            "demoted": demoted,
-            "first_time_correct": first_time_correct,
-            "first_time_wrong": first_time_wrong,
+            **reward_fields,
         }
-
-    async def _update_arena_profile_stats(
-        self, profile: UserArenaProfile, user_id: str
-    ) -> None:
-        """Update UserArenaProfile statistics from ArenaExerciseProgress records."""
-        result = await self.db.execute(
-            select(ArenaExerciseProgress, Exercise)
-            .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
-            .where(ArenaExerciseProgress.user_id == user_id)
-            .order_by(ArenaExerciseProgress.exercise_index)
-        )
-        rows = list(result.all())
-        if not rows:
-            return
-
-        progresses = [p for p, _ in rows]
-        exercises_map = {p.exercise_id: ex for p, ex in rows}
-
-        total = len(progresses)
-        completed = [p for p in progresses if p.is_completed]
-        correct = [p for p in progresses if p.is_correct]
-        total_attempts = sum(p.attempt_count for p in progresses)
-        times_spent = [p.time_spent for p in progresses if p.time_spent]
-
-        best_streak = 0
-        current_run = 0
-        for p in progresses:
-            if p.is_correct:
-                current_run += 1
-                best_streak = max(best_streak, current_run)
-            else:
-                current_run = 0
-
-        current_streak = 0
-        for p in reversed(progresses):
-            if p.is_correct:
-                current_streak += 1
-            else:
-                break
-
-        highest_difficulty = 0
-        for p in completed:
-            ex = exercises_map.get(p.exercise_id)
-            if ex and ex.difficulty > highest_difficulty:
-                highest_difficulty = ex.difficulty
-
-        profile.total_challenges = len(completed)
-        profile.wins = len(correct)
-        profile.losses = len(completed) - len(correct)
-        profile.best_streak = best_streak
-        profile.current_streak = current_streak
-        profile.highest_difficulty = highest_difficulty
-        profile.total_submissions = total_attempts
-        profile.avg_accuracy = len(correct) / total if total > 0 else 0.0
-        profile.avg_time_spent = sum(times_spent) / len(times_spent) if times_spent else 0.0
 
     async def get_stats(self, user_id: str) -> dict:
         """Get challenge path statistics."""

@@ -176,7 +176,7 @@ class ChallengeSubmissionService:
         # Delegate to legacy service for mutation / reward logic.
         # The legacy service determines correctness from the test_results
         # we pass in, so we pass the authoritative results.
-        return await self.legacy_service.submit_exercise(
+        return await self.legacy_service._submit_exercise_impl(
             user_id=user_id,
             exercise_id=exercise_id,
             code=code,
