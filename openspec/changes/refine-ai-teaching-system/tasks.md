@@ -36,8 +36,8 @@
 ## 6. Documentation And Validation
 
 - [x] 6.1 Add or update defense-facing notes that explain deterministic backbone versus controlled GAI assistant.
-- [ ] 6.2 Run backend tests covering challenge, AI hint policy, rewards, and learning-path compatibility.
+- [x] 6.2 Run backend tests covering challenge, AI hint policy, rewards, and learning-path compatibility.
 - [x] 6.3 Run frontend tests for arena/API clients plus `pnpm build`.
 - [ ] 6.4 Start backend and frontend services and request affected routes to verify startup and rendering.
-- [ ] 6.5 Run `npx codegraph sync` or `npx codegraph index` after code movement.
+- [x] 6.5 Run `npx codegraph sync` or `npx codegraph index` after code movement.
 - [ ] 6.6 Leave the change ready for final verification by the original reviewer before archive.
