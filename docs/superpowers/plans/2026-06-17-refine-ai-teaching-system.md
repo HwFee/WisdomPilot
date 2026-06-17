@@ -283,7 +283,7 @@ git commit -m "test: require backend-authoritative challenge submission"
 - Create: `backend/tests/test_ai_policy.py`
 - Modify: `backend/app/routers/ai.py`
 
-- [ ] **Step 1: Write AI policy tests**
+- [x] **Step 1: Write AI policy tests**
 
 Create `backend/tests/test_ai_policy.py`:
 
@@ -317,7 +317,7 @@ def test_unknown_hint_level_falls_back_to_light_cost():
     assert get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level="unknown").cost == AI_HINT_COSTS["light"]
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [x] **Step 2: Run tests and verify failure**
 
 ```powershell
 cd backend
@@ -326,7 +326,7 @@ pytest tests/test_ai_policy.py -q
 
 Expected: FAIL because `app.services.ai_policy` does not exist.
 
-- [ ] **Step 3: Implement minimal policy module**
+- [x] **Step 3: Implement minimal policy module**
 
 Create `backend/app/services/ai_policy.py`:
 
@@ -376,7 +376,7 @@ def get_ai_policy(
     raise ValueError(f"Unsupported AI feature: {feature}")
 ```
 
-- [ ] **Step 4: Route existing hint cost through policy**
+- [x] **Step 4: Route existing hint cost through policy**
 
 Modify `backend/app/routers/ai.py`:
 
@@ -410,7 +410,7 @@ policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level=request.hint_level)
 cost = policy.cost
 ```
 
-- [ ] **Step 5: Run AI policy and existing AI tests**
+- [x] **Step 5: Run AI policy and existing AI tests**
 
 ```powershell
 cd backend
@@ -419,7 +419,7 @@ pytest tests/test_ai_policy.py tests/test_ai.py tests/test_quota.py -q
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```powershell
 git add backend/app/services/ai_policy.py backend/app/routers/ai.py backend/tests/test_ai_policy.py

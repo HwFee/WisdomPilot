@@ -7,7 +7,7 @@
 
 ## 2. Controlled AI Tutor Boundary
 
-- [ ] 2.1 Introduce a focused AI policy module/service for learner-facing AI feature access decisions.
+- [x] 2.1 Introduce a focused AI policy module/service for learner-facing AI feature access decisions.
 - [ ] 2.2 Route challenge hint cost, cache, and insufficient-core behavior through the AI policy boundary without changing existing hint UX.
 - [ ] 2.3 Classify general chat as policy-controlled or explicitly outside the defense demo flow, and document the decision in code/docs.
 - [ ] 2.4 Preserve light/medium/deep hint pedagogical boundaries and add tests that inspect prompt construction or policy metadata.
