@@ -303,31 +303,23 @@ class TierService:
         - 超过免费次数后，每次做错扣1星，但有扣星上限
         - 做对时：基础奖励 + 补回之前扣掉的星
         """
-        free_attempts = self.get_free_attempts(difficulty)
-        max_deduction = self.get_max_deduction(difficulty)
         base_reward = self.get_base_reward(difficulty)
 
         if accuracy >= 0.90:
-            # 做对：基础奖励 + 补回之前扣掉的星
             stars = base_reward + total_deducted
             logger.info(f"[TIER_SERVICE] CORRECT: difficulty={difficulty}, base_reward={base_reward}, total_deducted={total_deducted}, result=+{stars}")
             return stars
-        else:
-            # 做错：检查是否超过免费次数
-            if attempt_count <= free_attempts:
-                # 免费次数内，不扣星
-                logger.info(f"[TIER_SERVICE] WRONG (free): difficulty={difficulty}, attempt={attempt_count}/{free_attempts}, result=0")
-                return 0
-            else:
-                # 超过免费次数，检查是否达到扣星上限
-                if total_deducted >= max_deduction:
-                    # 已达上限，不再扣
-                    logger.info(f"[TIER_SERVICE] WRONG (max reached): difficulty={difficulty}, total_deducted={total_deducted}/{max_deduction}, result=0")
-                    return 0
-                else:
-                    # 扣1星
-                    logger.info(f"[TIER_SERVICE] WRONG (deduct): difficulty={difficulty}, attempt={attempt_count}/{free_attempts}, result=-1")
-                    return -1
+
+        if accuracy >= 0.70:
+            return 1
+
+        if accuracy >= 0.50:
+            return 0
+
+        if accuracy >= 0.30:
+            return -1
+
+        return -2
 
     def has_protection(self, tier: TierRank) -> bool:
         """

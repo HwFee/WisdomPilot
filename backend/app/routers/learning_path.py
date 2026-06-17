@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 from app.database import get_db
 from app.utils.deps import get_current_user
 from app.models.user import User
-from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.section import Section
@@ -29,6 +28,16 @@ from app.services.leaderboard_service import (
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
 from app.services.arena_infinite import get_arena_infinite_service
+from app.services.challenge_path import (
+    ChallengeProgressService,
+    ChallengeSelectionService,
+    ChallengeSubmissionService,
+)
+from app.services.challenge_path.responses import (
+    map_exercise_detail_response,
+    map_exercise_summary,
+    map_switch_response,
+)
 from app.schemas.exercise import ExerciseRecommendRequest
 
 
@@ -945,35 +954,18 @@ async def start_infinite_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Start or get challenge path (independent of courses)"""
-    service = get_arena_infinite_service(db)
+    service = ChallengeSelectionService(db)
 
     try:
         exercises, is_new = await service.get_or_create_challenge_path(
             user_id=current_user.id,
-            
             difficulty_level=request.difficulty_level,
             initial_count=request.initial_count,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    exercise_list = [{
-        "id": ex.id,
-        "z_id": ex.z_id,
-        "title": ex.content.get("title", "") or (ex.content.get("text", "")[:50] if ex.content.get("text") else f"题目 {i+1}"),
-        "type": ex.type,
-        "difficulty": ex.difficulty,
-        "knowledge_points": ex.knowledge_points or [],
-        "content": {
-            "text": ex.content.get("text", ""),
-            "title": ex.content.get("title", ""),
-            "options": ex.content.get("options", []),
-            "code_template": ex.content.get("code_template"),
-            "description": ex.content.get("description"),
-            "samples": ex.content.get("samples", []),
-        },
-        "test_cases": ex.test_cases if ex.type == "programming" else None,
-    } for i, ex in enumerate(exercises)]
+    exercise_list = [map_exercise_summary(ex, i) for i, ex in enumerate(exercises)]
 
     # Use a fixed session_id for global challenge path
     pseudo_session_id = "challenge-global"
@@ -1000,7 +992,7 @@ async def get_challenge_path_progress(
     Lite mode dramatically reduces response size for users with many exercises.
     Use lite=False to get full content including test_cases.
     """
-    service = get_arena_infinite_service(db)
+    service = ChallengeProgressService(db)
 
     progress = await service.get_progress(
         user_id=current_user.id,
@@ -1017,12 +1009,12 @@ async def submit_challenge_exercise(
     db: AsyncSession = Depends(get_db),
 ):
     """Submit exercise answer in challenge path"""
-    service = get_arena_infinite_service(db)
+    arena_service = get_arena_infinite_service(db)
+    service = ChallengeSubmissionService(db, arena_service)
 
     try:
         result = await service.submit_exercise(
             user_id=current_user.id,
-            
             exercise_id=request.exercise_id,
             code=request.code,
             language=request.language,
@@ -1041,11 +1033,10 @@ async def save_challenge_code(
     db: AsyncSession = Depends(get_db),
 ):
     """Save code for an exercise"""
-    service = get_arena_infinite_service(db)
+    service = ChallengeProgressService(db)
 
     success = await service.save_code(
         user_id=current_user.id,
-        
         exercise_id=request.exercise_id,
         code=request.code,
         language=request.language,
@@ -1061,37 +1052,17 @@ async def switch_challenge_exercise(
     db: AsyncSession = Depends(get_db),
 ):
     """Switch to a different exercise by index"""
-    service = get_arena_infinite_service(db)
+    service = ChallengeProgressService(db)
 
     try:
         result = await service.switch_exercise(
             user_id=current_user.id,
-            
             target_index=request.target_index,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    exercise = result.pop("exercise", None)
-    if exercise:
-        result["exercise"] = {
-            "id": exercise.id,
-            "title": exercise.content.get("title", ""),
-            "type": exercise.type,
-            "difficulty": exercise.difficulty,
-            "knowledge_points": exercise.knowledge_points or [],
-            "content": {
-                "text": exercise.content.get("text", ""),
-                "title": exercise.content.get("title", ""),
-                "options": exercise.content.get("options", []),
-                "code_template": exercise.content.get("code_template"),
-                "description": exercise.content.get("description"),
-                "samples": exercise.content.get("samples", []),
-            },
-            "test_cases": exercise.test_cases if exercise.type == "programming" else None,
-        }
-
-    return result
+    return map_switch_response(result)
 
 
 @router.post("/challenge/append")
@@ -1101,12 +1072,11 @@ async def append_challenge_exercises(
     db: AsyncSession = Depends(get_db),
 ):
     """Append more exercises to challenge path"""
-    service = get_arena_infinite_service(db)
+    service = ChallengeSelectionService(db)
 
     try:
         new_ids = await service.append_exercises(
             user_id=current_user.id,
-
             difficulty_level=request.difficulty_level,
             count=request.count,
         )
@@ -1123,11 +1093,10 @@ async def exit_challenge_path(
     db: AsyncSession = Depends(get_db),
 ):
     """Save progress and exit challenge path"""
-    service = get_arena_infinite_service(db)
+    service = ChallengeProgressService(db)
 
     success = await service.save_code(
         user_id=current_user.id,
-        
         exercise_id=request.current_exercise_id,
         code=request.current_code,
         language=request.current_language,
@@ -1143,7 +1112,7 @@ async def get_challenge_exercise(
     db: AsyncSession = Depends(get_db),
 ):
     """Get specific exercise info - returns full content for on-demand loading (lite mode)"""
-    service = get_arena_infinite_service(db)
+    service = ChallengeProgressService(db)
 
     result = await service.get_exercise_by_id(
         user_id=current_user.id,
@@ -1153,41 +1122,9 @@ async def get_challenge_exercise(
     if not result:
         raise HTTPException(status_code=404, detail="Exercise not found in challenge path")
 
-    # Get total count only (lite mode, no need to load all exercise content)
     total = await service._get_exercise_count(current_user.id)
 
-    exercise = result.get("exercise")
-    return {
-        "exercise": {
-            "id": exercise.id,
-            "title": (exercise.content or {}).get("title", ""),
-            "type": exercise.type,
-            "difficulty": exercise.difficulty,
-            "knowledge_points": exercise.knowledge_points or [],
-            "content": {
-                "text": (exercise.content or {}).get("text", ""),
-                "title": (exercise.content or {}).get("title", ""),
-                "description": (exercise.content or {}).get("description", ""),
-                "options": (exercise.content or {}).get("options", []),
-                "code_template": (exercise.content or {}).get("code_template", ""),
-                "input_format": (exercise.content or {}).get("input_format", ""),
-                "output_format": (exercise.content or {}).get("output_format", ""),
-                "sample_input": (exercise.content or {}).get("sample_input", ""),
-                "sample_output": (exercise.content or {}).get("sample_output", ""),
-                "samples": (exercise.content or {}).get("samples", []),
-                "time_limit": (exercise.content or {}).get("time_limit", 1000),
-                "memory_limit": (exercise.content or {}).get("memory_limit", 256),
-            },
-            "test_cases": exercise.test_cases if exercise.type == "programming" else None,
-        },
-        "exercise_index": result["exercise_index"],
-        "is_unlocked": result["is_unlocked"],
-        "is_completed": result["is_completed"],
-        "is_correct": result["is_correct"],
-        "saved_code": result["saved_code"],
-        "current_language": result["current_language"],
-        "total_exercises": total,
-    }
+    return map_exercise_detail_response(result, total_exercises=total)
 
 
 
@@ -1206,36 +1143,9 @@ async def get_recent_arena_exercises(
     db: AsyncSession = Depends(get_db),
 ):
     """获取挑战之路最近练习的题目（含正确情况）- 全局，不关联课程"""
-    # 查询最近的 arena_exercise_progress，按最后尝试时间倒序
-    result = await db.execute(
-        select(ArenaExerciseProgress, Exercise)
-        .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
-        .where(
-            ArenaExerciseProgress.user_id == current_user.id,
-            ArenaExerciseProgress.is_completed,  # 只取已提交的
-        )
-        .order_by(ArenaExerciseProgress.last_attempt_at.desc())
-        .limit(limit)
-    )
-    rows = result.all()
-
-    exercises = []
-    for progress, exercise in rows:
-        # 获取标题
-        title = ""
-        if exercise.content:
-            title = exercise.content.get("title", "") or exercise.content.get("text", "")[:30] or f"题目 {exercise.id}"
-        else:
-            title = f"题目 {exercise.id}"
-
-        exercises.append(RecentArenaExercise(
-            exercise_id=exercise.id,
-            title=title,
-            is_correct=progress.is_correct,
-            difficulty=exercise.difficulty,
-        ))
-
-    return exercises
+    service = ChallengeProgressService(db)
+    recent = await service.get_recent_exercises(user_id=current_user.id, limit=limit)
+    return [RecentArenaExercise(**item) for item in recent]
 
 
 # ========== BKT Mastery Endpoints (小节/章节/课程 三层聚合) ==========

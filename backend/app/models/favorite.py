@@ -73,6 +73,12 @@ class Favorite(Base):
         index=True,
         comment="小节ID（强化测试来源）"
     )
+    challenge_session_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        nullable=True,
+        index=True,
+        comment="挑战会话ID"
+    )
     knowledge_points: Mapped[List[str]] = mapped_column(
         JSON,
         default=list,

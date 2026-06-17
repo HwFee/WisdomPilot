@@ -41,17 +41,17 @@ class ArenaLeaderboardService:
 
     def rank_profiles(self, profiles: list[dict]) -> list[dict]:
         """
-        Rank profiles by stars (descending).
+        Rank profiles by stars or score (descending).
 
         Args:
-            profiles: List of profile dicts with user_id and stars
+            profiles: List of profile dicts with user_id and stars or total_score
 
         Returns:
             Sorted list with ranks
         """
         sorted_profiles = sorted(
             profiles,
-            key=lambda x: x.get("stars", 0),
+            key=lambda profile: profile.get("stars", profile.get("total_score", 0)),
             reverse=True
         )
 
