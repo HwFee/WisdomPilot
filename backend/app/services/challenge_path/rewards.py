@@ -1,7 +1,6 @@
 """Challenge reward service - handles stars, tiers, cores, and profile stats."""
 
 import logging
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
@@ -10,10 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
 from app.models.user_arena import UserArenaProfile
+from app.services.challenge_path.tier_rewards import ChallengeTierRewardCalculator
 from app.services.core_service import CoreService
-from app.services.tier_service import tier_service
 from app.services.wrong_question import wrong_question_service
-from app.core.tier_config import TierRank, tier_from_string
+from app.core.tier_config import TierRank
 
 logger = logging.getLogger(__name__)
 
@@ -150,154 +149,12 @@ class ChallengeRewardService:
         is_correct: bool,
     ) -> dict:
         """Calculate and apply star/tier changes."""
-        profile_result = await self.db.execute(
-            select(UserArenaProfile).where(UserArenaProfile.user_id == user_id)
+        return await ChallengeTierRewardCalculator(self.db).apply(
+            user_id=user_id,
+            exercise=exercise,
+            progress=progress,
+            is_correct=is_correct,
         )
-        profile = profile_result.scalar_one_or_none()
-
-        if not profile:
-            profile = UserArenaProfile(user_id=user_id)
-            self.db.add(profile)
-            await self.db.flush()
-            logger.info("[STARS] Created new profile for user %s... ", user_id[:8])
-
-        current_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE
-        current_sub_tier = profile.sub_tier if profile.sub_tier else 4
-        current_stars = profile.stars if profile.stars else 0
-
-        stars_earned = 0
-        tier_changed = False
-        new_tier = None
-        new_sub_tier = None
-        new_stars = 0
-        promoted = False
-        demoted = False
-        tier_result = None
-
-        stars_deducted = getattr(progress, "stars_deducted", None)
-        if stars_deducted is None:
-            stars_deducted = abs(min(0, progress.stars_awarded)) if progress.stars_awarded < 0 else 0
-
-        logger.info("[STARS] === Reward Application ===")
-        logger.info("[STARS] User: %s...,  Exercise: %s", user_id[:8], progress.exercise_id)
-        logger.info(
-            "[STARS] is_correct: %s, attempt_count: %s, difficulty: %s",
-            is_correct, progress.attempt_count, exercise.difficulty if exercise else "?"
-        )
-        logger.info("[STARS] stars_awarded: %s, stars_deducted: %s", progress.stars_awarded, stars_deducted)
-        logger.info(
-            "[STARS] Current profile - tier: %s, sub_tier: %s, stars: %s",
-            current_tier.value, current_sub_tier, current_stars
-        )
-
-        already_correct = progress.stars_awarded > 0
-
-        if already_correct:
-            new_tier = current_tier
-            new_sub_tier = current_sub_tier
-            new_stars = current_stars
-            logger.info(
-                "[STARS] Already correct before (stars_awarded=%s), no change",
-                progress.stars_awarded
-            )
-        else:
-            if is_correct:
-                base_reward = tier_service.get_base_reward(exercise.difficulty) if exercise else 1
-                stars_earned = base_reward
-                logger.info("[STARS] CORRECT! base_reward=%s, total=+%s", base_reward, stars_earned)
-            else:
-                stars_earned = tier_service.calculate_stars_earned(
-                    accuracy=0.0,
-                    difficulty=exercise.difficulty if exercise else 1,
-                    attempt_count=progress.attempt_count,
-                    total_deducted=stars_deducted,
-                )
-                logger.info(
-                    "[STARS] WRONG. attempt_count=%s, stars_deducted=%s, result=%s",
-                    progress.attempt_count, stars_deducted, stars_earned
-                )
-
-            progress.stars_awarded = stars_earned
-
-            if stars_earned < 0 and hasattr(progress, "stars_deducted"):
-                progress.stars_deducted = stars_deducted + abs(stars_earned)
-                logger.info("[STARS] Updated stars_deducted to %s", progress.stars_deducted)
-
-            if stars_earned > 0:
-                tier_result = tier_service.add_stars(
-                    tier=current_tier,
-                    sub_tier=current_sub_tier,
-                    current_stars=current_stars,
-                    stars_earned=stars_earned,
-                )
-                new_tier = tier_result.tier
-                new_sub_tier = tier_result.sub_tier
-                new_stars = tier_result.stars
-                promoted = tier_result.promoted
-                logger.info(
-                    "[STARS] Add stars result - new_tier: %s, new_sub_tier: %s, new_stars: %s, promoted: %s",
-                    new_tier.value, new_sub_tier, new_stars, promoted
-                )
-            elif stars_earned < 0:
-                tier_result = tier_service.remove_stars(
-                    tier=current_tier,
-                    sub_tier=current_sub_tier,
-                    current_stars=current_stars,
-                    stars_lost=abs(stars_earned),
-                    protection_remaining=profile.protection_remaining or 0,
-                )
-                new_tier = tier_result.tier
-                new_sub_tier = tier_result.sub_tier
-                new_stars = tier_result.stars
-                demoted = tier_result.demoted
-                logger.info(
-                    "[STARS] Remove stars result - new_tier: %s, new_sub_tier: %s, new_stars: %s, demoted: %s",
-                    new_tier.value, new_sub_tier, new_stars, demoted
-                )
-                profile.protection_remaining = tier_result.protection_remaining
-            else:
-                new_tier = current_tier
-                new_sub_tier = current_sub_tier
-                new_stars = current_stars
-                logger.info("[STARS] No stars change (stars_earned == 0)")
-
-            profile.tier = new_tier.value
-            profile.sub_tier = new_sub_tier
-            profile.stars = new_stars
-            logger.info(
-                "[STARS] Updated profile - tier: %s, sub_tier: %s, stars: %s",
-                profile.tier, profile.sub_tier, profile.stars
-            )
-
-            if promoted:
-                highest_tier, highest_sub = tier_service.update_highest_tier(
-                    profile.highest_tier,
-                    profile.highest_sub_tier,
-                    new_tier,
-                    new_sub_tier,
-                )
-                profile.highest_tier = highest_tier.value if isinstance(highest_tier, TierRank) else highest_tier
-                profile.highest_sub_tier = highest_sub
-
-            tier_changed = (new_tier != current_tier or new_sub_tier != current_sub_tier)
-            new_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE
-            new_sub_tier = profile.sub_tier if profile.sub_tier else 4
-            new_stars = profile.stars if profile.stars else 0
-
-        return {
-            "stars_earned": stars_earned,
-            "tier_changed": tier_changed,
-            "new_tier": new_tier.value if new_tier else None,
-            "new_sub_tier": new_sub_tier,
-            "new_stars": new_stars,
-            "promoted": promoted,
-            "demoted": demoted,
-            "tier_result": tier_result,
-            "current_tier": current_tier,
-            "current_sub_tier": current_sub_tier,
-            "current_stars": current_stars,
-            "profile": profile,
-        }
 
     async def _award_cores(
         self,
