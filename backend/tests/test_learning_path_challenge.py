@@ -20,6 +20,7 @@ from sqlalchemy import select
 from app.models.exercise import Exercise
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.user_arena import UserArenaProfile
+from app.utils.security import decode_token
 
 
 class TestChallengeProgressLiteMode:
@@ -41,10 +42,11 @@ class TestChallengeProgressLiteMode:
         await db_session.refresh(exercise)
 
         # Create progress record
-        user_id = auth_headers["Authorization"].split(" ")[1]
-        # Need to get actual user id from token
+        token = auth_headers["Authorization"].split(" ")[1]
+        payload = decode_token(token)
+        user_id = payload["sub"]
         progress = ArenaExerciseProgress(
-            user_id="test-user-id",
+            user_id=user_id,
             exercise_id=exercise.id,
             exercise_index=0,
             is_unlocked=True,
@@ -368,6 +370,221 @@ class TestChallengeAppend:
             data = response.json()
             assert "new_exercise_ids" in data
             assert "count" in data
+
+
+class TestChallengeResponseShapes:
+    """Characterization tests to lock current API response shapes.
+
+    These tests document the exact fields returned by challenge endpoints
+    so that future refactors can detect accidental breaking changes.
+    """
+
+    @pytest.mark.asyncio
+    async def test_save_code_response_shape(self, client: AsyncClient, auth_headers: dict, db_session):
+        """TC-LP-17: POST /challenge/save-code returns {success: bool}"""
+        exercise = Exercise(
+            content={"title": "保存代码题", "text": "保存代码", "code_template": "print('x')"},
+            type="programming",
+            difficulty=2,
+            is_verified=True,
+            test_cases=[{"input": "", "output": "x"}],
+        )
+        db_session.add(exercise)
+        await db_session.commit()
+        await db_session.refresh(exercise)
+
+        token = auth_headers["Authorization"].split(" ")[1]
+        user_id = decode_token(token)["sub"]
+        db_session.add(ArenaExerciseProgress(
+            user_id=user_id,
+            exercise_id=exercise.id,
+            exercise_index=0,
+            is_unlocked=True,
+        ))
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/learning-path/challenge/save-code",
+            headers=auth_headers,
+            json={"exercise_id": exercise.id, "code": "print('saved')", "language": "python"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data == {"success": True}
+
+    @pytest.mark.asyncio
+    async def test_exercise_detail_response_shape(self, client: AsyncClient, auth_headers: dict, db_session):
+        """TC-LP-18: GET /challenge/exercise/{id} returns stable response fields"""
+        exercise = Exercise(
+            content={
+                "title": "详情测试题",
+                "text": "测试内容",
+                "code_template": "print('test')",
+                "description": "desc",
+                "options": [],
+                "samples": [],
+            },
+            type="programming",
+            difficulty=3,
+            is_verified=True,
+            test_cases=[{"input": "", "output": "test"}],
+            knowledge_points=["基础语法"],
+        )
+        db_session.add(exercise)
+        await db_session.commit()
+        await db_session.refresh(exercise)
+
+        token = auth_headers["Authorization"].split(" ")[1]
+        user_id = decode_token(token)["sub"]
+        db_session.add(ArenaExerciseProgress(
+            user_id=user_id,
+            exercise_id=exercise.id,
+            exercise_index=0,
+            is_unlocked=True,
+            is_completed=False,
+            is_correct=False,
+            saved_codes={"python": "print('draft')"},
+            current_language="python",
+        ))
+        await db_session.commit()
+
+        response = await client.get(
+            f"/api/learning-path/challenge/exercise/{exercise.id}",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Top-level fields must be stable
+        assert "exercise" in data
+        assert "exercise_index" in data
+        assert "is_unlocked" in data
+        assert "is_completed" in data
+        assert "is_correct" in data
+        assert "saved_code" in data
+        assert "current_language" in data
+        assert "total_exercises" in data
+
+        # Exercise nested fields must be stable
+        ex = data["exercise"]
+        assert "id" in ex
+        assert "title" in ex
+        assert "type" in ex
+        assert "difficulty" in ex
+        assert "knowledge_points" in ex
+        assert "content" in ex
+        assert "test_cases" in ex
+
+        # Content nested fields must be stable
+        content = ex["content"]
+        assert "text" in content
+        assert "title" in content
+        assert "description" in content
+        assert "options" in content
+        assert "code_template" in content
+        assert "input_format" in content
+        assert "output_format" in content
+        assert "sample_input" in content
+        assert "sample_output" in content
+        assert "samples" in content
+        assert "time_limit" in content
+        assert "memory_limit" in content
+
+    @pytest.mark.asyncio
+    async def test_switch_response_shape(self, client: AsyncClient, auth_headers: dict, db_session):
+        """TC-LP-19: POST /challenge/switch returns compatible progress fields"""
+        exercise = Exercise(
+            content={"title": "切换测试题", "text": "切换", "code_template": "print('switch')"},
+            type="programming",
+            difficulty=2,
+            is_verified=True,
+            test_cases=[{"input": "", "output": "switch"}],
+        )
+        db_session.add(exercise)
+        await db_session.commit()
+        await db_session.refresh(exercise)
+
+        token = auth_headers["Authorization"].split(" ")[1]
+        user_id = decode_token(token)["sub"]
+        db_session.add(ArenaExerciseProgress(
+            user_id=user_id,
+            exercise_id=exercise.id,
+            exercise_index=0,
+            is_unlocked=True,
+            is_completed=False,
+            is_correct=False,
+            saved_codes={"python": "print('switch')"},
+            current_language="python",
+        ))
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/learning-path/challenge/switch",
+            headers=auth_headers,
+            json={"target_index": 0},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Core progress fields must be stable
+        assert "exercise_id" in data
+        assert "saved_code" in data
+        assert "current_language" in data
+        assert "is_completed" in data
+        assert "is_correct" in data
+        assert "exercise" in data
+
+        # Exercise nested fields must be stable
+        ex = data["exercise"]
+        assert "id" in ex
+        assert "title" in ex
+        assert "type" in ex
+        assert "difficulty" in ex
+        assert "knowledge_points" in ex
+        assert "content" in ex
+        assert "test_cases" in ex
+
+    @pytest.mark.asyncio
+    async def test_append_response_shape(self, client: AsyncClient, auth_headers: dict, db_session):
+        """TC-LP-20: POST /challenge/append returns new_exercise_ids and count"""
+        # Seed at least one verified exercise so append has something to select
+        for i in range(3):
+            ex = Exercise(
+                content={"title": f"追加题{i}", "text": f"追加{i}", "code_template": "print('a')"},
+                type="programming",
+                difficulty=2,
+                is_verified=True,
+                test_cases=[{"input": "", "output": "a"}],
+            )
+            db_session.add(ex)
+        await db_session.commit()
+
+        # Start a challenge path first so the user has existing progress
+        start_response = await client.post(
+            "/api/learning-path/challenge/infinite/start",
+            headers=auth_headers,
+            json={"difficulty_level": 2, "initial_count": 1},
+        )
+        assert start_response.status_code == 200
+
+        response = await client.post(
+            "/api/learning-path/challenge/append",
+            headers=auth_headers,
+            json={"count": 2, "difficulty_level": 2},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert "new_exercise_ids" in data
+        assert "count" in data
+        assert isinstance(data["new_exercise_ids"], list)
+        assert isinstance(data["count"], int)
+        assert data["count"] == len(data["new_exercise_ids"])
+        assert data["count"] == 2
 
 
 class TestLiteModePerformance:
