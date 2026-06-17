@@ -42,6 +42,10 @@ logger = logging.getLogger(__name__)
 
 # Core rewards for challenge path
 CORE_REWARD_CHALLENGE_CORRECT = 3  # Cores earned for correct answer in challenge path
+MIN_CHALLENGE_DIFFICULTY = 1
+MAX_CHALLENGE_DIFFICULTY = 8
+CHALLENGE_CANDIDATE_MULTIPLIER = 3
+DEFAULT_CHALLENGE_LANGUAGE = "python"
 
 
 class ChallengePathService:
@@ -71,6 +75,59 @@ class ChallengePathService:
             return False
 
         return all(cls._is_strict_passed(result.get("passed")) for result in test_results)
+
+    async def _select_verified_exercises_by_difficulty(
+        self,
+        difficulty_level: int,
+        count: int,
+    ) -> list[Exercise]:
+        """Select verified exercises near the requested difficulty."""
+        exercises_result = await self.db.execute(
+            select(Exercise)
+            .where(
+                Exercise.is_verified,
+                Exercise.difficulty == difficulty_level,
+            )
+            .limit(count * CHALLENGE_CANDIDATE_MULTIPLIER)
+        )
+        all_exercises = list(exercises_result.scalars().all())
+
+        if len(all_exercises) < count:
+            exercises_result = await self.db.execute(
+                select(Exercise)
+                .where(
+                    Exercise.is_verified,
+                    Exercise.difficulty >= max(
+                        MIN_CHALLENGE_DIFFICULTY,
+                        difficulty_level - 1,
+                    ),
+                    Exercise.difficulty <= min(
+                        MAX_CHALLENGE_DIFFICULTY,
+                        difficulty_level + 1,
+                    ),
+                )
+                .limit(count * CHALLENGE_CANDIDATE_MULTIPLIER)
+            )
+            all_exercises = list(exercises_result.scalars().all())
+
+        return all_exercises
+
+    async def _create_progress_for_selected_exercises(
+        self,
+        user_id: str,
+        exercises: list[Exercise],
+        start_index: int = 0,
+    ) -> None:
+        """Create challenge progress records for selected exercises."""
+        for index_offset, exercise in enumerate(exercises):
+            exercise_index = start_index + index_offset
+            progress = ArenaExerciseProgress(
+                user_id=user_id,
+                exercise_id=exercise.id,
+                exercise_index=exercise_index,
+                is_unlocked=(exercise_index == 0),
+            )
+            self.db.add(progress)
 
     # ========================================
     # Core Methods - Course-based Management
@@ -259,8 +316,8 @@ class ChallengePathService:
                 user_id=user_id,
                 course_id=None,
                 limit=count,
-                min_difficulty=max(1, difficulty_level - 1),
-                max_difficulty=min(8, difficulty_level + 1),
+                min_difficulty=max(MIN_CHALLENGE_DIFFICULTY, difficulty_level - 1),
+                max_difficulty=min(MAX_CHALLENGE_DIFFICULTY, difficulty_level + 1),
             )
 
             if recommendations:
@@ -299,8 +356,8 @@ class ChallengePathService:
             recommendation = await adaptive_service.get_recommendations(
                 user=user,
                 limit=count,
-                min_difficulty=max(1, difficulty_level - 1),
-                max_difficulty=min(8, difficulty_level + 1),
+                min_difficulty=max(MIN_CHALLENGE_DIFFICULTY, difficulty_level - 1),
+                max_difficulty=min(MAX_CHALLENGE_DIFFICULTY, difficulty_level + 1),
 
                 learning_path="challenge",
             )
@@ -344,7 +401,9 @@ class ChallengePathService:
         # For new users without behavior data, force difficulty=1 to ensure
         # they start with the easiest problems, regardless of what difficulty
         # level the frontend requested.
-        effective_difficulty = 1 if not has_behavior else difficulty_level
+        effective_difficulty = (
+            MIN_CHALLENGE_DIFFICULTY if not has_behavior else difficulty_level
+        )
         logger.info(
             f"Challenge path (fast path): user={user_id[:8]}... "
             f"has_behavior={has_behavior}, selecting {count} exercises "
@@ -353,43 +412,34 @@ class ChallengePathService:
         # Challenge path is independent of courses - select from all verified exercises
         logger.info(f"Challenge path: selecting {count} exercises from all verified exercises (difficulty_level={effective_difficulty})")
 
-        # Try to get exercises with matching difficulty first
-        exercises_result = await self.db.execute(
-            select(Exercise)
-            .where(
-                Exercise.is_verified,
-                Exercise.difficulty == effective_difficulty,
-            )
-            .limit(count * 3)
+        all_exercises = await self._select_verified_exercises_by_difficulty(
+            effective_difficulty,
+            count,
         )
-        all_exercises = exercises_result.scalars().all()
 
-        # If not enough, get exercises within difficulty range
+        if len(all_exercises) < count and effective_difficulty != difficulty_level:
+            all_exercises = await self._select_verified_exercises_by_difficulty(
+                difficulty_level,
+                count,
+            )
+
+        # If not enough, gradually lower min difficulty but never exceed max
+        # This ensures new users always get easy problems when available, while still
+        # honoring explicitly requested difficulty when only those exercises exist.
         if len(all_exercises) < count:
             exercises_result = await self.db.execute(
                 select(Exercise)
                 .where(
                     Exercise.is_verified,
-                    Exercise.difficulty >= max(1, effective_difficulty - 1),
-                    Exercise.difficulty <= min(8, effective_difficulty + 1),
+                    Exercise.difficulty >= MIN_CHALLENGE_DIFFICULTY,
+                    Exercise.difficulty <= min(
+                        MAX_CHALLENGE_DIFFICULTY,
+                        effective_difficulty + 1,
+                    ),
                 )
-                .limit(count * 3)
+                .limit(count * CHALLENGE_CANDIDATE_MULTIPLIER)
             )
-            all_exercises = exercises_result.scalars().all()
-
-        # If still not enough, gradually lower min difficulty but never exceed max
-        # This ensures new users always get easy problems, never hard ones
-        if len(all_exercises) < count:
-            exercises_result = await self.db.execute(
-                select(Exercise)
-                .where(
-                    Exercise.is_verified,
-                    Exercise.difficulty >= 1,
-                    Exercise.difficulty <= min(8, effective_difficulty + 1),
-                )
-                .limit(count * 3)
-            )
-            all_exercises = exercises_result.scalars().all()
+            all_exercises = list(exercises_result.scalars().all())
 
         if len(all_exercises) < count:
             raise ValueError(f"Not enough verified exercises available (found {len(all_exercises)}, need {count})")
@@ -400,15 +450,7 @@ class ChallengePathService:
         selected = random.sample(exercise_pool, min(count, len(exercise_pool)))
         selected = self._ensure_fixed_first_two(selected, hello_world_ex, a_plus_b_ex, count)
 
-        for i, ex in enumerate(selected):
-            progress = ArenaExerciseProgress(
-                user_id=user_id,
-                exercise_id=ex.id,
-                exercise_index=i,
-                is_unlocked=(i == 0),
-            )
-            self.db.add(progress)
-
+        await self._create_progress_for_selected_exercises(user_id, selected)
         await self.db.flush()
         return selected
 
@@ -535,7 +577,38 @@ class ChallengePathService:
         )
         progress = result.scalar_one_or_none()
         if not progress:
-            return None
+            exercise_result = await self.db.execute(
+                select(Exercise).where(
+                    Exercise.id == exercise_id,
+                    Exercise.is_verified,
+                )
+            )
+            exercise = exercise_result.scalar_one_or_none()
+            if not exercise:
+                return None
+
+            exercise_index = await self._get_exercise_count(user_id)
+            await self._create_progress_for_selected_exercises(
+                user_id,
+                [exercise],
+                start_index=exercise_index,
+            )
+            await self.db.flush()
+
+            return {
+                "exercise_id": exercise.id,
+                "exercise_index": exercise_index,
+                "is_completed": False,
+                "is_correct": False,
+                "is_unlocked": exercise_index == 0,
+                "saved_code": "",
+                "current_language": DEFAULT_CHALLENGE_LANGUAGE,
+                "title": (exercise.content or {}).get(
+                    "title", f"题目 {exercise_index + 1}"
+                ),
+                "difficulty": exercise.difficulty,
+                "exercise": exercise,
+            }
 
         # Get exercise
         ex_result = await self.db.execute(

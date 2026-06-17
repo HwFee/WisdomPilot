@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 import re
 
 
@@ -53,8 +53,20 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     """Schema for user login"""
     username: str
+    email: EmailStr | None = None
     password: str
     remember_me: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_login_identifier(cls, values):
+        if not isinstance(values, dict):
+            return values
+        if values.get("username") or not values.get("email"):
+            return values
+        normalized_values = values.copy()
+        normalized_values["username"] = normalized_values["email"]
+        return normalized_values
 
 
 class UserResponse(UserBase):

@@ -1,257 +1,35 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from app.database import init_db
-from app.models import ChapterProgress, LearningSession, ActivityLog  # noqa: F401 - registers models
-from app.models import Course, Chapter, Exercise  # noqa: F401 - registers course models
-from app.models import Challenge, UserChallenge  # noqa: F401 - registers challenge models
-from app.models import Achievement, UserAchievement  # noqa: F401 - registers achievement models
-from app.models import UserWeakPoint, SpacedRepetition  # noqa: F401 - registers new models
-from app.models import Favorite, Note, NoteTag  # noqa: F401 - registers favorites and notes models
-from app.models import ChapterMastery, ChallengeSession, UserArenaProfile  # noqa: F401 - registers mastery and arena models
-from app.models import WrongQuestion  # noqa: F401 - registers wrong question model
-from app.models import CoreTransaction  # noqa: F401 - registers core transaction model
-from app.models import TierTransaction  # noqa: F401 - registers tier transaction model
-from app.models import MasteryXpTransaction  # noqa: F401 - registers mastery xp transaction model
-from app.models import Solution  # noqa: F401 - registers solution model
-from app.models import ExerciseGenerationSession  # noqa: F401 - registers exercise generation session model
-from app.middleware import RateLimitMiddleware
+"""FastAPI application entry point."""
+
+from fastapi import FastAPI
+
 from app.config import get_settings
+from app.core.exceptions import register_exception_handlers
+from app.core.lifespan import create_lifespan
+from app.core.middleware import configure_middleware
+from app.core.routes import include_routers, register_health_routes, register_websocket_routes
 
-settings = get_settings()
-
-from app.routers import (
-    auth_router,
-    users_router,
-    admin_router,
-    stats_router,
-    code_router,
-    solutions_router,
-)
-from app.routers.courses import router as courses_router
-from app.routers.ai import choice_router, review_router, config_router, chat_router, analysis_router, hint_router
-from app.routers.challenges import router as challenges_router
-from app.routers.achievements import router as achievements_router
-from app.routers.exercises import router as exercises_router
-from app.routers.review import router as spaced_review_router
-from app.routers.chapters import router as chapters_router
-from app.routers.favorites import router as favorites_router
-from app.routers.notes import router as notes_router
-from app.routers.note_tags import router as note_tags_router
-from app.routers.learning_path import router as learning_path_router
-from app.routers.tier import router as tier_router
-from app.routers.core import router as core_router
-from app.routers.xp import router as xp_router
-from app.routers.test_sandbox import router as test_sandbox_router
+APP_TITLE = "智码领航 API"
+APP_DESCRIPTION = "AI-powered Programming Teaching Platform API"
+APP_VERSION = "1.0.0"
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan events"""
-    # 配置日志级别 - 确保 INFO 级别日志可以显示
-    import logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    # 设置 app.services 的日志级别为 INFO
-    logging.getLogger('app.services').setLevel(logging.INFO)
-
-    # Startup: initialize database and AI service
-    await init_db()
-    # Initialize AI service with config from settings
-    from app.services.ai import ai_service
-    from app.schemas.ai import AIProviderConfig
-    # Settings already loaded at module level
-    ai_config = AIProviderConfig(
-        provider=settings.AI_PROVIDER,
-        api_key=settings.AI_API_KEY,
-        model=settings.AI_MODEL,
-        temperature=settings.AI_TEMPERATURE,
-        base_url=settings.AI_BASE_URL,
-        local_base_url=settings.AI_LOCAL_BASE_URL,
-        is_local_first=settings.AI_LOCAL_FIRST,
-    )
-    ai_service.configure(ai_config)
-
-    yield
-    # Shutdown: cleanup if needed
-
-
-app = FastAPI(
-    title="智码领航 API",
-    description="AI-powered Programming Teaching Platform API",
-    version="1.0.0",
-    lifespan=lifespan,
-)
-
-# Rate limiting middleware (C5, C8)
-# NOTE: In Starlette, middleware is applied in REVERSE order (last added = outermost).
-# CORS must be outermost so ALL responses (including rate-limit 429s) get CORS headers.
-# Therefore: add RateLimit FIRST (innermost), CORS LAST (outermost).
-app.add_middleware(RateLimitMiddleware)
-
-# CORS configuration
-import os
-
-cors_origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-# From environment variable (comma-separated)
-production_origins = os.environ.get("CORS_ORIGINS", "")
-if production_origins:
-    cors_origins.extend([origin.strip() for origin in production_origins.split(",") if origin.strip()])
-
-# Auto-allow any http origin from any port on the server IP
-allow_origin_regex = r"https?://localhost(:\d+)?|https?://127\.0\.0\.1(:\d+)?|https?://\d+\.\d+\.\d+\.\d+(:\d+)?"
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_origin_regex=allow_origin_regex,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
-)
-
-# Include routers
-app.include_router(auth_router)
-app.include_router(users_router)
-app.include_router(admin_router)
-app.include_router(stats_router)
-app.include_router(code_router)
-app.include_router(courses_router)
-
-# AI Module routers (独立模块)
-app.include_router(choice_router)
-app.include_router(review_router)
-app.include_router(config_router)
-app.include_router(chat_router)
-app.include_router(analysis_router)
-app.include_router(hint_router)
-app.include_router(challenges_router)
-app.include_router(achievements_router)
-app.include_router(exercises_router)
-app.include_router(chapters_router)
-app.include_router(spaced_review_router)
-app.include_router(favorites_router)
-app.include_router(notes_router)
-app.include_router(note_tags_router)
-app.include_router(learning_path_router)
-app.include_router(tier_router)
-app.include_router(core_router)
-app.include_router(xp_router)
-# Test sandbox router - only register if enabled (should be False in production)
-if settings.ENABLE_TEST_SANDBOX:
-    app.include_router(test_sandbox_router)
-app.include_router(solutions_router)
-
-# WebSocket endpoints
-@app.websocket("/ws/exercises")
-async def exercise_websocket(websocket):
-    """WebSocket endpoint for exercise generation streaming"""
-    from app.websockets.exercise import exercise_websocket_endpoint
-    from starlette.datastructures import QueryParams
-
-    # Parse token from query params
-    query_string = websocket.scope.get("query_string", b"").decode("utf-8")
-    params = QueryParams(query_string)
-    token = params.get("token", "")
-
-    await exercise_websocket_endpoint(websocket, token)
-
-
-@app.get("/")
-async def root():
-    """Health check endpoint"""
-    return {"status": "ok", "message": "智码领航 API is running"}
-
-
-@app.get("/health")
-async def health():
-    """Health check endpoint"""
-    return {"status": "healthy"}
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """
-    将 Pydantic 验证错误转换为友好的中文消息。
-
-    FastAPI 默认返回复杂的验证错误对象，前端难以解析。
-    此处理器将其转换为简单字符串，方便前端显示。
-    """
-    errors = exc.errors()
-    messages = []
-
-    # 字段名称映射（英 -> 中）
-    field_names = {
-        "email": "邮箱",
-        "username": "用户名",
-        "password": "密码",
-    }
-
-    for error in errors:
-        # 获取字段名
-        loc = error.get("loc", [])
-        field = loc[-1] if loc else "未知字段"
-        field_cn = field_names.get(field, field)
-
-        # 获取错误类型和消息
-        error_type = error.get("type", "")
-        msg = error.get("msg", "验证失败")
-        ctx = error.get("ctx", {})
-
-        # 处理不同类型的错误
-        if error_type == "string_too_short":
-            min_length = ctx.get("min_length", 8)
-            messages.append(f"{field_cn}长度至少需要{min_length}个字符")
-        elif error_type == "value_error":
-            # 自定义验证错误（如密码复杂度）
-            # 尝试从 ctx 中获取原始 ValueError 消息
-            if "error" in ctx:
-                original_msg = str(ctx["error"])
-                messages.append(f"{field_cn}: {original_msg}")
-            elif "Password must contain at least one letter" in msg:
-                messages.append(f"{field_cn}需要包含至少一个字母")
-            elif "Password must contain at least one digit" in msg:
-                messages.append(f"{field_cn}需要包含至少一个数字")
-            else:
-                # 移除 "Value error, " 前缀
-                clean_msg = msg.replace("Value error, ", "").strip()
-                messages.append(f"{field_cn}: {clean_msg}")
-        elif error_type == "value_error.email":
-            messages.append("请输入有效的邮箱地址")
-        elif "missing" in error_type:
-            messages.append(f"缺少必填字段: {field_cn}")
-        else:
-            # 默认处理
-            messages.append(f"{field_cn}: {msg}")
-
-    return JSONResponse(
-        status_code=422,
-        content={"detail": "; ".join(messages)}
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application."""
+    settings = get_settings()
+    app = FastAPI(
+        title=APP_TITLE,
+        description=APP_DESCRIPTION,
+        version=APP_VERSION,
+        lifespan=create_lifespan(settings),
     )
 
+    configure_middleware(app)
+    include_routers(app, settings)
+    register_websocket_routes(app)
+    register_health_routes(app)
+    register_exception_handlers(app)
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """捕获所有未处理的异常，记录日志并返回友好错误"""
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.error(
-        "Unhandled exception on %s %s",
-        request.method,
-        request.url,
-        exc_info=True,
-    )
+    return app
 
-    # 返回固定错误消息，不暴露内部异常详情
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+
+app = create_app()
