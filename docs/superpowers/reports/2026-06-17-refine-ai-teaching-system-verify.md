@@ -12,7 +12,7 @@
 
 - `openspec status --change "refine-ai-teaching-system" --json`: `schemaName=spec-driven`, `actionContext.mode=repo-local`, all artifacts done.
 - `openspec instructions apply --change "refine-ai-teaching-system" --json`: 26 total tasks, 26 complete, 0 remaining.
-- `python -m pytest backend/tests/test_ai_policy.py backend/tests/test_challenge_responses.py backend/tests/test_learning_path_challenge.py backend/tests/test_challenge_authoritative_submission.py backend/tests/test_user_arena.py backend/tests/test_tier_system.py backend/tests/test_mastery_xp.py -q --tb=short`: 95 passed.
+- `python -m pytest backend/tests/test_ai_policy.py backend/tests/test_challenge_responses.py backend/tests/test_learning_path_challenge.py backend/tests/test_challenge_authoritative_submission.py backend/tests/test_user_arena.py backend/tests/test_tier_system.py backend/tests/test_mastery_xp.py -q --tb=short`: 96 passed.
 - `pnpm -C frontend test -- --runTestsByPath __tests__/arena-submit-hook.test.tsx __tests__/api-client.test.ts __tests__/mastery-quiz-api.test.ts`: 3 suites passed, 19 tests passed.
 - `pnpm -C frontend exec tsc --noEmit`: exit 0.
 - `pnpm -C frontend build`: compiled successfully; 24 static pages generated.
@@ -29,6 +29,7 @@
 
 - Backend-authoritative grading is implemented in `backend/app/services/challenge_path/submission.py`.
 - Forged client-passing results and unavailable judge paths are covered by `backend/tests/test_challenge_authoritative_submission.py`.
+- Final code review found and fixed two authoritative-grading gaps: test accounts no longer bypass backend judge failures, and failed submissions no longer mark progress complete or unlock the next challenge.
 - Challenge selection/progress/reward/submission/response mapping responsibilities are split under `backend/app/services/challenge_path/`.
 - Final quality review split tier and star state transitions into `backend/app/services/challenge_path/tier_rewards.py`, leaving `rewards.py` focused on reward orchestration.
 - API response compatibility is covered by `backend/tests/test_challenge_responses.py` and `backend/tests/test_learning_path_challenge.py`.
@@ -41,8 +42,10 @@
 
 ## Code Review
 
-- No Critical issues found in main-agent review.
-- No Important issues found in main-agent review.
+- Final reviewer found Critical/Important issues in authoritative challenge submission semantics.
+- Fixed Critical: removed the test-account auto-pass branch from reward-bearing challenge submission.
+- Fixed Important: failed authoritative submissions no longer complete progress or unlock the next exercise.
+- Fixed Important: frontend arena results panel and success modal now use backend-authoritative `test_results` when present instead of local batch counts.
 - Quality fix applied during verification: extracted `ChallengeTierRewardCalculator` from the challenge reward service to keep reward orchestration and tier transition logic separate.
 
 ## Warnings / Accepted Risks
