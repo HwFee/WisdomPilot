@@ -22,6 +22,10 @@ _DEMO_SCOPE_OUT_OF_DEMO_SCOPE = "out_of_demo_scope"
 
 class AIFeature(str, Enum):
     CHALLENGE_HINT = "challenge_hint"
+    # GENERAL_CHAT is classified as out_of_demo_scope because the deterministic
+    # teaching backbone is the defense focus. General chat is a convenience
+    # feature outside the controlled demo scope and is not part of the official
+    # defense demo flow.
     GENERAL_CHAT = "general_chat"
     REFLECTION_PROMPT = "reflection_prompt"
 
