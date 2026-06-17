@@ -31,6 +31,7 @@ from app.schemas.ai import (
     ExerciseHintRequest,
 )
 from app.services.ai import ai_service
+from app.services.ai_policy import AIFeature, get_ai_policy
 from app.config import get_settings
 
 
@@ -311,13 +312,6 @@ async def analyze_choice(
 
 hint_router = APIRouter(prefix="/api/ai", tags=["ai-hint"])
 
-# 提示级别对应的智核消耗
-HINT_COSTS = {
-    "light": 1,
-    "medium": 3,
-    "deep": 5,
-}
-
 
 @hint_router.get("/exercise-hint/cache/{exercise_id}/{hint_level}")
 async def get_cached_hint(
@@ -339,13 +333,15 @@ async def get_cached_hint(
     cached = result.scalar_one_or_none()
 
     if cached:
+        policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level=hint_level, cached=True)
         return {
             "cached": True,
             "hint": cached.hint_content,
-            "cost": 0,  # 免费
+            "cost": policy.cost,
         }
 
-    return {"cached": False, "cost": HINT_COSTS.get(hint_level, 1)}
+    policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level=hint_level)
+    return {"cached": False, "cost": policy.cost}
 
 
 async def sse_exercise_hint_generator(
@@ -567,7 +563,8 @@ async def stream_exercise_hint(
     logger.info("[AI Hint] CACHE MISS, generating new hint...")
 
     # 获取消耗
-    cost = HINT_COSTS.get(request.hint_level, 1)
+    policy = get_ai_policy(AIFeature.CHALLENGE_HINT, hint_level=request.hint_level)
+    cost = policy.cost
     logger.info(f"[PERF-ROUTE] Entering SSE generator, elapsed_so_far={(time.time()-t_route_start)*1000:.1f}ms")
 
     # SSE generator uses independent short-lived DB sessions,
