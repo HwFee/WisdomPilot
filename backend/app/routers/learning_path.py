@@ -34,7 +34,11 @@ from app.services.challenge_path import (
     ChallengeSelectionService,
     ChallengeSubmissionService,
 )
-from app.services.challenge_path.responses import map_exercise_summary
+from app.services.challenge_path.responses import (
+    map_exercise_detail_response,
+    map_exercise_summary,
+    map_switch_response,
+)
 from app.schemas.exercise import ExerciseRecommendRequest
 
 
@@ -1059,26 +1063,7 @@ async def switch_challenge_exercise(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    exercise = result.pop("exercise", None)
-    if exercise:
-        result["exercise"] = {
-            "id": exercise.id,
-            "title": exercise.content.get("title", ""),
-            "type": exercise.type,
-            "difficulty": exercise.difficulty,
-            "knowledge_points": exercise.knowledge_points or [],
-            "content": {
-                "text": exercise.content.get("text", ""),
-                "title": exercise.content.get("title", ""),
-                "options": exercise.content.get("options", []),
-                "code_template": exercise.content.get("code_template"),
-                "description": exercise.content.get("description"),
-                "samples": exercise.content.get("samples", []),
-            },
-            "test_cases": exercise.test_cases if exercise.type == "programming" else None,
-        }
-
-    return result
+    return map_switch_response(result)
 
 
 @router.post("/challenge/append")
@@ -1138,41 +1123,9 @@ async def get_challenge_exercise(
     if not result:
         raise HTTPException(status_code=404, detail="Exercise not found in challenge path")
 
-    # Get total count only (lite mode, no need to load all exercise content)
     total = await service._get_exercise_count(current_user.id)
 
-    exercise = result.get("exercise")
-    return {
-        "exercise": {
-            "id": exercise.id,
-            "title": (exercise.content or {}).get("title", ""),
-            "type": exercise.type,
-            "difficulty": exercise.difficulty,
-            "knowledge_points": exercise.knowledge_points or [],
-            "content": {
-                "text": (exercise.content or {}).get("text", ""),
-                "title": (exercise.content or {}).get("title", ""),
-                "description": (exercise.content or {}).get("description", ""),
-                "options": (exercise.content or {}).get("options", []),
-                "code_template": (exercise.content or {}).get("code_template", ""),
-                "input_format": (exercise.content or {}).get("input_format", ""),
-                "output_format": (exercise.content or {}).get("output_format", ""),
-                "sample_input": (exercise.content or {}).get("sample_input", ""),
-                "sample_output": (exercise.content or {}).get("sample_output", ""),
-                "samples": (exercise.content or {}).get("samples", []),
-                "time_limit": (exercise.content or {}).get("time_limit", 1000),
-                "memory_limit": (exercise.content or {}).get("memory_limit", 256),
-            },
-            "test_cases": exercise.test_cases if exercise.type == "programming" else None,
-        },
-        "exercise_index": result["exercise_index"],
-        "is_unlocked": result["is_unlocked"],
-        "is_completed": result["is_completed"],
-        "is_correct": result["is_correct"],
-        "saved_code": result["saved_code"],
-        "current_language": result["current_language"],
-        "total_exercises": total,
-    }
+    return map_exercise_detail_response(result, total_exercises=total)
 
 
 

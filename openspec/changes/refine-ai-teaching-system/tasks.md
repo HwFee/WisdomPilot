@@ -2,22 +2,22 @@
 
 - [x] 1.1 Add backend characterization tests for challenge progress, save-code, switch, append, and exercise-detail response compatibility.
 - [x] 1.2 Add backend tests proving challenge rewards/progress are not awarded from forged client-supplied passing results.
-- [ ] 1.3 Add backend tests for AI hint cost, cached hint reuse, insufficient core behavior, and general-chat policy classification.
+- [x] 1.3 Add backend tests for AI hint cost, cached hint reuse, insufficient core behavior, and general-chat policy classification.
 - [ ] 1.4 Add frontend tests or focused integration tests for arena submission behavior against the preserved challenge API shape.
 
 ## 2. Controlled AI Tutor Boundary
 
 - [x] 2.1 Introduce a focused AI policy module/service for learner-facing AI feature access decisions.
-- [ ] 2.2 Route challenge hint cost, cache, and insufficient-core behavior through the AI policy boundary without changing existing hint UX.
-- [ ] 2.3 Classify general chat as policy-controlled or explicitly outside the defense demo flow, and document the decision in code/docs.
-- [ ] 2.4 Preserve light/medium/deep hint pedagogical boundaries and add tests that inspect prompt construction or policy metadata.
+- [x] 2.2 Route challenge hint cost, cache, and insufficient-core behavior through the AI policy boundary without changing existing hint UX.
+- [x] 2.3 Classify general chat as policy-controlled or explicitly outside the defense demo flow, and document the decision in code/docs.
+- [x] 2.4 Preserve light/medium/deep hint pedagogical boundaries and add tests that inspect prompt construction or policy metadata.
 
 ## 3. Backend Challenge Path Decomposition
 
 - [x] 3.1 Extract challenge exercise selection and append behavior from `backend/app/services/arena_infinite.py` into a focused service.
 - [x] 3.2 Extract challenge progress loading, switching, code saving, and unlocking behavior into a focused service.
-- [ ] 3.3 Extract challenge reward behavior for stars, tiers, cores, tier transactions, profile stats, and wrong-question collection into focused services/helpers.
-- [ ] 3.4 Extract API response mapping for challenge exercises/progress/submission results so route handlers stay thin and compatible.
+- [x] 3.3 Extract challenge reward behavior for stars, tiers, cores, tier transactions, profile stats, and wrong-question collection into focused services/helpers.
+- [x] 3.4 Extract API response mapping for challenge exercises/progress/submission results so route handlers stay thin and compatible.
 - [ ] 3.5 Reduce `backend/app/routers/learning_path.py` challenge endpoints to orchestration-only handlers while preserving current endpoint paths.
 
 ## 4. Backend-Authoritative Submission
