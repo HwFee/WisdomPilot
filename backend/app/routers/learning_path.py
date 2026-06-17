@@ -29,6 +29,7 @@ from app.services.leaderboard_service import (
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
 from app.services.arena_infinite import get_arena_infinite_service
+from app.services.challenge_path import ChallengeSubmissionService
 from app.schemas.exercise import ExerciseRecommendRequest
 
 
@@ -1017,12 +1018,12 @@ async def submit_challenge_exercise(
     db: AsyncSession = Depends(get_db),
 ):
     """Submit exercise answer in challenge path"""
-    service = get_arena_infinite_service(db)
+    arena_service = get_arena_infinite_service(db)
+    service = ChallengeSubmissionService(db, arena_service)
 
     try:
         result = await service.submit_exercise(
             user_id=current_user.id,
-            
             exercise_id=request.exercise_id,
             code=request.code,
             language=request.language,
