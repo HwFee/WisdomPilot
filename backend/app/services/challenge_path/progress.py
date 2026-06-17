@@ -287,3 +287,34 @@ class ChallengeProgressService:
             "is_correct": progress.is_correct,
             "exercise": exercise,
         }
+
+    async def get_recent_exercises(
+        self, user_id: str, limit: int = 3
+    ) -> list[dict]:
+        result = await self.db.execute(
+            select(ArenaExerciseProgress, Exercise)
+            .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
+            .where(
+                ArenaExerciseProgress.user_id == user_id,
+                ArenaExerciseProgress.is_completed,
+            )
+            .order_by(ArenaExerciseProgress.last_attempt_at.desc())
+            .limit(limit)
+        )
+        rows = result.all()
+
+        recent = []
+        for progress, exercise in rows:
+            content = exercise.content or {}
+            title = (
+                content.get("title", "")
+                or content.get("text", "")[:30]
+                or f"题目 {exercise.id}"
+            )
+            recent.append({
+                "exercise_id": exercise.id,
+                "title": title,
+                "is_correct": progress.is_correct,
+                "difficulty": exercise.difficulty,
+            })
+        return recent

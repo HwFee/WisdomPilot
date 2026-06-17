@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 from app.database import get_db
 from app.utils.deps import get_current_user
 from app.models.user import User
-from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.course import Course
 from app.models.chapter import Chapter
 from app.models.section import Section
@@ -1144,36 +1143,9 @@ async def get_recent_arena_exercises(
     db: AsyncSession = Depends(get_db),
 ):
     """获取挑战之路最近练习的题目（含正确情况）- 全局，不关联课程"""
-    # 查询最近的 arena_exercise_progress，按最后尝试时间倒序
-    result = await db.execute(
-        select(ArenaExerciseProgress, Exercise)
-        .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
-        .where(
-            ArenaExerciseProgress.user_id == current_user.id,
-            ArenaExerciseProgress.is_completed,  # 只取已提交的
-        )
-        .order_by(ArenaExerciseProgress.last_attempt_at.desc())
-        .limit(limit)
-    )
-    rows = result.all()
-
-    exercises = []
-    for progress, exercise in rows:
-        # 获取标题
-        title = ""
-        if exercise.content:
-            title = exercise.content.get("title", "") or exercise.content.get("text", "")[:30] or f"题目 {exercise.id}"
-        else:
-            title = f"题目 {exercise.id}"
-
-        exercises.append(RecentArenaExercise(
-            exercise_id=exercise.id,
-            title=title,
-            is_correct=progress.is_correct,
-            difficulty=exercise.difficulty,
-        ))
-
-    return exercises
+    service = ChallengeProgressService(db)
+    recent = await service.get_recent_exercises(user_id=current_user.id, limit=limit)
+    return [RecentArenaExercise(**item) for item in recent]
 
 
 # ========== BKT Mastery Endpoints (小节/章节/课程 三层聚合) ==========
