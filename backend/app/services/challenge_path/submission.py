@@ -139,9 +139,8 @@ class ChallengeSubmissionService:
         If the judge is unavailable the endpoint returns an HTTP error and
         does **not** mutate correctness-dependent state.
 
-        Non-programming exercises or exercises without test cases currently
-        fall back to client-supplied results; challenge path only uses
-        programming exercises in this change.
+        Programming exercises without backend test cases are rejected outright
+        so that client-forged results cannot be used to claim rewards.
         """
         # Load exercise to get backend-owned test cases
         exercise_result = await self.db.execute(
@@ -153,7 +152,12 @@ class ChallengeSubmissionService:
 
         # Run authoritative judge on backend-owned test cases
         backend_test_cases = exercise.test_cases or []
-        if exercise.type == "programming" and backend_test_cases:
+        if exercise.type == "programming":
+            if not backend_test_cases:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Programming exercise has no backend test cases",
+                )
             try:
                 authoritative_result = await run_authoritative_judge(
                     code=code,
@@ -169,8 +173,9 @@ class ChallengeSubmissionService:
 
             authoritative_test_results = authoritative_result["results"]
         else:
-            # Non-programming exercises or exercises without test cases:
-            # fall back to client-supplied results for compatibility
+            # Non-programming exercises fall back to client-supplied results
+            # for compatibility.  Challenge path only uses programming
+            # exercises in this change.
             authoritative_test_results = test_results
 
         # Delegate to legacy service for mutation / reward logic.

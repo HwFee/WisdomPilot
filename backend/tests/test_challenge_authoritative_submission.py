@@ -145,3 +145,58 @@ async def test_unavailable_judge_does_not_award_progress(
     await db_session.refresh(progress)
     assert progress.is_correct is False
     assert progress.is_completed is False
+
+
+@pytest.mark.asyncio
+async def test_programming_exercise_without_backend_test_cases_is_rejected(
+    client: AsyncClient,
+    auth_headers: dict,
+    db_session,
+):
+    exercise = Exercise(
+        content={"title": "无后台测试", "text": "输出 1", "code_template": "print(1)"},
+        type="programming",
+        difficulty=3,
+        is_verified=True,
+        test_cases=[],
+    )
+    db_session.add(exercise)
+    await db_session.commit()
+    await db_session.refresh(exercise)
+
+    user_id = _user_id_from_headers(auth_headers)
+    progress = ArenaExerciseProgress(
+        user_id=user_id,
+        exercise_id=exercise.id,
+        exercise_index=0,
+        is_unlocked=True,
+    )
+    db_session.add(progress)
+    await db_session.commit()
+
+    response = await client.post(
+        "/api/learning-path/challenge/submit",
+        headers=auth_headers,
+        json={
+            "exercise_id": exercise.id,
+            "code": "print(1)",
+            "language": "python",
+            "test_results": [
+                {"passed": True, "input": "", "expected": "1", "actual": "1"}
+            ],
+        },
+    )
+
+    assert response.status_code == 400
+    data = response.json()
+    assert "backend test cases" in data.get("detail", "").lower()
+
+    await db_session.refresh(progress)
+    assert progress.is_correct is False
+    assert progress.is_completed is False
+
+    profile_result = await db_session.execute(
+        select(UserArenaProfile).where(UserArenaProfile.user_id == user_id)
+    )
+    profile = profile_result.scalar_one_or_none()
+    assert profile is None or profile.stars == 0
