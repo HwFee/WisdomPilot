@@ -40,4 +40,4 @@
 - [x] 6.3 Run frontend tests for arena/API clients plus `pnpm build`.
 - [x] 6.4 Start backend and frontend services and request affected routes to verify startup and rendering.
 - [x] 6.5 Run `npx codegraph sync` or `npx codegraph index` after code movement.
-- [ ] 6.6 Leave the change ready for final verification by the original reviewer before archive.
+- [x] 6.6 Leave the change ready for final verification by the original reviewer before archive.
