@@ -1,12 +1,13 @@
 workflow: full
-phase: build
+phase: verify
 context_compression: off
 build_mode: subagent-driven-development
 build_pause: null
 subagent_dispatch: confirmed
 tdd_mode: tdd
 isolation: worktree
-verify_mode: null
+verify_mode: full
+build_command: pnpm -C frontend build
 auto_transition: true
 base_ref: 3f1f3fe7754ab3aae60fe473103034c36d7eb6d6
 design_doc: docs/superpowers/specs/2026-06-17-refine-ai-teaching-system-design.md

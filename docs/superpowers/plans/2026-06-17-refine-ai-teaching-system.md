@@ -697,7 +697,7 @@ git commit -m "refactor: split challenge selection and progress services"
 - Modify: `backend/app/services/arena_infinite.py`
 - Modify: backend reward tests as needed
 
-- [ ] **Step 1: Explore reward dependencies**
+- [x] **Step 1: Explore reward dependencies**
 
 Run:
 
@@ -707,7 +707,7 @@ npx codegraph context "stars_earned tier_service CoreService wrong_question_serv
 
 Expected: identify reward-related imports and side effects.
 
-- [ ] **Step 2: Extract reward application**
+- [x] **Step 2: Extract reward application**
 
 Move star/tier/core/tier-transaction/profile-stat/wrong-question behavior from `submit_exercise` into `ChallengeRewardService`.
 
@@ -740,7 +740,7 @@ Return reward fields currently used by the API:
 - `first_time_correct`
 - `first_time_wrong`
 
-- [ ] **Step 3: Keep submission response stable**
+- [x] **Step 3: Keep submission response stable**
 
 `ChallengeSubmissionService.submit_exercise` should merge:
 
@@ -750,7 +750,7 @@ Return reward fields currently used by the API:
 
 Keep existing API keys stable.
 
-- [ ] **Step 4: Run reward-related tests**
+- [x] **Step 4: Run reward-related tests**
 
 ```powershell
 cd backend
@@ -759,7 +759,7 @@ pytest tests/test_user_arena.py tests/test_tier_system.py tests/test_mastery_xp.
 
 Expected: PASS. If unrelated tests fail, capture output and fix only regressions from this task.
 
-- [ ] **Step 5: Commit Task 7**
+- [x] **Step 5: Commit Task 7**
 
 ```powershell
 git add backend/app/services/challenge_path/rewards.py backend/app/services/challenge_path/submission.py backend/app/services/arena_infinite.py backend/tests
@@ -773,7 +773,7 @@ git commit -m "refactor: split challenge reward service"
 - Modify: `backend/app/routers/learning_path.py`
 - Modify: `backend/app/services/arena_infinite.py`
 
-- [ ] **Step 1: Move duplicate route mapping into response helpers**
+- [x] **Step 1: Move duplicate route mapping into response helpers**
 
 Move repeated exercise mapping from `learning_path.py` to `responses.py`.
 
@@ -785,7 +785,7 @@ def map_switch_exercise(exercise) -> dict: ...
 def map_exercise_detail(result: dict, total: int) -> dict: ...
 ```
 
-- [ ] **Step 2: Update learning path challenge endpoints**
+- [x] **Step 2: Update learning path challenge endpoints**
 
 Keep route functions in `learning_path.py`, but make each one:
 
@@ -796,7 +796,7 @@ Keep route functions in `learning_path.py`, but make each one:
 
 Do not mix mastery endpoint refactors into this task.
 
-- [ ] **Step 3: Check file-size direction**
+- [x] **Step 3: Check file-size direction**
 
 Run:
 
@@ -807,7 +807,7 @@ Run:
 
 Expected: both files should shrink or have challenge responsibility visibly reduced. Exact line-count target is less important than responsibility separation.
 
-- [ ] **Step 4: Run route compatibility tests**
+- [x] **Step 4: Run route compatibility tests**
 
 ```powershell
 cd backend
@@ -816,7 +816,7 @@ pytest tests/test_learning_path_challenge.py tests/test_challenge_authoritative_
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit Task 8**
+- [x] **Step 5: Commit Task 8**
 
 ```powershell
 git add backend/app/services/challenge_path/responses.py backend/app/routers/learning_path.py backend/app/services/arena_infinite.py
@@ -830,7 +830,7 @@ git commit -m "refactor: thin challenge path routes"
 - Create: `frontend/app/arena/use-arena-submit.ts`
 - Create: `frontend/app/arena/use-arena-append.ts`
 
-- [ ] **Step 1: Explore frontend arena dependencies**
+- [x] **Step 1: Explore frontend arena dependencies**
 
 Run:
 
@@ -840,7 +840,7 @@ npx codegraph context "arena-content performSubmit appendChallengeExercises subm
 
 Expected: understand `performSubmit` dependencies and state setters before extraction.
 
-- [ ] **Step 2: Extract submit orchestration**
+- [x] **Step 2: Extract submit orchestration**
 
 Move `performSubmit` from `arena-content.tsx` into `frontend/app/arena/use-arena-submit.ts`.
 
@@ -852,7 +852,7 @@ export async function performSubmit(args: PerformSubmitArgs): Promise<void>
 
 Define `PerformSubmitArgs` in the new file with the same fields currently used by `performSubmit`.
 
-- [ ] **Step 3: Extract append/progress helper if still large**
+- [x] **Step 3: Extract append/progress helper if still large**
 
 If `performSubmit` remains too large after extraction, move the append block into `frontend/app/arena/use-arena-append.ts`:
 
@@ -862,7 +862,7 @@ export async function appendExercisesNearEnd(args: AppendExercisesArgs): Promise
 
 Keep behavior identical.
 
-- [ ] **Step 4: Run frontend tests and type/build checks**
+- [x] **Step 4: Run frontend tests and type/build checks**
 
 ```powershell
 cd frontend
@@ -877,7 +877,7 @@ pnpm test -- api-client
 pnpm test -- mastery-quiz-api
 ```
 
-- [ ] **Step 5: Commit Task 9**
+- [x] **Step 5: Commit Task 9**
 
 ```powershell
 git add frontend/app/arena/_components/arena-content.tsx frontend/app/arena/use-arena-submit.ts frontend/app/arena/use-arena-append.ts
@@ -889,7 +889,7 @@ git commit -m "refactor: extract arena submission helpers"
 **Files:**
 - Create: `docs/defense/ai-controlled-teaching-architecture.md`
 
-- [ ] **Step 1: Create defense architecture note**
+- [x] **Step 1: Create defense architecture note**
 
 Create `docs/defense/ai-controlled-teaching-architecture.md`:
 
@@ -931,7 +931,7 @@ AI output does not directly determine challenge correctness, rewards, or ranking
 The system avoids relying on AI as an unstable judge or curriculum authority. AI improves interaction quality while deterministic services preserve verifiability.
 ```
 
-- [ ] **Step 2: Commit Task 10**
+- [x] **Step 2: Commit Task 10**
 
 ```powershell
 git add docs/defense/ai-controlled-teaching-architecture.md
@@ -944,7 +944,7 @@ git commit -m "docs: explain controlled ai teaching architecture"
 - Modify only if failures require fixes.
 - Update OpenSpec task checkboxes as tasks complete.
 
-- [ ] **Step 1: Run backend targeted tests**
+- [x] **Step 1: Run backend targeted tests**
 
 ```powershell
 cd backend
@@ -953,7 +953,7 @@ pytest tests/test_learning_path_challenge.py tests/test_challenge_authoritative_
 
 Expected: PASS.
 
-- [ ] **Step 2: Run frontend tests/build**
+- [x] **Step 2: Run frontend tests/build**
 
 ```powershell
 cd frontend
@@ -964,7 +964,7 @@ pnpm build
 
 Expected: PASS.
 
-- [ ] **Step 3: Start services and smoke affected routes**
+- [x] **Step 3: Start services and smoke affected routes**
 
 Run from repo root:
 
@@ -984,7 +984,7 @@ Expected: backend starts, frontend compiles, affected route/page renders. Stop s
 python stop_services.py
 ```
 
-- [ ] **Step 4: Update CodeGraph after code movement**
+- [x] **Step 4: Update CodeGraph after code movement**
 
 ```powershell
 npx codegraph sync
@@ -998,7 +998,7 @@ npx codegraph index
 
 Expected: CodeGraph completes without fatal error.
 
-- [ ] **Step 5: Do not archive**
+- [x] **Step 5: Do not archive**
 
 Leave the change active. Report:
 
