@@ -2,17 +2,17 @@
 
 ## Current Task
 
-- Plan task: "3.1 Write AI policy tests"
-- OpenSpec task: "2.1 Introduce a focused AI policy module/service for learner-facing AI feature access decisions."
+- Plan task: "4.1 Create package exports"
+- OpenSpec task: "3.1 Extract challenge exercise selection and append behavior from `backend/app/services/arena_infinite.py` into a focused service."
 - Stage: done
 - Round: 1
 
 ## Evidence
 
-- RED: `pytest tests/test_ai_policy.py -q` → ModuleNotFoundError: No module named 'app.services.ai_policy'
-- GREEN: `pytest tests/test_ai_policy.py tests/test_ai.py tests/test_quota.py -q --tb=short` → 28 passed in 6.79s
-- Commit: `52be2aa`
-- Files changed: `backend/app/services/ai_policy.py`, `backend/tests/test_ai_policy.py`, `backend/app/routers/ai.py`
+- RED: N/A
+- GREEN: `pytest tests/test_learning_path_challenge.py tests/test_arena_submission_result.py -q --tb=short` → 27 passed in 8.15s
+- Commit: `08a3c6d`
+- Files changed: `backend/app/services/challenge_path/*`
 
 ## Reviews
 
@@ -21,4 +21,4 @@
 
 ## Notes
 
-Task 3 complete. Moving to Task 4.
+Task 4 complete. Moving to Task 5.

@@ -436,7 +436,7 @@ git commit -m "feat: add controlled ai policy boundary"
 - Create: `backend/app/services/challenge_path/rewards.py`
 - Create: `backend/app/services/challenge_path/submission.py`
 
-- [ ] **Step 1: Create package exports**
+- [x] **Step 1: Create package exports**
 
 Create `backend/app/services/challenge_path/__init__.py`:
 
@@ -456,7 +456,7 @@ __all__ = [
 ]
 ```
 
-- [ ] **Step 2: Create response mapper placeholders with real behavior moved first**
+- [x] **Step 2: Create response mapper placeholders with real behavior moved first**
 
 Create `backend/app/services/challenge_path/responses.py` with pure mapping helpers. Start with duplicated mapping logic from `learning_path.py`, then route tests will protect cleanup:
 
@@ -486,7 +486,7 @@ def map_exercise_summary(exercise: Exercise, index: int | None = None) -> dict:
     }
 ```
 
-- [ ] **Step 3: Create service shells that delegate to old service**
+- [x] **Step 3: Create service shells that delegate to old service**
 
 For the first commit, keep behavior stable by delegating to `ChallengePathService` methods. Later tasks move internals.
 
@@ -515,7 +515,7 @@ class ChallengeProgressService:
 
 Create analogous shells for selection, rewards, and submission. Keep constructor signatures simple and typed.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```powershell
 cd backend
@@ -524,7 +524,7 @@ pytest tests/test_learning_path_challenge.py tests/test_arena_submission_result.
 
 Expected: PASS because no route behavior has changed.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 ```powershell
 git add backend/app/services/challenge_path
