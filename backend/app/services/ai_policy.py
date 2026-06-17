@@ -37,6 +37,13 @@ class AIPolicy:
     cached: bool = False
     admin_only: bool = False
     demo_scope: str = _DEMO_SCOPE_CONTROLLED
+    hint_level: str = _DEFAULT_HINT_LEVEL
+
+    @property
+    def category(self) -> str | None:
+        if self.feature == AIFeature.CHALLENGE_HINT:
+            return f"ai_hint_{self.hint_level}"
+        return None
 
 
 def get_ai_policy(
@@ -52,6 +59,7 @@ def get_ai_policy(
             cost=cost,
             cached=cached,
             demo_scope=_DEMO_SCOPE_CONTROLLED,
+            hint_level=hint_level,
         )
 
     if feature == AIFeature.GENERAL_CHAT:
