@@ -18,7 +18,7 @@
 - [x] 3.2 Extract challenge progress loading, switching, code saving, and unlocking behavior into a focused service.
 - [x] 3.3 Extract challenge reward behavior for stars, tiers, cores, tier transactions, profile stats, and wrong-question collection into focused services/helpers.
 - [x] 3.4 Extract API response mapping for challenge exercises/progress/submission results so route handlers stay thin and compatible.
-- [ ] 3.5 Reduce `backend/app/routers/learning_path.py` challenge endpoints to orchestration-only handlers while preserving current endpoint paths.
+- [x] 3.5 Reduce `backend/app/routers/learning_path.py` challenge endpoints to orchestration-only handlers while preserving current endpoint paths.
 
 ## 4. Backend-Authoritative Submission
 
@@ -29,15 +29,15 @@
 
 ## 5. Frontend Arena Cleanup
 
-- [ ] 5.1 Extract arena submit orchestration from `frontend/app/arena/_components/arena-content.tsx` into a hook or helper module.
-- [ ] 5.2 Extract append/progress refresh behavior from `arena-content.tsx` into a focused helper while preserving current UX.
-- [ ] 5.3 Keep arena components visually unchanged unless required by API compatibility.
+- [x] 5.1 Extract arena submit orchestration from `frontend/app/arena/_components/arena-content.tsx` into a hook or helper module.
+- [x] 5.2 Extract append/progress refresh behavior from `arena-content.tsx` into a focused helper while preserving current UX.
+- [x] 5.3 Keep arena components visually unchanged unless required by API compatibility.
 
 ## 6. Documentation And Validation
 
 - [ ] 6.1 Add or update defense-facing notes that explain deterministic backbone versus controlled GAI assistant.
 - [ ] 6.2 Run backend tests covering challenge, AI hint policy, rewards, and learning-path compatibility.
-- [ ] 6.3 Run frontend tests for arena/API clients plus `pnpm build`.
+- [x] 6.3 Run frontend tests for arena/API clients plus `pnpm build`.
 - [ ] 6.4 Start backend and frontend services and request affected routes to verify startup and rendering.
 - [ ] 6.5 Run `npx codegraph sync` or `npx codegraph index` after code movement.
 - [ ] 6.6 Leave the change ready for final verification by the original reviewer before archive.
