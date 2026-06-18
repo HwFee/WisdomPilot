@@ -10,6 +10,7 @@ import rehypeHighlight from 'rehype-highlight'
 import { MermaidBlock } from './mermaid-block'
 import { getLanguageId } from '../lib/section-utils'
 import type { KnowledgePointDetail } from '@/lib/api/sections'
+import type { MermaidComponent } from './mermaid-block'
 
 interface KnowledgePointCardProps {
   kp: KnowledgePointDetail
@@ -137,7 +138,12 @@ export function KnowledgePointCard({
                     },
                     pre({ children }) {
                       const childArr = Children.toArray(children)
-                      const isMermaid = childArr.some((c: any) => c?.type?.isMermaid)
+                      const isMermaid = childArr.some((child) => {
+                        if (typeof child !== 'object' || child === null || !('type' in child)) {
+                          return false
+                        }
+                        return (child.type as MermaidComponent | undefined)?.isMermaid === true
+                      })
                       if (isMermaid) {
                         return <>{children}</>
                       }

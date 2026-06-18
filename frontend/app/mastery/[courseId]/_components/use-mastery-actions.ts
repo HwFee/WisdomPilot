@@ -13,6 +13,7 @@ import {
   completeMasteryQuiz,
   getMasteryChapterDetailProgress,
   getSectionMastery,
+  type KnowledgePointMastery,
   type MasteryExerciseProgressItem,
 } from "@/lib/api/learning-path";
 import { collectWrongQuestion } from "@/lib/api/wrong-question";
@@ -173,8 +174,8 @@ export function useMasteryActions(deps: MasteryActionDeps): MasteryActionHandler
             }
           }
 
-          let weakPoints: string[] = [];
-          let strongPoints: string[] = [];
+          const weakPoints: string[] = [];
+          const strongPoints: string[] = [];
           try {
             const sectionMastery = await getSectionMastery(
               state.selectedSectionId!,
@@ -187,7 +188,9 @@ export function useMasteryActions(deps: MasteryActionDeps): MasteryActionHandler
                 allKps.add(kp);
               }
             }
-            const bktKps = new Map(kpMasteries.map((m: any) => [m.name, m]));
+            const bktKps = new Map<string, KnowledgePointMastery>(
+              kpMasteries.map((mastery) => [mastery.name, mastery]),
+            );
             const kpToQuestions = new Map<string, typeof data.questions>();
             for (const q of data.questions) {
               for (const kp of q.knowledge_points || []) {
@@ -405,8 +408,8 @@ export function useMasteryActions(deps: MasteryActionDeps): MasteryActionHandler
             }
           }
 
-          let weakPoints: string[] = [];
-          let strongPoints: string[] = [];
+          const weakPoints: string[] = [];
+          const strongPoints: string[] = [];
           try {
             const sectionMastery = await getSectionMastery(
               state.selectedSectionId!,
@@ -419,7 +422,9 @@ export function useMasteryActions(deps: MasteryActionDeps): MasteryActionHandler
                 allKps.add(kp);
               }
             }
-            const bktKps = new Map(kpMasteries.map((m: any) => [m.name, m]));
+            const bktKps = new Map<string, KnowledgePointMastery>(
+              kpMasteries.map((mastery) => [mastery.name, mastery]),
+            );
             const kpToQuestions = new Map<string, typeof data.questions>();
             for (const q of data.questions) {
               for (const kp of q.knowledge_points || []) {

@@ -213,6 +213,10 @@ def ensure_frontend_dependencies(frontend_dir: Path, pnpm_cmd: str) -> None:
         raise RuntimeError("前端依赖安装失败。")
 
 
+def should_copy_backend_env_line(line: str) -> bool:
+    return not line.startswith("NEXT_PUBLIC_")
+
+
 def ensure_backend_env(backend_dir: Path) -> None:
     env_file = backend_dir / ".env"
     example_file = backend_dir.parent / ".env.example"
@@ -233,6 +237,8 @@ def ensure_backend_env(backend_dir: Path) -> None:
         content = example_file.read_text(encoding="utf-8")
         lines = []
         for line in content.splitlines():
+            if not should_copy_backend_env_line(line):
+                continue
             if line.startswith("SECRET_KEY="):
                 lines.append(f"SECRET_KEY={secret_key}")
             else:

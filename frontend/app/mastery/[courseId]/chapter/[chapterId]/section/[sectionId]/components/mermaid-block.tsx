@@ -3,7 +3,12 @@
 /* react-doctor-disable no-danger */
 
 import { useRef, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import mermaid from 'mermaid'
+
+export type MermaidComponent = ((props: { code: string }) => ReactNode) & {
+  isMermaid?: boolean
+}
 
 interface MermaidDiagramProps {
   svg: string
@@ -11,10 +16,10 @@ interface MermaidDiagramProps {
 }
 
 function MermaidDiagram({ svg, className }: MermaidDiagramProps) {
-  return <div className={className} dangerouslySetInnerHTML={{ __html: svg }} /* eslint-disable-line react/no-danger */ />
+  return <div className={className} dangerouslySetInnerHTML={{ __html: svg }} />
 }
 
-export function MermaidBlock({ code }: { code: string }) {
+export const MermaidBlock: MermaidComponent = function MermaidBlock({ code }) {
   const ref = useRef<HTMLDivElement>(null)
   const [mermaidState, setMermaidState] = useState<{ svg: string; err: string | null }>({ svg: '', err: null })
 
@@ -57,4 +62,4 @@ export function MermaidBlock({ code }: { code: string }) {
     </div>
   )
 }
-(MermaidBlock as any).isMermaid = true
+MermaidBlock.isMermaid = true

@@ -59,8 +59,6 @@ export function NoteButton({
   const t = (zh: string, en: string) => (lang === 'zh' ? zh : en)
 
   useEffect(() => {
-    let cancelled = false
-
     const token = getStoredToken()
     if (!token || !exerciseId) return
 
