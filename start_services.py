@@ -29,6 +29,7 @@ import json
 BACKEND_PORT = 8000
 FRONTEND_PORT = 3000
 STATE_FILE_NAME = "service_state.json"
+FRONTEND_API_URL = f"http://127.0.0.1:{BACKEND_PORT}"
 
 
 def is_windows() -> bool:
@@ -284,6 +285,7 @@ def start_frontend(frontend_dir: Path, log_dir: Path, pnpm_cmd: str) -> subproce
     env = os.environ.copy()
     env["NODE_OPTIONS"] = "--max-old-space-size=4096"
     env["NEXT_TELEMETRY_DISABLED"] = "1"
+    env["NEXT_PUBLIC_API_URL"] = FRONTEND_API_URL
 
     command = [pnpm_cmd, "exec", "next", "dev", "--port", str(FRONTEND_PORT)]
     print(f"[启动] 前端 Next.js: {' '.join(command)}")

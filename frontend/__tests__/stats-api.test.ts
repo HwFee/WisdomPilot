@@ -21,6 +21,7 @@ global.fetch = jest.fn()
 
 const mockToken = 'test-token'
 const mockUserId = 'test-user-id'
+const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8000'
 
 describe('Stats API Functions', () => {
   beforeEach(() => {
@@ -54,7 +55,7 @@ describe('Stats API Functions', () => {
       const result = await getUserProgress(mockToken)
       expect(result).toEqual(mockProgress)
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/stats/progress',
+        `${DEFAULT_API_BASE_URL}/api/stats/progress`,
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: `Bearer ${mockToken}`,
@@ -66,7 +67,9 @@ describe('Stats API Functions', () => {
     it('throws error on API failure', async () => {
       ;(fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
-        json: () => Promise.resolve({ detail: 'Unauthorized' }),
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve(JSON.stringify({ detail: 'Unauthorized' })),
       })
 
       await expect(getUserProgress(mockToken)).rejects.toThrow('Unauthorized')

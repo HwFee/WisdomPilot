@@ -17,6 +17,7 @@ import {
   NoteTagListResponse,
 } from '@/types/api'
 import { get, post, put, del } from './client'
+import { getApiBaseUrl } from '@/lib/api-config'
 
 // ========================================
 // Notes API Functions
@@ -107,7 +108,7 @@ export async function exportNote(
   token: string,
   noteId: string
 ): Promise<Response> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  const apiUrl = getApiBaseUrl()
   return fetch(`${apiUrl}/api/notes/export/${noteId}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
@@ -117,7 +118,7 @@ export async function exportNotes(
   token: string,
   data: NoteExportRequest
 ): Promise<Response> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  const apiUrl = getApiBaseUrl()
   return fetch(`${apiUrl}/api/notes/export`, {
     method: 'POST',
     headers: {

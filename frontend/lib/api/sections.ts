@@ -3,8 +3,9 @@
  */
 
 import { getStoredToken } from './auth'
+import { getApiBaseUrl } from '@/lib/api-config'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_URL = getApiBaseUrl()
 
 // 知识点详情类型
 export interface KnowledgePointDetail {

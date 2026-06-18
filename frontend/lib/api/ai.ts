@@ -18,6 +18,7 @@ import {
   TestConnectionResponse,
 } from '@/types/api'
 import { get, post, put } from './client'
+import { getApiBaseUrl } from '@/lib/api-config'
 
 // ========================================
 // AI Choice Explanation
@@ -59,7 +60,7 @@ export async function aiChatStream(
   onError: (error: string) => void,
   onComplete: () => void
 ): Promise<void> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/ai/chat/stream`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/ai/chat/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -188,7 +189,7 @@ export async function streamExerciseHint(
   onError: (error: string) => void,
   onComplete: () => void
 ): Promise<StreamHintResult> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/ai/exercise-hint/stream`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/ai/exercise-hint/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

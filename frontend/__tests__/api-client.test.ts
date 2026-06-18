@@ -23,6 +23,24 @@ describe('API Client', () => {
     localStorageMock.removeItem.mockReset()
   })
 
+  describe('API_BASE_URL', () => {
+    const originalApiUrl = process.env.NEXT_PUBLIC_API_URL
+
+    afterEach(() => {
+      process.env.NEXT_PUBLIC_API_URL = originalApiUrl
+      jest.resetModules()
+    })
+
+    it('defaults to the IPv4 loopback backend to avoid localhost IPv6 failures', async () => {
+      delete process.env.NEXT_PUBLIC_API_URL
+      jest.resetModules()
+
+      const { API_BASE_URL } = await import('@/lib/api/client')
+
+      expect(API_BASE_URL).toBe('http://127.0.0.1:8000')
+    })
+  })
+
   describe('getStoredUser', () => {
     it('returns null when no user stored', async () => {
       const { getStoredUser } = await import('@/lib/api')

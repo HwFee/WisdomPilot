@@ -3,6 +3,7 @@
 import { useCallback } from "react"
 import type { ActiveKnowledgeQuestion } from "@/contexts/AIContext"
 import { buildPrompt } from "@/lib/knowledge-orb"
+import { getApiBaseUrl } from "@/lib/api-config"
 import type { KnowledgeOrbState, KnowledgeOrbAction } from "./use-knowledge-orb-state"
 
 interface UseKnowledgeOrbChatArgs {
@@ -40,7 +41,7 @@ export function useKnowledgeOrbChat({
       const token = localStorage.getItem("token:v1")
       if (!token) return
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+      const apiUrl = getApiBaseUrl()
       const response = await fetch(
         `${apiUrl}/api/ai/chat/stream`,
         {

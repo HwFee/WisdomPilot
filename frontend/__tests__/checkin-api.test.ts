@@ -8,6 +8,7 @@ import { checkin, getCheckinStatus, CheckinResponse, CheckinStatusResponse } fro
 global.fetch = jest.fn()
 
 const mockToken = 'test-token'
+const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8000'
 
 describe('Checkin API Functions', () => {
   beforeEach(() => {
@@ -34,7 +35,7 @@ describe('Checkin API Functions', () => {
       const result = await checkin(mockToken)
       expect(result).toEqual(mockResponse)
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/users/checkin',
+        `${DEFAULT_API_BASE_URL}/api/users/checkin`,
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -68,7 +69,9 @@ describe('Checkin API Functions', () => {
     it('throws error on API failure', async () => {
       ;(fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
-        json: () => Promise.resolve({ detail: 'Unauthorized' }),
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve(JSON.stringify({ detail: 'Unauthorized' })),
       })
 
       await expect(checkin(mockToken)).rejects.toThrow('Unauthorized')
@@ -98,7 +101,9 @@ describe('Checkin API Functions', () => {
     it('throws error on API failure', async () => {
       ;(fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
-        json: () => Promise.resolve({ detail: 'Token expired' }),
+        status: 403,
+        statusText: 'Forbidden',
+        text: () => Promise.resolve(JSON.stringify({ detail: 'Token expired' })),
       })
 
       await expect(getCheckinStatus(mockToken)).rejects.toThrow('Token expired')

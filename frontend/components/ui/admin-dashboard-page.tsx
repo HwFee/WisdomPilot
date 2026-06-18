@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Panel, PanelHeader } from '@/components/layout/Panel'
 import { StatsGrid, StatCell } from '@/components/layout/StatsGrid'
 import { Shield, Users, UserCheck, RefreshCw, LogOut } from 'lucide-react'
+import { getApiBaseUrl } from '@/lib/api-config'
 
 interface User {
   id: string
@@ -104,13 +105,14 @@ export default function AdminDashboardPage() {
   const isLoading = state.status === 'loading'
 
   const currentUser = getCurrentUser()
+  const apiBaseUrl = getApiBaseUrl()
 
   const fetchUsers = useCallback(async () => {
     const token = getAuthToken()
     if (!token) return
     dispatch({ type: 'fetch_start' })
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users`, {
+      const res = await fetch(`${apiBaseUrl}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Failed to fetch users')
@@ -122,7 +124,7 @@ export default function AdminDashboardPage() {
         error: err instanceof Error ? err.message : 'Error fetching users',
       })
     }
-  }, [])
+  }, [apiBaseUrl])
 
   useEffect(() => {
     const token = getAuthToken()
@@ -138,7 +140,7 @@ export default function AdminDashboardPage() {
     const token = getAuthToken()
     if (!token) return
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users/online`, {
+      const res = await fetch(`${apiBaseUrl}/api/admin/users/online`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Failed to fetch online users')
@@ -156,7 +158,7 @@ export default function AdminDashboardPage() {
     const token = getAuthToken()
     if (!token) return
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/users/${userId}`, {
+      const res = await fetch(`${apiBaseUrl}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

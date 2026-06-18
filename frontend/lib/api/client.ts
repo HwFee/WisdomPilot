@@ -3,6 +3,7 @@
  */
 
 import { ApiError } from "@/types/api";
+import { getApiBaseUrl } from "@/lib/api-config";
 
 function normalizeApiBaseUrl(rawUrl: string): string {
   const trimmed = rawUrl.replace(/\/+$/, "");
@@ -10,7 +11,7 @@ function normalizeApiBaseUrl(rawUrl: string): string {
 }
 
 const API_BASE_URL = normalizeApiBaseUrl(
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+  getApiBaseUrl(),
 );
 const REQUEST_TIMEOUT = 30000; // 30 seconds for regular requests
 const CODE_EXECUTION_TIMEOUT = 60000; // 60 seconds for code execution (Judge0 can be slow)
