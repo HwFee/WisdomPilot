@@ -330,6 +330,22 @@ def main() -> int:
 
     ensure_backend_env(backend_dir)
 
+    print("[迁移] 检查并补齐数据库缺失列...")
+    migrate_result = subprocess.run(
+        [sys.executable, "scripts/migrate_missing_columns.py"],
+        cwd=backend_dir,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
+        check=False,
+    )
+    if migrate_result.returncode != 0:
+        print(f"[警告] 数据库迁移脚本异常: {migrate_result.stderr.strip()}")
+    else:
+        for line in migrate_result.stdout.strip().splitlines():
+            print(f"  {line}")
+
     pnpm_cmd = resolve_pnpm()
     ensure_frontend_dependencies(frontend_dir, pnpm_cmd)
 
