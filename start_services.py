@@ -29,7 +29,6 @@ import json
 BACKEND_PORT = 8000
 FRONTEND_PORT = 3000
 STATE_FILE_NAME = "service_state.json"
-FRONTEND_API_URL = f"http://127.0.0.1:{BACKEND_PORT}"
 
 
 def is_windows() -> bool:
@@ -281,11 +280,11 @@ def start_frontend(frontend_dir: Path, log_dir: Path, pnpm_cmd: str) -> subproce
     stdout_file = open(log_dir / "frontend.log", "w", encoding="utf-8")
     stderr_file = open(log_dir / "frontend.err.log", "w", encoding="utf-8")
 
-    # 禁用 Turbopack 避免 PostCSS worker 爆炸；限制 Node 内存并指定单一 worker 进程
+    # 前端通过 Next.js rewrite 走同域 /api/* 代理到后端，避免开发时 CORS 问题。
+    # 因此不再设置 NEXT_PUBLIC_API_URL，让 api-config.ts 在浏览器开发环境下返回相对路径。
     env = os.environ.copy()
     env["NODE_OPTIONS"] = "--max-old-space-size=4096"
     env["NEXT_TELEMETRY_DISABLED"] = "1"
-    env["NEXT_PUBLIC_API_URL"] = FRONTEND_API_URL
 
     command = [pnpm_cmd, "exec", "next", "dev", "--port", str(FRONTEND_PORT)]
     print(f"[启动] 前端 Next.js: {' '.join(command)}")
