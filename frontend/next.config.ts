@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
 const nextConfig: NextConfig = {
   // Disable React StrictMode in development to prevent double-rendering
   reactStrictMode: false,
@@ -9,6 +11,17 @@ const nextConfig: NextConfig = {
 
   // Keep Next from walking up to parent tool worktrees and picking their lockfiles.
   outputFileTracingRoot: process.cwd(),
+
+  // Proxy API requests to the backend during development to avoid CORS issues
+  // caused by browsers/network environments stripping CORS response headers.
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${API_BASE_URL}/api/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
