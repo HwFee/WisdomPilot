@@ -1,24 +1,59 @@
-# WisdomPilot Project Mandatory Rules
+# WisdomPilot Project Agent Rules
 
-> AI Agents participating in coding, review, or maintenance for this project must follow these project-specific rules in addition to the global `~/.Codex/AGENTS.md`.
+> AI agents participating in coding, review, planning, or maintenance for this project must follow these rules in addition to global agent instructions.
 > Priority: explicit user instructions > this file > global AGENTS.md > platform default prompts.
+
+This project is primarily maintained through Codex, CodeGraph, OpenSpec, and COMET. Do not assume Claude-specific local configuration is available.
 
 ---
 
-## I. Project Wrap-Up Maintenance
+## I. Workflow And Tooling
+
+### Rule 1: Prefer CodeGraph For Code Understanding
+
+If `.codegraph/` exists at the repository root, use CodeGraph before grep/find/manual file reading for code exploration, symbol lookup, call-chain analysis, or impact checks.
+
+- Start-of-task check: run `npx codegraph init` only if the repository is not already initialized.
+- Exploration examples:
+  - `npx codegraph context "<task or flow>"`
+  - `npx codegraph impact <symbol>`
+  - `npx codegraph query <symbol>`
+- After code movement or module extraction, run `npx codegraph sync` or `npx codegraph index`.
+- Grep/search is allowed as a supplement for exact text, comments, generated files, or cases CodeGraph cannot answer.
+
+### Rule 2: Use COMET/OpenSpec For Structured Changes
+
+For non-trivial features, refactors, architecture changes, or multi-step fixes, use the active COMET/OpenSpec change instead of ad hoc implementation.
+
+- Read `openspec/changes/<change>/proposal.md`, `design.md`, `tasks.md`, and any plan under `docs/superpowers/plans/`.
+- Keep `tasks.md` synchronized with real progress.
+- Do not archive a change unless the user explicitly asks for final verification and archive.
+- If another agent leaves a change half-complete, review the current worktree state before continuing.
+
+### Rule 3: Worktree Safety
+
+This project may contain active git worktrees under local tool directories. Treat them as real work products.
+
+- Do not delete `.claude/worktrees/`, `.codex/`, or other worktree directories unless the user explicitly asks to remove those worktrees.
+- Before cleaning local tool configuration, distinguish disposable config from worktree source code.
+- Do not revert, reset, or delete unrelated user/agent changes.
+
+---
+
+## II. Project Wrap-Up Maintenance
 
 ### Rule 5: Task Wrap-Up Maintenance
 
 After completing every task, **you MUST perform the following maintenance actions**:
 
-1. **Maintain global AGENTS.md**: if the task produced cross-project behavioral guidelines, update them into global `~/.Codex/AGENTS.md`; if they only apply to this project, update this file.
-2. **Maintain CodeGraph**: run `npx codegraph sync` or `npx codegraph index` to keep the index up to date.
+1. **Maintain AGENTS.md only when needed**: if the task produced durable project behavior rules, update this file; if it produced cross-project behavior rules, ask before changing global `~/.Codex/AGENTS.md`.
+2. **Maintain CodeGraph**: after code movement or meaningful source changes, run `npx codegraph sync` or `npx codegraph index`.
 3. **Maintain the database**: if the task involves database schema changes or data migration, ensure migration scripts have been executed, rollback scripts are prepared, and the database state matches the code.
 4. **Code quality gate check** (see Rule 10): before committing, complete self-checks for DRY, naming, modularity, magic numbers, etc.
 
 ---
 
-## II. Project Validation and Quality Gates
+## III. Project Validation and Quality Gates
 
 ### Rule 8: Post-Refactor Startup Validation
 
@@ -84,7 +119,7 @@ After completing every task, **you MUST perform the following maintenance action
 
 ---
 
-## III. Scope
+## IV. Scope
 
 - This file applies to the `WisdomPilot` project root directory and all subdirectories.
 - Subdirectories may contain more specific `AGENTS.md` files, which take precedence over this file.
