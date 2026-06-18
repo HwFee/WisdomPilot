@@ -116,6 +116,11 @@ const TIER_ORDER = [
   'master',
   'king',
 ] as const
+type TierId = (typeof TIER_ORDER)[number]
+
+function isTierId(tierId: string): tierId is TierId {
+  return TIER_ORDER.includes(tierId as TierId)
+}
 
 /**
  * 根据XP获取段位
@@ -141,7 +146,11 @@ export function getTierConfig(tierId: string): TierIconConfig | undefined {
  * 获取下一个段位
  */
 function getNextTier(currentTierId: string): TierIconConfig | undefined {
-  const currentIndex = TIER_ORDER.indexOf(currentTierId as any)
+  if (!isTierId(currentTierId)) {
+    return undefined
+  }
+
+  const currentIndex = TIER_ORDER.indexOf(currentTierId)
   if (currentIndex === -1 || currentIndex === TIER_ORDER.length - 1) {
     return undefined
   }
