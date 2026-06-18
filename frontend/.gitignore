@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# react-doctor scans
+.react-doctor-scan.txt
+rd_out.json
+react-doctor-report.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

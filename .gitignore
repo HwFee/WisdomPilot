@@ -121,3 +121,6 @@ openspec/
 # Empty accidental file
 EOF
 
+# Generated file lists
+modified_files.txt
+
