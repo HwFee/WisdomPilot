@@ -17,6 +17,6 @@ verification_report: docs/superpowers/reports/2026-06-17-refine-ai-teaching-syst
 branch_status: handled
 created_at: 2026-06-17
 verified_at: 2026-06-17
-archived: false
+archived: true
 handoff_context: openspec/changes/refine-ai-teaching-system/.comet/handoff/design-context.json
 handoff_hash: d51087dfed0649d459f7c92aa5a05b91534128b4d8c645c43085bffe248f0ac8
