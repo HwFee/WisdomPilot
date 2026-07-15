@@ -249,6 +249,18 @@ def ensure_backend_env(backend_dir: Path) -> None:
         env_file.write_text(f"SECRET_KEY={secret_key}\n", encoding="utf-8")
 
 
+def run_database_migration(backend_dir: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-m", "scripts.migrate_missing_columns"],
+        cwd=backend_dir,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
+        check=False,
+    )
+
+
 def start_backend(backend_dir: Path, log_dir: Path, reload_backend: bool) -> subprocess.Popen:
     stdout_file = open(log_dir / "backend.log", "w", encoding="utf-8")
     stderr_file = open(log_dir / "backend.err.log", "w", encoding="utf-8")
@@ -286,7 +298,8 @@ def start_frontend(frontend_dir: Path, log_dir: Path, pnpm_cmd: str) -> subproce
     env["NODE_OPTIONS"] = "--max-old-space-size=4096"
     env["NEXT_TELEMETRY_DISABLED"] = "1"
 
-    command = [pnpm_cmd, "exec", "next", "dev", "--port", str(FRONTEND_PORT)]
+    next_executable = frontend_dir / "node_modules" / ".bin" / ("next.cmd" if is_windows() else "next")
+    command = [str(next_executable), "dev", "--port", str(FRONTEND_PORT)]
     print(f"[启动] 前端 Next.js: {' '.join(command)}")
     creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0
     return subprocess.Popen(
@@ -331,15 +344,7 @@ def main() -> int:
     ensure_backend_env(backend_dir)
 
     print("[迁移] 检查并补齐数据库缺失列...")
-    migrate_result = subprocess.run(
-        [sys.executable, "scripts/migrate_missing_columns.py"],
-        cwd=backend_dir,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="ignore",
-        check=False,
-    )
+    migrate_result = run_database_migration(backend_dir)
     if migrate_result.returncode != 0:
         print(f"[警告] 数据库迁移脚本异常: {migrate_result.stderr.strip()}")
     else:

@@ -53,18 +53,6 @@ htmlcov/
 # Ruff cache
 .ruff_cache/
 
-# Claude Code (local config)
-.claude/
-backend/.claude/
-
-# Local docs and plans
-docs/
-CLAUDE.md
-frontend/AGENTS.md
-
-# Everything-claude-code
-everything-claude-code/
-
 # Downloaded data
 backend/data/
 backend/downloads/
@@ -93,24 +81,11 @@ frontend/package-lock.json
 # CodeGraph temp files
 .codegraph/
 
-# Comet local config
-.comet/
-
-# Kimi Code local config
-.kimi-code/
-.kimi/
-
-# Continue/caveman local skills
-.continue/
-
 # Root-level node_modules (if accidentally created)
 /node_modules/
-/package-lock.json
-/package.json
-/skills-lock.json
 
-# OpenSpec workflow temp directory
-openspec/
+# Local agent skill lock
+/skills-lock.json
 
 # Backup files
 *.bak

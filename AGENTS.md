@@ -3,7 +3,7 @@
 > AI agents participating in coding, review, planning, or maintenance for this project must follow these rules in addition to global agent instructions.
 > Priority: explicit user instructions > this file > global AGENTS.md > platform default prompts.
 
-This project is primarily maintained through Codex, CodeGraph, OpenSpec, and COMET. Do not assume Claude-specific local configuration is available.
+This project is primarily maintained through Codex and CodeGraph. Do not assume tool-specific local configuration from other agents is available.
 
 ---
 
@@ -21,16 +21,7 @@ If `.codegraph/` exists at the repository root, use CodeGraph before grep/find/m
 - After code movement or module extraction, run `npx codegraph sync` or `npx codegraph index`.
 - Grep/search is allowed as a supplement for exact text, comments, generated files, or cases CodeGraph cannot answer.
 
-### Rule 2: Use COMET/OpenSpec For Structured Changes
-
-For non-trivial features, refactors, architecture changes, or multi-step fixes, use the active COMET/OpenSpec change instead of ad hoc implementation.
-
-- Read `openspec/changes/<change>/proposal.md`, `design.md`, `tasks.md`, and any plan under `docs/superpowers/plans/`.
-- Keep `tasks.md` synchronized with real progress.
-- Do not archive a change unless the user explicitly asks for final verification and archive.
-- If another agent leaves a change half-complete, review the current worktree state before continuing.
-
-### Rule 3: Worktree Safety
+### Rule 2: Worktree Safety
 
 This project may contain active git worktrees under local tool directories. Treat them as real work products.
 
