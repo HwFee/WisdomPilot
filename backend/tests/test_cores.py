@@ -6,6 +6,7 @@ TDD approach: Tests written first, then implementation.
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User
@@ -156,21 +157,46 @@ class TestCoreSpend:
 class TestCoreEarn:
     """Test core earning functionality"""
 
-    @pytest.mark.skip(reason="Checkin API needs to be updated to return cores_earned - will be done in Task #56")
     @pytest.mark.asyncio
     async def test_earn_cores_checkin(self, client: AsyncClient, auth_headers: dict, auth_user: User, db_session: AsyncSession):
         """Test earning cores from daily check-in"""
-        # Perform check-in
+        initial_balance = auth_user.cores
+
         response = await client.post("/api/users/checkin", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
-        assert "cores_earned" in data
-        assert data["cores_earned"] >= 5  # At least base reward
+        cores_earned = data["cores_earned"]
+        assert cores_earned >= 5
 
-        # Verify balance increased
-        response = await client.get("/api/cores/balance", headers=auth_headers)
-        balance_data = response.json()
-        assert balance_data["balance"] >= 105  # 100 initial + 5 check-in
+        await db_session.refresh(auth_user)
+        assert auth_user.cores == initial_balance + cores_earned
+
+        result = await db_session.execute(
+            select(CoreTransaction).where(
+                CoreTransaction.user_id == auth_user.id,
+                CoreTransaction.category == "checkin",
+            )
+        )
+        transactions = list(result.scalars().all())
+        assert len(transactions) == 1
+        assert transactions[0].type == "earn"
+        assert transactions[0].amount == cores_earned
+        assert transactions[0].balance_after == auth_user.cores
+
+        duplicate_response = await client.post("/api/users/checkin", headers=auth_headers)
+        assert duplicate_response.status_code == 200
+        assert duplicate_response.json()["cores_earned"] == 0
+
+        await db_session.refresh(auth_user)
+        assert auth_user.cores == initial_balance + cores_earned
+
+        duplicate_result = await db_session.execute(
+            select(CoreTransaction).where(
+                CoreTransaction.user_id == auth_user.id,
+                CoreTransaction.category == "checkin",
+            )
+        )
+        assert len(list(duplicate_result.scalars().all())) == 1
 
 
 class TestDailyCoreStats:

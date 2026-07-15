@@ -2,7 +2,6 @@
 Tests for FPS import script
 """
 
-import pytest
 from pathlib import Path
 from app.scripts.import_fps import (
     parse_fps_xml,
@@ -33,17 +32,21 @@ class TestFPSParser:
     """Tests for FPS XML parsing"""
 
     def test_parse_sample_file(self):
-        """Test parsing sample problems file"""
-        sample_path = Path(__file__).parent.parent / "data" / "sample_problems.xml"
-        if not sample_path.exists():
-            pytest.skip("Sample file not found")
-
+        sample_path = Path(__file__).parent / "fixtures" / "sample_problems.xml"
         problems = parse_fps_xml(sample_path)
 
-        assert len(problems) == 6
+        assert len(problems) == 2
         assert problems[0]["title"] == "A+B Problem"
         assert problems[0]["time_limit"] == 1
         assert problems[0]["memory_limit"] == 128
+        assert problems[0]["sample_input"] == "1 2"
+        assert problems[0]["sample_output"] == "3"
+        assert problems[1]["title"] == "Hello World"
+        assert problems[1]["time_limit"] == 2
+        assert problems[1]["memory_limit"] == 64
+        assert problems[1]["sample_input"] == ""
+        assert problems[1]["sample_output"] == "Hello World"
+        assert problems[1]["test_cases"] == []
 
     def test_parse_handles_missing_fields(self):
         """Test parsing handles missing optional fields gracefully"""

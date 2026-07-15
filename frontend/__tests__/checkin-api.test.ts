@@ -21,6 +21,7 @@ describe('Checkin API Functions', () => {
         streak_days: 5,
         checked_in_today: true,
         xp_earned: 10,
+        cores_earned: 5,
         last_checkin_date: '2024-01-15T10:30:00Z',
         total_checkin_days: 15,
         streak_multiplier: 1.0,
@@ -34,6 +35,7 @@ describe('Checkin API Functions', () => {
 
       const result = await checkin(mockToken)
       expect(result).toEqual(mockResponse)
+      expect(result.cores_earned).toBe(5)
       expect(fetch).toHaveBeenCalledWith(
         `${DEFAULT_API_BASE_URL}/api/users/checkin`,
         expect.objectContaining({
@@ -50,6 +52,7 @@ describe('Checkin API Functions', () => {
         streak_days: 5,
         checked_in_today: true,
         xp_earned: 0,
+        cores_earned: 0,
         last_checkin_date: '2024-01-15T10:30:00Z',
         total_checkin_days: 15,
         streak_multiplier: 1.0,
@@ -63,6 +66,7 @@ describe('Checkin API Functions', () => {
 
       const result = await checkin(mockToken)
       expect(result.xp_earned).toBe(0)
+      expect(result.cores_earned).toBe(0)
       expect(result.streak_days).toBe(5)
     })
 

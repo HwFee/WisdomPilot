@@ -330,6 +330,7 @@ export interface CheckinResponse {
   streak_days: number
   checked_in_today: boolean
   xp_earned: number
+  cores_earned: number
   last_checkin_date?: string
   total_checkin_days: number
   streak_multiplier: number

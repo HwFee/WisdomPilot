@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fps version="1.1" url="https://github.com/zhblue/freeproblemset/">
+  <item>
+    <title><![CDATA[A+B Problem]]></title>
+    <time_limit unit="s">1</time_limit>
+    <memory_limit unit="mb">128</memory_limit>
+    <description><![CDATA[Read two integers and print their sum.]]></description>
+    <input><![CDATA[Two integers a and b.]]></input>
+    <output><![CDATA[The sum of a and b.]]></output>
+    <sample_input><![CDATA[1 2]]></sample_input>
+    <sample_output><![CDATA[3]]></sample_output>
+    <source><![CDATA[Fixture]]></source>
+    <test_input name="sample"><![CDATA[1 2]]></test_input>
+    <test_output name="sample"><![CDATA[3]]></test_output>
+  </item>
+  <item>
+    <title><![CDATA[Hello World]]></title>
+    <time_limit unit="s">2</time_limit>
+    <memory_limit unit="mb">64</memory_limit>
+    <description><![CDATA[Print Hello World.]]></description>
+    <input><![CDATA[]]></input>
+    <output><![CDATA[Hello World]]></output>
+    <sample_output><![CDATA[Hello World]]></sample_output>
+    <source><![CDATA[Fixture]]></source>
+  </item>
+</fps>
