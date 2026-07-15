@@ -12,12 +12,29 @@ import type { KnowledgeContentResponse } from '@/types/api'
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: React.PropsWithChildren) => <div {...props}>{children}</div>,
+  m: {
+    div: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+      const motionProps = new Set(['initial', 'animate', 'exit', 'transition', 'layout'])
+      const domProps = Object.fromEntries(
+        Object.entries(props).filter(([property]) => !motionProps.has(property))
+      ) as React.HTMLAttributes<HTMLDivElement>
+      return <div {...domProps}>{children}</div>
+    },
     button: ({ children, ...props }: React.PropsWithChildren) => <button {...props}>{children}</button>,
   },
+  LazyMotion: ({ children }: React.PropsWithChildren) => <>{children}</>,
+  domAnimation: {},
   AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }))
+
+jest.mock('react-markdown', () => ({
+  __esModule: true,
+  default: ({ children }: React.PropsWithChildren) => <>{children}</>,
+}))
+jest.mock('remark-gfm', () => ({ __esModule: true, default: jest.fn() }))
+jest.mock('remark-math', () => ({ __esModule: true, default: jest.fn() }))
+jest.mock('rehype-katex', () => ({ __esModule: true, default: jest.fn() }))
+jest.mock('rehype-highlight', () => ({ __esModule: true, default: jest.fn() }))
 
 const mockKnowledgeContent: KnowledgeContentResponse = {
   chapter_id: 1,
@@ -118,7 +135,7 @@ describe('KnowledgePanel', () => {
       />
     )
 
-    const startButton = screen.getByRole('button', { name: /开始测试/ })
+    const startButton = screen.getByRole('button', { name: /小节测试/ })
     fireEvent.click(startButton)
 
     expect(mockOnStartQuiz).toHaveBeenCalledTimes(1)

@@ -12,10 +12,18 @@ import type { MasteryQuizQuestion } from '@/types/api'
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: React.PropsWithChildren) => <div {...props}>{children}</div>,
+  m: {
+    div: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+      const motionProps = new Set(['initial', 'animate', 'exit', 'transition', 'layout'])
+      const domProps = Object.fromEntries(
+        Object.entries(props).filter(([property]) => !motionProps.has(property))
+      ) as React.HTMLAttributes<HTMLDivElement>
+      return <div {...domProps}>{children}</div>
+    },
     button: ({ children, ...props }: React.PropsWithChildren) => <button {...props}>{children}</button>,
   },
+  LazyMotion: ({ children }: React.PropsWithChildren) => <>{children}</>,
+  domAnimation: {},
   AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }))
 

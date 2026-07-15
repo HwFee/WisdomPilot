@@ -63,7 +63,7 @@ describe("Dashboard Detail Pages", () => {
       render(<ExercisesPage />);
       await waitFor(() => {
         expect(
-          screen.getByText("今日做题详情（挑战之路）"),
+          screen.getByText("今日做题趋势"),
         ).toBeInTheDocument();
       });
     });
@@ -80,7 +80,7 @@ describe("Dashboard Detail Pages", () => {
     it("renders content after loading", async () => {
       render(<AccuracyPage />);
       await waitFor(() => {
-        expect(screen.getByText("正确率详情（挑战之路）")).toBeInTheDocument();
+        expect(screen.getByText("正确率趋势")).toBeInTheDocument();
       });
     });
   });
@@ -97,7 +97,7 @@ describe("Dashboard Detail Pages", () => {
       render(<TimePage />);
       await waitFor(() => {
         expect(
-          screen.getByText("学习时长详情（精进之路 + 挑战之路）"),
+          screen.getByText("学习时长趋势"),
         ).toBeInTheDocument();
       });
     });
@@ -115,7 +115,7 @@ describe("Dashboard Detail Pages", () => {
     it("renders empty state when no favorites", async () => {
       render(<FavoritesPage />);
       await waitFor(() => {
-        expect(screen.getByText("暂无收藏")).toBeInTheDocument();
+        expect(screen.getByText("还没有收藏")).toBeInTheDocument();
       });
     });
   });

@@ -8,6 +8,7 @@ Provides:
 """
 
 import json
+import hashlib
 import numpy as np
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,15 +104,21 @@ async def generate_user_vector(
     # If we have some user data, generate embedding
     if text_parts:
         text = "\n".join(text_parts)
-        return await _get_embedding_from_api(text)
+        embedding = await _get_embedding_from_api(text)
+        if np.linalg.norm(embedding) > 0:
+            return embedding
 
-    # Default: return a neutral vector (will match all exercises moderately)
-    # Use a small random component to avoid all users having same vector
     config = _get_embedding_config()
-    np.random.seed(hash(user.id) % (2**32))
-    default_vec = np.random.randn(config["dimensions"]) * 0.1
-    default_vec = default_vec / np.linalg.norm(default_vec)  # Normalize
-    return default_vec.tolist()
+    fallback_dimensions = len(embedding) if text_parts and embedding else config["dimensions"]
+    return _generate_default_vector(str(user.id), fallback_dimensions)
+
+
+def _generate_default_vector(user_id: str, dimensions: int) -> list[float]:
+    """Create a stable normalized fallback when embeddings are unavailable."""
+    digest = hashlib.sha256(user_id.encode("utf-8")).digest()
+    random_generator = np.random.default_rng(int.from_bytes(digest[:8], "big"))
+    default_vector = random_generator.standard_normal(dimensions)
+    return (default_vector / np.linalg.norm(default_vector)).tolist()
 
 
 async def _get_embedding_from_api(text: str) -> list[float]:

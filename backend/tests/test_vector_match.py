@@ -70,9 +70,12 @@ class TestUserProfileVector:
             MagicMock(knowledge_point="链表", error_count=3, mastery_level=3),
         ]
 
-        # This will fail until we implement the function
         from app.services.vector_match import generate_user_vector
-        vector = await generate_user_vector(user, weak_points)
+        with patch(
+            "app.services.vector_match._get_embedding_from_api",
+            new=AsyncMock(return_value=[0.1] * 1024),
+        ):
+            vector = await generate_user_vector(user, weak_points)
 
         # Vector should be 1024 dimensions (same as exercise embeddings)
         assert len(vector) == 1024
@@ -87,13 +90,17 @@ class TestUserProfileVector:
         user.weak_points = []
 
         from app.services.vector_match import generate_user_vector
-        vector = await generate_user_vector(user, [])
+        with patch(
+            "app.services.vector_match._get_embedding_from_api",
+            new=AsyncMock(return_value=[0.0, 0.0, 0.0]),
+        ):
+            vector = await generate_user_vector(user, [])
+            repeated_vector = await generate_user_vector(user, [])
 
-        # Should return a default vector
-        assert len(vector) == 1024
-        # Default vector should be normalized (not all zeros)
+        assert len(vector) == 3
         norm = sum(v**2 for v in vector) ** 0.5
-        assert norm > 0
+        assert norm == pytest.approx(1.0)
+        assert vector == repeated_vector
 
 
 class TestExerciseRecommendation:
