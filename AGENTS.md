@@ -15,7 +15,7 @@ If `.codegraph/` exists at the repository root, use CodeGraph before grep/find/m
 
 - Start-of-task check: run `npx codegraph init` only if the repository is not already initialized.
 - Exploration examples:
-  - `npx codegraph context "<task or flow>"`
+  - `npx codegraph explore "<task or flow>"`
   - `npx codegraph impact <symbol>`
   - `npx codegraph query <symbol>`
 - After code movement or module extraction, run `npx codegraph sync` or `npx codegraph index`.
