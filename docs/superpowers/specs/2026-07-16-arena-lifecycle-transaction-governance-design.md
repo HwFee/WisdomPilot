@@ -134,11 +134,13 @@ Progress becomes read/navigation-only:
 
 ### Arena schemas and responses
 
-Move Arena request/response models from the large Router into
-`backend/app/schemas/arena.py`. The Router imports them at module scope so
-existing internal imports remain compatible. Dynamic exercise payloads stay
-as dictionaries to preserve lite/full and programming/non-programming field
-presence, while every endpoint gets an explicit top-level response model.
+Move the included non-submit Arena request/response models from the large
+Router into `backend/app/schemas/arena.py`. Submission request/response models
+remain in place. The Router imports moved models at module scope so existing
+internal imports remain compatible. Dynamic exercise payloads stay as
+dictionaries to preserve lite/full and programming/non-programming field
+presence, while every included endpoint gets an explicit top-level response
+model.
 
 Pure response mappers must not mutate service dictionaries. In particular,
 `map_switch_response()` returns a new mapping instead of calling `pop()`.
