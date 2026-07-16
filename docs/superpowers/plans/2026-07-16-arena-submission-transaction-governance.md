@@ -1227,7 +1227,10 @@ git add app/routers/learning_path.py tests/test_arena_submission_governance.py t
 git commit -m "refactor: enforce arena submission contract"
 ```
 
-Expected: forbidden search has no matches; constructor search has no legacy two-argument call.
+Expected: forbidden search has no submission-path commit/FastAPI/HTTPException or
+legacy matches; the unchanged Judge0 transport catch in `submission.py` remains
+the only `except Exception` match. Constructor search has no legacy two-argument
+call.
 
 ## Task 6: Validate, Document, And Maintain 3B-1
 
