@@ -420,6 +420,9 @@ class TestChallengeExerciseDetail:
         )
 
         assert response.status_code == 404
+        assert response.json() == {
+            "detail": "Exercise not found in challenge path"
+        }
 
 
 class TestChallengeSubmit:

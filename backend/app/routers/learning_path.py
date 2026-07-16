@@ -28,6 +28,7 @@ from app.services.leaderboard_service import (
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
 from app.services.challenge_path import (
+    ChallengeExerciseDetailNotFoundError,
     ChallengeExerciseLockedError,
     ChallengeExerciseNotFoundError,
     ChallengePathLifecycleService,
@@ -1127,16 +1128,19 @@ async def save_challenge_code(
     db: AsyncSession = Depends(get_db),
 ):
     """Save code for an exercise"""
-    service = ChallengeProgressService(db)
+    service = ChallengePathLifecycleService(db)
 
-    success = await service.save_code(
-        user_id=current_user.id,
-        exercise_id=request.exercise_id,
-        code=request.code,
-        language=request.language,
-    )
+    try:
+        await service.save_code(
+            user_id=current_user.id,
+            exercise_id=request.exercise_id,
+            code=request.code,
+            language=request.language,
+        )
+    except ChallengeProgressNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
 
-    return {"success": success}
+    return {"success": True}
 
 
 @router.post("/challenge/switch")
@@ -1188,16 +1192,19 @@ async def exit_challenge_path(
     db: AsyncSession = Depends(get_db),
 ):
     """Save progress and exit challenge path"""
-    service = ChallengeProgressService(db)
+    service = ChallengePathLifecycleService(db)
 
-    success = await service.save_code(
-        user_id=current_user.id,
-        exercise_id=request.current_exercise_id,
-        code=request.current_code,
-        language=request.current_language,
-    )
+    try:
+        await service.save_code(
+            user_id=current_user.id,
+            exercise_id=request.current_exercise_id,
+            code=request.current_code,
+            language=request.current_language,
+        )
+    except ChallengeProgressNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
 
-    return {"success": success, "message": "Progress saved"}
+    return {"success": True, "message": "Progress saved"}
 
 
 @router.get("/challenge/exercise/{exercise_id:int}")
@@ -1207,19 +1214,18 @@ async def get_challenge_exercise(
     db: AsyncSession = Depends(get_db),
 ):
     """Get specific exercise info - returns full content for on-demand loading (lite mode)"""
-    service = ChallengeProgressService(db)
+    lifecycle = ChallengePathLifecycleService(db)
+    progress = ChallengeProgressService(db)
 
-    result = await service.get_exercise_by_id(
-        user_id=current_user.id,
-        exercise_id=exercise_id,
-    )
-
-    if not result:
-        raise HTTPException(
-            status_code=404, detail="Exercise not found in challenge path"
+    try:
+        result = await lifecycle.get_or_attach_exercise(
+            user_id=current_user.id,
+            exercise_id=exercise_id,
         )
+    except ChallengeExerciseDetailNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
 
-    total = await service._get_exercise_count(current_user.id)
+    total = await progress._get_exercise_count(current_user.id)
 
     return map_exercise_detail_response(result, total_exercises=total)
 

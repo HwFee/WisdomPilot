@@ -146,61 +146,39 @@ class ChallengeProgressService:
             "current_index": current_index,
         }
 
-    async def get_exercise_by_id(
-        self, user_id: str, exercise_id: int
+    async def get_existing_exercise_detail(
+        self,
+        *,
+        user_id: str,
+        exercise_id: int,
     ) -> dict | None:
-        """Get specific exercise progress by exercise_id."""
+        """Get an existing exercise and progress detail without mutation."""
         result = await self.db.execute(
-            select(ArenaExerciseProgress).where(
+            select(ArenaExerciseProgress, Exercise)
+            .join(
+                Exercise,
+                ArenaExerciseProgress.exercise_id == Exercise.id,
+            )
+            .where(
                 ArenaExerciseProgress.user_id == user_id,
                 ArenaExerciseProgress.exercise_id == exercise_id,
             )
         )
-        progress = result.scalar_one_or_none()
-        if not progress:
-            exercise_result = await self.db.execute(
-                select(Exercise).where(
-                    Exercise.id == exercise_id,
-                    Exercise.is_verified,
-                )
-            )
-            exercise = exercise_result.scalar_one_or_none()
-            if not exercise:
-                return None
-
-            exercise_index = await self._get_exercise_count(user_id)
-            self.db.add(
-                ArenaExerciseProgress(
-                    user_id=user_id,
-                    exercise_id=exercise.id,
-                    exercise_index=exercise_index,
-                    is_unlocked=exercise_index == 0,
-                )
-            )
-            await self.db.flush()
-
-            return {
-                "exercise_id": exercise.id,
-                "exercise_index": exercise_index,
-                "is_completed": False,
-                "is_correct": False,
-                "is_unlocked": exercise_index == 0,
-                "saved_code": "",
-                "current_language": DEFAULT_CHALLENGE_LANGUAGE,
-                "title": (exercise.content or {}).get(
-                    "title", f"题目 {exercise_index + 1}"
-                ),
-                "difficulty": exercise.difficulty,
-                "exercise": exercise,
-            }
-
-        ex_result = await self.db.execute(
-            select(Exercise).where(Exercise.id == exercise_id)
-        )
-        exercise = ex_result.scalar_one_or_none()
-        if not exercise:
+        row = result.one_or_none()
+        if row is None:
             return None
+        progress, exercise = row
+        return self.build_exercise_detail(
+            progress=progress,
+            exercise=exercise,
+        )
 
+    def build_exercise_detail(
+        self,
+        *,
+        progress: ArenaExerciseProgress,
+        exercise: Exercise,
+    ) -> dict:
         return {
             "exercise_id": progress.exercise_id,
             "exercise_index": progress.exercise_index,
@@ -232,29 +210,10 @@ class ChallengeProgressService:
         if not progress:
             return None
 
-        return await self.get_exercise_by_id(user_id, progress.exercise_id)
-
-    async def save_code(
-        self, user_id: str, exercise_id: int, code: str, language: str
-    ) -> bool:
-        """Save code for a specific language."""
-        result = await self.db.execute(
-            select(ArenaExerciseProgress).where(
-                ArenaExerciseProgress.user_id == user_id,
-                ArenaExerciseProgress.exercise_id == exercise_id,
-            )
+        return await self.get_existing_exercise_detail(
+            user_id=user_id,
+            exercise_id=progress.exercise_id,
         )
-        progress = result.scalar_one_or_none()
-        if not progress:
-            return False
-
-        saved_codes = progress.saved_codes or {}
-        saved_codes[language] = code
-        progress.saved_codes = saved_codes
-        progress.current_language = language
-
-        await self.db.commit()
-        return True
 
     async def switch_exercise(self, user_id: str, target_index: int) -> dict:
         """Switch to a different exercise by index."""

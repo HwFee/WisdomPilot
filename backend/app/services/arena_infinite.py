@@ -76,7 +76,7 @@ class ChallengePathService:
         self, user_id: str, exercise_id: int
     ) -> Optional[dict]:
         """Get specific exercise progress by exercise_id."""
-        return await self.progress.get_exercise_by_id(
+        return await self.lifecycle.get_or_attach_exercise(
             user_id=user_id, exercise_id=exercise_id
         )
 
@@ -92,12 +92,13 @@ class ChallengePathService:
         self, user_id: str, exercise_id: int, code: str, language: str
     ) -> bool:
         """Save code for a specific language."""
-        return await self.progress.save_code(
+        await self.lifecycle.save_code(
             user_id=user_id,
             exercise_id=exercise_id,
             code=code,
             language=language,
         )
+        return True
 
     async def switch_exercise(
         self, user_id: str, target_index: int

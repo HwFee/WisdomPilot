@@ -138,7 +138,12 @@ async def client(db_session: AsyncSession, setup_database) -> AsyncGenerator[Asy
     """Create test client with shared database session."""
 
     async def override_get_db_shared():
-        yield db_session
+        try:
+            yield db_session
+            await db_session.commit()
+        except Exception:
+            await db_session.rollback()
+            raise
 
     # Override get_db to use the same session
     app.dependency_overrides[get_db] = override_get_db_shared

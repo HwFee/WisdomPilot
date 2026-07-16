@@ -6,15 +6,19 @@ from sqlalchemy.dialects import postgresql
 
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
+from app.services.arena_infinite import ChallengePathService
 from app.services.challenge_path.errors import (
+    ChallengeExerciseDetailNotFoundError,
     ChallengeExerciseLockedError,
     ChallengeProgressIndexNotFoundError,
+    ChallengeProgressNotFoundError,
     InsufficientChallengeExercisesError,
     InvalidChallengeExerciseIndexError,
 )
 from app.services.challenge_path.lifecycle import (
     ChallengePathLifecycleService,
     challenge_owner_lock_query,
+    challenge_progress_lock_query,
 )
 from app.services.challenge_path.progress import ChallengeProgressService
 from app.services.challenge_path.selection import ChallengeSelectionService
@@ -291,3 +295,193 @@ async def test_append_keeps_first_new_exercise_locked_after_incomplete_tail(
         )
     ).scalar_one()
     assert appended_row.is_unlocked is False
+
+
+@pytest.mark.asyncio
+async def test_save_code_locks_progress_replaces_json_and_does_not_commit(
+    db_session, auth_user
+) -> None:
+    exercise = (await persist_verified_exercises(db_session, 1))[0]
+    original_codes = {"python": "old"}
+    progress = ArenaExerciseProgress(
+        user_id=auth_user.id,
+        exercise_id=exercise.id,
+        exercise_index=0,
+        is_unlocked=True,
+        saved_codes=original_codes,
+        current_language="python",
+    )
+    db_session.add(progress)
+    await db_session.commit()
+    service = ChallengePathLifecycleService(db_session)
+
+    with patch.object(db_session, "commit", new=AsyncMock()) as commit_mock:
+        await service.save_code(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+            code="print('new')",
+            language="python",
+        )
+
+    assert progress.saved_codes == {"python": "print('new')"}
+    assert progress.saved_codes is not original_codes
+    assert progress.current_language == "python"
+    assert "FOR UPDATE" in str(
+        challenge_progress_lock_query(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+        ).compile(dialect=postgresql.dialect())
+    )
+    commit_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_missing_save_progress_raises_typed_error(
+    db_session, auth_user
+) -> None:
+    with pytest.raises(
+        ChallengeProgressNotFoundError,
+        match="Progress record for exercise 99999 not found",
+    ):
+        await ChallengePathLifecycleService(db_session).save_code(
+            user_id=auth_user.id,
+            exercise_id=99999,
+            code="print(1)",
+            language="python",
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("path", "payload"),
+    [
+        (
+            "/api/learning-path/challenge/save-code",
+            {
+                "exercise_id": 99999,
+                "code": "print(1)",
+                "language": "python",
+            },
+        ),
+        (
+            "/api/learning-path/challenge/exit",
+            {
+                "current_exercise_id": 99999,
+                "current_code": "print(1)",
+                "current_language": "python",
+            },
+        ),
+    ],
+)
+async def test_missing_save_endpoints_return_exact_404(
+    client, auth_headers, path: str, payload: dict
+) -> None:
+    response = await client.post(path, headers=auth_headers, json=payload)
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Progress record for exercise 99999 not found"
+    }
+
+
+@pytest.mark.asyncio
+async def test_detail_attachment_flushes_without_commit(
+    db_session, auth_user
+) -> None:
+    exercise = (await persist_verified_exercises(db_session, 1))[0]
+    service = ChallengePathLifecycleService(db_session)
+
+    with patch.object(db_session, "commit", new=AsyncMock()) as commit_mock:
+        detail = await service.get_or_attach_exercise(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+        )
+
+    assert detail["exercise_id"] == exercise.id
+    assert detail["exercise_index"] == 0
+    assert detail["is_unlocked"] is True
+    commit_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_missing_detail_raises_typed_error(
+    db_session, auth_user
+) -> None:
+    with pytest.raises(
+        ChallengeExerciseDetailNotFoundError,
+        match="Exercise not found in challenge path",
+    ):
+        await ChallengePathLifecycleService(
+            db_session
+        ).get_or_attach_exercise(
+            user_id=auth_user.id,
+            exercise_id=99999,
+        )
+
+
+@pytest.mark.asyncio
+async def test_detail_failure_after_flush_rolls_back_attachment(
+    client, auth_headers, db_session, auth_user
+) -> None:
+    exercise = (await persist_verified_exercises(db_session, 1))[0]
+    user_id = auth_user.id
+    exercise_id = exercise.id
+    with patch(
+        "app.routers.learning_path.map_exercise_detail_response",
+        side_effect=RuntimeError("response mapping failed"),
+    ):
+        with pytest.raises(RuntimeError, match="response mapping failed"):
+            await client.get(
+                f"/api/learning-path/challenge/exercise/{exercise_id}",
+                headers=auth_headers,
+            )
+
+    attached = (
+        await db_session.execute(
+            select(ArenaExerciseProgress).where(
+                ArenaExerciseProgress.user_id == user_id,
+                ArenaExerciseProgress.exercise_id == exercise_id,
+            )
+        )
+    ).scalar_one_or_none()
+    assert attached is None
+
+
+@pytest.mark.asyncio
+async def test_compatibility_facade_saves_through_lifecycle(
+    db_session, auth_user
+) -> None:
+    exercise = (await persist_verified_exercises(db_session, 1))[0]
+    progress = ArenaExerciseProgress(
+        user_id=auth_user.id,
+        exercise_id=exercise.id,
+        exercise_index=0,
+        is_unlocked=True,
+    )
+    db_session.add(progress)
+    await db_session.commit()
+
+    success = await ChallengePathService(db_session).save_code(
+        user_id=auth_user.id,
+        exercise_id=exercise.id,
+        code="print('facade')",
+        language="python",
+    )
+
+    assert success is True
+    assert progress.saved_codes == {"python": "print('facade')"}
+
+
+@pytest.mark.asyncio
+async def test_compatibility_facade_attaches_detail_through_lifecycle(
+    db_session, auth_user
+) -> None:
+    exercise = (await persist_verified_exercises(db_session, 1))[0]
+
+    detail = await ChallengePathService(db_session).get_exercise_by_id(
+        user_id=auth_user.id,
+        exercise_id=exercise.id,
+    )
+
+    assert detail is not None
+    assert detail["exercise_id"] == exercise.id
