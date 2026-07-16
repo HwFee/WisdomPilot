@@ -43,6 +43,9 @@ BINARY_CHALLENGE_TYPES = frozenset(
         ChallengeType.COURSE_COMPLETE.value,
     }
 )
+QUOTA_BONUS_REWARD_KEY = "quota_bonus"
+CHALLENGE_REWARD_CATEGORY = "bonus"
+CHALLENGE_REWARD_REFERENCE_TYPE = "challenge"
 DEFAULT_CHALLENGE_DEFINITIONS: tuple[ChallengeDefinition, ...] = (
     {
         "code": "FIRST_STEPS",
@@ -236,17 +239,19 @@ class ChallengeService:
         if challenge is None:
             raise ChallengeNotFoundError(user_challenge.challenge_id)
 
-        quota_bonus = (challenge.rewards or {}).get("quota_bonus", 0)
+        quota_bonus = (challenge.rewards or {}).get(QUOTA_BONUS_REWARD_KEY, 0)
         if not isinstance(quota_bonus, int) or isinstance(quota_bonus, bool):
-            raise InvalidChallengeDefinitionError(challenge.type, "quota_bonus")
+            raise InvalidChallengeDefinitionError(
+                challenge.type, QUOTA_BONUS_REWARD_KEY
+            )
         if quota_bonus <= 0:
             return
 
         await CoreService(db).earn_cores(
             user_id=user_challenge.user_id,
             amount=quota_bonus,
-            category="bonus",
-            reference_type="challenge",
+            category=CHALLENGE_REWARD_CATEGORY,
+            reference_type=CHALLENGE_REWARD_REFERENCE_TYPE,
             reference_id=user_challenge.id,
             description=f"Challenge completed: {challenge.code}",
         )
