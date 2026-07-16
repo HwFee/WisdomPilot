@@ -1,10 +1,124 @@
 """Tests for AI module endpoints (choice-explanation, code-review, config)"""
 
-import pytest
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, Mock, patch
 
-from app.services.ai import OpenAIProvider as DeepSeekProvider, AIService, ai_service
+import httpx
+import pytest
+
 from app.schemas.ai import AIProviderConfig
+from app.services.ai import AIService, ai_service
+from app.services.ai_provider import (
+    AIProviderConfigurationError,
+    OpenAICompatibleProvider,
+)
+
+
+class RecordingCompletionClient:
+    def __init__(self) -> None:
+        self.messages: list[list[dict[str, str]]] = []
+
+    async def complete(self, messages: list[dict[str, str]]) -> str:
+        self.messages.append(messages)
+        return "provider answer"
+
+    async def stream(
+        self, messages: list[dict[str, str]]
+    ) -> AsyncGenerator[str, None]:
+        self.messages.append(messages)
+        yield "streamed"
+
+
+@pytest.mark.asyncio
+async def test_openai_adapter_builds_existing_explanation_messages() -> None:
+    client = RecordingCompletionClient()
+    provider = OpenAICompatibleProvider(client)
+
+    assert await provider.generate_explanation("question") == "provider answer"
+    assert client.messages == [[
+        {
+            "role": "system",
+            "content": "你是一位耐心的编程老师，擅长分析学生的错误并给出建设性的反馈。",
+        },
+        {"role": "user", "content": "question"},
+    ]]
+
+
+@pytest.mark.asyncio
+async def test_openai_adapter_builds_existing_code_review_messages() -> None:
+    client = RecordingCompletionClient()
+    provider = OpenAICompatibleProvider(client)
+
+    assert await provider.review_code("print(1)", "python") == "provider answer"
+    assert client.messages[0][0]["content"] == (
+        "你是一位资深的代码审查专家，擅长发现代码问题并给出优化建议。"
+    )
+    assert client.messages[0][1]["content"] == "请审查以下python代码：\n\nprint(1)"
+
+
+@pytest.mark.asyncio
+async def test_openai_adapter_delegates_stream_messages() -> None:
+    client = RecordingCompletionClient()
+    provider = OpenAICompatibleProvider(client)
+    messages = [{"role": "user", "content": "hello"}]
+
+    assert [chunk async for chunk in provider.stream_generate(messages)] == [
+        "streamed"
+    ]
+    assert client.messages == [messages]
+
+
+@pytest.mark.asyncio
+async def test_ai_service_reconfigure_reuses_protocol_client() -> None:
+    http_client = httpx.AsyncClient()
+    service = AIService(http_client=http_client)
+    first = AIProviderConfig(
+        provider="deepseek",
+        api_key="one",
+        model="model-one",
+        temperature=0.1,
+        base_url="https://one.test",
+    )
+    second = first.model_copy(
+        update={
+            "api_key": "two",
+            "model": "model-two",
+            "base_url": "https://two.test",
+        }
+    )
+
+    service.configure(first)
+    protocol_client = service._protocol_client
+    service.configure(second)
+
+    assert service._protocol_client is protocol_client
+    assert service._protocol_client._config == second
+    assert isinstance(service.provider, OpenAICompatibleProvider)
+    await http_client.aclose()
+
+
+def test_ai_service_rejects_unsupported_provider_without_mutating_state() -> None:
+    service = AIService()
+    valid = AIProviderConfig(
+        provider="deepseek",
+        api_key="one",
+        model="model-one",
+        temperature=0.1,
+    )
+    service.configure(valid)
+    original_provider = service.provider
+
+    with pytest.raises(AIProviderConfigurationError, match="Unsupported AI provider"):
+        service.configure(valid.model_copy(update={"provider": "unknown"}))
+
+    assert service.provider is original_provider
+
+
+@pytest.mark.asyncio
+async def test_ai_service_preserves_unconfigured_friendly_response() -> None:
+    service = AIService()
+
+    assert await service.generate_chat("hello") == "AI 服务未配置，请联系管理员。"
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +139,7 @@ class TestAIServiceConfigure:
     """Test AIService provider configuration"""
 
     def test_ai_service_configure_deepseek_provider(self):
-        """AIService creates DeepSeekProvider when provider is 'deepseek'"""
+        """AIService creates an OpenAI-compatible provider for DeepSeek."""
         service = AIService()
         config = AIProviderConfig(
             provider="deepseek",
@@ -35,7 +149,7 @@ class TestAIServiceConfigure:
         )
         service.configure(config)
         assert service.is_configured()
-        assert isinstance(service._provider, DeepSeekProvider)
+        assert isinstance(service._provider, OpenAICompatibleProvider)
 
 class TestChoiceExplanation:
     """Test AI choice explanation endpoint"""

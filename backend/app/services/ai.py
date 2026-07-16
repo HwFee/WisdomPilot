@@ -1,298 +1,24 @@
 """AI 服务层 - 支持多种 AI 提供商，与原有代码完全隔离"""
 
-import asyncio
 import json
 import logging
+from typing import Any, AsyncGenerator, Optional
+
 import httpx
-from typing import Optional, AsyncGenerator, Any
+
 from app.config import get_settings
 from app.schemas.ai import AIProviderConfig
+from app.services.ai_provider import (
+    AIProvider,
+    AIProviderConfigurationError,
+    OpenAICompatibleClient,
+    OpenAICompatibleProvider,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class AIProvider:
-    """AI 提供商基类 - 独立模块"""
-
-    async def generate_explanation(self, prompt: str) -> str:
-        raise NotImplementedError
-
-    async def review_code(self, code: str, language: str) -> str:
-        raise NotImplementedError
-
-    def stream_generate(self, messages: list) -> AsyncGenerator[str, None]:
-        raise NotImplementedError
-
-
-class OpenAIProvider(AIProvider):
-    """DeepSeek 兼容 API 实现 - 独立模块"""
-
-    _client: Optional[httpx.AsyncClient] = None
-
-    CHAT_COMPLETIONS_ENDPOINT = "/chat/completions"
-    HEADER_AUTHORIZATION = "Authorization"
-    HEADER_CONTENT_TYPE = "Content-Type"
-    MEDIA_TYPE_JSON = "application/json"
-    JSON_KEY_MODEL = "model"
-    JSON_KEY_MESSAGES = "messages"
-    JSON_KEY_TEMPERATURE = "temperature"
-    JSON_KEY_CHOICES = "choices"
-    JSON_KEY_MESSAGE = "message"
-    JSON_KEY_CONTENT = "content"
-    MAX_RETRIES = 3
-    RETRYABLE_STATUS_THRESHOLD = 500
-    ERROR_BODY_TRUNCATION_LENGTH = 500
-
-    def __init__(self, config: AIProviderConfig):
-        self.config = config
-        self.base_url = config.base_url or "https://api.deepseek.com"
-
-    def _get_client(self) -> httpx.AsyncClient:
-        """获取共享的 AsyncClient（连接池复用）"""
-        if OpenAIProvider._client is None or OpenAIProvider._client.is_closed:
-            OpenAIProvider._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(60.0),
-                limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
-            )
-        return OpenAIProvider._client
-
-    def _build_chat_headers(self) -> dict:
-        return {
-            self.HEADER_AUTHORIZATION: f"Bearer {self.config.api_key}",
-            self.HEADER_CONTENT_TYPE: self.MEDIA_TYPE_JSON,
-        }
-
-    def _build_chat_payload(self, messages: list) -> dict:
-        return {
-            self.JSON_KEY_MODEL: self.config.model,
-            self.JSON_KEY_MESSAGES: messages,
-            self.JSON_KEY_TEMPERATURE: self.config.temperature,
-        }
-
-    def _extract_content(self, response: httpx.Response) -> str:
-        return response.json()[self.JSON_KEY_CHOICES][0][self.JSON_KEY_MESSAGE][
-            self.JSON_KEY_CONTENT
-        ]
-
-    def _log_http_error(self, error: httpx.HTTPStatusError) -> None:
-        try:
-            err_body = error.response.text[: self.ERROR_BODY_TRUNCATION_LENGTH]
-        except Exception:
-            err_body = "<unable to read response body>"
-        logger.error(
-            f"[OpenAIProvider] HTTP {error.response.status_code} "
-            f"from {error.request.url}: {err_body}"
-        )
-
-    def _should_retry_network_error(self, attempt: int) -> bool:
-        return attempt < self.MAX_RETRIES - 1
-
-    def _should_retry_http_error(
-        self, error: httpx.HTTPStatusError, attempt: int
-    ) -> bool:
-        return (
-            error.response.status_code >= self.RETRYABLE_STATUS_THRESHOLD
-            and attempt < self.MAX_RETRIES - 1
-        )
-
-    async def _call_api(self, messages: list) -> str:
-        client = self._get_client()
-        last_exception = None
-        for attempt in range(self.MAX_RETRIES):
-            try:
-                response = await client.post(
-                    f"{self.base_url}{self.CHAT_COMPLETIONS_ENDPOINT}",
-                    headers=self._build_chat_headers(),
-                    json=self._build_chat_payload(messages),
-                )
-                response.raise_for_status()
-                return self._extract_content(response)
-            except (httpx.TimeoutException, httpx.ConnectError) as e:
-                last_exception = e
-                if not self._should_retry_network_error(attempt):
-                    break
-                logger.warning(
-                    f"[OpenAIProvider] API call attempt {attempt + 1} failed ({e}), "
-                    f"retrying in {attempt + 1}s..."
-                )
-                await asyncio.sleep(attempt + 1)
-            except httpx.HTTPStatusError as e:
-                self._log_http_error(e)
-                if not self._should_retry_http_error(e, attempt):
-                    raise
-                logger.warning(
-                    f"[OpenAIProvider] API call attempt {attempt + 1} got "
-                    f"{e.response.status_code}, retrying in {attempt + 1}s..."
-                )
-                await asyncio.sleep(attempt + 1)
-        if last_exception is None:
-            raise RuntimeError("Failed to call API after all retries")
-        raise last_exception
-
-    SYSTEM_ROLE = "system"
-    USER_ROLE = "user"
-    CONTENT_KEY = "content"
-    ROLE_KEY = "role"
-    EXPLANATION_SYSTEM_PROMPT = (
-        "你是一位耐心的编程老师，擅长分析学生的错误并给出建设性的反馈。"
-    )
-    CODE_REVIEW_SYSTEM_PROMPT = (
-        "你是一位资深的代码审查专家，擅长发现代码问题并给出优化建议。"
-    )
-    CODE_REVIEW_USER_TEMPLATE = "请审查以下{language}代码：\n\n{code}"
-
-    def _build_system_message(self, prompt_text: str) -> dict:
-        return {self.ROLE_KEY: self.SYSTEM_ROLE, self.CONTENT_KEY: prompt_text}
-
-    def _build_user_message(self, prompt_text: str) -> dict:
-        return {self.ROLE_KEY: self.USER_ROLE, self.CONTENT_KEY: prompt_text}
-
-    async def generate_explanation(self, prompt: str) -> str:
-        return await self._call_api(
-            [
-                self._build_system_message(self.EXPLANATION_SYSTEM_PROMPT),
-                self._build_user_message(prompt),
-            ]
-        )
-
-    async def review_code(self, code: str, language: str) -> str:
-        return await self._call_api(
-            [
-                self._build_system_message(self.CODE_REVIEW_SYSTEM_PROMPT),
-                self._build_user_message(
-                    self.CODE_REVIEW_USER_TEMPLATE.format(language=language, code=code)
-                ),
-            ]
-        )
-
-    async def _stream_connect(self, messages: list) -> httpx.Response:
-        """建立流式连接，带重试。只对连接/握手阶段重试，避免内容重复。"""
-        import time
-
-        t0 = time.time()
-        client = self._get_client()
-        t1 = time.time()
-        logger.info(f"[PERF-AI] get_client took {(t1 - t0) * 1000:.1f}ms")
-
-        request = client.build_request(
-            "POST",
-            f"{self.base_url}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self.config.api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": self.config.model,
-                "messages": messages,
-                "temperature": self.config.temperature,
-                "stream": True,
-            },
-        )
-        t2 = time.time()
-        logger.info(f"[PERF-AI] build_request took {(t2 - t1) * 1000:.1f}ms")
-
-        for attempt in range(3):
-            t_attempt = time.time()
-            try:
-                logger.info(
-                    f"[PERF-AI] sending request (attempt {attempt + 1}) to {self.base_url}..."
-                )
-                response = await client.send(request, stream=True)
-                t_after_send = time.time()
-                logger.info(
-                    f"[PERF-AI] client.send completed in {(t_after_send - t_attempt) * 1000:.1f}ms"
-                )
-                response.raise_for_status()
-                t_after_raise = time.time()
-                logger.info(
-                    f"[PERF-AI] raise_for_status completed in {(t_after_raise - t_after_send) * 1000:.1f}ms"
-                )
-                logger.info(
-                    f"[PERF-AI] total _stream_connect took {(t_after_raise - t0) * 1000:.1f}ms, status={response.status_code}"
-                )
-                return response
-            except (httpx.TimeoutException, httpx.ConnectError) as e:
-                logger.error(
-                    f"[PERF-AI] attempt {attempt + 1} connect failed after {(time.time() - t_attempt) * 1000:.1f}ms: {e}"
-                )
-                if attempt < 2:
-                    logger.warning(
-                        f"[OpenAIProvider] Stream connect attempt {attempt + 1} failed ({e}), retrying in {attempt + 1}s..."
-                    )
-                    import asyncio
-
-                    await asyncio.sleep(attempt + 1)
-                else:
-                    raise
-            except httpx.HTTPStatusError as e:
-                # Log detailed error for 4xx/5xx to help diagnose model/key issues
-                logger.error(
-                    f"[PERF-AI] attempt {attempt + 1} HTTP error after {(time.time() - t_attempt) * 1000:.1f}ms: {e.response.status_code}"
-                )
-                try:
-                    err_body = e.response.text[:500]
-                except Exception:
-                    err_body = "<unable to read response body>"
-                logger.error(
-                    f"[OpenAIProvider] HTTP {e.response.status_code} from {e.request.url}: {err_body}"
-                )
-                if e.response.status_code >= 500 and attempt < 2:
-                    logger.warning(
-                        f"[OpenAIProvider] Stream connect attempt {attempt + 1} got {e.response.status_code}, retrying in {attempt + 1}s..."
-                    )
-                    import asyncio
-
-                    await asyncio.sleep(attempt + 1)
-                else:
-                    raise
-        raise RuntimeError("Failed to start stream after all retries")
-
-    async def stream_generate(self, messages: list) -> AsyncGenerator[str, None]:
-        import time
-
-        t0 = time.time()
-        response = await self._stream_connect(messages)
-        t1 = time.time()
-        logger.info(
-            f"[PERF-AI] _stream_connect returned, TTFB={(t1 - t0) * 1000:.1f}ms"
-        )
-
-        chunk_count = 0
-        total_chars = 0
-        last_log_time = t1
-        try:
-            async for line in response.aiter_lines():
-                if line.startswith("data: "):
-                    data = line[6:]
-                    if data == "[DONE]":
-                        break
-                    chunk = json.loads(data)
-                    content = chunk["choices"][0]["delta"].get("content", "")
-                    if content:
-                        chunk_count += 1
-                        total_chars += len(content)
-                        now = time.time()
-                        # 每 20 个 chunk 或每 5 秒打一次日志
-                        if chunk_count % 20 == 0 or (now - last_log_time) > 5:
-                            logger.info(
-                                f"[PERF-AI] streaming progress: chunks={chunk_count}, "
-                                f"chars={total_chars}, elapsed={(now - t0) * 1000:.1f}ms, "
-                                f"chunk_interval={(now - last_log_time) * 1000:.1f}ms"
-                            )
-                            last_log_time = now
-                        yield content
-        except Exception as e:
-            logger.error(
-                f"[PERF-AI] stream interrupted after {(time.time() - t0) * 1000:.1f}ms, chunks={chunk_count}: {e}"
-            )
-            raise
-        finally:
-            await response.aclose()
-            t_end = time.time()
-            logger.info(
-                f"[PERF-AI] stream finished: total={(t_end - t0) * 1000:.1f}ms, "
-                f"chunks={chunk_count}, chars={total_chars}"
-            )
+OpenAIProvider = OpenAICompatibleProvider
 
 
 def _build_exercise_hint_prompt(
@@ -384,17 +110,32 @@ def _build_exercise_hint_prompt(
 class AIService:
     """AI 服务统一入口 - 独立模块"""
 
-    def __init__(self):
+    def __init__(self, http_client: httpx.AsyncClient | None = None) -> None:
         self._provider: Optional[AIProvider] = None
         self._config: Optional[AIProviderConfig] = None
+        self._protocol_client: OpenAICompatibleClient | None = None
+        self._http_client = http_client
 
-    def configure(self, config: AIProviderConfig):
+    def configure(self, config: AIProviderConfig) -> None:
         """配置 AI 提供商（仅支持 DeepSeek / OpenAI 兼容 API）"""
-        self._config = config
-        if config.provider in ("openai", "siliconflow", "deepseek"):
-            self._provider = OpenAIProvider(config)
+        if config.provider not in {"openai", "siliconflow", "deepseek"}:
+            raise AIProviderConfigurationError(
+                f"Unsupported AI provider: {config.provider}"
+            )
+        if self._protocol_client is None:
+            self._protocol_client = OpenAICompatibleClient(
+                config,
+                http_client=self._http_client,
+            )
         else:
-            raise ValueError(f"不支持的 AI 提供商: {config.provider}")
+            self._protocol_client.configure(config)
+        self._provider = OpenAICompatibleProvider(self._protocol_client)
+        self._config = config
+
+    def _require_provider(self) -> AIProvider:
+        if self._provider is None:
+            raise AIProviderConfigurationError("AI service is not configured")
+        return self._provider
 
     def is_configured(self) -> bool:
         return self._provider is not None and self._config is not None
@@ -427,7 +168,7 @@ class AIService:
         if not self.is_configured():
             return "AI 服务未配置，请联系管理员。"
 
-        assert self._provider is not None
+        provider = self._require_provider()
         user_option = options[user_selected_index]
         correct_option = options[correct_index]
 
@@ -445,7 +186,7 @@ class AIService:
 2. 解释为什么正确答案是正确的
 3. 给出学习建议"""
 
-        return await self._provider.generate_explanation(prompt)
+        return await provider.generate_explanation(prompt)
 
     async def generate_code_review(
         self,
@@ -456,9 +197,9 @@ class AIService:
         if not self.is_configured():
             return "AI 服务未配置，请联系管理员。"
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
-        return await self._provider.review_code(code, language)
+        return await provider.review_code(code, language)
 
     async def generate_chat(
         self,
@@ -468,9 +209,9 @@ class AIService:
         if not self.is_configured():
             return "AI 服务未配置，请联系管理员。"
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
-        return await self._provider.generate_explanation(
+        return await provider.generate_explanation(
             f"你是一位耐心的编程老师。学生的问题是：\n\n{message}\n\n请给出简洁、有帮助的回答。"
         )
 
@@ -484,7 +225,7 @@ class AIService:
             yield "AI 服务未配置，请联系管理员。"
             return
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         if context:
             q_type = context.get("type", "")
@@ -521,7 +262,7 @@ class AIService:
             {"role": "user", "content": prompt},
         ]
 
-        async for chunk in self._provider.stream_generate(messages):
+        async for chunk in provider.stream_generate(messages):
             yield chunk
 
     async def generate_choice_analysis(
@@ -535,7 +276,7 @@ class AIService:
         if not self.is_configured():
             return {"analysis": "AI 服务未配置，请联系管理员。", "is_correct": False}
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         is_correct = user_selected == correct_answer
         selected_label = chr(65 + user_selected)
@@ -566,7 +307,7 @@ class AIService:
 2. 逐步推导为什么 {correct_label} 是正确答案
 3. 指出学习这个概念时常见的陷阱和记忆技巧"""
 
-        analysis = await self._provider.generate_explanation(prompt)
+        analysis = await provider.generate_explanation(prompt)
         return {"analysis": analysis, "is_correct": is_correct}
 
     async def generate_exercises(
@@ -582,7 +323,7 @@ class AIService:
         if not self.is_configured():
             return []
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         difficulty_labels = {
             1: "入门",
@@ -642,7 +383,7 @@ class AIService:
 
 请直接返回 JSON，不要有其他内容："""
 
-        response = await self._provider.generate_explanation(prompt)
+        response = await provider.generate_explanation(prompt)
 
         # Parse JSON response
         try:
@@ -683,7 +424,7 @@ class AIService:
         if not self.is_configured():
             return {}
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         kp_context = ""
         if knowledge_points:
@@ -723,7 +464,7 @@ class AIService:
 
 请直接返回 JSON，不要有其他内容："""
 
-        response = await self._provider.generate_explanation(prompt)
+        response = await provider.generate_explanation(prompt)
 
         try:
             # Try to extract JSON from response
@@ -765,7 +506,7 @@ class AIService:
         if not self.is_configured():
             return []
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         if question_types is None:
             question_types = ["choice"]
@@ -868,7 +609,7 @@ class AIService:
 
 请直接返回 JSON 数组，不要有其他内容："""
 
-        response = await self._provider.generate_explanation(prompt)
+        response = await provider.generate_explanation(prompt)
 
         try:
             # Try to extract JSON from response
@@ -900,16 +641,16 @@ class AIService:
         if not self.is_configured():
             return "AI 服务未配置，请联系管理员。"
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         # 对于所有 provider，直接使用 generate_explanation
         # 它会将 prompt 发送给 AI，让 AI 生成内容
         # 如果需要 system_prompt，可以在 prompt 中包含
         if system_prompt:
             combined_prompt = f"{system_prompt}\n\n{prompt}"
-            return await self._provider.generate_explanation(combined_prompt)
+            return await provider.generate_explanation(combined_prompt)
         else:
-            return await self._provider.generate_explanation(prompt)
+            return await provider.generate_explanation(prompt)
 
     async def generate_question_analysis(
         self,
@@ -937,7 +678,7 @@ class AIService:
         if not self.is_configured():
             return {"analysis": "AI 服务未配置", "is_correct": is_correct}
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         kp_context = ""
         if knowledge_points:
@@ -969,7 +710,7 @@ class AIService:
 2. 解释为什么正确答案是 {correct_answer}
 3. 给出学习建议"""
 
-        analysis = await self._provider.generate_explanation(prompt)
+        analysis = await provider.generate_explanation(prompt)
         return {"analysis": analysis, "is_correct": is_correct}
 
     async def stream_exercise_hint(
@@ -1007,7 +748,7 @@ class AIService:
             yield "AI 服务未配置，请联系管理员。"
             return
 
-        assert self._provider is not None
+        provider = self._require_provider()
 
         difficulty_labels = {1: "入门", 2: "基础", 3: "中等", 4: "较难", 5: "困难"}
         diff_label = difficulty_labels.get(difficulty, "中等")
@@ -1034,7 +775,7 @@ class AIService:
         t_stream_start = time.time()
         chunk_count = 0
         try:
-            async for chunk in self._provider.stream_generate(messages):
+            async for chunk in provider.stream_generate(messages):
                 chunk_count += 1
                 yield chunk
         finally:
