@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from app.models.challenge import Challenge, ChallengeType
+
 
 @pytest.mark.asyncio
 class TestChallengeList:
@@ -112,6 +114,40 @@ async def test_unexpected_start_value_error_is_not_mapped_to_bad_request(
     ):
         with pytest.raises(ValueError, match="unexpected storage failure"):
             await client.post("/api/challenges/1/start", headers=auth_headers)
+
+
+@pytest.mark.asyncio
+async def test_successful_progress_preserves_exact_response_contract(
+    client, auth_headers, db_session
+):
+    challenge = Challenge(
+        code="API_PROGRESS",
+        title="API progress",
+        type=ChallengeType.EXERCISE_COUNT.value,
+        requirements={"target": 2},
+        rewards={},
+    )
+    db_session.add(challenge)
+    await db_session.commit()
+    await db_session.refresh(challenge)
+    start_response = await client.post(
+        f"/api/challenges/{challenge.id}/start", headers=auth_headers
+    )
+    assert start_response.status_code == 200
+
+    response = await client.post(
+        f"/api/challenges/{challenge.id}/progress?progress=1",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "challenge_id": challenge.id,
+        "current_progress": 1,
+        "target_value": 2,
+        "is_completed": False,
+        "status": "in_progress",
+    }
 
 
 @pytest.mark.asyncio

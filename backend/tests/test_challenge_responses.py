@@ -1,8 +1,16 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
+from app.models.challenge import Challenge, ChallengeType
+from app.models.user_challenge import UserChallenge, UserChallengeStatus
 from app.services.challenge_path.responses import (
     map_exercise_detail_response,
     map_switch_response,
+)
+from app.services.challenge_responses import (
+    build_challenge_progress_response,
+    build_user_challenge_response,
+    build_user_challenges_response,
 )
 
 
@@ -121,3 +129,55 @@ class TestMapExerciseDetailResponse:
         }
         mapped = map_exercise_detail_response(service_result, total_exercises=5)
         assert mapped["exercise"]["test_cases"] is None
+
+
+def completed_record() -> UserChallenge:
+    challenge = Challenge(
+        id=7,
+        code="MAPPER_TEST",
+        title="Mapper test",
+        type=ChallengeType.EXERCISE_COUNT.value,
+        requirements={"target": 2},
+        rewards={},
+        difficulty=2,
+        is_active=True,
+        min_level=0,
+    )
+    record = UserChallenge(
+        id="record-id",
+        user_id="user-id",
+        challenge_id=7,
+        status=UserChallengeStatus.COMPLETED.value,
+        current_progress=2,
+        target_value=2,
+        attempts=1,
+        started_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(timezone.utc),
+    )
+    record.challenge = challenge
+    return record
+
+
+def test_build_user_challenge_response_preserves_contract() -> None:
+    response = build_user_challenge_response(completed_record())
+    assert response.is_completed is True
+    assert response.user_challenge.id == "record-id"
+    assert response.user_challenge.current_progress == 2
+
+
+def test_build_user_challenges_response_includes_detail_and_counts() -> None:
+    response = build_user_challenges_response([completed_record()])
+    assert response.total == 1
+    assert response.completed_count == 1
+    assert response.challenges[0].challenge.code == "MAPPER_TEST"
+
+
+def test_build_progress_response_preserves_exact_fields() -> None:
+    response = build_challenge_progress_response(completed_record())
+    assert response.model_dump() == {
+        "challenge_id": 7,
+        "current_progress": 2,
+        "target_value": 2,
+        "is_completed": True,
+        "status": "completed",
+    }

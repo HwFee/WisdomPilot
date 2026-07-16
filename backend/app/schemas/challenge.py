@@ -85,3 +85,11 @@ class UserChallengesResponse(BaseModel):
     challenges: list[UserChallengeDetail]
     total: int
     completed_count: int
+
+
+class ChallengeProgressResponse(BaseModel):
+    challenge_id: int
+    current_progress: int
+    target_value: int
+    is_completed: bool
+    status: str
