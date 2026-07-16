@@ -1,5 +1,5 @@
 """
-Test the fixed tier/star logic in arena_infinite.py
+Test tier and star calculations.
 
 Key test cases:
 1. First time correct → award stars
@@ -7,10 +7,8 @@ Key test cases:
 3. Repeat submission → no star change
 """
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
+from unittest.mock import MagicMock
 
-from app.services.arena_infinite import ChallengePathService
 from app.services.tier_service import tier_service
 from app.core.tier_config import TierRank
 
@@ -21,9 +19,6 @@ class TestStarAwardingLogic:
     @pytest.mark.asyncio
     async def test_first_correct_awards_stars(self, db_session):
         """First time correct should award stars"""
-        # Setup
-        service = ChallengePathService(db_session)
-
         # Mock progress record - not yet completed
         progress = MagicMock()
         progress.is_completed = False
@@ -140,7 +135,7 @@ class TestTierService:
         assert result.tier == TierRank.SILVER
         assert result.sub_tier == 4  # Silver IV
         assert result.stars == 0
-        assert result.promoted == True
+        assert result.promoted
 
     def test_remove_stars_demotion(self):
         """Removing stars should handle demotion correctly"""
@@ -154,7 +149,7 @@ class TestTierService:
         )
         assert result.tier == TierRank.BRONZE
         assert result.sub_tier == 1  # Bronze I
-        assert result.demoted == True
+        assert result.demoted
 
 
 # Run tests

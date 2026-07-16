@@ -1,3 +1,4 @@
+from types import GenericAlias
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -6,7 +7,17 @@ from sqlalchemy.dialects import postgresql
 
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
-from app.services.arena_infinite import ChallengePathService
+from app.routers.learning_path import router as learning_path_router
+from app.schemas.arena import (
+    AppendExercisesResponse,
+    ChallengeExerciseDetailResponse,
+    ChallengeProgressResponse,
+    ChallengeSessionResponse,
+    ExitChallengeResponse,
+    RecentArenaExercise,
+    SaveCodeResponse,
+    SwitchExerciseResponse,
+)
 from app.services.challenge_path.errors import (
     ChallengeExerciseDetailNotFoundError,
     ChallengeExerciseLockedError,
@@ -21,6 +32,7 @@ from app.services.challenge_path.lifecycle import (
     challenge_progress_lock_query,
 )
 from app.services.challenge_path.progress import ChallengeProgressService
+from app.services.challenge_path.responses import map_switch_response
 from app.services.challenge_path.selection import ChallengeSelectionService
 
 
@@ -108,6 +120,28 @@ async def test_locked_switch_raises_typed_error() -> None:
 
 
 @pytest.mark.asyncio
+async def test_switch_missing_exercise_raises_typed_detail_error() -> None:
+    db = AsyncMock()
+    count_result = MagicMock()
+    count_result.scalar.return_value = 1
+    unlocked_progress = MagicMock(is_unlocked=True, exercise_id=999)
+    progress_result = MagicMock()
+    progress_result.scalar_one_or_none.return_value = unlocked_progress
+    exercise_result = MagicMock()
+    exercise_result.scalar_one_or_none.return_value = None
+    db.execute.side_effect = [count_result, progress_result, exercise_result]
+
+    with pytest.raises(
+        ChallengeExerciseDetailNotFoundError,
+        match="Exercise not found in challenge path",
+    ):
+        await ChallengeProgressService(db).switch_exercise(
+            user_id="user-id",
+            target_index=0,
+        )
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("service_method", "path", "payload"),
     [
@@ -154,6 +188,27 @@ async def test_unknown_switch_value_error_is_not_mapped_to_400(
                 headers=auth_headers,
                 json={"target_index": 0},
             )
+
+
+@pytest.mark.asyncio
+async def test_missing_switch_exercise_returns_exact_404(
+    client, auth_headers
+) -> None:
+    with patch.object(
+        ChallengeProgressService,
+        "switch_exercise",
+        new=AsyncMock(side_effect=ChallengeExerciseDetailNotFoundError()),
+    ):
+        response = await client.post(
+            "/api/learning-path/challenge/switch",
+            headers=auth_headers,
+            json={"target_index": 0},
+        )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Exercise not found in challenge path"
+    }
 
 
 @pytest.mark.asyncio
@@ -447,41 +502,61 @@ async def test_detail_failure_after_flush_rolls_back_attachment(
     assert attached is None
 
 
-@pytest.mark.asyncio
-async def test_compatibility_facade_saves_through_lifecycle(
-    db_session, auth_user
-) -> None:
-    exercise = (await persist_verified_exercises(db_session, 1))[0]
-    progress = ArenaExerciseProgress(
-        user_id=auth_user.id,
-        exercise_id=exercise.id,
-        exercise_index=0,
-        is_unlocked=True,
+def test_lifecycle_routes_declare_response_models() -> None:
+    expected = {
+        ("/api/learning-path/challenge/infinite/start", "POST"):
+            ChallengeSessionResponse,
+        ("/api/learning-path/challenge/progress", "GET"):
+            ChallengeProgressResponse,
+        ("/api/learning-path/challenge/save-code", "POST"):
+            SaveCodeResponse,
+        ("/api/learning-path/challenge/switch", "POST"):
+            SwitchExerciseResponse,
+        ("/api/learning-path/challenge/append", "POST"):
+            AppendExercisesResponse,
+        ("/api/learning-path/challenge/exit", "POST"):
+            ExitChallengeResponse,
+        ("/api/learning-path/challenge/exercise/{exercise_id:int}", "GET"):
+            ChallengeExerciseDetailResponse,
+        ("/api/learning-path/challenge/recent", "GET"):
+            list[RecentArenaExercise],
+    }
+    routes = {
+        (route.path, method): route.response_model
+        for route in learning_path_router.routes
+        for method in getattr(route, "methods", set())
+    }
+    for route_key, response_model in expected.items():
+        if isinstance(response_model, GenericAlias):
+            assert routes[route_key] == response_model
+        else:
+            assert routes[route_key] is response_model
+
+
+def test_switch_mapper_does_not_mutate_service_result() -> None:
+    exercise = Exercise(
+        id=999,
+        content={"title": "Mapper"},
+        type="programming",
+        difficulty=3,
+        is_verified=True,
     )
-    db_session.add(progress)
-    await db_session.commit()
+    result = {
+        "exercise_id": 999,
+        "saved_code": "",
+        "current_language": "python",
+        "is_completed": False,
+        "is_correct": False,
+        "exercise": exercise,
+    }
 
-    success = await ChallengePathService(db_session).save_code(
-        user_id=auth_user.id,
-        exercise_id=exercise.id,
-        code="print('facade')",
-        language="python",
-    )
+    mapped = map_switch_response(result)
 
-    assert success is True
-    assert progress.saved_codes == {"python": "print('facade')"}
+    assert result["exercise"] is exercise
+    assert mapped["exercise"]["id"] == 999
 
 
-@pytest.mark.asyncio
-async def test_compatibility_facade_attaches_detail_through_lifecycle(
-    db_session, auth_user
-) -> None:
-    exercise = (await persist_verified_exercises(db_session, 1))[0]
+def test_legacy_arena_facade_is_absent() -> None:
+    from pathlib import Path
 
-    detail = await ChallengePathService(db_session).get_exercise_by_id(
-        user_id=auth_user.id,
-        exercise_id=exercise.id,
-    )
-
-    assert detail is not None
-    assert detail["exercise_id"] == exercise.id
+    assert not Path("app/services/arena_infinite.py").exists()

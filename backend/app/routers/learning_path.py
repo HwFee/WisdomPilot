@@ -11,7 +11,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,21 @@ from app.services.challenge_path.responses import (
     map_exercise_detail_response,
     map_exercise_summary,
     map_switch_response,
+)
+from app.schemas.arena import (
+    AppendExercisesRequest,
+    AppendExercisesResponse,
+    ChallengeExerciseDetailResponse,
+    ChallengeProgressResponse,
+    ChallengeSessionResponse,
+    ExitChallengeResponse,
+    ExitSaveRequest,
+    InfiniteSessionStartRequest,
+    RecentArenaExercise,
+    SaveCodeRequest,
+    SaveCodeResponse,
+    SwitchExerciseRequest,
+    SwitchExerciseResponse,
 )
 from app.schemas.exercise import ExerciseRecommendRequest
 
@@ -83,17 +98,6 @@ class ChapterMasteryResponse(BaseModel):
     correct_exercises: int
     can_advance: bool
     objectives_status: Optional[dict]
-
-
-class ChallengeSessionResponse(BaseModel):
-    """Response for challenge session"""
-
-    session_id: str
-    difficulty_level: int
-    exercises: list[dict]
-    time_limit: int
-    score_multiplier: float
-    status: str
 
 
 class LeaderboardResponse(BaseModel):
@@ -948,25 +952,6 @@ async def get_mastery_progress_by_key(
 # ========== Arena Infinite Mode Endpoints ==========
 
 
-class InfiniteSessionStartRequest(BaseModel):
-    """Request to start infinite mode session"""
-
-    difficulty_level: int = Field(default=3, ge=1, le=5)
-    initial_count: int = Field(default=3, ge=1, le=50)
-
-
-class InfiniteProgressResponse(BaseModel):
-    """Response for infinite mode progress"""
-
-    session_id: str
-    current_index: int
-    total_exercises: int
-    exercises: list[dict]
-    correct_count: int
-    completed_count: int
-    total_stars_earned: int
-
-
 class SubmitExerciseRequest(BaseModel):
     """Request to submit exercise answer"""
 
@@ -993,37 +978,6 @@ class SubmitExerciseResponse(BaseModel):
     demoted: bool
     first_time_correct: bool
     first_time_wrong: bool
-
-
-class SaveCodeRequest(BaseModel):
-    """Request to save code"""
-
-    exercise_id: int
-    code: str
-    language: str
-
-
-class SwitchExerciseRequest(BaseModel):
-    """Request to switch to a different exercise"""
-
-    target_index: int
-
-
-class AppendExercisesRequest(BaseModel):
-    """Request to append more exercises"""
-
-    count: int = Field(default=5, ge=1, le=20)
-    difficulty_level: Optional[int] = Field(
-        default=None, ge=1, le=8, description="难度等级，不传则从用户现有题目推断"
-    )
-
-
-class ExitSaveRequest(BaseModel):
-    """Request to save on exit"""
-
-    current_exercise_id: int
-    current_code: str
-    current_language: str
 
 
 # ========================================
@@ -1064,7 +1018,7 @@ async def start_infinite_session(
     )
 
 
-@router.get("/challenge/progress")
+@router.get("/challenge/progress", response_model=ChallengeProgressResponse)
 async def get_challenge_path_progress(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1121,7 +1075,7 @@ async def submit_challenge_exercise(
     return result
 
 
-@router.post("/challenge/save-code")
+@router.post("/challenge/save-code", response_model=SaveCodeResponse)
 async def save_challenge_code(
     request: SaveCodeRequest,
     current_user: User = Depends(get_current_user),
@@ -1143,7 +1097,7 @@ async def save_challenge_code(
     return {"success": True}
 
 
-@router.post("/challenge/switch")
+@router.post("/challenge/switch", response_model=SwitchExerciseResponse)
 async def switch_challenge_exercise(
     request: SwitchExerciseRequest,
     current_user: User = Depends(get_current_user),
@@ -1163,11 +1117,12 @@ async def switch_challenge_exercise(
         ChallengeExerciseLockedError,
     ) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
-
+    except ChallengeExerciseDetailNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
     return map_switch_response(result)
 
 
-@router.post("/challenge/append")
+@router.post("/challenge/append", response_model=AppendExercisesResponse)
 async def append_challenge_exercises(
     request: AppendExercisesRequest,
     current_user: User = Depends(get_current_user),
@@ -1185,7 +1140,7 @@ async def append_challenge_exercises(
     return {"new_exercise_ids": new_ids, "count": len(new_ids)}
 
 
-@router.post("/challenge/exit")
+@router.post("/challenge/exit", response_model=ExitChallengeResponse)
 async def exit_challenge_path(
     request: ExitSaveRequest,
     current_user: User = Depends(get_current_user),
@@ -1207,7 +1162,10 @@ async def exit_challenge_path(
     return {"success": True, "message": "Progress saved"}
 
 
-@router.get("/challenge/exercise/{exercise_id:int}")
+@router.get(
+    "/challenge/exercise/{exercise_id:int}",
+    response_model=ChallengeExerciseDetailResponse,
+)
 async def get_challenge_exercise(
     exercise_id: int,
     current_user: User = Depends(get_current_user),
@@ -1225,18 +1183,9 @@ async def get_challenge_exercise(
     except ChallengeExerciseDetailNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
 
-    total = await progress._get_exercise_count(current_user.id)
+    total = await progress.get_exercise_count(current_user.id)
 
     return map_exercise_detail_response(result, total_exercises=total)
-
-
-class RecentArenaExercise(BaseModel):
-    """最近挑战之路练习"""
-
-    exercise_id: int
-    title: str
-    is_correct: bool
-    difficulty: int
 
 
 @router.get("/challenge/recent", response_model=list[RecentArenaExercise])

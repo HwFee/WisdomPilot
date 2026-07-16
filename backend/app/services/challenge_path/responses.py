@@ -38,10 +38,15 @@ def map_exercise_summary(exercise: Exercise, index: int | None = None) -> dict:
 
 
 def map_switch_response(result: dict) -> dict:
-    exercise = result.pop("exercise", None)
+    exercise = result.get("exercise")
+    mapped = {
+        key: value
+        for key, value in result.items()
+        if key != "exercise"
+    }
     if exercise is not None:
-        result["exercise"] = map_exercise_summary(exercise)
-    return result
+        mapped["exercise"] = map_exercise_summary(exercise)
+    return mapped
 
 
 def map_exercise_detail_response(result: dict, total_exercises: int) -> dict:
