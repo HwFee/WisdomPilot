@@ -977,6 +977,7 @@ class SubmitExerciseResponse(BaseModel):
     is_correct: bool
     test_results: list[dict]
     stars_earned: int
+    cores_earned: int
     next_unlocked: bool
     added_to_wrong_book: bool
     tier_changed: bool
@@ -1082,7 +1083,7 @@ async def get_challenge_path_progress(
     return progress
 
 
-@router.post("/challenge/submit")
+@router.post("/challenge/submit", response_model=SubmitExerciseResponse)
 async def submit_challenge_exercise(
     request: SubmitExerciseRequest,
     current_user: User = Depends(get_current_user),

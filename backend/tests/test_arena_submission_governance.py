@@ -11,6 +11,7 @@ from app.models.stats import ActivityLog
 from app.models.tier_transaction import TierTransaction
 from app.models.user_arena import UserArenaProfile
 from app.models.wrong_question import WrongQuestion
+from app.routers.learning_path import SubmitExerciseResponse, router as learning_path_router
 from app.services.challenge_path.errors import (
     ChallengeExerciseNotFoundError,
     ChallengeProgressNotFoundError,
@@ -414,3 +415,73 @@ async def test_attempted_wrong_splits_streak_and_future_rows_are_ignored(
     profile = await UserProfileService(db_session).get_or_create_profile(auth_user.id)
     assert profile.best_streak == 2
     assert profile.current_streak == 1
+
+
+def test_submit_route_declares_complete_response_model() -> None:
+    route = next(
+        route
+        for route in learning_path_router.routes
+        if getattr(route, "path", None) == "/api/learning-path/challenge/submit"
+        and "POST" in getattr(route, "methods", set())
+    )
+    assert route.response_model is SubmitExerciseResponse
+    assert "cores_earned" in SubmitExerciseResponse.model_fields
+
+
+@pytest.mark.asyncio
+async def test_submission_flushes_without_committing(
+    db_session, auth_user
+) -> None:
+    exercise, _, _ = await persist_arena_pair(db_session, auth_user.id)
+    service = ChallengeSubmissionService(db_session)
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(return_value=passing_judge_result()),
+    ), patch.object(db_session, "commit", new=AsyncMock()) as commit_mock:
+        result = await service.submit_exercise(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+            code="print(42)",
+            language="python",
+            test_results=[],
+        )
+    assert result["cores_earned"] == 3
+    commit_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_submit_api_preserves_exact_success_fields(
+    client, auth_headers, db_session, auth_user
+) -> None:
+    exercise, _, _ = await persist_arena_pair(db_session, auth_user.id)
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(return_value=passing_judge_result()),
+    ):
+        response = await client.post(
+            "/api/learning-path/challenge/submit",
+            headers=auth_headers,
+            json={
+                "exercise_id": exercise.id,
+                "code": "print(42)",
+                "language": "python",
+                "test_results": [],
+            },
+        )
+    assert response.status_code == 200
+    assert set(response.json()) == {
+        "is_correct",
+        "test_results",
+        "stars_earned",
+        "cores_earned",
+        "next_unlocked",
+        "added_to_wrong_book",
+        "tier_changed",
+        "new_tier",
+        "new_sub_tier",
+        "new_stars",
+        "promoted",
+        "demoted",
+        "first_time_correct",
+        "first_time_wrong",
+    }
