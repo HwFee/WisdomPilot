@@ -90,6 +90,24 @@ class TestAdminListUsers:
                 headers={"Authorization": f"Bearer {user_token}"}
             )
         assert response.status_code == 403
+        assert response.json()["detail"] == "Admin access required"
+
+    @pytest.mark.asyncio
+    async def test_inactive_admin_cannot_list_users(
+        self, admin_user, admin_token, db_session
+    ) -> None:
+        admin_user.is_active = False
+        await db_session.commit()
+        transport = ASGITransport(app=app)
+
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get(
+                "/api/admin/users",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "User account is inactive"
 
     @pytest.mark.asyncio
     async def test_unauthenticated_cannot_list_users(self):

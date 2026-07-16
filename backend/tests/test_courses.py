@@ -2,6 +2,9 @@
 
 import pytest
 
+from app.main import app
+from app.utils.deps import get_current_admin_user
+
 
 @pytest.mark.asyncio
 class TestCourseList:
@@ -34,6 +37,29 @@ class TestCourseList:
             assert isinstance(course["id"], int)
             assert isinstance(course["code"], str)
             assert isinstance(course["name"], str)
+
+
+@pytest.mark.asyncio
+class TestCourseInitializationAuthorization:
+    async def test_regular_user_cannot_initialize_courses(
+        self, client, auth_headers
+    ) -> None:
+        response = await client.post("/api/courses/init", headers=auth_headers)
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Admin access required"
+
+    async def test_init_uses_central_admin_dependency(
+        self, client, admin_user
+    ) -> None:
+        app.dependency_overrides[get_current_admin_user] = lambda: admin_user
+        try:
+            response = await client.post("/api/courses/init")
+        finally:
+            app.dependency_overrides.pop(get_current_admin_user, None)
+
+        assert response.status_code == 200
+        assert response.json()["created"] == ["C", "CPP", "Python"]
 
 
 @pytest.mark.asyncio

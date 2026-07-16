@@ -489,17 +489,11 @@ async def get_user_course_progress(db: db_dependency, current_user: auth_depende
 
 
 @router.post("/init")
-async def init_courses(db: db_dependency, user: auth_dependency):
-    """
-    Initialize the 8 courses if they don't exist.
-
-    Admin only endpoint.
-    """
-    if not user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
-        )
-
+async def init_courses(
+    db: db_dependency,
+    _admin: User = Depends(get_current_admin_user),
+):
+    """Initialize the configured courses when invoked by an administrator."""
     created = []
     for course_data in COURSES_INIT_DATA:
         # Check if exists
