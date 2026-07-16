@@ -308,6 +308,18 @@ class TestAuthMe:
         )
         assert response.status_code == 401
 
+    @pytest.mark.asyncio
+    async def test_get_me_rejects_inactive_user(
+        self, client: AsyncClient, db_session, auth_user, auth_headers
+    ) -> None:
+        auth_user.is_active = False
+        await db_session.commit()
+
+        response = await client.get("/api/auth/me", headers=auth_headers)
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "User account is inactive"
+
 
 class TestAuthForgotPassword:
     """Test forgot-password endpoint (C6 - user enumeration prevention)"""
