@@ -367,4 +367,38 @@ class TestChoiceAnalysis:
         assert response.status_code == 422
 
 
+@pytest.mark.asyncio
+async def test_ai_service_close_closes_owned_protocol_client() -> None:
+    service = AIService()
+    service.configure(AIProviderConfig(
+        provider="deepseek",
+        api_key="key",
+        model="model",
+        temperature=0.1,
+    ))
+    internal = service._protocol_client._get_http_client()
+
+    await service.aclose()
+    await service.aclose()
+
+    assert internal.is_closed is True
+
+
+@pytest.mark.asyncio
+async def test_ai_service_close_preserves_injected_http_client() -> None:
+    http_client = httpx.AsyncClient()
+    service = AIService(http_client=http_client)
+    service.configure(AIProviderConfig(
+        provider="deepseek",
+        api_key="key",
+        model="model",
+        temperature=0.1,
+    ))
+
+    await service.aclose()
+
+    assert http_client.is_closed is False
+    await http_client.aclose()
+
+
 

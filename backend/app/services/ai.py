@@ -137,6 +137,10 @@ class AIService:
             raise AIProviderConfigurationError("AI service is not configured")
         return self._provider
 
+    async def aclose(self) -> None:
+        if self._protocol_client is not None:
+            await self._protocol_client.close()
+
     def is_configured(self) -> bool:
         return self._provider is not None and self._config is not None
 

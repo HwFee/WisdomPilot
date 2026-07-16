@@ -43,6 +43,9 @@ def create_lifespan(settings: Settings):
         configure_logging()
         await init_db()
         configure_ai_service(settings)
-        yield
+        try:
+            yield
+        finally:
+            await ai_service.aclose()
 
     return lifespan
