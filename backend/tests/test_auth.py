@@ -1,6 +1,10 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from httpx import AsyncClient
+
 from app.models import User
+from app.utils.security import get_password_hash
 
 
 class TestAuthRegister:
@@ -131,6 +135,24 @@ class TestAuthRegister:
         response_str = str(response.json())
         assert "digit" in response_str.lower() or "数字" in response_str
 
+    @pytest.mark.asyncio
+    async def test_unexpected_register_error_is_not_mapped_to_bad_request(
+        self, client: AsyncClient
+    ) -> None:
+        with patch("app.routers.auth.AuthService") as service_class:
+            service_class.return_value.register = AsyncMock(
+                side_effect=ValueError("unexpected persistence failure")
+            )
+            with pytest.raises(ValueError, match="unexpected persistence failure"):
+                await client.post(
+                    "/api/auth/register",
+                    json={
+                        "email": "unexpected@example.com",
+                        "username": "unexpecteduser",
+                        "password": "Password123",
+                    },
+                )
+
 
 class TestAuthLogin:
     """Test user login endpoint"""
@@ -221,6 +243,27 @@ class TestAuthLogin:
         )
         assert response.status_code == 401
         assert "用户名或密码错误" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_login_inactive_account_preserves_public_contract(
+        self, client: AsyncClient, db_session
+    ) -> None:
+        user = User(
+            email="inactive-login@example.com",
+            username="inactivelogin",
+            hashed_password=get_password_hash("Password123"),
+            is_active=False,
+        )
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/auth/login",
+            json={"username": user.email, "password": "Password123"},
+        )
+
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Account is inactive"
 
 
 class TestAuthMe:
