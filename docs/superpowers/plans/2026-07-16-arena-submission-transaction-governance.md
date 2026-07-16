@@ -1317,7 +1317,8 @@ git commit -m "docs: record arena submission governance batch"
 
 ### Final Gates
 
-- `py -3 -m pytest backend/tests -q -rs`: `649 passed in 92.87s`, with no skipped section.
+- Task 6 pre-review gate `py -3 -m pytest backend/tests -q -rs`: `649 passed in 92.87s`, with no skipped section.
+- Post-review final gate on `f19e4de`: `651 passed in 90.85s`, with no skipped section. Final Pyright remained `0 errors, 0 warnings, 0 informations`.
 - `pyright -p backend/pyrightconfig.json`: `0 errors, 0 warnings, 0 informations`. A second Pyright run after the byte-only whitespace correction produced the same result.
 - Scope search found no service commit, FastAPI/HTTP exception dependency, legacy service, or `_submit_exercise_impl` in the four submission services. The sole `except Exception` hit is the pre-existing Judge0 transport translator at `submission.py:115`, unchanged from the baseline and required to raise `JudgeUnavailableError`.
 - `git diff --check 6eba9ea..HEAD` initially exposed one CRLF-only blank line in `user_profile.py`. Byte inspection proved the mixed-line-ending cause; commit `50fa5b7` changes only that separator line, after which the exact aggregate check exits zero.
@@ -1329,13 +1330,14 @@ git commit -m "docs: record arena submission governance batch"
 - Hidden managed FastAPI and Next.js processes used a dedicated SQLite database, a test-only secret, and preferred ports `8000` and `3000`.
 - `GET /health` returned `200`; Next.js compiled `/` in `12.4s` and returned `200`; registration returned `201` with a bearer token; challenge progress returned `200`; missing exercise submission returned `400` with exact body `{"detail":"Exercise 99999 not found"}`.
 - Backend startup completed and initialized/stamped the smoke database; frontend startup and compilation completed. Expected negative-request rollback traces were inspected. Only the managed Uvicorn PID and Next.js parent/listener PIDs were stopped, both ports were proven free, and the resolved in-worktree smoke database/log directory was removed. The intentional `frontend/node_modules` junction was not modified.
+- The post-review smoke on clean HEAD `f19e4de` repeated the same five contracts: backend health `200`, registration `201` bearer, challenge progress `200`, exact missing-exercise `400`, and frontend `/` `200` after `Compiled / in 1888ms`. Managed processes were stopped, ports `8000`/`3000` were free, and `.final-smoke` artifacts were removed.
 - CodeGraph was already initialized; `npx codegraph sync .` completed. Impacts contained 15 symbols for `ChallengeSubmissionService`, 24 for `ChallengeSubmissionStateService`, and 28 for `ChallengeRewardService`, showing the Router -> Submission -> State/Reward/Profile flow and governance tests. Querying `_submit_exercise_impl` returned `No results found`.
 
 ### Commits, Deviations, And Review
 
-- Implementation commits: `36edbff` (typed failures), `0b6461a` (corrected exception-contract plan text), `366bfd2` (locked state extraction), `835e8be` (atomic rewards), `6517680` (stale reward logger cleanup), `daa67dc` (single-owned profile updates), `53a65ff` (response/transaction contract), and `50fa5b7` (aggregate whitespace gate correction).
+- Implementation and review-fix commits: `36edbff` (typed failures), `0b6461a` (corrected exception-contract text), `366bfd2` (locked state extraction), `835e8be` (atomic rewards), `6517680` (stale reward logger cleanup), `daa67dc` (single-owned profile updates), `53a65ff` (response/transaction contract), `50fa5b7` (aggregate whitespace gate correction), `ac58773` (completion record), `d88b366` (search-evidence correction), and `f19e4de` (attempted-result aggregates and profile-failure rollback proof).
 - Approved Task 4 deviation: streaks use rows with `attempt_count > 0`. Future unattempted rows do not reset a streak, while attempted incorrect rows remain in sequence and do reset it. Unit and integration tests cover both cases.
-- Task review findings for a stale docstring/logger and Task 4 P3 stale-import/mixed-state/attempted-wrong coverage were corrected before the original completion record. Final review then identified and corrected the remaining mixed-population aggregate defect and added the missing profile-failure rollback proof; the controller owns the final full-suite verification count for this follow-up.
+- Task review findings for a stale docstring/logger and Task 4 P3 stale-import/mixed-state/attempted-wrong coverage were corrected before the original completion record. Final review then identified and corrected the remaining mixed-population aggregate defect and added the missing profile-failure rollback proof. Re-review reported no remaining findings and `Ready to merge: Yes`; the final 651-test gate and post-review live smoke both passed on the corrected branch.
 - Residual SQLite risk: SQLite does not exercise production `SELECT ... FOR UPDATE` contention, so concurrency behavior still requires a production-dialect integration gate. Future 3B-2 work should govern the remaining non-submit challenge paths and broad/`ValueError` mappings without reopening this submission transaction or changing selection/navigation behavior opportunistically.
 
 ## Plan Self-Review
