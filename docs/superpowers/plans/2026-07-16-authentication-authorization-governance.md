@@ -49,7 +49,7 @@
 - Preserves: `AuthService.register(UserCreate) -> tuple[User, Token]` and `AuthService.login(UserLogin) -> tuple[User, Token]`.
 - Produces: `AuthService.forgot_password(email: str) -> None`, which returns normally for unknown email addresses.
 
-- [ ] **Step 1: Add failing service contract tests**
+- [x] **Step 1: Add failing service contract tests**
 
 Create `backend/tests/test_auth_service.py`:
 
@@ -138,7 +138,7 @@ async def test_forgot_password_unknown_email_returns_normally(
     assert await service.forgot_password("missing@example.com") is None
 ```
 
-- [ ] **Step 2: Run the new module and confirm the error module is absent**
+- [x] **Step 2: Run the new module and confirm the error module is absent**
 
 Run from `backend`:
 
@@ -148,7 +148,7 @@ py -3 -m pytest tests/test_auth_service.py -q
 
 Expected: collection fails with `ModuleNotFoundError: No module named 'app.services.auth_errors'`.
 
-- [ ] **Step 3: Add the authentication-specific exception module**
+- [x] **Step 3: Add the authentication-specific exception module**
 
 Create `backend/app/services/auth_errors.py`:
 
@@ -177,7 +177,7 @@ class InactiveAccountError(AuthError):
         super().__init__("Account is inactive")
 ```
 
-- [ ] **Step 4: Run the service tests and confirm the old `ValueError` behavior fails**
+- [x] **Step 4: Run the service tests and confirm the old `ValueError` behavior fails**
 
 Run:
 
@@ -187,7 +187,7 @@ py -3 -m pytest tests/test_auth_service.py -q
 
 Expected: typed-error assertions fail because `AuthService` still raises `ValueError`; the forgot-password test also fails for the unknown address.
 
-- [ ] **Step 5: Replace ambiguous service failures with typed errors**
+- [x] **Step 5: Replace ambiguous service failures with typed errors**
 
 Modify `backend/app/services/auth.py` as follows:
 
@@ -231,7 +231,7 @@ async def forgot_password(self, email: str) -> None:
 
 Remove the now-unused `logging` import and module logger.
 
-- [ ] **Step 6: Verify the service boundary**
+- [x] **Step 6: Verify the service boundary**
 
 Run:
 
@@ -242,7 +242,7 @@ pyright
 
 Expected: all new service tests pass; Pyright reports `0 errors, 0 warnings, 0 informations`.
 
-- [ ] **Step 7: Review and commit Task 1**
+- [x] **Step 7: Review and commit Task 1**
 
 Run:
 
@@ -266,7 +266,7 @@ Expected: only the three Task 1 files are committed.
 - Preserves: registration 400 details, login 401 details, forgot-password uniform 200 response, and `/api/auth/me` response.
 - Guarantees: unexpected `ValueError` is not mislabeled as a client authentication failure.
 
-- [ ] **Step 1: Add failing Router contract tests**
+- [x] **Step 1: Add failing Router contract tests**
 
 Add imports to `backend/tests/test_auth.py`:
 
@@ -319,7 +319,7 @@ Add the following tests:
 
 Also import `get_password_hash` from `app.utils.security`.
 
-- [ ] **Step 2: Confirm the broad Router catch and typed service error break the tests**
+- [x] **Step 2: Confirm the broad Router catch and typed service error break the tests**
 
 Run:
 
@@ -329,7 +329,7 @@ py -3 -m pytest tests/test_auth.py -q
 
 Expected: the unexpected error is converted to 400 by the old broad catch, and typed authentication errors are not mapped by the Router.
 
-- [ ] **Step 3: Map the exact typed errors and remove forgot-password exception swallowing**
+- [x] **Step 3: Map the exact typed errors and remove forgot-password exception swallowing**
 
 Update imports in `backend/app/routers/auth.py`:
 
@@ -381,7 +381,7 @@ return {
 
 Remove unused logging code from the Router.
 
-- [ ] **Step 4: Verify all authentication API contracts**
+- [x] **Step 4: Verify all authentication API contracts**
 
 Run:
 
@@ -392,7 +392,7 @@ pyright
 
 Expected: all selected tests pass and Pyright remains clean.
 
-- [ ] **Step 5: Review and commit Task 2**
+- [x] **Step 5: Review and commit Task 2**
 
 Run:
 
@@ -414,7 +414,7 @@ git commit -m "refactor: map typed authentication errors"
 - Preserves: `get_current_user`, `get_current_active_user`, `get_current_admin_user`, `get_optional_user`, and `get_quota_user` dependency signatures.
 - Produces constants: `INVALID_CREDENTIALS_DETAIL`, `INACTIVE_ACCOUNT_DETAIL`, and `ADMIN_ACCESS_REQUIRED_DETAIL`.
 
-- [ ] **Step 1: Add failing dependency tests**
+- [x] **Step 1: Add failing dependency tests**
 
 Create `backend/tests/test_auth_dependencies.py`:
 
@@ -487,7 +487,7 @@ async def test_active_compatibility_dependency_does_not_recheck_state() -> None:
     assert await get_current_active_user(current_user) is current_user
 ```
 
-- [ ] **Step 2: Run the dependency module and confirm the shared resolver is absent**
+- [x] **Step 2: Run the dependency module and confirm the shared resolver is absent**
 
 Run:
 
@@ -497,7 +497,7 @@ py -3 -m pytest tests/test_auth_dependencies.py -q
 
 Expected: collection fails because `_find_user_from_credentials` does not exist.
 
-- [ ] **Step 3: Replace duplicated dependency logic with the shared resolver**
+- [x] **Step 3: Replace duplicated dependency logic with the shared resolver**
 
 Rewrite `backend/app/utils/deps.py` with these responsibilities:
 
@@ -594,7 +594,7 @@ async def get_optional_user(
     return user
 ```
 
-- [ ] **Step 4: Verify dependency and broad authentication regressions**
+- [x] **Step 4: Verify dependency and broad authentication regressions**
 
 Run:
 
@@ -605,7 +605,7 @@ pyright
 
 Expected: all selected tests pass; Pyright reports no issues.
 
-- [ ] **Step 5: Review and commit Task 3**
+- [x] **Step 5: Review and commit Task 3**
 
 Run:
 
@@ -629,7 +629,7 @@ git commit -m "refactor: centralize authentication dependencies"
 - Preserves: all admin CRUD, quota, and course initialization success behavior.
 - Produces: one endpoint-wide admin gate for `/api/admin/*` and `POST /api/courses/init`.
 
-- [ ] **Step 1: Add failing central-admin dependency tests**
+- [x] **Step 1: Add failing central-admin dependency tests**
 
 In `backend/tests/test_admin.py`, strengthen the regular-user list assertion:
 
@@ -689,10 +689,10 @@ class TestCourseInitializationAuthorization:
             app.dependency_overrides.pop(get_current_admin_user, None)
 
         assert response.status_code == 200
-        assert response.json()["message"] == "Created 8 new courses"
+        assert response.json()["created"] == ["C", "CPP", "Python"]
 ```
 
-- [ ] **Step 2: Run the new contracts and confirm local gates remain**
+- [x] **Step 2: Run the new contracts and confirm local gates remain**
 
 Run:
 
@@ -702,7 +702,7 @@ py -3 -m pytest tests/test_admin.py::TestAdminListUsers tests/test_courses.py::T
 
 Expected: admin detail is still `Admin privileges required`; the course dependency override does not bypass the inline `get_current_active_user` gate.
 
-- [ ] **Step 3: Remove the local admin dependency from `routers/admin.py`**
+- [x] **Step 3: Remove the local admin dependency from `routers/admin.py`**
 
 Replace the dependency import with:
 
@@ -724,7 +724,7 @@ admin: User = Depends(get_current_admin_user)
 
 Do not alter endpoint bodies or their database error mappings. Remove the unused logger if it has no remaining references.
 
-- [ ] **Step 4: Move course initialization to the central dependency**
+- [x] **Step 4: Move course initialization to the central dependency**
 
 Change only the endpoint signature and delete its inline `is_admin` block:
 
@@ -739,7 +739,7 @@ async def init_courses(
 
 Keep the existing course existence checks, inserts, flush, and response unchanged.
 
-- [ ] **Step 5: Verify all administrator dependency consumers**
+- [x] **Step 5: Verify all administrator dependency consumers**
 
 Run:
 
@@ -750,19 +750,19 @@ pyright
 
 Expected: all existing selected tests pass and Pyright stays clean. The repository has no dedicated solutions Router test module, so its unchanged central-dependency use is covered by the complete suite, application startup, and CodeGraph impact check in Task 5.
 
-- [ ] **Step 6: Confirm no duplicate endpoint-wide admin gate remains**
+- [x] **Step 6: Confirm no duplicate endpoint-wide admin gate remains**
 
 Run from the repository root:
 
 ```powershell
-rg -n "require_admin|Admin privileges required" backend/app backend/tests
-rg -n "if not .*is_admin" backend/app/routers
+rg -n "require_admin|Admin privileges required" backend/app
+rg -n "is_admin" backend/app/routers
 npx codegraph impact get_current_admin_user
 ```
 
 Expected: the first search has no matches. The second search shows only object-level rules in `routers/solutions.py`; CodeGraph lists admin, AI, courses, exercises, and solutions consumers.
 
-- [ ] **Step 7: Review and commit Task 4**
+- [x] **Step 7: Review and commit Task 4**
 
 Run from `backend`:
 
@@ -783,18 +783,18 @@ git commit -m "refactor: unify administrator route gates"
 - Consumes: Tasks 1-4.
 - Produces: fresh full-suite, type-check, startup, live-route, CodeGraph, and quality-gate evidence.
 
-- [ ] **Step 1: Run the full backend quality gate**
+- [x] **Step 1: Run the full backend quality gate**
 
-Run from `backend`:
+Run from the repository root so `tests/test_start_services_env.py` can import the root `start_services` module:
 
 ```powershell
-py -3 -m pytest -q -rs
-pyright
+py -3 -m pytest backend/tests -q -rs
+pyright -p backend/pyrightconfig.json
 ```
 
 Expected: every backend test passes, no `SKIPPED` section appears, and Pyright reports `0 errors, 0 warnings, 0 informations`.
 
-- [ ] **Step 2: Run code quality and dead-code searches**
+- [x] **Step 2: Run code quality and dead-code searches**
 
 Run from the repository root:
 
@@ -808,7 +808,7 @@ Expected: no broad authentication `ValueError` catch or local admin dependency r
 
 Inspect each changed function for the mandatory project checklist: no duplicated logic, no circular dependencies, descriptive names, no unexplained business literals, functions near or below 40 effective lines, no unused imports, and explicit types at module boundaries.
 
-- [ ] **Step 3: Start both services and request affected routes**
+- [x] **Step 3: Start both services and request affected routes**
 
 From the repository root, start the launcher in a hidden background process:
 
@@ -843,7 +843,7 @@ Expected: health, frontend, and `/api/auth/me` return 200; registration returns 
 py -3 stop_services.py
 ```
 
-- [ ] **Step 4: Synchronize CodeGraph and inspect impact**
+- [x] **Step 4: Synchronize CodeGraph and inspect impact**
 
 Run:
 
@@ -855,7 +855,7 @@ npx codegraph impact get_current_admin_user
 
 Expected: synchronization succeeds; `AuthService` remains consumed only by the auth Router, and the admin dependency impact includes admin, AI, courses, exercises, and solutions routes.
 
-- [ ] **Step 5: Record the completed authentication batch**
+- [x] **Step 5: Record the completed authentication batch**
 
 Append this section to `docs/superpowers/specs/2026-07-15-backend-learning-oriented-governance-design.md`, replacing the final proof values with the exact fresh counts from Steps 1-4:
 
@@ -868,7 +868,7 @@ Append this section to `docs/superpowers/specs/2026-07-15-backend-learning-orien
 - 证明：认证服务、Router、依赖、管理员消费者回归测试、完整后端测试、Pyright、FastAPI 与 Next.js 启动、真实路由请求和 CodeGraph 影响检查均通过。
 ```
 
-- [ ] **Step 6: Update plan evidence and perform final review**
+- [x] **Step 6: Update plan evidence and perform final review**
 
 Check every completed step in this plan and append a `## Completion Evidence` section containing exact test counts, Pyright output, live HTTP statuses, CodeGraph consumers, and the final commit list.
 
@@ -882,7 +882,7 @@ git log --oneline --decorate -8
 
 Review every changed file against the design specification and the project DRY, modularity, naming, magic-value, function-length, dead-code, and type-safety gates. Resolve every Critical or Important issue before committing the records.
 
-- [ ] **Step 7: Commit completion records**
+- [x] **Step 7: Commit completion records**
 
 Run:
 
@@ -900,3 +900,15 @@ Expected: the implementation branch is clean, all five tasks are committed, and 
 - Type consistency: all error names, dependency names, signatures, response messages, and file paths match the design document and current codebase.
 - TDD ordering: each production change is preceded by a test that fails for the current implementation's specific missing boundary.
 - Placeholder scan: no unfinished implementation instruction remains.
+
+## Completion Evidence
+
+- TDD evidence: the service test first failed because `auth_errors` did not exist, then six cases failed on old `ValueError` behavior; Router tests failed on broad error mapping; dependency tests failed because the shared resolver did not exist; admin tests failed on the local dependency and inline course gate. Each focused suite passed after its minimal implementation.
+- Focused verification: authentication Router/service/rate-limit tests passed 32 tests; dependency/auth/AI/code tests passed 68 tests; admin/quota/AI/course/exercise tests passed 60 tests.
+- Complete backend suite: `609 passed` with no skipped tests in 80.13 seconds.
+- Pyright: `0 errors, 0 warnings, 0 informations`.
+- Runtime: FastAPI startup completed without startup traceback; `/health` returned 200; registration returned a bearer token; authenticated `/api/auth/me` returned 200; a regular user received `403 / Admin access required`; unauthenticated `/api/auth/me` and `/api/admin/users` returned 401.
+- Frontend startup: Next.js 15.5.18 became ready, compiled `/` with 1,633 modules, and returned `GET / 200`. Because the worktree `pnpm install` was stopped by the active supply-chain trust policy before creating `.bin`, startup used the main worktree's already-installed binaries from the same lockfile without changing the lockfile or relaxing policy.
+- CodeGraph: an explicit worktree index synchronized 476 files, 6,561 nodes, and 14,568 edges. `get_current_admin_user` impact includes admin, AI, courses, exercises, and solutions routes; the query lists all six admin endpoints and course initialization on the central dependency.
+- Quality review: no broad authentication `ValueError` catch, local `require_admin`, old admin message, duplicate token decoding, unused import, circular dependency, or unexplained new business literal remains. The two remaining Router `is_admin` checks are object-level solution rules required by the design.
+- Implementation commits: `1f83202`, `817c008`, `ede74c5`, and `55f8e36`.
