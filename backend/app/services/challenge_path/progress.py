@@ -20,7 +20,9 @@ class ChallengeProgressService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _get_user_progress(self, user_id: str) -> list[ArenaExerciseProgress]:
+    async def list_user_progress(
+        self, user_id: str
+    ) -> list[ArenaExerciseProgress]:
         """Get all progress records for user's challenge path."""
         result = await self.db.execute(
             select(ArenaExerciseProgress)
@@ -38,7 +40,7 @@ class ChallengeProgressService:
         )
         return result.scalar() or 0
 
-    async def _get_exercises_from_progress(
+    async def get_exercises_for_progress(
         self,
         progress_records: list[ArenaExerciseProgress],
     ) -> list[Exercise]:
@@ -64,7 +66,7 @@ class ChallengeProgressService:
         Args:
             lite: If True, only return metadata (title, difficulty, progress state).
         """
-        progress_records = await self._get_user_progress(user_id)
+        progress_records = await self.list_user_progress(user_id)
 
         if not progress_records:
             return {
@@ -167,11 +169,13 @@ class ChallengeProgressService:
                 return None
 
             exercise_index = await self._get_exercise_count(user_id)
-            from app.services.challenge_path.selection import ChallengeSelectionService
-
-            selection_service = ChallengeSelectionService(self.db)
-            await selection_service._create_progress_for_selected_exercises(
-                user_id, [exercise], start_index=exercise_index
+            self.db.add(
+                ArenaExerciseProgress(
+                    user_id=user_id,
+                    exercise_id=exercise.id,
+                    exercise_index=exercise_index,
+                    is_unlocked=exercise_index == 0,
+                )
             )
             await self.db.flush()
 

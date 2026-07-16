@@ -20,17 +20,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.exercise import Exercise
 
 # Import focused services
+from app.services.challenge_path.lifecycle import ChallengePathLifecycleService
 from app.services.challenge_path.selection import ChallengeSelectionService
 from app.services.challenge_path.progress import ChallengeProgressService
 from app.services.challenge_path.rewards import ChallengeRewardService
-
-DEFAULT_CHALLENGE_LANGUAGE = "python"
-
 
 class ChallengePathService:
     """Service for Challenge Path operations - delegates to focused services."""
 
     def __init__(self, db: AsyncSession):
+        self.lifecycle = ChallengePathLifecycleService(db)
         self.selection = ChallengeSelectionService(db)
         self.progress = ChallengeProgressService(db)
         self.rewards = ChallengeRewardService(db)
@@ -46,7 +45,7 @@ class ChallengePathService:
         initial_count: int = 3,
     ) -> tuple[list[Exercise], bool]:
         """Get existing exercises or create initial set."""
-        return await self.selection.get_or_create_challenge_path(
+        return await self.lifecycle.start_path(
             user_id=user_id,
             difficulty_level=difficulty_level,
             initial_count=initial_count,

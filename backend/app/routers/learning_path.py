@@ -30,6 +30,7 @@ from app.services.adaptive_recommendation import AdaptiveRecommendationService
 from app.services.challenge_path import (
     ChallengeExerciseLockedError,
     ChallengeExerciseNotFoundError,
+    ChallengePathLifecycleService,
     ChallengeProgressIndexNotFoundError,
     ChallengeProgressService,
     ChallengeProgressNotFoundError,
@@ -1037,10 +1038,10 @@ async def start_infinite_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Start or get challenge path (independent of courses)"""
-    service = ChallengeSelectionService(db)
+    service = ChallengePathLifecycleService(db)
 
     try:
-        exercises, is_new = await service.get_or_create_challenge_path(
+        exercises, is_new = await service.start_path(
             user_id=current_user.id,
             difficulty_level=request.difficulty_level,
             initial_count=request.initial_count,

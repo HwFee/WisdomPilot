@@ -29,7 +29,7 @@ class ChallengeRewardService:
         from app.services.challenge_path.progress import ChallengeProgressService
 
         progress_service = ChallengeProgressService(self.db)
-        progress_records = await progress_service._get_user_progress(user_id)
+        progress_records = await progress_service.list_user_progress(user_id)
 
         if not progress_records:
             return {

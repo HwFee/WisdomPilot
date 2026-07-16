@@ -15,6 +15,7 @@ from .errors import (
     UnsupportedChallengeLanguageError,
 )
 from .progress import ChallengeProgressService
+from .lifecycle import ChallengePathLifecycleService
 from .responses import map_exercise_detail_response, map_exercise_summary, map_switch_response
 from .rewards import ChallengeRewardService
 from .selection import ChallengeSelectionService
@@ -29,6 +30,7 @@ __all__ = [
     "ChallengeExerciseLockedError",
     "ChallengeExerciseNotFoundError",
     "ChallengePathError",
+    "ChallengePathLifecycleService",
     "ChallengeProgressIndexNotFoundError",
     "ChallengeProgressService",
     "ChallengeProgressNotFoundError",

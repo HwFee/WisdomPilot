@@ -18,14 +18,10 @@ from app.services.hybrid_recommendation import HybridRecommendationService
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_DIFFICULTY_LEVEL = 3
-DEFAULT_INITIAL_COUNT = 3
 DEFAULT_APPEND_COUNT = 5
 MIN_CHALLENGE_DIFFICULTY = 1
 MAX_CHALLENGE_DIFFICULTY = 8
 CHALLENGE_CANDIDATE_MULTIPLIER = 3
-DEFAULT_CHALLENGE_LANGUAGE = "python"
-
 # Fixed first two exercises
 HELLO_WORLD_EXERCISE_ID = 211
 A_PLUS_B_EXERCISE_ID = 207
@@ -144,24 +140,7 @@ class ChallengeSelectionService:
         result = fixed + filtered
         return result[:count]
 
-    async def _create_progress_for_selected_exercises(
-        self,
-        user_id: str,
-        exercises: list[Exercise],
-        start_index: int = 0,
-    ) -> None:
-        """Create challenge progress records for selected exercises."""
-        for index_offset, exercise in enumerate(exercises):
-            exercise_index = start_index + index_offset
-            progress = ArenaExerciseProgress(
-                user_id=user_id,
-                exercise_id=exercise.id,
-                exercise_index=exercise_index,
-                is_unlocked=(exercise_index == 0),
-            )
-            self.db.add(progress)
-
-    async def _create_initial_exercises(
+    async def select_initial_exercises(
         self,
         user_id: str,
         difficulty_level: int,
@@ -206,15 +185,9 @@ class ChallengeSelectionService:
                 ]
 
                 if len(selected) >= count:
-                    selected = self._ensure_fixed_first_two(
+                    return self._ensure_fixed_first_two(
                         selected, hello_world_ex, a_plus_b_ex, count
                     )
-                    await self._create_progress_for_selected_exercises(
-                        user_id, selected, start_index=0
-                    )
-
-                    await self.db.flush()
-                    return selected
 
             adaptive_service = AdaptiveRecommendationService(self.db)
             recommendation = await adaptive_service.get_recommendations(
@@ -241,15 +214,9 @@ class ChallengeSelectionService:
                 ]
 
                 if len(selected) >= count:
-                    selected = self._ensure_fixed_first_two(
+                    return self._ensure_fixed_first_two(
                         selected, hello_world_ex, a_plus_b_ex, count
                     )
-                    await self._create_progress_for_selected_exercises(
-                        user_id, selected, start_index=0
-                    )
-
-                    await self.db.flush()
-                    return selected
 
         effective_difficulty = (
             MIN_CHALLENGE_DIFFICULTY if not has_behavior else difficulty_level
@@ -298,36 +265,12 @@ class ChallengeSelectionService:
 
         exercise_pool = list(all_exercises)
         selected = random.sample(exercise_pool, min(count, len(exercise_pool)))
-        selected = self._ensure_fixed_first_two(selected, hello_world_ex, a_plus_b_ex, count)
-
-        await self._create_progress_for_selected_exercises(user_id, selected)
-        await self.db.flush()
-        return selected
-
-    async def get_or_create_challenge_path(
-        self,
-        user_id: str,
-        difficulty_level: int = DEFAULT_DIFFICULTY_LEVEL,
-        initial_count: int = DEFAULT_INITIAL_COUNT,
-    ) -> tuple[list[Exercise], bool]:
-        """Get existing exercises or create initial set.
-
-        Returns:
-            tuple: (exercises, is_new)
-        """
-        from app.services.challenge_path.progress import ChallengeProgressService
-
-        progress_service = ChallengeProgressService(self.db)
-        existing_progress = await progress_service._get_user_progress(user_id)
-
-        if existing_progress:
-            exercises = await progress_service._get_exercises_from_progress(existing_progress)
-            return exercises, False
-
-        exercises = await self._create_initial_exercises(
-            user_id, difficulty_level, initial_count
+        return self._ensure_fixed_first_two(
+            selected,
+            hello_world_ex,
+            a_plus_b_ex,
+            count,
         )
-        return exercises, True
 
     async def append_exercises(
         self,
