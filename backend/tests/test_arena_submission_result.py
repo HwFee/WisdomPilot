@@ -1,10 +1,10 @@
 """Regression tests for challenge submission pass/fail parsing."""
 
-from app.services.arena_infinite import ChallengePathService
+from app.services.challenge_path.submission import all_test_cases_passed
 
 
 def test_all_test_cases_passed_requires_non_empty_list():
-    assert ChallengePathService._all_test_cases_passed([]) is False
+    assert all_test_cases_passed([]) is False
 
 
 def test_all_test_cases_passed_accepts_explicit_boolean_true():
@@ -13,7 +13,7 @@ def test_all_test_cases_passed_accepts_explicit_boolean_true():
         {"passed": True},
     ]
 
-    assert ChallengePathService._all_test_cases_passed(test_results) is True
+    assert all_test_cases_passed(test_results) is True
 
 
 def test_all_test_cases_passed_rejects_false_like_strings():
@@ -22,7 +22,7 @@ def test_all_test_cases_passed_rejects_false_like_strings():
         {"passed": "0"},
     ]
 
-    assert ChallengePathService._all_test_cases_passed(test_results) is False
+    assert all_test_cases_passed(test_results) is False
 
 
 def test_all_test_cases_passed_rejects_mixed_values():
@@ -32,4 +32,4 @@ def test_all_test_cases_passed_rejects_mixed_values():
         {"passed": 0},
     ]
 
-    assert ChallengePathService._all_test_cases_passed(test_results) is False
+    assert all_test_cases_passed(test_results) is False

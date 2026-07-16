@@ -27,7 +27,6 @@ from app.services.leaderboard_service import (
     get_mastery_leaderboard_service,
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
-from app.services.arena_infinite import get_arena_infinite_service
 from app.services.challenge_path import (
     ChallengeExerciseNotFoundError,
     ChallengeProgressService,
@@ -1090,8 +1089,7 @@ async def submit_challenge_exercise(
     db: AsyncSession = Depends(get_db),
 ):
     """Submit exercise answer in challenge path"""
-    arena_service = get_arena_infinite_service(db)
-    service = ChallengeSubmissionService(db, arena_service)
+    service = ChallengeSubmissionService(db)
 
     try:
         result = await service.submit_exercise(

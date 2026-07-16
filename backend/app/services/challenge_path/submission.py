@@ -12,6 +12,10 @@ from app.services.challenge_path.errors import (
     MissingChallengeTestCasesError,
     UnsupportedChallengeLanguageError,
 )
+from app.services.challenge_path.rewards import ChallengeRewardService
+from app.services.challenge_path.submission_state import (
+    ChallengeSubmissionStateService,
+)
 from app.services.judge0 import (
     Judge0Service,
     LANGUAGE_C,
@@ -22,6 +26,7 @@ from app.services.judge0 import (
     LANGUAGE_RUST,
     LANGUAGE_TYPESCRIPT,
 )
+from app.services.user_profile import UserProfileService
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +41,22 @@ LANGUAGE_NAME_TO_JUDGE0_ID = {
     "java": LANGUAGE_JAVA,
     "rust": LANGUAGE_RUST,
 }
+
+
+def is_strict_passed(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value == 1
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "1", "pass", "passed", "ok"}
+    return False
+
+
+def all_test_cases_passed(test_results: list[dict]) -> bool:
+    return bool(test_results) and all(
+        is_strict_passed(result.get("passed")) for result in test_results
+    )
 
 
 async def run_authoritative_judge(
@@ -117,9 +138,11 @@ async def run_authoritative_judge(
 
 
 class ChallengeSubmissionService:
-    def __init__(self, db: AsyncSession, legacy_service):
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
-        self.legacy_service = legacy_service
+        self.state = ChallengeSubmissionStateService(db)
+        self.rewards = ChallengeRewardService(db)
+        self.profile = UserProfileService(db)
 
     async def submit_exercise(
         self,
@@ -169,13 +192,32 @@ class ChallengeSubmissionService:
             # exercises in this change.
             authoritative_test_results = test_results
 
-        # Delegate to legacy service for mutation / reward logic.
-        # The legacy service determines correctness from the test_results
-        # we pass in, so we pass the authoritative results.
-        return await self.legacy_service._submit_exercise_impl(
+        is_correct = all_test_cases_passed(authoritative_test_results)
+        state = await self.state.apply_attempt(
             user_id=user_id,
-            exercise_id=exercise_id,
+            exercise=exercise,
             code=code,
             language=language,
-            test_results=authoritative_test_results,
+            is_correct=is_correct,
+            time_spent=None,
+            hint_used=False,
         )
+        reward_fields = await self.rewards.apply_submission_rewards(
+            user_id=user_id,
+            exercise=exercise,
+            progress=state.progress,
+            is_correct=is_correct,
+            code=code,
+        )
+        await self.profile.update_after_exercise(
+            user_id=user_id,
+            exercise_id=exercise.id,
+            is_correct=is_correct,
+        )
+        await self.db.flush()
+        return {
+            "is_correct": is_correct,
+            "test_results": authoritative_test_results,
+            "next_unlocked": state.next_unlocked,
+            **reward_fields,
+        }
