@@ -3,7 +3,6 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.tier_config import TierRank, tier_from_string
@@ -11,6 +10,7 @@ from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
 from app.models.user_arena import UserArenaProfile
 from app.services.tier_service import tier_service
+from app.services.user_profile import UserProfileService
 
 logger = logging.getLogger(__name__)
 
@@ -97,18 +97,9 @@ class ChallengeTierRewardCalculator:
         )
 
     async def _get_or_create_profile(self, user_id: str) -> UserArenaProfile:
-        profile_result = await self.db.execute(
-            select(UserArenaProfile).where(UserArenaProfile.user_id == user_id)
-        )
-        profile = profile_result.scalar_one_or_none()
-
-        if not profile:
-            profile = UserArenaProfile(user_id=user_id)
-            self.db.add(profile)
-            await self.db.flush()
-            logger.info("[STARS] Created new profile for user %s... ", user_id[:8])
-
-        return profile
+        return await UserProfileService(
+            self.db
+        ).get_or_create_profile_for_update(user_id)
 
     def _get_profile_tier_state(self, profile: UserArenaProfile):
         current_tier = tier_from_string(profile.tier) if profile.tier else TierRank.BRONZE

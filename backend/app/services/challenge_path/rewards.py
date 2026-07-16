@@ -11,12 +11,16 @@ from app.models.exercise import Exercise
 from app.models.user_arena import UserArenaProfile
 from app.services.challenge_path.tier_rewards import ChallengeTierRewardCalculator
 from app.services.core_service import CoreService
+from app.services.tier_transaction_service import TierTransactionService
 from app.services.wrong_question import wrong_question_service
 from app.core.tier_config import TierRank
 
 logger = logging.getLogger(__name__)
 
 CORE_REWARD_CHALLENGE_CORRECT = 3
+CORE_REWARD_CATEGORY = "arena"
+CORE_REWARD_REFERENCE_TYPE = "exercise"
+TIER_TRANSACTION_SOURCE = "arena_challenge"
 
 
 class ChallengeRewardService:
@@ -54,7 +58,7 @@ class ChallengeRewardService:
         self,
         *,
         user_id: str,
-        exercise: Optional[Exercise],
+        exercise: Exercise,
         progress: ArenaExerciseProgress,
         is_correct: bool,
         code: str,
@@ -161,98 +165,67 @@ class ChallengeRewardService:
         self,
         *,
         user_id: str,
-        exercise: Optional[Exercise],
+        exercise: Exercise,
         is_correct: bool,
         stars_earned: int,
     ) -> int:
-        """Award cores for correct answers."""
         if not is_correct or stars_earned <= 0:
             return 0
-
-        try:
-            core_service = CoreService(self.db)
-            cores_earned = CORE_REWARD_CHALLENGE_CORRECT
-            await core_service.earn_cores(
-                user_id=user_id,
-                amount=cores_earned,
-                category="arena",
-                reference_type="exercise",
-                reference_id=str(exercise.id) if exercise else "0",
-                description="挑战之路答对题目",
-            )
-            logger.info(
-                "[CORE] Awarded %s cores to user %s... for correct challenge exercise",
-                cores_earned,
-                user_id[:8],
-            )
-            return cores_earned
-        except Exception as e:
-            logger.warning("Failed to award cores: %s", e)
-            return 0
+        await CoreService(self.db).earn_cores(
+            user_id=user_id,
+            amount=CORE_REWARD_CHALLENGE_CORRECT,
+            category=CORE_REWARD_CATEGORY,
+            reference_type=CORE_REWARD_REFERENCE_TYPE,
+            reference_id=str(exercise.id),
+            description="挑战之路答对题目",
+        )
+        return CORE_REWARD_CHALLENGE_CORRECT
 
     async def _record_tier_transaction(
         self,
         *,
         user_id: str,
-        exercise: Optional[Exercise],
+        exercise: Exercise,
         progress: ArenaExerciseProgress,
         is_correct: bool,
         reward_result: dict,
     ) -> None:
-        """Record tier transaction if stars changed or tier promoted/demoted."""
         stars_earned = reward_result["stars_earned"]
         promoted = reward_result["promoted"]
         demoted = reward_result["demoted"]
-        tier_result = reward_result.get("tier_result")
-        current_tier = reward_result.get("current_tier")
-        current_sub_tier = reward_result.get("current_sub_tier")
-        current_stars = reward_result.get("current_stars")
-        profile = reward_result.get("profile")
-        new_tier_value = reward_result.get("new_tier")
-        new_sub_tier = reward_result.get("new_sub_tier")
-        new_stars = reward_result.get("new_stars")
-
         if stars_earned == 0 and not promoted and not demoted:
             return
 
-        try:
-            from app.services.tier_transaction_service import TierTransactionService
-
-            tier_tx_service = TierTransactionService(self.db)
-            used_protection = (
-                getattr(tier_result, "used_protection", False)
-                if tier_result and stars_earned < 0
-                else False
-            )
-            await tier_tx_service.record_transaction(
-                user_id=user_id,
-                course_id=None,
-                tier_before=current_tier.value
-                if current_tier
-                else TierRank.BRONZE.value,
-                sub_tier_before=int(current_sub_tier or 0),
-                stars_before=int(current_stars or 0),
-                tier_after=new_tier_value if new_tier_value else TierRank.BRONZE.value,
-                sub_tier_after=int(new_sub_tier or 0),
-                stars_after=int(new_stars or 0),
-                stars_change=stars_earned,
-                promoted=promoted,
-                demoted=demoted,
-                used_protection=used_protection,
-                protection_remaining=profile.protection_remaining or 0
-                if profile
-                else 0,
-                source="arena_challenge",
-                reference_id=str(exercise.id) if exercise else "0",
-                description=f"挑战之路答题 - {'答对' if is_correct else '答错'}",
-            )
-            logger.info(
-                "[TierTx] Recorded tier transaction for user %s... stars_change=%s",
-                user_id[:8],
-                stars_earned,
-            )
-        except Exception as e:
-            logger.warning("Failed to record tier transaction: %s", e)
+        tier_result = reward_result.get("tier_result")
+        current_tier = reward_result.get("current_tier")
+        profile = reward_result.get("profile")
+        used_protection = bool(
+            tier_result
+            and stars_earned < 0
+            and getattr(tier_result, "used_protection", False)
+        )
+        await TierTransactionService(self.db).record_transaction(
+            user_id=user_id,
+            course_id=None,
+            tier_before=(
+                current_tier.value if current_tier else TierRank.BRONZE.value
+            ),
+            sub_tier_before=int(reward_result.get("current_sub_tier") or 0),
+            stars_before=int(reward_result.get("current_stars") or 0),
+            tier_after=(reward_result.get("new_tier") or TierRank.BRONZE.value),
+            sub_tier_after=int(reward_result.get("new_sub_tier") or 0),
+            stars_after=int(reward_result.get("new_stars") or 0),
+            stars_change=stars_earned,
+            promoted=promoted,
+            demoted=demoted,
+            used_protection=used_protection,
+            protection_remaining=(
+                int(profile.protection_remaining or 0) if profile else 0
+            ),
+            source=TIER_TRANSACTION_SOURCE,
+            reference_id=str(exercise.id),
+            description=f"挑战之路答题 - {'答对' if is_correct else '答错'}",
+        )
 
     async def _update_profile_stats(self, user_id: str) -> None:
         """Update arena profile statistics from progress records."""

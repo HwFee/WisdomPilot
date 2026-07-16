@@ -4,8 +4,13 @@ import pytest
 from sqlalchemy import select
 
 from app.models.arena_exercise_progress import ArenaExerciseProgress
+from app.models.core_transaction import CoreTransaction
 from app.models.exercise import Exercise
+from app.models.spaced_repetition import SpacedRepetition
 from app.models.stats import ActivityLog
+from app.models.tier_transaction import TierTransaction
+from app.models.user_arena import UserArenaProfile
+from app.models.wrong_question import WrongQuestion
 from app.services.challenge_path.errors import (
     ChallengeExerciseNotFoundError,
     ChallengeProgressNotFoundError,
@@ -15,6 +20,8 @@ from app.services.challenge_path.submission import ChallengeSubmissionService
 from app.services.challenge_path.submission_state import (
     ChallengeSubmissionStateService,
 )
+from app.services.core_service import CoreService
+from app.services.tier_transaction_service import TierTransactionService
 
 
 async def persist_arena_pair(db_session, user_id: str):
@@ -49,6 +56,38 @@ async def persist_arena_pair(db_session, user_id: str):
     db_session.add_all([progress, next_progress])
     await db_session.commit()
     return exercise, progress, next_progress
+
+
+def passing_judge_result() -> dict:
+    return {
+        "passed_count": 1,
+        "total_count": 1,
+        "results": [
+            {
+                "passed": True,
+                "input": "",
+                "expected": "42",
+                "actual": "42",
+                "message": None,
+            }
+        ],
+    }
+
+
+def failing_judge_result() -> dict:
+    return {
+        "passed_count": 0,
+        "total_count": 1,
+        "results": [
+            {
+                "passed": False,
+                "input": "",
+                "expected": "42",
+                "actual": "0",
+                "message": "Wrong Answer",
+            }
+        ],
+    }
 
 
 @pytest.mark.asyncio
@@ -166,3 +205,123 @@ async def test_unexpected_submit_value_error_is_not_mapped_to_400(
                     "test_results": [],
                 },
             )
+
+
+@pytest.mark.asyncio
+async def test_core_failure_rolls_back_entire_submission(
+    db_session, auth_user
+) -> None:
+    exercise, progress, next_progress = await persist_arena_pair(
+        db_session, auth_user.id
+    )
+    service = ChallengeSubmissionService(db_session)
+    original_earn = CoreService.earn_cores
+    initial_cores = auth_user.cores
+
+    async def earn_then_fail(core_service, *args, **kwargs):
+        await original_earn(core_service, *args, **kwargs)
+        raise RuntimeError("core ledger failed")
+
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(return_value=passing_judge_result()),
+    ), patch.object(CoreService, "earn_cores", new=earn_then_fail):
+        with pytest.raises(RuntimeError, match="core ledger failed"):
+            await service.submit_exercise(
+                user_id=auth_user.id,
+                exercise_id=exercise.id,
+                code="print(42)",
+                language="python",
+                test_results=[],
+            )
+    await db_session.rollback()
+
+    await db_session.refresh(progress)
+    await db_session.refresh(next_progress)
+    await db_session.refresh(auth_user)
+    assert progress.attempt_count == 0
+    assert progress.is_correct is False
+    assert next_progress.is_unlocked is False
+    assert auth_user.cores == initial_cores
+    assert list((await db_session.execute(select(ActivityLog))).scalars()) == []
+    assert list((await db_session.execute(select(UserArenaProfile))).scalars()) == []
+    assert list((await db_session.execute(select(CoreTransaction))).scalars()) == []
+    assert list((await db_session.execute(select(TierTransaction))).scalars()) == []
+
+
+@pytest.mark.asyncio
+async def test_tier_failure_rolls_back_wrong_attempt_side_effects(
+    db_session, auth_user
+) -> None:
+    exercise, progress, _ = await persist_arena_pair(db_session, auth_user.id)
+    service = ChallengeSubmissionService(db_session)
+    original_record = TierTransactionService.record_transaction
+
+    async def record_then_fail(transaction_service, *args, **kwargs):
+        await original_record(transaction_service, *args, **kwargs)
+        raise RuntimeError("tier ledger failed")
+
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(return_value=failing_judge_result()),
+    ), patch.object(
+        TierTransactionService, "record_transaction", new=record_then_fail
+    ):
+        with pytest.raises(RuntimeError, match="tier ledger failed"):
+            await service.submit_exercise(
+                user_id=auth_user.id,
+                exercise_id=exercise.id,
+                code="print(0)",
+                language="python",
+                test_results=[],
+            )
+    await db_session.rollback()
+
+    await db_session.refresh(progress)
+    assert progress.attempt_count == 0
+    assert list((await db_session.execute(select(ActivityLog))).scalars()) == []
+    assert list((await db_session.execute(select(WrongQuestion))).scalars()) == []
+    assert list((await db_session.execute(select(SpacedRepetition))).scalars()) == []
+    assert list((await db_session.execute(select(UserArenaProfile))).scalars()) == []
+    assert list((await db_session.execute(select(TierTransaction))).scalars()) == []
+
+
+@pytest.mark.asyncio
+async def test_repeat_correct_does_not_duplicate_reward_ledgers(
+    db_session, auth_user
+) -> None:
+    exercise, progress, _ = await persist_arena_pair(db_session, auth_user.id)
+    service = ChallengeSubmissionService(db_session)
+    judge = AsyncMock(return_value=passing_judge_result())
+
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=judge,
+    ):
+        first = await service.submit_exercise(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+            code="print(42)",
+            language="python",
+            test_results=[],
+        )
+        await db_session.commit()
+        second = await service.submit_exercise(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+            code="print(42)",
+            language="python",
+            test_results=[],
+        )
+
+    core_transactions = list(
+        (await db_session.execute(select(CoreTransaction))).scalars().all()
+    )
+    tier_transactions = list(
+        (await db_session.execute(select(TierTransaction))).scalars().all()
+    )
+    assert first["cores_earned"] == 3
+    assert second["stars_earned"] == 0
+    assert second["cores_earned"] == 0
+    assert len(core_transactions) == 1
+    assert len(tier_transactions) == 1

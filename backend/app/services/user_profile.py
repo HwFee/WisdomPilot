@@ -74,6 +74,21 @@ class UserProfileService:
 
         return profile
 
+    async def get_or_create_profile_for_update(
+        self, user_id: str
+    ) -> UserArenaProfile:
+        result = await self.db.execute(
+            select(UserArenaProfile)
+            .where(UserArenaProfile.user_id == user_id)
+            .with_for_update()
+        )
+        profile = result.scalar_one_or_none()
+        if profile is None:
+            profile = UserArenaProfile(user_id=user_id)
+            self.db.add(profile)
+            await self.db.flush()
+        return profile
+
     async def update_after_exercise(
         self,
         user_id: str,
