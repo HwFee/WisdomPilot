@@ -689,16 +689,23 @@ MAX_EXISTING_DIFFICULTY_SAMPLE = 100
 Replace the old `append_exercises` with selection-only helpers:
 
 ```python
-@staticmethod
-def _infer_append_difficulty(
-    existing_exercises: list[Exercise],
+async def _infer_append_difficulty(
+    self,
+    existing_ids: list[int],
     requested_difficulty: int | None,
 ) -> int:
     if requested_difficulty is not None:
         return requested_difficulty
-    if not existing_exercises:
+    if not existing_ids:
         return MIN_CHALLENGE_DIFFICULTY
-    sampled = existing_exercises[:MAX_EXISTING_DIFFICULTY_SAMPLE]
+    result = await self.db.execute(
+        select(Exercise)
+        .where(Exercise.id.in_(existing_ids))
+        .limit(MAX_EXISTING_DIFFICULTY_SAMPLE)
+    )
+    sampled = list(result.scalars().all())
+    if not sampled:
+        return MIN_CHALLENGE_DIFFICULTY
     average = sum(exercise.difficulty for exercise in sampled) / len(sampled)
     return max(
         MIN_CHALLENGE_DIFFICULTY,
@@ -822,15 +829,14 @@ async def select_append_exercises(
     self,
     *,
     user_id: str,
-    existing_exercises: list[Exercise],
+    existing_ids: list[int],
     difficulty_level: int | None,
     count: int,
 ) -> list[Exercise]:
-    effective_difficulty = self._infer_append_difficulty(
-        existing_exercises,
+    effective_difficulty = await self._infer_append_difficulty(
+        existing_ids,
         difficulty_level,
     )
-    existing_ids = [exercise.id for exercise in existing_exercises]
     selected = await self._recommended_append_exercises(
         user_id=user_id,
         difficulty_level=effective_difficulty,
@@ -862,12 +868,10 @@ async def append_exercises(
 ) -> list[int]:
     await self._lock_owner(user_id)
     progress_records = await self.progress.list_user_progress(user_id)
-    existing_exercises = await self.progress.get_exercises_for_progress(
-        progress_records
-    )
+    existing_ids = [progress.exercise_id for progress in progress_records]
     selected = await self.selection.select_append_exercises(
         user_id=user_id,
-        existing_exercises=existing_exercises,
+        existing_ids=existing_ids,
         difficulty_level=difficulty_level,
         count=count,
     )
