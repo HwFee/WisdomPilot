@@ -296,19 +296,33 @@ async def test_complete_rejects_closed_injected_client() -> None:
 
 
 class InterruptingStream(httpx.AsyncByteStream):
-    def __init__(self, chunks: list[bytes], *, interrupt: bool = False) -> None:
+    def __init__(
+        self,
+        chunks: list[bytes],
+        *,
+        interrupt: bool = False,
+        interruption_message: str = "stream interrupted",
+    ) -> None:
         self.chunks = chunks
         self.interrupt = interrupt
+        self.interruption_message = interruption_message
         self.closed = False
 
     async def __aiter__(self):
         for chunk in self.chunks:
             yield chunk
         if self.interrupt:
-            raise httpx.ReadError("stream interrupted")
+            raise httpx.ReadError(self.interruption_message)
 
     async def aclose(self) -> None:
         self.closed = True
+
+
+class TimeoutStream(InterruptingStream):
+    async def __aiter__(self):
+        for chunk in self.chunks:
+            yield chunk
+        raise httpx.ReadTimeout("slow error body")
 
 
 @pytest.mark.asyncio
@@ -422,6 +436,32 @@ async def test_stream_does_not_retry_4xx_and_redacts_summary() -> None:
 
 
 @pytest.mark.asyncio
+async def test_stream_does_not_retry_4xx_when_error_body_times_out() -> None:
+    attempts = 0
+    upstream = TimeoutStream([])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(401, request=request, stream=upstream)
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    ) as http_client:
+        client = OpenAICompatibleClient(
+            provider_config(),
+            http_client=http_client,
+            sleep=recording_sleep([]),
+        )
+        with pytest.raises(AIProviderHTTPError) as captured:
+            [chunk async for chunk in client.stream([])]
+
+    assert attempts == 1
+    assert captured.value.status_code == 401
+    assert upstream.closed is True
+
+
+@pytest.mark.asyncio
 async def test_stream_does_not_retry_or_expose_request_protocol_error() -> None:
     attempts = 0
 
@@ -488,6 +528,31 @@ async def test_stream_does_not_restart_after_partial_read_failure() -> None:
 
     assert captured.value.content_started is True
     assert attempts == 1
+    assert upstream.closed is True
+
+
+@pytest.mark.asyncio
+async def test_stream_interruption_does_not_expose_request_details() -> None:
+    upstream = InterruptingStream(
+        [b'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n'],
+        interrupt=True,
+        interruption_message="Authorization: Bearer secret-key",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, request=request, stream=upstream)
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    ) as http_client:
+        client = OpenAICompatibleClient(provider_config(), http_client=http_client)
+        with pytest.raises(AIProviderStreamError) as captured:
+            [chunk async for chunk in client.stream([])]
+
+    formatted = "".join(traceback.format_exception(captured.value))
+    assert captured.value.content_started is True
+    assert "secret-key" not in formatted
+    assert "Authorization" not in formatted
     assert upstream.closed is True
 
 

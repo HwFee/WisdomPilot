@@ -8,7 +8,6 @@ from app.schemas.ai import AIProviderConfig
 from app.services.ai_provider.base import AIMessage
 from app.services.ai_provider.errors import (
     AIProviderConfigurationError,
-    AIProviderError,
     AIProviderHTTPError,
     AIProviderNetworkError,
     AIProviderProtocolError,
@@ -135,8 +134,6 @@ class OpenAICompatibleClient:
         response: httpx.Response | None = None
         try:
             response = await client.send(request, stream=stream)
-            if stream and self._is_http_error(response):
-                await response.aread()
         except (httpx.ConnectError, httpx.TimeoutException):
             if response is not None:
                 await response.aclose()
@@ -145,6 +142,11 @@ class OpenAICompatibleClient:
             if response is not None:
                 await response.aclose()
             return None, False
+        if stream and self._is_http_error(response):
+            try:
+                await response.aread()
+            except (httpx.RequestError, httpx.StreamError):
+                pass
         return response, False
 
     async def _request_with_retries(
@@ -213,32 +215,34 @@ class OpenAICompatibleClient:
         response = await self._request_with_retries(messages, stream=True)
         content_started = False
         done = False
+        stream_interrupted = False
         try:
-            async for line in response.aiter_lines():
-                if not line.startswith("data: "):
-                    continue
-                data = line[6:]
-                if data == "[DONE]":
-                    done = True
-                    break
-                content = self._parse_stream_content(
-                    data, content_started=content_started
+            try:
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data = line[6:]
+                    if data == "[DONE]":
+                        done = True
+                        break
+                    content = self._parse_stream_content(
+                        data, content_started=content_started
+                    )
+                    if content:
+                        content_started = True
+                        yield content
+            except (httpx.RequestError, httpx.StreamError):
+                stream_interrupted = True
+            if stream_interrupted:
+                raise AIProviderStreamError(
+                    "AI provider stream was interrupted",
+                    content_started=content_started,
                 )
-                if content:
-                    content_started = True
-                    yield content
             if not done:
                 raise AIProviderStreamError(
                     "AI provider stream ended before completion",
                     content_started=content_started,
                 )
-        except AIProviderError:
-            raise
-        except (httpx.RequestError, httpx.StreamError) as error:
-            raise AIProviderStreamError(
-                "AI provider stream was interrupted",
-                content_started=content_started,
-            ) from error
         finally:
             await response.aclose()
 
