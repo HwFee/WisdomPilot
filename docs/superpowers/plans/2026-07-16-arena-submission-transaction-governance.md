@@ -54,7 +54,7 @@
 - Preserves: `JudgeUnavailableError` importable from `challenge_path.submission`.
 - Preserves: existing 400/503 details and authoritative judging behavior.
 
-- [ ] **Step 1: Add failing typed-error and Router tests**
+- [x] **Step 1: Add failing typed-error and Router tests**
 
 Create `backend/tests/test_arena_submission_governance.py`:
 
@@ -149,7 +149,7 @@ async def test_unsupported_language_raises_typed_error():
         )
 ```
 
-- [ ] **Step 2: Run the tests and confirm typed interfaces are absent**
+- [x] **Step 2: Run the tests and confirm typed interfaces are absent**
 
 Run from `backend`:
 
@@ -159,7 +159,7 @@ py -3 -m pytest tests/test_arena_submission_governance.py tests/test_challenge_a
 
 Expected: collection fails because `challenge_path.errors` does not exist.
 
-- [ ] **Step 3: Add FastAPI-independent errors**
+- [x] **Step 3: Add FastAPI-independent errors**
 
 Create `backend/app/services/challenge_path/errors.py`:
 
@@ -197,7 +197,7 @@ class JudgeUnavailableError(ChallengeSubmissionError):
 
 Export these classes from `challenge_path/__init__.py`.
 
-- [ ] **Step 4: Replace service HTTP/ValueError failures**
+- [x] **Step 4: Replace service HTTP/ValueError failures**
 
 In `submission.py`, remove FastAPI imports, import the errors, remove the local `JudgeUnavailableError`, and use:
 
@@ -218,7 +218,7 @@ if exercise.type == "programming" and not backend_test_cases:
 
 Do not translate `JudgeUnavailableError` inside the service; let it propagate to the Router. Re-export it from `submission.py` by importing it at module scope.
 
-- [ ] **Step 5: Map only known errors in the submit Router**
+- [x] **Step 5: Map only known errors in the submit Router**
 
 Import the five errors into `learning_path.py`. Replace the broad submit catch with:
 
@@ -234,7 +234,7 @@ Import the five errors into `learning_path.py`. Replace the broad submit catch w
         raise HTTPException(status_code=503, detail=str(error)) from error
 ```
 
-- [ ] **Step 6: Verify errors and commit Task 1**
+- [x] **Step 6: Verify errors and commit Task 1**
 
 ```powershell
 py -3 -m pytest tests/test_arena_submission_governance.py tests/test_challenge_authoritative_submission.py -q
@@ -264,7 +264,7 @@ Expected: tests and Pyright pass; submission service has no FastAPI match. Other
 - Produces: `all_test_cases_passed(test_results) -> bool` in `submission.py`.
 - Changes: `ChallengeSubmissionService(db)` no longer consumes a legacy service.
 
-- [ ] **Step 1: Add failing state and no-commit tests**
+- [x] **Step 1: Add failing state and no-commit tests**
 
 Append helpers and tests to `test_arena_submission_governance.py`:
 
@@ -371,7 +371,7 @@ async def test_state_service_rejects_missing_progress_with_typed_error(
         )
 ```
 
-- [ ] **Step 2: Run and confirm the state module is absent**
+- [x] **Step 2: Run and confirm the state module is absent**
 
 ```powershell
 py -3 -m pytest tests/test_arena_submission_governance.py -q
@@ -379,7 +379,7 @@ py -3 -m pytest tests/test_arena_submission_governance.py -q
 
 Expected: collection fails with `ModuleNotFoundError` for `submission_state`.
 
-- [ ] **Step 3: Implement the focused state service**
+- [x] **Step 3: Implement the focused state service**
 
 Create `submission_state.py` with:
 
@@ -510,7 +510,7 @@ Add these exact helpers to the class:
         return True
 ```
 
-- [ ] **Step 4: Make submission.py the full use-case orchestrator**
+- [x] **Step 4: Make submission.py the full use-case orchestrator**
 
 Move strict pass parsing to these module-level functions:
 
@@ -573,7 +573,7 @@ class ChallengeSubmissionService:
     }
 ```
 
-- [ ] **Step 5: Remove legacy submission and update callers/tests**
+- [x] **Step 5: Remove legacy submission and update callers/tests**
 
 Delete `ChallengePathService._is_strict_passed`, `_all_test_cases_passed`, `submit_exercise`, and `_submit_exercise_impl`, plus their unused imports. Keep selection/progress/get_stats delegates and compatibility aliases.
 
@@ -585,7 +585,7 @@ service = ChallengeSubmissionService(db)
 
 Update `test_arena_submission_result.py` to import and call `all_test_cases_passed` directly.
 
-- [ ] **Step 6: Verify state extraction and commit Task 2**
+- [x] **Step 6: Verify state extraction and commit Task 2**
 
 ```powershell
 py -3 -m pytest tests/test_arena_submission_governance.py tests/test_challenge_authoritative_submission.py tests/test_learning_path_challenge.py tests/test_arena_submission_result.py -q
@@ -611,7 +611,7 @@ Expected: tests and Pyright pass; the legacy/private search has no matches in `a
 - Guarantees: reward/ledger failures propagate and roll back.
 - Guarantees: repeat correct produces zero additional star/core/tier transactions.
 
-- [ ] **Step 1: Add failing atomic rollback and retry tests**
+- [x] **Step 1: Add failing atomic rollback and retry tests**
 
 Append imports and two integration tests to `test_arena_submission_governance.py`:
 
@@ -777,7 +777,7 @@ async def test_repeat_correct_does_not_duplicate_reward_ledgers(
     assert len(tier_transactions) == 1
 ```
 
-- [ ] **Step 2: Run and confirm swallowed core failure commits partial state**
+- [x] **Step 2: Run and confirm swallowed core failure commits partial state**
 
 ```powershell
 py -3 -m pytest tests/test_arena_submission_governance.py -q
@@ -785,7 +785,7 @@ py -3 -m pytest tests/test_arena_submission_governance.py -q
 
 Expected: rollback test fails because `_award_cores` catches the injected error and the later profile commit persists partial state.
 
-- [ ] **Step 3: Stop swallowing reward and transaction failures**
+- [x] **Step 3: Stop swallowing reward and transaction failures**
 
 In `rewards.py`, define:
 
@@ -870,7 +870,7 @@ Import `TierTransactionService` at module scope and replace `_record_tier_transa
         )
 ```
 
-- [ ] **Step 4: Centralize locked Arena profile acquisition**
+- [x] **Step 4: Centralize locked Arena profile acquisition**
 
 Add to `UserProfileService`:
 
@@ -900,7 +900,7 @@ Change `ChallengeTierRewardCalculator._get_or_create_profile` to the following a
         ).get_or_create_profile_for_update(user_id)
 ```
 
-- [ ] **Step 5: Verify atomic rewards and commit Task 3**
+- [x] **Step 5: Verify atomic rewards and commit Task 3**
 
 ```powershell
 py -3 -m pytest tests/test_arena_submission_governance.py tests/test_challenge_authoritative_submission.py tests/test_cores.py tests/test_tier_system.py tests/test_user_arena.py -q
@@ -926,7 +926,7 @@ Expected: selected tests pass; scoped services contain no broad catch or commit.
 - Changes: the method flushes but does not commit.
 - Produces: one complete recomputation of Arena statistics per submission.
 
-- [ ] **Step 1: Change tests to require flush/no-commit and one streak increment**
+- [x] **Step 1: Change tests to require flush/no-commit and one streak increment**
 
 In `test_user_profile.py`, change the progress mock to match the new joined query:
 
@@ -986,7 +986,7 @@ async def test_first_correct_updates_profile_streak_once(
     assert profile.wins == 1
 ```
 
-- [ ] **Step 2: Run and confirm commit/double-streak failures**
+- [x] **Step 2: Run and confirm commit/double-streak failures**
 
 ```powershell
 py -3 -m pytest tests/test_user_profile.py tests/test_arena_submission_governance.py -q
@@ -994,7 +994,7 @@ py -3 -m pytest tests/test_user_profile.py tests/test_arena_submission_governanc
 
 Expected: the mock test reports commit usage and the integration test sees `current_streak == 2`.
 
-- [ ] **Step 3: Consolidate complete statistics in UserProfileService**
+- [x] **Step 3: Consolidate complete statistics in UserProfileService**
 
 Replace `update_after_exercise` with:
 
@@ -1089,11 +1089,11 @@ for progress in reversed(progresses):
 profile.current_streak = current_streak
 ```
 
-- [ ] **Step 4: Remove duplicate reward profile statistics**
+- [x] **Step 4: Remove duplicate reward profile statistics**
 
 Delete the `_update_profile_stats` call and method from `ChallengeRewardService`, plus imports only used by that method. The submission orchestrator's `UserProfileService.update_after_exercise` call becomes the sole statistics owner.
 
-- [ ] **Step 5: Verify profile ownership and commit Task 4**
+- [x] **Step 5: Verify profile ownership and commit Task 4**
 
 ```powershell
 py -3 -m pytest tests/test_user_profile.py tests/test_user_arena.py tests/test_hybrid_recommendation.py tests/test_arena_submission_governance.py tests/test_challenge_authoritative_submission.py -q
@@ -1117,7 +1117,7 @@ Expected: selected tests pass. The search may find commits in unrelated `UserPro
 - Produces: complete `SubmitExerciseResponse` including `cores_earned`.
 - Guarantees: Router success response is schema-validated and service commits remain absent.
 
-- [ ] **Step 1: Add failing exact response and no-service-commit tests**
+- [x] **Step 1: Add failing exact response and no-service-commit tests**
 
 Append:
 
@@ -1186,7 +1186,7 @@ async def test_submit_api_preserves_exact_success_fields(
     }
 ```
 
-- [ ] **Step 2: Run and confirm the service still commits through the profile method or response schema is incomplete**
+- [x] **Step 2: Run and confirm the service still commits through the profile method or response schema is incomplete**
 
 ```powershell
 py -3 -m pytest tests/test_arena_submission_governance.py -q
@@ -1194,7 +1194,7 @@ py -3 -m pytest tests/test_arena_submission_governance.py -q
 
 Expected: route response-model assertion fails because the decorator has no model and `cores_earned` is absent. The no-commit assertion also fails until Task 4 removes the nested profile commit.
 
-- [ ] **Step 3: Complete the response model**
+- [x] **Step 3: Complete the response model**
 
 Add to `SubmitExerciseResponse`:
 
@@ -1208,7 +1208,7 @@ Change the decorator to:
 @router.post("/challenge/submit", response_model=SubmitExerciseResponse)
 ```
 
-- [ ] **Step 4: Run the complete focused governance gate**
+- [x] **Step 4: Run the complete focused governance gate**
 
 ```powershell
 py -3 -m pytest tests/test_arena_submission_governance.py tests/test_challenge_authoritative_submission.py tests/test_learning_path_challenge.py tests/test_arena_submission_result.py tests/test_star_logic.py tests/test_cores.py tests/test_tier_system.py tests/test_user_arena.py tests/test_user_profile.py tests/test_review_api.py tests/test_hybrid_recommendation.py -q
@@ -1217,7 +1217,7 @@ pyright
 
 Expected: all selected tests pass and Pyright reports zero errors.
 
-- [ ] **Step 5: Review and commit Task 5**
+- [x] **Step 5: Review and commit Task 5**
 
 ```powershell
 rg -n "commit\(|except Exception|from fastapi|HTTPException|legacy_service|_submit_exercise_impl" app/services/challenge_path/submission.py app/services/challenge_path/submission_state.py app/services/challenge_path/rewards.py app/services/challenge_path/tier_rewards.py
@@ -1235,7 +1235,7 @@ Expected: forbidden search has no matches; constructor search has no legacy two-
 - Modify: `docs/superpowers/specs/2026-07-15-backend-learning-oriented-governance-design.md`
 - Modify: `docs/superpowers/plans/2026-07-16-arena-submission-transaction-governance.md`
 
-- [ ] **Step 1: Run the full backend gate from the repository root**
+- [x] **Step 1: Run the full backend gate from the repository root**
 
 ```powershell
 py -3 -m pytest backend/tests -q -rs
@@ -1244,7 +1244,7 @@ pyright -p backend/pyrightconfig.json
 
 Expected: every backend test passes with no skipped section; Pyright reports `0 errors, 0 warnings, 0 informations`.
 
-- [ ] **Step 2: Run scope and quality searches**
+- [x] **Step 2: Run scope and quality searches**
 
 ```powershell
 rg -n "commit\(|except Exception|from fastapi|HTTPException|legacy_service|_submit_exercise_impl" backend/app/services/challenge_path/submission.py backend/app/services/challenge_path/submission_state.py backend/app/services/challenge_path/rewards.py backend/app/services/challenge_path/tier_rewards.py
@@ -1255,7 +1255,7 @@ git diff --check 6eba9ea..HEAD
 
 Confirm no frontend, database, migration, Mastery, ChallengeSession, selection, progress, or response-navigation source file changed. Complete DRY, dependency direction, naming, magic-value, function-length, dead-code, and type-safety review.
 
-- [ ] **Step 3: Start FastAPI and Next.js and request live contracts**
+- [x] **Step 3: Start FastAPI and Next.js and request live contracts**
 
 Use ports 8000/3000 if free, otherwise choose free alternatives. Set a dedicated SQLite smoke database and secret, start hidden processes with redirected logs, and verify:
 
@@ -1269,7 +1269,7 @@ POST /api/learning-path/challenge/submit exercise=99999 -> 400 exact typed detai
 
 Inspect backend/frontend stdout and stderr, verify listener command lines, then stop only those processes and prove the ports are free.
 
-- [ ] **Step 4: Synchronize the worktree CodeGraph index**
+- [x] **Step 4: Synchronize the worktree CodeGraph index**
 
 ```powershell
 npx codegraph init .
@@ -1282,16 +1282,49 @@ npx codegraph query -p . _submit_exercise_impl
 
 Expected: Router -> Submission -> State/Reward/Profile edges exist and `_submit_exercise_impl` has no result.
 
-- [ ] **Step 5: Record learning and completion evidence**
+- [x] **Step 5: Record learning and completion evidence**
 
 Append a 3B-1 implementation record to the global governance design. Add `## Completion Evidence` here with red-green outputs, focused/full counts, Pyright, live statuses, CodeGraph edges, commits, deviations, review findings, and residual SQLite/3B-2 risks.
 
-- [ ] **Step 6: Commit completion records**
+- [x] **Step 6: Commit completion records**
 
 ```powershell
 git add docs/superpowers/specs/2026-07-15-backend-learning-oriented-governance-design.md docs/superpowers/plans/2026-07-16-arena-submission-transaction-governance.md
 git commit -m "docs: record arena submission governance batch"
 ```
+
+## Completion Evidence
+
+### TDD And Focused Regression History
+
+- Task 1 RED failed collection with `ModuleNotFoundError: app.services.challenge_path.errors`; GREEN was `12 passed in 2.30s`.
+- Task 2 RED failed collection with `ModuleNotFoundError: app.services.challenge_path.submission_state`; focused GREEN was `5 passed in 1.40s`, and the four-file regression gate was `41 passed in 9.67s`.
+- Task 3 RED was `2 failed, 6 passed in 2.53s`, proving core and tier ledger failures were swallowed; focused GREEN was `8 passed in 2.24s`, and the required reward regression gate was `59 passed in 7.42s`.
+- Task 4 RED was `1 failed, 17 passed in 3.04s`, proving the profile path committed instead of flushing. Focused GREEN was `18 passed in 2.62s`; an explicit correct/correct/wrong/correct regression also failed when future unattempted rows were included and passed after the approved attempted-row filter. The final profile regression gate was `65 passed in 4.99s`.
+- Task 5 produced two structural RED runs of `1 failed, 12 passed`: first the FastAPI lazy-router lookup was corrected, then the route correctly failed because `response_model` was `None`. GREEN was `13 passed`; the final focused governance gate was `152 passed in 19.73s`.
+
+### Final Gates
+
+- `py -3 -m pytest backend/tests -q -rs`: `649 passed in 92.87s`, with no skipped section.
+- `pyright -p backend/pyrightconfig.json`: `0 errors, 0 warnings, 0 informations`. A second Pyright run after the byte-only whitespace correction produced the same result.
+- Scope search found no service commit, FastAPI/HTTP exception dependency, legacy service, or `_submit_exercise_impl` in the four submission services. The sole `except Exception` hit is the pre-existing Judge0 transport translator at `submission.py:115`, unchanged from the baseline and required to raise `JudgeUnavailableError`.
+- `git diff --check 6eba9ea..HEAD` initially exposed one CRLF-only blank line in `user_profile.py`. Byte inspection proved the mixed-line-ending cause; commit `50fa5b7` changes only that separator line, after which the exact aggregate check exits zero.
+- Changed-source inspection found no frontend, schema/database, migration, Mastery, ChallengeSession, selection, progress, response, or navigation source changes. `arena_infinite.py` only loses the legacy submit mutation while keeping selection/progress compatibility delegates.
+- Rule 10 passed for DRY, one-way Router -> Submission -> State/Reward/Profile dependencies, descriptive naming, named business constants, explicit orchestration/section boundaries for longer functions, reachable symbols, and type safety. No database or AGENTS.md maintenance was required.
+
+### Live Contracts And Maintenance
+
+- Hidden managed FastAPI and Next.js processes used a dedicated SQLite database, a test-only secret, and preferred ports `8000` and `3000`.
+- `GET /health` returned `200`; Next.js compiled `/` in `12.4s` and returned `200`; registration returned `201` with a bearer token; challenge progress returned `200`; missing exercise submission returned `400` with exact body `{"detail":"Exercise 99999 not found"}`.
+- Backend startup completed and initialized/stamped the smoke database; frontend startup and compilation completed. Expected negative-request rollback traces were inspected. Only the managed Uvicorn PID and Next.js parent/listener PIDs were stopped, both ports were proven free, and the resolved in-worktree smoke database/log directory was removed. The intentional `frontend/node_modules` junction was not modified.
+- CodeGraph was already initialized; `npx codegraph sync .` completed. Impacts contained 15 symbols for `ChallengeSubmissionService`, 24 for `ChallengeSubmissionStateService`, and 28 for `ChallengeRewardService`, showing the Router -> Submission -> State/Reward/Profile flow and governance tests. Querying `_submit_exercise_impl` returned `No results found`.
+
+### Commits, Deviations, And Review
+
+- Implementation commits: `36edbff` (typed failures), `0b6461a` (corrected exception-contract plan text), `366bfd2` (locked state extraction), `835e8be` (atomic rewards), `6517680` (stale reward logger cleanup), `daa67dc` (single-owned profile updates), `53a65ff` (response/transaction contract), and `50fa5b7` (aggregate whitespace gate correction).
+- Approved Task 4 deviation: streaks use rows with `attempt_count > 0`. Future unattempted rows do not reset a streak, while attempted incorrect rows remain in sequence and do reset it. Unit and integration tests cover both cases.
+- All task review gates approved. Review findings for a stale docstring/logger and Task 4 P3 stale-import/mixed-state/attempted-wrong coverage were corrected before completion.
+- Residual SQLite risk: SQLite does not exercise production `SELECT ... FOR UPDATE` contention, so concurrency behavior still requires a production-dialect integration gate. Future 3B-2 work should govern the remaining non-submit challenge paths and broad/`ValueError` mappings without reopening this submission transaction or changing selection/navigation behavior opportunistically.
 
 ## Plan Self-Review
 
