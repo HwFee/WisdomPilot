@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable
+import json
 
 import httpx
 
@@ -7,9 +8,11 @@ from app.schemas.ai import AIProviderConfig
 from app.services.ai_provider.base import AIMessage
 from app.services.ai_provider.errors import (
     AIProviderConfigurationError,
+    AIProviderError,
     AIProviderHTTPError,
     AIProviderNetworkError,
     AIProviderProtocolError,
+    AIProviderStreamError,
 )
 
 DEFAULT_AI_BASE_URL = "https://api.deepseek.com"
@@ -143,8 +146,99 @@ class OpenAICompatibleClient:
             return self._extract_content(response)
         raise AssertionError("provider retry loop must return or raise")
 
-    def stream(self, messages: list[AIMessage]) -> AsyncGenerator[str, None]:
-        raise NotImplementedError
+    async def _connect_stream(
+        self, messages: list[AIMessage]
+    ) -> httpx.Response:
+        config = self._config
+        client = self._get_http_client()
+        url = self._url(config)
+        headers = self._headers(config)
+        payload = self._payload(config, messages, stream=True)
+        for attempt in range(MAX_PROVIDER_ATTEMPTS):
+            request = client.build_request(
+                "POST",
+                url,
+                headers=headers,
+                json=payload,
+            )
+            response: httpx.Response | None = None
+            try:
+                response = await client.send(request, stream=True)
+                if response.is_error:
+                    await response.aread()
+            except httpx.RequestError as error:
+                if response is not None:
+                    await response.aclose()
+                if attempt == MAX_PROVIDER_ATTEMPTS - 1:
+                    raise AIProviderNetworkError(MAX_PROVIDER_ATTEMPTS) from error
+                await self._sleep(attempt + 1)
+                continue
+
+            if response.is_error:
+                provider_error = self._http_error(response, config.api_key)
+                await response.aclose()
+                if (
+                    response.status_code >= RETRYABLE_STATUS_CODE
+                    and attempt < MAX_PROVIDER_ATTEMPTS - 1
+                ):
+                    await self._sleep(attempt + 1)
+                    continue
+                raise provider_error
+            return response
+        raise AssertionError("stream retry loop must return or raise")
+
+    @staticmethod
+    def _parse_stream_content(data: str, *, content_started: bool) -> str:
+        try:
+            payload = json.loads(data)
+            delta = payload["choices"][0]["delta"]
+            content = delta.get("content", "")
+        except (ValueError, KeyError, IndexError, TypeError) as error:
+            raise AIProviderProtocolError(
+                "AI provider returned an invalid stream payload",
+                content_started=content_started,
+            ) from error
+        if not isinstance(content, str):
+            raise AIProviderProtocolError(
+                "AI provider stream content must be a string",
+                content_started=content_started,
+            )
+        return content
+
+    async def stream(
+        self, messages: list[AIMessage]
+    ) -> AsyncGenerator[str, None]:
+        response = await self._connect_stream(messages)
+        content_started = False
+        done = False
+        try:
+            async for line in response.aiter_lines():
+                if not line.startswith("data: "):
+                    continue
+                data = line[6:]
+                if data == "[DONE]":
+                    done = True
+                    break
+                content = self._parse_stream_content(
+                    data, content_started=content_started
+                )
+                if content:
+                    content_started = True
+                    yield content
+            if not done:
+                raise AIProviderStreamError(
+                    "AI provider stream ended before completion",
+                    content_started=content_started,
+                )
+        except AIProviderError:
+            raise
+        except (httpx.RequestError, httpx.StreamError) as error:
+            raise AIProviderStreamError(
+                "AI provider stream was interrupted",
+                content_started=content_started,
+            ) from error
+        finally:
+            await response.aclose()
 
     async def close(self) -> None:
         if (
