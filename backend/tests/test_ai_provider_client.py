@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable
+import traceback
 
 import httpx
 import pytest
@@ -114,6 +115,76 @@ async def test_complete_retries_network_failure_three_total_attempts() -> None:
 
     assert attempts == 3
     assert delays == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_complete_retries_timeout_three_total_attempts() -> None:
+    attempts = 0
+    delays: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        raise httpx.ReadTimeout("slow provider", request=request)
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    ) as http_client:
+        client = OpenAICompatibleClient(
+            provider_config(),
+            http_client=http_client,
+            sleep=recording_sleep(delays),
+        )
+        with pytest.raises(AIProviderNetworkError, match="3 attempts"):
+            await client.complete([])
+
+    assert attempts == 3
+    assert delays == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_complete_does_not_retry_or_expose_request_protocol_error() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        raise httpx.LocalProtocolError(
+            "Authorization: Bearer secret-key",
+            request=request,
+        )
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    ) as http_client:
+        client = OpenAICompatibleClient(provider_config(), http_client=http_client)
+        with pytest.raises(AIProviderProtocolError) as captured:
+            await client.complete([])
+
+    formatted = "".join(traceback.format_exception(captured.value))
+    assert attempts == 1
+    assert "secret-key" not in formatted
+    assert "Authorization" not in formatted
+
+
+@pytest.mark.asyncio
+async def test_complete_does_not_retry_non_5xx_extension_status() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(600, text="extension failure", request=request)
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    ) as http_client:
+        client = OpenAICompatibleClient(provider_config(), http_client=http_client)
+        with pytest.raises(AIProviderHTTPError) as captured:
+            await client.complete([])
+
+    assert attempts == 1
+    assert captured.value.status_code == 600
 
 
 @pytest.mark.asyncio
@@ -348,6 +419,51 @@ async def test_stream_does_not_retry_4xx_and_redacts_summary() -> None:
     assert attempts == 1
     assert captured.value.status_code == 401
     assert captured.value.response_summary == "bad <redacted>"
+
+
+@pytest.mark.asyncio
+async def test_stream_does_not_retry_or_expose_request_protocol_error() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        raise httpx.LocalProtocolError(
+            "Authorization: Bearer secret-key",
+            request=request,
+        )
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    ) as http_client:
+        client = OpenAICompatibleClient(provider_config(), http_client=http_client)
+        with pytest.raises(AIProviderProtocolError) as captured:
+            [chunk async for chunk in client.stream([])]
+
+    formatted = "".join(traceback.format_exception(captured.value))
+    assert attempts == 1
+    assert "secret-key" not in formatted
+    assert "Authorization" not in formatted
+
+
+@pytest.mark.asyncio
+async def test_stream_does_not_retry_non_5xx_extension_status() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(600, text="extension failure", request=request)
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler)
+    ) as http_client:
+        client = OpenAICompatibleClient(provider_config(), http_client=http_client)
+        with pytest.raises(AIProviderHTTPError) as captured:
+            [chunk async for chunk in client.stream([])]
+
+    assert attempts == 1
+    assert captured.value.status_code == 600
 
 
 @pytest.mark.asyncio

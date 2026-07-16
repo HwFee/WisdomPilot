@@ -18,7 +18,9 @@ from app.services.ai_provider.errors import (
 DEFAULT_AI_BASE_URL = "https://api.deepseek.com"
 CHAT_COMPLETIONS_PATH = "/chat/completions"
 MAX_PROVIDER_ATTEMPTS = 3
+HTTP_ERROR_STATUS_CODE = 400
 RETRYABLE_STATUS_CODE = 500
+SERVER_ERROR_STATUS_CODE_LIMIT = 600
 ERROR_SUMMARY_LIMIT = 500
 DEFAULT_TIMEOUT_SECONDS = 60.0
 MAX_KEEPALIVE_CONNECTIONS = 5
@@ -101,6 +103,14 @@ class OpenAICompatibleClient:
         return AIProviderHTTPError(response.status_code, summary)
 
     @staticmethod
+    def _is_http_error(response: httpx.Response) -> bool:
+        return response.status_code >= HTTP_ERROR_STATUS_CODE
+
+    @staticmethod
+    def _is_retryable_status(status_code: int) -> bool:
+        return RETRYABLE_STATUS_CODE <= status_code < SERVER_ERROR_STATUS_CODE_LIMIT
+
+    @staticmethod
     def _extract_content(response: httpx.Response) -> str:
         try:
             payload = response.json()
@@ -115,77 +125,69 @@ class OpenAICompatibleClient:
             )
         return content
 
-    async def complete(self, messages: list[AIMessage]) -> str:
-        config = self._config
-        client = self._get_http_client()
-        url = self._url(config)
-        headers = self._headers(config)
-        payload = self._payload(config, messages)
-        for attempt in range(MAX_PROVIDER_ATTEMPTS):
-            try:
-                response = await client.post(
-                    url,
-                    headers=headers,
-                    json=payload,
-                )
-            except httpx.RequestError as error:
-                if attempt == MAX_PROVIDER_ATTEMPTS - 1:
-                    raise AIProviderNetworkError(MAX_PROVIDER_ATTEMPTS) from error
-                await self._sleep(attempt + 1)
-                continue
+    async def _send_request(
+        self,
+        client: httpx.AsyncClient,
+        request: httpx.Request,
+        *,
+        stream: bool,
+    ) -> tuple[httpx.Response | None, bool]:
+        response: httpx.Response | None = None
+        try:
+            response = await client.send(request, stream=stream)
+            if stream and self._is_http_error(response):
+                await response.aread()
+        except (httpx.ConnectError, httpx.TimeoutException):
+            if response is not None:
+                await response.aclose()
+            return None, True
+        except httpx.RequestError:
+            if response is not None:
+                await response.aclose()
+            return None, False
+        return response, False
 
-            if response.is_error:
-                provider_error = self._http_error(response, config.api_key)
-                if (
-                    response.status_code >= RETRYABLE_STATUS_CODE
-                    and attempt < MAX_PROVIDER_ATTEMPTS - 1
-                ):
-                    await self._sleep(attempt + 1)
-                    continue
-                raise provider_error
-            return self._extract_content(response)
-        raise AssertionError("provider retry loop must return or raise")
-
-    async def _connect_stream(
-        self, messages: list[AIMessage]
+    async def _request_with_retries(
+        self,
+        messages: list[AIMessage],
+        *,
+        stream: bool,
     ) -> httpx.Response:
         config = self._config
         client = self._get_http_client()
         url = self._url(config)
         headers = self._headers(config)
-        payload = self._payload(config, messages, stream=True)
+        payload = self._payload(config, messages, stream=stream)
         for attempt in range(MAX_PROVIDER_ATTEMPTS):
-            request = client.build_request(
-                "POST",
-                url,
-                headers=headers,
-                json=payload,
+            request = client.build_request("POST", url, headers=headers, json=payload)
+            response, retryable_failure = await self._send_request(
+                client, request, stream=stream
             )
-            response: httpx.Response | None = None
-            try:
-                response = await client.send(request, stream=True)
-                if response.is_error:
-                    await response.aread()
-            except httpx.RequestError as error:
-                if response is not None:
-                    await response.aclose()
+            if response is None:
+                if not retryable_failure:
+                    raise AIProviderProtocolError(
+                        "AI provider request failed before receiving a response"
+                    )
                 if attempt == MAX_PROVIDER_ATTEMPTS - 1:
-                    raise AIProviderNetworkError(MAX_PROVIDER_ATTEMPTS) from error
+                    raise AIProviderNetworkError(MAX_PROVIDER_ATTEMPTS)
                 await self._sleep(attempt + 1)
                 continue
-
-            if response.is_error:
+            if self._is_http_error(response):
                 provider_error = self._http_error(response, config.api_key)
                 await response.aclose()
                 if (
-                    response.status_code >= RETRYABLE_STATUS_CODE
+                    self._is_retryable_status(response.status_code)
                     and attempt < MAX_PROVIDER_ATTEMPTS - 1
                 ):
                     await self._sleep(attempt + 1)
                     continue
                 raise provider_error
             return response
-        raise AssertionError("stream retry loop must return or raise")
+        raise AssertionError("provider retry loop must return or raise")
+
+    async def complete(self, messages: list[AIMessage]) -> str:
+        response = await self._request_with_retries(messages, stream=False)
+        return self._extract_content(response)
 
     @staticmethod
     def _parse_stream_content(data: str, *, content_started: bool) -> str:
@@ -208,7 +210,7 @@ class OpenAICompatibleClient:
     async def stream(
         self, messages: list[AIMessage]
     ) -> AsyncGenerator[str, None]:
-        response = await self._connect_stream(messages)
+        response = await self._request_with_retries(messages, stream=True)
         content_started = False
         done = False
         try:
