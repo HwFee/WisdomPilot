@@ -1,5 +1,7 @@
 """Tests for Challenge API endpoints"""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 
 
@@ -88,6 +90,28 @@ class TestChallengeProgress:
             headers=auth_headers,
         )
         assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_progress_rejects_non_positive_query_values(client, auth_headers):
+    for progress in (0, -1):
+        response = await client.post(
+            f"/api/challenges/99999/progress?progress={progress}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_unexpected_start_value_error_is_not_mapped_to_bad_request(
+    client, auth_headers
+):
+    with patch(
+        "app.routers.challenges.challenge_service.start_challenge",
+        new=AsyncMock(side_effect=ValueError("unexpected storage failure")),
+    ):
+        with pytest.raises(ValueError, match="unexpected storage failure"):
+            await client.post("/api/challenges/1/start", headers=auth_headers)
 
 
 @pytest.mark.asyncio

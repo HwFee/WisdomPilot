@@ -1,12 +1,18 @@
 """Challenge API Router"""
 
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
 from app.services.challenge import challenge_service
+from app.services.challenge_errors import (
+    ChallengeAlreadyCompletedError,
+    ChallengeNotFoundError,
+    ChallengeNotStartedError,
+    InvalidProgressDeltaError,
+)
 from app.schemas.challenge import (
     ChallengeListResponse,
     ChallengeDetailResponse,
@@ -18,7 +24,6 @@ from app.schemas.challenge import (
     UserChallengeDetail,
 )
 from app.utils.deps import get_current_active_user
-import logging
 
 router = APIRouter(prefix="/api/challenges", tags=["challenges"])
 
@@ -114,8 +119,11 @@ async def start_challenge(
             user_challenge=UserChallengeSummary.model_validate(user_challenge),
             is_completed=user_challenge.status == "completed",
         )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except (ChallengeNotFoundError, ChallengeAlreadyCompletedError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
 
 
 @router.post("/{challenge_id}/progress")
@@ -123,7 +131,7 @@ async def update_challenge_progress(
     challenge_id: int,
     db: db_dependency,
     current_user: auth_dependency,
-    progress: int = 1,
+    progress: int = Query(default=1, ge=1),
 ):
     """
     Update progress on a challenge.
@@ -141,8 +149,8 @@ async def update_challenge_progress(
             "is_completed": user_challenge.status == "completed",
             "status": user_challenge.status,
         }
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-
-logger = logging.getLogger(__name__)
+    except (ChallengeNotStartedError, InvalidProgressDeltaError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error

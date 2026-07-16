@@ -7,7 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.challenge import Challenge, ChallengeType
 from app.models.user import User
 from app.services.challenge import ChallengeService, resolve_challenge_target
-from app.services.challenge_errors import InvalidChallengeDefinitionError
+from app.services.challenge_errors import (
+    InvalidChallengeDefinitionError,
+    InvalidProgressDeltaError,
+)
 
 
 def challenge_definition(
@@ -97,4 +100,75 @@ async def test_default_initialization_fills_missing_codes_without_committing(
         (await db_session.execute(select(Challenge.code))).scalars().all()
     )
     assert codes == {"FIRST_STEPS", "CHAPTER_MASTER", "STREAK_7"}
+    commit_mock.assert_not_awaited()
+
+
+async def persisted_challenge(
+    db_session: AsyncSession,
+    *,
+    code: str = "STATE_TEST",
+    target: int = 2,
+) -> Challenge:
+    challenge = Challenge(
+        code=code,
+        title="State test",
+        type=ChallengeType.EXERCISE_COUNT.value,
+        requirements={"target": target},
+        rewards={},
+    )
+    db_session.add(challenge)
+    await db_session.commit()
+    await db_session.refresh(challenge)
+    return challenge
+
+
+@pytest.mark.asyncio
+async def test_start_retry_returns_same_record_without_commit(
+    db_session: AsyncSession, auth_user: User
+) -> None:
+    challenge = await persisted_challenge(db_session)
+    service = ChallengeService()
+    with patch.object(db_session, "commit", new=AsyncMock()) as commit_mock:
+        first = await service.start_challenge(db_session, auth_user, challenge.id)
+        second = await service.start_challenge(db_session, auth_user, challenge.id)
+
+    assert second.id == first.id
+    assert second.attempts == 1
+    commit_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("progress_delta", [0, -1])
+async def test_update_progress_rejects_non_positive_delta_without_mutation(
+    db_session: AsyncSession,
+    auth_user: User,
+    progress_delta: int,
+) -> None:
+    challenge = await persisted_challenge(db_session)
+    service = ChallengeService()
+    user_challenge = await service.start_challenge(db_session, auth_user, challenge.id)
+
+    with pytest.raises(InvalidProgressDeltaError):
+        await service.update_progress(
+            db_session, auth_user, challenge.id, progress_delta
+        )
+
+    assert user_challenge.current_progress == 0
+
+
+@pytest.mark.asyncio
+async def test_update_progress_flushes_without_committing(
+    db_session: AsyncSession, auth_user: User
+) -> None:
+    challenge = await persisted_challenge(db_session, target=3)
+    service = ChallengeService()
+    await service.start_challenge(db_session, auth_user, challenge.id)
+    await db_session.commit()
+
+    with patch.object(db_session, "commit", new=AsyncMock()) as commit_mock:
+        result = await service.update_progress(
+            db_session, auth_user, challenge.id, 1
+        )
+
+    assert result.current_progress == 1
     commit_mock.assert_not_awaited()

@@ -11,8 +11,13 @@ from sqlalchemy.orm import selectinload
 from app.models.user import User
 from app.models.challenge import Challenge, ChallengeType
 from app.models.user_challenge import UserChallenge, UserChallengeStatus
-from app.services.challenge_errors import InvalidChallengeDefinitionError
-import logging
+from app.services.challenge_errors import (
+    ChallengeAlreadyCompletedError,
+    ChallengeNotFoundError,
+    ChallengeNotStartedError,
+    InvalidChallengeDefinitionError,
+    InvalidProgressDeltaError,
+)
 
 
 class ChallengeDefinition(TypedDict):
@@ -139,19 +144,33 @@ class ChallengeService:
         )
         return result.scalar_one_or_none()
 
+    async def get_user_challenge_for_update(
+        self, db: AsyncSession, user_id: str, challenge_id: int
+    ) -> UserChallenge | None:
+        """Lock and return a user's progress on a specific challenge."""
+        result = await db.execute(
+            select(UserChallenge)
+            .where(
+                UserChallenge.user_id == user_id,
+                UserChallenge.challenge_id == challenge_id,
+            )
+            .with_for_update()
+        )
+        return result.scalar_one_or_none()
+
     async def start_challenge(
         self, db: AsyncSession, user: User, challenge_id: int
     ) -> UserChallenge:
         """Start a challenge for a user"""
         challenge = await self.get_challenge_by_id(db, challenge_id)
         if not challenge:
-            raise ValueError(f"Challenge {challenge_id} not found")
+            raise ChallengeNotFoundError(challenge_id)
 
         # Check if already started
         existing = await self.get_user_challenge(db, user.id, challenge_id)
         if existing:
             if existing.status == UserChallengeStatus.COMPLETED:
-                raise ValueError("Challenge already completed")
+                raise ChallengeAlreadyCompletedError()
             if existing.status == UserChallengeStatus.IN_PROGRESS:
                 return existing
 
@@ -168,7 +187,7 @@ class ChallengeService:
             started_at=datetime.now(timezone.utc),
         )
         db.add(user_challenge)
-        await db.commit()
+        await db.flush()
         await db.refresh(user_challenge)
         return user_challenge
 
@@ -180,9 +199,14 @@ class ChallengeService:
         progress_delta: int = 1,
     ) -> UserChallenge:
         """Update user's progress on a challenge"""
-        user_challenge = await self.get_user_challenge(db, user.id, challenge_id)
+        if progress_delta <= 0:
+            raise InvalidProgressDeltaError()
+
+        user_challenge = await self.get_user_challenge_for_update(
+            db, user.id, challenge_id
+        )
         if not user_challenge:
-            raise ValueError("Challenge not started")
+            raise ChallengeNotStartedError()
 
         if user_challenge.status == UserChallengeStatus.COMPLETED:
             return user_challenge
@@ -198,7 +222,7 @@ class ChallengeService:
             await self._apply_rewards(db, user, challenge_id)
 
         db.add(user_challenge)
-        await db.commit()
+        await db.flush()
         await db.refresh(user_challenge)
         return user_challenge
 
@@ -242,6 +266,3 @@ class ChallengeService:
 
 
 challenge_service = ChallengeService()
-
-
-logger = logging.getLogger(__name__)
