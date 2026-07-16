@@ -47,7 +47,7 @@
 - Produces: `DEFAULT_CHALLENGE_DEFINITIONS: tuple[dict[str, object], ...]`.
 - Preserves: `ChallengeService.start_challenge(db, user, challenge_id) -> UserChallenge`.
 
-- [ ] **Step 1: Add failing target and initialization tests**
+- [x] **Step 1: Add failing target and initialization tests**
 
 Create `backend/tests/test_challenge_service_governance.py`:
 
@@ -154,7 +154,7 @@ async def test_default_initialization_fills_missing_codes_without_committing(
     commit_mock.assert_not_awaited()
 ```
 
-- [ ] **Step 2: Run the module and confirm the new interfaces are absent**
+- [x] **Step 2: Run the module and confirm the new interfaces are absent**
 
 Run from `backend`:
 
@@ -164,7 +164,7 @@ py -3 -m pytest tests/test_challenge_service_governance.py -q
 
 Expected: collection fails because `resolve_challenge_target` and `challenge_errors` do not exist.
 
-- [ ] **Step 3: Add the definition error and target resolver**
+- [x] **Step 3: Add the definition error and target resolver**
 
 Create `backend/app/services/challenge_errors.py`:
 
@@ -225,7 +225,7 @@ def resolve_challenge_target(challenge: Challenge) -> int:
     return target
 ```
 
-- [ ] **Step 4: Extract default definitions and make initialization incremental**
+- [x] **Step 4: Extract default definitions and make initialization incremental**
 
 Move the existing three dictionaries unchanged into:
 
@@ -284,7 +284,7 @@ target_value = resolve_challenge_target(challenge)
 
 Do not change start's transaction handling until Task 2.
 
-- [ ] **Step 5: Verify target and initialization behavior**
+- [x] **Step 5: Verify target and initialization behavior**
 
 Run:
 
@@ -295,7 +295,7 @@ pyright
 
 Expected: target and incremental initialization tests pass; all existing challenge tests and Pyright pass.
 
-- [ ] **Step 6: Review and commit Task 1**
+- [x] **Step 6: Review and commit Task 1**
 
 ```powershell
 git diff --check
@@ -317,7 +317,7 @@ git commit -m "refactor: define generic challenge targets"
 - Produces: `ChallengeService.get_user_challenge_for_update(...) -> UserChallenge | None`.
 - Preserves: start and progress successful response behavior.
 
-- [ ] **Step 1: Add failing state, transaction, and Router tests**
+- [x] **Step 1: Add failing state, transaction, and Router tests**
 
 Append to `test_challenge_service_governance.py`:
 
@@ -424,7 +424,7 @@ async def test_unexpected_start_value_error_is_not_mapped_to_bad_request(
             await client.post("/api/challenges/1/start", headers=auth_headers)
 ```
 
-- [ ] **Step 2: Run focused tests and confirm old commit/validation/error behavior fails**
+- [x] **Step 2: Run focused tests and confirm old commit/validation/error behavior fails**
 
 ```powershell
 py -3 -m pytest tests/test_challenge_service_governance.py tests/test_challenges.py -q
@@ -432,7 +432,7 @@ py -3 -m pytest tests/test_challenge_service_governance.py tests/test_challenges
 
 Expected: tests fail because service commits, non-positive progress is accepted until lookup, and Router catches unexpected `ValueError`.
 
-- [ ] **Step 3: Add typed state errors**
+- [x] **Step 3: Add typed state errors**
 
 Extend `challenge_errors.py`:
 
@@ -459,7 +459,7 @@ class InvalidProgressDeltaError(ChallengeError):
 
 Use these exact exceptions in `start_challenge` and `update_progress` instead of `ValueError`.
 
-- [ ] **Step 4: Move state persistence to flush and lock progress rows**
+- [x] **Step 4: Move state persistence to flush and lock progress rows**
 
 Add:
 
@@ -499,7 +499,7 @@ user_challenge = await self.get_user_challenge_for_update(
 
 Replace its commit with `await db.flush()` followed by refresh. Keep the completed early return and current reward implementation until Task 3.
 
-- [ ] **Step 5: Map exact errors and validate the Query parameter**
+- [x] **Step 5: Map exact errors and validate the Query parameter**
 
 Import `Query` and the four request-state errors in `routers/challenges.py`. Change the progress parameter to:
 
@@ -527,7 +527,7 @@ except (ChallengeNotStartedError, InvalidProgressDeltaError) as error:
 
 Remove the unused logger.
 
-- [ ] **Step 6: Verify state and API behavior**
+- [x] **Step 6: Verify state and API behavior**
 
 ```powershell
 py -3 -m pytest tests/test_challenge_service_governance.py tests/test_challenges.py tests/test_stats.py -q
@@ -536,7 +536,7 @@ pyright
 
 Expected: all selected tests pass; no service `commit()` remains except none in `challenge.py`; Pyright is clean.
 
-- [ ] **Step 7: Review and commit Task 2**
+- [x] **Step 7: Review and commit Task 2**
 
 ```powershell
 rg -n "commit\(|except ValueError" app/services/challenge.py app/routers/challenges.py
@@ -558,7 +558,7 @@ Expected: the search has no matches and Task 2 files are committed.
 - Produces: one `bonus` transaction with `reference_type="challenge"` and `reference_id=UserChallenge.id` on first completion.
 - Guarantees: a sequential completed retry does not change progress, completion time, balance, total earned, or transaction count.
 
-- [ ] **Step 1: Add failing ledger and retry tests**
+- [x] **Step 1: Add failing ledger and retry tests**
 
 Append imports and tests:
 
@@ -617,7 +617,7 @@ async def test_completion_reward_updates_balance_total_and_ledger_once(
     assert len(repeated_transactions) == 1
 ```
 
-- [ ] **Step 2: Add a failing atomic rollback test**
+- [x] **Step 2: Add a failing atomic rollback test**
 
 ```python
 @pytest.mark.asyncio
@@ -662,7 +662,7 @@ async def test_reward_failure_rolls_back_progress_balance_and_ledger(
 
 Also import `UserChallenge` in the test module.
 
-- [ ] **Step 3: Run the reward tests and confirm direct balance mutation fails the ledger contract**
+- [x] **Step 3: Run the reward tests and confirm direct balance mutation fails the ledger contract**
 
 ```powershell
 py -3 -m pytest tests/test_challenge_service_governance.py -q
@@ -670,7 +670,7 @@ py -3 -m pytest tests/test_challenge_service_governance.py -q
 
 Expected: ledger/total-earned assertions fail because the old `_apply_rewards` only mutates `user.cores`.
 
-- [ ] **Step 4: Delegate rewards to CoreService**
+- [x] **Step 4: Delegate rewards to CoreService**
 
 Import `CoreService` and replace `_apply_rewards` with:
 
@@ -702,7 +702,7 @@ async def _apply_rewards(
 
 Call it with the locked `user_challenge` after setting completed state. Remove the now-unused direct `User` reward mutation and `db.add(user)`.
 
-- [ ] **Step 5: Verify reward consistency and adjacent core behavior**
+- [x] **Step 5: Verify reward consistency and adjacent core behavior**
 
 ```powershell
 py -3 -m pytest tests/test_challenge_service_governance.py tests/test_challenges.py tests/test_cores.py tests/test_checkin.py -q
@@ -711,7 +711,7 @@ pyright
 
 Expected: all selected tests pass, including exact one-transaction retry behavior and rollback.
 
-- [ ] **Step 6: Review and commit Task 3**
+- [x] **Step 6: Review and commit Task 3**
 
 ```powershell
 git diff --check
@@ -733,7 +733,7 @@ git commit -m "fix: make challenge rewards atomic and ledger backed"
 - Produces: `build_user_challenges_response`, `build_user_challenge_response`, `build_challenge_progress_response`.
 - Preserves: all existing successful JSON field names and values.
 
-- [ ] **Step 1: Add failing pure mapper tests**
+- [x] **Step 1: Add failing pure mapper tests**
 
 Create `backend/tests/test_challenge_responses.py`:
 
@@ -801,7 +801,7 @@ def test_build_progress_response_preserves_exact_fields() -> None:
     }
 ```
 
-- [ ] **Step 2: Run mapper tests and confirm the module is absent**
+- [x] **Step 2: Run mapper tests and confirm the module is absent**
 
 ```powershell
 py -3 -m pytest tests/test_challenge_responses.py -q
@@ -809,7 +809,7 @@ py -3 -m pytest tests/test_challenge_responses.py -q
 
 Expected: collection fails with `ModuleNotFoundError` for `challenge_responses`.
 
-- [ ] **Step 3: Add the progress schema and pure mappers**
+- [x] **Step 3: Add the progress schema and pure mappers**
 
 Add to `schemas/challenge.py`:
 
@@ -890,7 +890,7 @@ def build_challenge_progress_response(
     )
 ```
 
-- [ ] **Step 4: Replace Router response assembly**
+- [x] **Step 4: Replace Router response assembly**
 
 Import `ChallengeProgressResponse` and the three mapper functions. Replace the user-list body after the service call with:
 
@@ -912,7 +912,7 @@ return build_challenge_progress_response(user_challenge)
 
 Remove imports used only by the deleted manual assembly, list loops, string status comparisons, dictionary assembly, and logging.
 
-- [ ] **Step 5: Add API response-model assertions and run regressions**
+- [x] **Step 5: Add API response-model assertions and run regressions**
 
 Extend `test_challenges.py`:
 
@@ -963,7 +963,7 @@ pyright
 
 Expected: mapper, API, service, and stats tests pass; Pyright is clean.
 
-- [ ] **Step 6: Review and commit Task 4**
+- [x] **Step 6: Review and commit Task 4**
 
 ```powershell
 git diff --check
@@ -981,7 +981,7 @@ git commit -m "refactor: isolate generic challenge responses"
 - Consumes: Tasks 1-4.
 - Produces: fresh full-suite, type, startup, live-route, CodeGraph, review, and maintenance evidence.
 
-- [ ] **Step 1: Run the full backend gate from the repository root**
+- [x] **Step 1: Run the full backend gate from the repository root**
 
 ```powershell
 py -3 -m pytest backend/tests -q -rs
@@ -990,7 +990,7 @@ pyright -p backend/pyrightconfig.json
 
 Expected: every backend test passes with no skipped section; Pyright reports `0 errors, 0 warnings, 0 informations`.
 
-- [ ] **Step 2: Run scope and quality searches**
+- [x] **Step 2: Run scope and quality searches**
 
 ```powershell
 rg -n "commit\(|except ValueError|user\.cores \+=" backend/app/services/challenge.py backend/app/routers/challenges.py
@@ -1003,7 +1003,7 @@ Expected: the first and third searches have no matches; every typed error has a 
 
 Complete the mandatory DRY, dependency direction, naming, magic-value, function-length, dead-code, and type-safety review. Confirm no database, frontend, Arena, Mastery, or ChallengeSession file changed.
 
-- [ ] **Step 3: Start FastAPI and Next.js and request live contracts**
+- [x] **Step 3: Start FastAPI and Next.js and request live contracts**
 
 From the isolated worktree root, verify ports are free, then start both services with hidden windows and log redirection:
 
@@ -1060,7 +1060,7 @@ Start-Sleep -Seconds 2
 if (Get-NetTCPConnection -LocalPort 8000,3000 -State Listen -ErrorAction SilentlyContinue) { throw 'Smoke-test services are still listening' }
 ```
 
-- [ ] **Step 4: Synchronize an explicit worktree CodeGraph index**
+- [x] **Step 4: Synchronize an explicit worktree CodeGraph index**
 
 ```powershell
 npx codegraph init .
@@ -1072,7 +1072,7 @@ npx codegraph query -p . build_challenge_progress_response
 
 Expected: generic ChallengeService callers are challenge Router/tests, CoreService records the new reward edge, and the response mapper is used by the challenge Router. Arena and Mastery source files are unchanged.
 
-- [ ] **Step 5: Record the 3A learning note**
+- [x] **Step 5: Record the 3A learning note**
 
 Append to the governance design with exact fresh counts:
 
@@ -1085,16 +1085,58 @@ Append to the governance design with exact fresh counts:
 - 证明：目标、状态、回滚、账本、映射、API、完整后端测试、Pyright、双服务启动、真实路由和 CodeGraph 影响检查均通过。
 ```
 
-- [ ] **Step 6: Perform final review and update completion evidence**
+- [x] **Step 6: Perform final review and update completion evidence**
 
 Review the exact git range against the design. Record red-green evidence, focused/full counts, Pyright, HTTP statuses, CodeGraph edges, commits, deviations, and residual risks in `## Completion Evidence`. Resolve all Critical and Important findings.
 
-- [ ] **Step 7: Commit completion records**
+- [x] **Step 7: Commit completion records**
 
 ```powershell
 git add docs/superpowers/specs/2026-07-15-backend-learning-oriented-governance-design.md docs/superpowers/plans/2026-07-16-challenge-state-reward-governance.md
 git commit -m "docs: record generic challenge governance batch"
 ```
+
+## Completion Evidence
+
+### Implementation And TDD
+
+- Implementation range: `aa2cec2..890594d`; commits `be1473b`, `6c990ff`, `8c9a58e`, `c1c8a56`, `ecfe7be`, `2a1c06d`, and `890594d`.
+- Task 1 red: target resolver and challenge error module were absent. Green: target/default initialization suite and existing challenge tests passed; Pyright was clean.
+- Task 2 red: 6 failures proved service commits, non-positive progress acceptance, missing Query validation, and broad `ValueError` mapping. Green: 68 focused tests passed and Pyright was clean.
+- Task 3 red: 2 failures proved missing cumulative earnings/ledger writes and missing atomic reward delegation. Green: 54 challenge/core/check-in tests passed and Pyright was clean.
+- Task 4 red: mapper test collection failed because `challenge_responses` was absent. Green: 78 mapper/API/service/stats tests passed after preserving the pre-existing Arena response tests; Pyright was clean.
+- Review repair red: temporarily restoring the old completed-restart `ValueError` made the typed-error regression test fail. Green: 38 challenge service/API tests passed after restoring `ChallengeAlreadyCompletedError`.
+
+### Final Gates
+
+- Full backend: `py -3 -m pytest backend/tests -q -rs` -> `636 passed in 79.48s`; no skipped section was reported.
+- Type safety: `pyright -p backend/pyrightconfig.json` -> `0 errors, 0 warnings, 0 informations`.
+- Static scope: no `commit(`, broad `except ValueError`, or direct `user.cores +=` remains in generic challenge service/router; no Arena `challenge_path` or Mastery reference was introduced there.
+- Quality review: DRY response construction, Router -> Service -> CoreService dependency direction, descriptive names, named reward metadata, functions under the approximate 40-effective-line limit, typed errors, and dead-code consumers all passed review.
+- Changed source scope contains only generic challenge service/errors/responses, challenge Router/schema, and related tests. No frontend, database, migration, Arena source, Mastery source, or `ChallengeSession` file changed.
+- Database maintenance: no schema or data migration was required; the smoke database initialized at the existing Alembic revision.
+- `git diff --check aa2cec2..HEAD` passed after normalizing two mixed-line-ending blank lines in the challenge Router.
+
+### Startup And Live Contracts
+
+- FastAPI started on `127.0.0.1:8000`; Next.js 15.5.18 started on `127.0.0.1:3000`, compiled `/` in 9.2 seconds, and returned 200.
+- Live results: `GET /health` 200; `GET /` 200; `POST /api/auth/register` 201 with a bearer token; `GET /api/challenges` 200; authenticated `GET /api/challenges/user/me` 200.
+- Error results: authenticated missing challenge start returned 400 with `Challenge 99999 not found`; `progress=0` returned FastAPI validation 422.
+- Both listener processes were identified by command line and stopped; ports 8000 and 3000 no longer listened.
+
+### CodeGraph And Review
+
+- Worktree-local CodeGraph initialized 479 files with 6,629 nodes and 14,775 edges, then synchronized the final test changes.
+- `CoreService` impact includes `backend/app/services/challenge.py::_apply_rewards`; `build_challenge_progress_response` is imported by the challenge Router and its tests.
+- `ChallengeService` is also the name of the separate `ChallengeSession` scoring class, so name-only impact output lists both; file-level edges distinguish the generic service and no `challenge_service.py` source changed.
+- Final read-only review found one Important missing completed-restart typed-error test and one whitespace gate issue; both were fixed and reverified. No Critical or remaining Important findings.
+
+### Deviations And Residual Risk
+
+- `backend/tests/test_challenge_responses.py` already contained Batch 1 Arena mapper tests although the plan called it a new file. Those tests were preserved byte-for-byte and generic challenge mapper tests were appended.
+- The isolated frontend initially lacked `node_modules`. A frozen pnpm install was blocked by the existing supply-chain policy after partial linking, so smoke validation used a worktree junction to the main checkout's already-installed dependencies; no lockfile or frontend source changed.
+- Sequential retries are covered. Concurrent first-start uniqueness remains intentionally deferred to a `(user_id, challenge_id)` database constraint migration, and SQLite tests do not prove production row-lock isolation.
+- Existing `get_db` behavior logs expected HTTP 400/422 exceptions as transaction rollback errors; changing that operational logging is outside this batch.
 
 ## Plan Self-Review
 
