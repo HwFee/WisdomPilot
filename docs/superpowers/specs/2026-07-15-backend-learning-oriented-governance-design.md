@@ -157,3 +157,12 @@ SQLAlchemy 模型表示持久化状态，Pydantic schema 表示 API 契约。禁
 - Task 6 与类型偏差：第一次 `git diff --check dd50e05..HEAD` 暴露六个 CRLF 空行，单独的 `33a3db6`（`style: clean arena router whitespace`）只替换行尾且 `--ignore-space-at-eol` 无语义差异，修复后范围 diff check 为 0。Python 3.10 每次订阅 `list[RecentArenaExercise]` 都产生新的 `GenericAlias`，因此 Task 5 对 recent 路由模型使用相等性而非同一性断言，具体 Pydantic 模型仍使用同一性。
 - 进程与产物清理：检查命令行后只停止已验证的 FastAPI PID 34640/42424 与 Next PID 39404/38056/32432 进程树，端口 18176/13176 最终 listener 均为 0；已证明位于工作树内的 `.tmp-task6-live` SQLite/WAL/SHM 与日志目录已移除。预先存在的 `frontend/.next` 保留，`frontend/node_modules` 仍是指向主检出 `C:\Users\17445\Desktop\WisdomPilot\frontend\node_modules` 的 Junction。
 - 审查与剩余风险：Tasks 1、2、4、5 审查无发现；Task 3 当时获批但保留的推荐顺序、fallback 升级和 100 行抽样规模覆盖 Minor，已经由 `test: close arena lifecycle review coverage` 提交的 5 个确定性 characterization cases 关闭，不再是未决项。Task 6 提交文档前的全批次只读复审没有该历史 Minor 之外的新发现。仍未解决的风险只有既有兼容与集成边界：detail 路由继续是 mutating GET；SQLite 能证明锁语句结构、编排和回滚结果，但不能模拟生产数据库 `SELECT ... FOR UPDATE` 的真实竞争，仍需生产方言并发集成测试。
+
+## AI Provider 协议治理第四批 A 实施记录
+
+- 重构前：`AIService` 同时拥有教学提示、OpenAI-compatible 请求、同步和流式重试、SSE 解析及类级共享 `httpx.AsyncClient`；应用 shutdown 没有明确关闭该资源，裸 HTTPX 异常还可能把 bearer 内容带入日志 traceback。
+- 重构后：`app.services.ai_provider` 分离纯端口、FastAPI-independent typed errors、唯一 `_request_with_retries` 协议客户端和教学 Adapter。`AIService` 保留所有公开教学方法与未配置友好返回，reconfigure 复用同一个协议客户端；`OpenAIProvider` 暂时作为 `OpenAICompatibleProvider` 的兼容别名。
+- 协议与安全边界：只有 connect/timeout 和严格 HTTP 500-599 可重试，最多三次且退避为 `[1, 2]`；4xx、600+ 扩展状态、请求协议失败、JSON/SSE 失败和成功握手后的读取中断都不重试。错误摘要最多 500 字符并替换 API key；请求协议与流读取异常在离开原 `except` 后转换，格式化 traceback 不包含 Authorization 或 API key。流必须收到 `[DONE]`，所有响应退出路径都会关闭。
+- 生命周期与范围：owned HTTP client 由 `AIService.aclose()` 幂等关闭，injected client 保持调用方所有；FastAPI lifespan 在 `finally` 关闭全局 service。未修改 Router 响应、hint 成本/缓存/扣费/退款、Core、quota、embedding、前端、数据库模式或配置持久化，因此不需要迁移或 AGENTS.md 更新。
+- 证明：最终 AI 聚焦门为 77 项通过，完整后端为 716 项通过且 `-rs` 没有 skipped 段，Pyright 零诊断。FastAPI health、注册、已认证 hint cache miss，以及 Next.js `/` 和 `/arena` 的真实启动请求均通过；MockTransport 同步/流式 facade smoke 通过。CodeGraph 证明 `AIService -> OpenAICompatibleProvider -> OpenAICompatibleClient -> httpx`，旧 `_call_api` 和 `_stream_connect` 无结果。独立审查发现并关闭四项 retry/secret 边界问题，最终复审无剩余发现并判定可合并。
+- 剩余风险：4B 仍需单独治理 hint 的 cache-first、短事务扣费、生成锁、缓存保存和失败退款；多 worker 严格购买幂等仍需要持久化 reservation/状态设计，不能由本批的 provider 端口或 SQLite 单进程测试代替。

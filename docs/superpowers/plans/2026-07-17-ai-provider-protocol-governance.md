@@ -54,7 +54,7 @@
 - Produces: `OpenAICompatibleClient.complete(...)`, `configure(...)`, and `close()`.
 - Guarantees: exact request construction, one retry owner, typed failures, injected-client ownership.
 
-- [ ] **Step 1: Add failing non-streaming protocol tests**
+- [x] **Step 1: Add failing non-streaming protocol tests**
 
 Create `backend/tests/test_ai_provider_client.py` with these helpers and tests:
 
@@ -284,7 +284,7 @@ async def test_complete_rejects_closed_injected_client() -> None:
         await client.complete([])
 ```
 
-- [ ] **Step 2: Run the tests and confirm the package is absent**
+- [x] **Step 2: Run the tests and confirm the package is absent**
 
 Run from `backend`:
 
@@ -294,7 +294,7 @@ py -3 -m pytest tests/test_ai_provider_client.py -q
 
 Expected: collection fails with `ModuleNotFoundError: No module named 'app.services.ai_provider'`.
 
-- [ ] **Step 3: Add the provider ports and typed errors**
+- [x] **Step 3: Add the provider ports and typed errors**
 
 Create an empty `backend/app/services/ai_provider/__init__.py` so Task 1 uses a regular package. Task 3 replaces it with the stable export surface.
 
@@ -363,7 +363,7 @@ class AIProviderStreamError(AIProviderError):
         super().__init__(message)
 ```
 
-- [ ] **Step 4: Implement non-streaming protocol and ownership primitives**
+- [x] **Step 4: Implement non-streaming protocol and ownership primitives**
 
 Create `backend/app/services/ai_provider/client.py` with named constants and these public methods:
 
@@ -519,7 +519,7 @@ class OpenAICompatibleClient:
             self._http_client = None
 ```
 
-- [ ] **Step 5: Verify Task 1 and commit**
+- [x] **Step 5: Verify Task 1 and commit**
 
 ```powershell
 py -3 -m pytest tests/test_ai_provider_client.py -q
@@ -545,7 +545,7 @@ Expected: non-stream tests pass, Pyright is clean, and provider modules contain 
 - Produces: `OpenAICompatibleClient.stream(...)` with connection-only retries and `content_started` failures.
 - Guarantees: `[DONE]` is required and every upstream response is closed.
 
-- [ ] **Step 1: Add failing stream tests**
+- [x] **Step 1: Add failing stream tests**
 
 Append:
 
@@ -764,7 +764,7 @@ async def test_stream_consumer_close_closes_upstream() -> None:
 
 Import `AIProviderStreamError` in the test module.
 
-- [ ] **Step 2: Run and confirm stream is absent**
+- [x] **Step 2: Run and confirm stream is absent**
 
 ```powershell
 py -3 -m pytest tests/test_ai_provider_client.py -q
@@ -772,7 +772,7 @@ py -3 -m pytest tests/test_ai_provider_client.py -q
 
 Expected: stream tests fail at the `NotImplementedError`.
 
-- [ ] **Step 3: Implement connection-only retry and SSE parsing**
+- [x] **Step 3: Implement connection-only retry and SSE parsing**
 
 Add `_connect_stream`, `_parse_stream_content`, and replace `stream`:
 
@@ -873,7 +873,7 @@ Add `_connect_stream`, `_parse_stream_content`, and replace `stream`:
 
 Import `AIProviderError` and `AIProviderStreamError` in `client.py`.
 
-- [ ] **Step 4: Add close ownership tests**
+- [x] **Step 4: Add close ownership tests**
 
 Append:
 
@@ -901,7 +901,7 @@ async def test_close_closes_and_clears_owned_http_client() -> None:
     assert client._http_client is None
 ```
 
-- [ ] **Step 5: Verify Task 2 and commit**
+- [x] **Step 5: Verify Task 2 and commit**
 
 ```powershell
 py -3 -m pytest tests/test_ai_provider_client.py -q
@@ -930,7 +930,7 @@ Expected: stream tests and ownership tests pass with no raw response leak.
 - Produces: `AIService(http_client=None)`, `_require_provider()`, reused protocol client, and typed unsupported-provider failure.
 - Preserves: every existing public `AIService` method and unconfigured fallback.
 
-- [ ] **Step 1: Add failing adapter and service tests**
+- [x] **Step 1: Add failing adapter and service tests**
 
 Add imports and tests to `test_ai.py`:
 
@@ -1049,7 +1049,7 @@ async def test_ai_service_preserves_unconfigured_friendly_response() -> None:
 
 Convert `test_ai_service_configure_deepseek_provider` to assert the new adapter and close any locally-created service in async tests where its owned HTTP client was opened.
 
-- [ ] **Step 2: Run and confirm adapter package exports are absent**
+- [x] **Step 2: Run and confirm adapter package exports are absent**
 
 ```powershell
 py -3 -m pytest tests/test_ai.py -q
@@ -1057,7 +1057,7 @@ py -3 -m pytest tests/test_ai.py -q
 
 Expected: import fails for `OpenAICompatibleProvider`.
 
-- [ ] **Step 3: Implement the teaching adapter**
+- [x] **Step 3: Implement the teaching adapter**
 
 Create `backend/app/services/ai_provider/openai.py`:
 
@@ -1111,7 +1111,7 @@ class OpenAICompatibleProvider(AIProvider):
 
 Replace the empty `backend/app/services/ai_provider/__init__.py` with exports for every port, error, client, and adapter.
 
-- [ ] **Step 4: Rewire `AIService` without changing teaching methods**
+- [x] **Step 4: Rewire `AIService` without changing teaching methods**
 
 In `ai.py`:
 
@@ -1151,7 +1151,7 @@ class AIService:
 
 After every existing unconfigured guard, replace `assert self._provider is not None` with a local `provider = self._require_provider()` and call that local. Do not remove or alter any friendly fallback text/dict/yield.
 
-- [ ] **Step 5: Verify compatibility and commit Task 3**
+- [x] **Step 5: Verify compatibility and commit Task 3**
 
 ```powershell
 py -3 -m pytest tests/test_ai.py tests/test_ai_mastery_quiz.py tests/test_ai_policy.py -q
@@ -1180,7 +1180,7 @@ Expected: no old provider implementation or provider asserts remain in `ai.py`; 
 - Produces: idempotent `AIService.aclose()`.
 - Guarantees: FastAPI shutdown closes the global service even when lifespan body raises; injected HTTP clients remain open.
 
-- [ ] **Step 1: Add failing service-close tests**
+- [x] **Step 1: Add failing service-close tests**
 
 Append to `test_ai.py`:
 
@@ -1219,7 +1219,7 @@ async def test_ai_service_close_preserves_injected_http_client() -> None:
     await http_client.aclose()
 ```
 
-- [ ] **Step 2: Add failing lifespan-finally tests**
+- [x] **Step 2: Add failing lifespan-finally tests**
 
 Create `backend/tests/test_ai_lifespan.py`:
 
@@ -1271,7 +1271,7 @@ async def test_lifespan_closes_ai_service_when_application_body_fails() -> None:
     close.assert_awaited_once()
 ```
 
-- [ ] **Step 3: Run and confirm `aclose` is absent**
+- [x] **Step 3: Run and confirm `aclose` is absent**
 
 ```powershell
 py -3 -m pytest tests/test_ai.py tests/test_ai_lifespan.py -q
@@ -1279,7 +1279,7 @@ py -3 -m pytest tests/test_ai.py tests/test_ai_lifespan.py -q
 
 Expected: failures because `AIService.aclose` does not exist and lifespan does not close it.
 
-- [ ] **Step 4: Implement service close and lifespan `finally`**
+- [x] **Step 4: Implement service close and lifespan `finally`**
 
 In `AIService`:
 
@@ -1303,7 +1303,7 @@ In `create_lifespan`:
             await ai_service.aclose()
 ```
 
-- [ ] **Step 5: Verify Task 4 and commit**
+- [x] **Step 5: Verify Task 4 and commit**
 
 ```powershell
 py -3 -m pytest tests/test_ai_provider_client.py tests/test_ai.py tests/test_ai_lifespan.py tests/test_ai_mastery_quiz.py tests/test_ai_policy.py -q
@@ -1328,7 +1328,7 @@ Expected: all focused tests pass and external clients remain caller-owned.
 - Consumes: completed Tasks 1-4.
 - Produces: durable 4A completion evidence and CodeGraph ownership record.
 
-- [ ] **Step 1: Run the full backend gate**
+- [x] **Step 1: Run the full backend gate**
 
 From repository root:
 
@@ -1339,7 +1339,7 @@ pyright -p backend/pyrightconfig.json
 
 Expected: every backend test passes, no skipped section is printed, and Pyright reports zero diagnostics.
 
-- [ ] **Step 2: Run scope, protocol, and secret-safety searches**
+- [x] **Step 2: Run scope, protocol, and secret-safety searches**
 
 ```powershell
 rg -n "class OpenAIProvider|class AIProvider|_call_api|_stream_connect|assert self\._provider|from fastapi|HTTPException" backend/app/services/ai.py backend/app/services/ai_provider
@@ -1352,7 +1352,7 @@ git diff --check "$mergeBase..HEAD"
 
 Confirm no Router response, hint cost/cache/refund, Core, embedding, frontend, schema, or database source changed. Complete Rule 10 DRY, dependency, naming, magic-value, function-length, dead-code, and type-safety review.
 
-- [ ] **Step 3: Start FastAPI and Next.js and request live contracts**
+- [x] **Step 3: Start FastAPI and Next.js and request live contracts**
 
 Use a test-only secret, isolated SQLite database, hidden managed processes, and free ports. Verify:
 
@@ -1366,7 +1366,7 @@ GET  /api/ai/exercise-hint/cache/ex1/light -> 200 existing cache-miss fields
 
 Also run a deterministic in-process `httpx.MockTransport` smoke through `AIService.generate_chat` and `AIService.stream_chat` rather than calling a real paid provider. Inspect logs and listener command lines, stop only owned process trees, prove ports free, remove only resolved worktree-local artifacts, and preserve the `frontend/node_modules` junction.
 
-- [ ] **Step 4: Synchronize and inspect CodeGraph**
+- [x] **Step 4: Synchronize and inspect CodeGraph**
 
 ```powershell
 npx codegraph init .
@@ -1380,11 +1380,11 @@ npx codegraph query -p . _stream_connect
 
 Expected: `AIService -> OpenAICompatibleProvider -> OpenAICompatibleClient -> httpx` is the external call chain; old raw protocol methods have no result.
 
-- [ ] **Step 5: Record completion evidence**
+- [x] **Step 5: Record completion evidence**
 
 Append a fourth-stage 4A record to the global governance design. Add `## Completion Evidence` here with exact TDD red/green output, focused/full counts, Pyright, live statuses, MockTransport evidence, CodeGraph edges, commits, review findings, the temporary alias, and remaining 4B/multi-worker risks.
 
-- [ ] **Step 6: Commit the completion records**
+- [x] **Step 6: Commit the completion records**
 
 ```powershell
 git add docs/superpowers/specs/2026-07-15-backend-learning-oriented-governance-design.md docs/superpowers/plans/2026-07-17-ai-provider-protocol-governance.md
@@ -1401,3 +1401,43 @@ git commit -m "docs: record ai provider governance batch"
 - Retry consistency: all tests and implementation use exactly 3 total attempts and delays `[1, 2]`; no post-handshake stream restart is introduced.
 - TDD order: every production behavior or extraction has an explicit failing import, missing method, or `NotImplementedError` test before implementation.
 - Placeholder scan: no unfinished implementation instruction remains.
+
+## Completion Evidence
+
+### TDD And Checkpoints
+
+- Task 1 red collection failed with `ModuleNotFoundError: No module named 'app.services.ai_provider'`; the extracted non-streaming boundary checkpoint was `10 passed` and commit `d89b929` (`refactor: extract ai provider protocol`).
+- Task 2 red was `8 failed, 12 passed`, all eight failures reaching the planned `NotImplementedError`; green was `20 passed` and commit `2ba399d` (`refactor: govern ai provider streaming`).
+- Task 3 red collection failed because `AIProviderConfigurationError` / `OpenAICompatibleProvider` were not exported; green was `21 passed`, the expanded facade/mastery/policy gate was `46 passed`, and commit `bcdaf68` (`refactor: isolate ai provider adapter`).
+- Task 4 red was `4 failed, 21 passed` because `AIService.aclose` was absent; green was `25 passed`, the five-file AI gate was `70 passed`, and commit `88c74a0` (`fix: close ai provider resources`).
+- Independent review first exposed broad `RequestError` retries, non-strict server-status classification, and chained request exceptions. The new negative-test red was `4 failed, 21 passed`; green was `25 passed`, then the AI gate was `75 passed`. Commit `0cf3a23` (`fix: restrict ai provider retry failures`) introduced the shared `_request_with_retries` owner.
+- Re-review exposed 4xx error-body timeout retry and a chained midstream error. Red was `2 failed, 25 passed`; green was `27 passed`, the final focused gate was `77 passed`, and commit `bafef3b` (`fix: harden ai stream failure boundary`) closed both. Final independent re-review reported no Critical, Important, or Minor findings and `Ready to merge: Yes`.
+
+### Final Automated And Scope Gates
+
+- Final `py -3 -m pytest backend/tests -q -rs` on `bafef3b` returned `716 passed in 104.57s`; no skipped-reason section was printed. `pyright -p backend/pyrightconfig.json` returned `0 errors, 0 warnings, 0 informations`.
+- `git diff --check 9a3923d..HEAD` is clean. The implementation range changes only the planned AI provider package, `AIService`, lifespan, and AI tests. Searches find no old `_call_api`, `_stream_connect`, facade provider class body, provider assertion, FastAPI dependency in the provider package, or 4B quota/Core/cache/deduct/refund logic.
+- Rule 10: request/retry construction has one owner; dependency direction is Router/consumer -> `AIService` -> Adapter -> Client; constants name HTTP bounds, attempts, timeouts, limits, and summary length; new production methods stay focused around one operation; identifiers are descriptive; Pyright and CodeGraph find no stale call path. Existing long teaching-prompt methods were not expanded or behaviorally changed.
+- No frontend, model/schema, migration, database configuration, hint policy, Core, refund, quota, or embedding source changed. No database or AGENTS.md maintenance change was required.
+
+### Live And Mock Contracts
+
+The final post-review startup used isolated SQLite, test-only secrets, and free ports `18177` / `13177`:
+
+| Contract | Result |
+|---|---|
+| `GET /health` | `200`, `{"status":"healthy"}` |
+| Next.js `GET /` | compiled in 2.1s, `200`, 13597 bytes |
+| Next.js `GET /arena` | compiled in 4.2s, `200`, 47919 bytes |
+| `POST /api/auth/register` | `201`, bearer token present |
+| `GET /api/ai/exercise-hint/cache/ex1/light` | `200`, `{"cached":false,"cost":1}` |
+
+- Deterministic in-process `httpx.MockTransport` exercised `AIService.generate_chat` and `AIService.stream_chat`: results were `chat answer` and `stream answer`, exactly two requests targeted `https://provider.test/v1/chat/completions`, and `AIService.aclose()` preserved the injected client.
+- Backend logs showed successful database initialization and the three expected requests with no startup or response-validation error. Frontend stderr was empty. Verified Python PIDs `49056/51188` and Next.js PIDs `16592/47564/19816` were stopped; both ports then had zero listeners. The resolved `.tmp-ai-provider-live-final` database/log directory was removed, and `frontend/node_modules` remains a Junction to the main checkout.
+
+### CodeGraph And Residual Risk
+
+- Final `codegraph init` reported the worktree already initialized; final `sync` was up to date. Impact counts were `OpenAICompatibleClient` 62, `OpenAICompatibleProvider` 27, and `AIService` 54. The graph contains the intended facade -> Adapter -> Client chain and tests for every retry, stream, ownership, and service edge; `_call_api` and `_stream_connect` both return `No results found`.
+- `OpenAIProvider = OpenAICompatibleProvider` remains intentionally temporary for compatibility. 4B must govern hint cache-first purchase, short deduction/refund transactions, generation locking, and cache persistence without reopening provider HTTP details.
+- Strict multi-worker purchase idempotency is still unsolved and requires a persistent reservation/state migration plus production-dialect concurrency tests; this batch does not claim SQLite or the provider client solves it.
+- The documentation checkpoint is committed as `docs: record ai provider governance batch` after the six implementation commits listed above.
