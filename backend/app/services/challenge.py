@@ -18,6 +18,7 @@ from app.services.challenge_errors import (
     InvalidChallengeDefinitionError,
     InvalidProgressDeltaError,
 )
+from app.services.core_service import CoreService
 
 
 class ChallengeDefinition(TypedDict):
@@ -218,8 +219,7 @@ class ChallengeService:
             user_challenge.status = UserChallengeStatus.COMPLETED
             user_challenge.completed_at = datetime.now(timezone.utc)
 
-            # Apply rewards
-            await self._apply_rewards(db, user, challenge_id)
+            await self._apply_rewards(db, user_challenge)
 
         db.add(user_challenge)
         await db.flush()
@@ -227,19 +227,29 @@ class ChallengeService:
         return user_challenge
 
     async def _apply_rewards(
-        self, db: AsyncSession, user: User, challenge_id: int
+        self,
+        db: AsyncSession,
+        user_challenge: UserChallenge,
     ) -> None:
         """Apply challenge rewards to user"""
-        challenge = await self.get_challenge_by_id(db, challenge_id)
-        if not challenge:
+        challenge = await self.get_challenge_by_id(db, user_challenge.challenge_id)
+        if challenge is None:
+            raise ChallengeNotFoundError(user_challenge.challenge_id)
+
+        quota_bonus = (challenge.rewards or {}).get("quota_bonus", 0)
+        if not isinstance(quota_bonus, int) or isinstance(quota_bonus, bool):
+            raise InvalidChallengeDefinitionError(challenge.type, "quota_bonus")
+        if quota_bonus <= 0:
             return
 
-        rewards = challenge.rewards or {}
-        quota_bonus = rewards.get("quota_bonus", 0)
-
-        if quota_bonus > 0:
-            user.cores += quota_bonus
-            db.add(user)
+        await CoreService(db).earn_cores(
+            user_id=user_challenge.user_id,
+            amount=quota_bonus,
+            category="bonus",
+            reference_type="challenge",
+            reference_id=user_challenge.id,
+            description=f"Challenge completed: {challenge.code}",
+        )
 
     async def check_challenge_completion(
         self, db: AsyncSession, user_id: str, challenge_id: int
