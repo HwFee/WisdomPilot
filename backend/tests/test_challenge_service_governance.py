@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.user_challenge import UserChallenge
 from app.services.challenge import ChallengeService, resolve_challenge_target
 from app.services.challenge_errors import (
+    ChallengeAlreadyCompletedError,
     InvalidChallengeDefinitionError,
     InvalidProgressDeltaError,
 )
@@ -138,6 +139,19 @@ async def test_start_retry_returns_same_record_without_commit(
     assert second.id == first.id
     assert second.attempts == 1
     commit_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_start_completed_challenge_raises_typed_error(
+    db_session: AsyncSession, auth_user: User
+) -> None:
+    challenge = await persisted_challenge(db_session, target=1)
+    service = ChallengeService()
+    await service.start_challenge(db_session, auth_user, challenge.id)
+    await service.update_progress(db_session, auth_user, challenge.id, 1)
+
+    with pytest.raises(ChallengeAlreadyCompletedError):
+        await service.start_challenge(db_session, auth_user, challenge.id)
 
 
 @pytest.mark.asyncio
