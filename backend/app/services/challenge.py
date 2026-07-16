@@ -2,6 +2,8 @@
 
 import uuid
 from datetime import datetime, timezone
+from typing import TypedDict
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,7 +11,89 @@ from sqlalchemy.orm import selectinload
 from app.models.user import User
 from app.models.challenge import Challenge, ChallengeType
 from app.models.user_challenge import UserChallenge, UserChallengeStatus
+from app.services.challenge_errors import InvalidChallengeDefinitionError
 import logging
+
+
+class ChallengeDefinition(TypedDict):
+    code: str
+    title: str
+    description: str
+    type: str
+    difficulty: int
+    requirements: dict[str, int]
+    rewards: dict[str, int]
+
+
+CHALLENGE_TARGET_KEYS = {
+    ChallengeType.EXERCISE_COUNT.value: "exercise_count",
+    ChallengeType.STREAK.value: "days",
+    ChallengeType.TIME_SPENT.value: "minutes",
+    ChallengeType.ACCURACY.value: "accuracy",
+}
+BINARY_CHALLENGE_TYPES = frozenset(
+    {
+        ChallengeType.CHAPTER_COMPLETE.value,
+        ChallengeType.COURSE_COMPLETE.value,
+    }
+)
+DEFAULT_CHALLENGE_DEFINITIONS: tuple[ChallengeDefinition, ...] = (
+    {
+        "code": "FIRST_STEPS",
+        "title": "First Steps",
+        "description": "Complete your first 5 exercises",
+        "type": ChallengeType.EXERCISE_COUNT.value,
+        "difficulty": 1,
+        "requirements": {"exercise_count": 5},
+        "rewards": {"quota_bonus": 10},
+    },
+    {
+        "code": "CHAPTER_MASTER",
+        "title": "Chapter Master",
+        "description": "Complete a chapter",
+        "type": ChallengeType.CHAPTER_COMPLETE.value,
+        "difficulty": 2,
+        "requirements": {"chapter_id": 1},
+        "rewards": {"quota_bonus": 20},
+    },
+    {
+        "code": "STREAK_7",
+        "title": "7 Day Streak",
+        "description": "Maintain a 7-day learning streak",
+        "type": ChallengeType.STREAK.value,
+        "difficulty": 3,
+        "requirements": {"days": 7},
+        "rewards": {"quota_bonus": 50},
+    },
+)
+
+
+def _positive_integer(value: object) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return None
+    return value
+
+
+def resolve_challenge_target(challenge: Challenge) -> int:
+    requirements = challenge.requirements or {}
+    if "target" in requirements:
+        explicit_target = _positive_integer(requirements["target"])
+        if explicit_target is None:
+            raise InvalidChallengeDefinitionError(str(challenge.type), "target")
+        return explicit_target
+
+    challenge_type = str(challenge.type)
+    if challenge_type in BINARY_CHALLENGE_TYPES:
+        return 1
+
+    requirement_key = CHALLENGE_TARGET_KEYS.get(challenge_type)
+    if requirement_key is None:
+        raise InvalidChallengeDefinitionError(challenge_type, "target")
+
+    target = _positive_integer(requirements.get(requirement_key))
+    if target is None:
+        raise InvalidChallengeDefinitionError(challenge_type, requirement_key)
+    return target
 
 
 class ChallengeService:
@@ -71,9 +155,7 @@ class ChallengeService:
             if existing.status == UserChallengeStatus.IN_PROGRESS:
                 return existing
 
-        # Get target from requirements
-        requirements = challenge.requirements or {}
-        target_value = requirements.get("target", requirements.get("exercise_count", 10))
+        target_value = resolve_challenge_target(challenge)
 
         user_challenge = UserChallenge(
             id=str(uuid.uuid4()),
@@ -146,45 +228,17 @@ class ChallengeService:
 
     async def create_default_challenges(self, db: AsyncSession) -> None:
         """Create default challenges if they don't exist"""
-        existing = await db.execute(select(Challenge).limit(1))
-        if existing.scalar_one_or_none():
-            return  # Already has challenges
+        codes = tuple(item["code"] for item in DEFAULT_CHALLENGE_DEFINITIONS)
+        result = await db.execute(
+            select(Challenge.code).where(Challenge.code.in_(codes))
+        )
+        existing_codes = set(result.scalars().all())
 
-        default_challenges = [
-            {
-                "code": "FIRST_STEPS",
-                "title": "First Steps",
-                "description": "Complete your first 5 exercises",
-                "type": ChallengeType.EXERCISE_COUNT.value,
-                "difficulty": 1,
-                "requirements": {"exercise_count": 5},
-                "rewards": {"quota_bonus": 10},
-            },
-            {
-                "code": "CHAPTER_MASTER",
-                "title": "Chapter Master",
-                "description": "Complete a chapter",
-                "type": ChallengeType.CHAPTER_COMPLETE.value,
-                "difficulty": 2,
-                "requirements": {"chapter_id": 1},
-                "rewards": {"quota_bonus": 20},
-            },
-            {
-                "code": "STREAK_7",
-                "title": "7 Day Streak",
-                "description": "Maintain a 7-day learning streak",
-                "type": ChallengeType.STREAK.value,
-                "difficulty": 3,
-                "requirements": {"days": 7},
-                "rewards": {"quota_bonus": 50},
-            },
-        ]
+        for definition in DEFAULT_CHALLENGE_DEFINITIONS:
+            if definition["code"] not in existing_codes:
+                db.add(Challenge(**definition))
 
-        for ch_data in default_challenges:
-            challenge = Challenge(**ch_data)
-            db.add(challenge)
-
-        await db.commit()
+        await db.flush()
 
 
 challenge_service = ChallengeService()
