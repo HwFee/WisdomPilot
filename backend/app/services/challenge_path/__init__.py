@@ -1,9 +1,15 @@
 """Focused services for the challenge path."""
 
 from .errors import (
+    ChallengeExerciseDetailNotFoundError,
+    ChallengeExerciseLockedError,
     ChallengeExerciseNotFoundError,
+    ChallengePathError,
+    ChallengeProgressIndexNotFoundError,
     ChallengeProgressNotFoundError,
     ChallengeSubmissionError,
+    InsufficientChallengeExercisesError,
+    InvalidChallengeExerciseIndexError,
     JudgeUnavailableError,
     MissingChallengeTestCasesError,
     UnsupportedChallengeLanguageError,
@@ -19,7 +25,11 @@ from .submission_state import (
 )
 
 __all__ = [
+    "ChallengeExerciseDetailNotFoundError",
+    "ChallengeExerciseLockedError",
     "ChallengeExerciseNotFoundError",
+    "ChallengePathError",
+    "ChallengeProgressIndexNotFoundError",
     "ChallengeProgressService",
     "ChallengeProgressNotFoundError",
     "ChallengeRewardService",
@@ -28,6 +38,8 @@ __all__ = [
     "ChallengeSubmissionService",
     "ChallengeSubmissionState",
     "ChallengeSubmissionStateService",
+    "InsufficientChallengeExercisesError",
+    "InvalidChallengeExerciseIndexError",
     "JudgeUnavailableError",
     "MissingChallengeTestCasesError",
     "UnsupportedChallengeLanguageError",

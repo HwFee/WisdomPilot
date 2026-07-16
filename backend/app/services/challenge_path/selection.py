@@ -13,6 +13,7 @@ from app.models.stats import ActivityLog
 from app.models.user import User
 from app.models.user_arena import UserArenaProfile
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
+from app.services.challenge_path.errors import InsufficientChallengeExercisesError
 from app.services.hybrid_recommendation import HybridRecommendationService
 
 logger = logging.getLogger(__name__)
@@ -290,8 +291,9 @@ class ChallengeSelectionService:
             all_exercises = list(exercises_result.scalars().all())
 
         if len(all_exercises) < count:
-            raise ValueError(
-                f"Not enough verified exercises available (found {len(all_exercises)}, need {count})"
+            raise InsufficientChallengeExercisesError(
+                found=len(all_exercises),
+                required=count,
             )
 
         exercise_pool = list(all_exercises)

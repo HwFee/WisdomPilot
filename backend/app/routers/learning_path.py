@@ -28,11 +28,15 @@ from app.services.leaderboard_service import (
 )
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
 from app.services.challenge_path import (
+    ChallengeExerciseLockedError,
     ChallengeExerciseNotFoundError,
+    ChallengeProgressIndexNotFoundError,
     ChallengeProgressService,
     ChallengeProgressNotFoundError,
     ChallengeSelectionService,
     ChallengeSubmissionService,
+    InsufficientChallengeExercisesError,
+    InvalidChallengeExerciseIndexError,
     JudgeUnavailableError,
     MissingChallengeTestCasesError,
     UnsupportedChallengeLanguageError,
@@ -1041,8 +1045,8 @@ async def start_infinite_session(
             difficulty_level=request.difficulty_level,
             initial_count=request.initial_count,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except InsufficientChallengeExercisesError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
     exercise_list = [map_exercise_summary(ex, i) for i, ex in enumerate(exercises)]
 
@@ -1149,8 +1153,12 @@ async def switch_challenge_exercise(
             user_id=current_user.id,
             target_index=request.target_index,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (
+        InvalidChallengeExerciseIndexError,
+        ChallengeProgressIndexNotFoundError,
+        ChallengeExerciseLockedError,
+    ) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
     return map_switch_response(result)
 
@@ -1164,14 +1172,11 @@ async def append_challenge_exercises(
     """Append more exercises to challenge path"""
     service = ChallengeSelectionService(db)
 
-    try:
-        new_ids = await service.append_exercises(
-            user_id=current_user.id,
-            difficulty_level=request.difficulty_level,
-            count=request.count,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    new_ids = await service.append_exercises(
+        user_id=current_user.id,
+        difficulty_level=request.difficulty_level,
+        count=request.count,
+    )
 
     return {"new_exercise_ids": new_ids, "count": len(new_ids)}
 

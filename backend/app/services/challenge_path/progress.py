@@ -5,6 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
+from app.services.challenge_path.errors import (
+    ChallengeExerciseLockedError,
+    ChallengeProgressIndexNotFoundError,
+    InvalidChallengeExerciseIndexError,
+)
 
 DEFAULT_CHALLENGE_LANGUAGE = "python"
 
@@ -257,7 +262,7 @@ class ChallengeProgressService:
         total = count_result.scalar() or 0
 
         if target_index < 0 or target_index >= total:
-            raise ValueError("Invalid exercise index")
+            raise InvalidChallengeExerciseIndexError()
 
         result = await self.db.execute(
             select(ArenaExerciseProgress).where(
@@ -267,10 +272,10 @@ class ChallengeProgressService:
         )
         progress = result.scalar_one_or_none()
         if not progress:
-            raise ValueError("Progress not found")
+            raise ChallengeProgressIndexNotFoundError()
 
         if not progress.is_unlocked:
-            raise ValueError("Exercise is locked")
+            raise ChallengeExerciseLockedError()
 
         ex_result = await self.db.execute(
             select(Exercise).where(Exercise.id == progress.exercise_id)
