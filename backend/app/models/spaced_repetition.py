@@ -37,80 +37,59 @@ class SpacedRepetition(Base):
     __tablename__ = "spaced_repetitions"
 
     id: Mapped[str] = mapped_column(
-        String(36),
-        primary_key=True,
-        default=lambda: str(uuid.uuid4())
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     user_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="用户ID"
+        comment="用户ID",
     )
     exercise_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         ForeignKey("exercises.id", ondelete="CASCADE"),
         nullable=True,
         index=True,
-        comment="练习题ID（可能为空，使用 exercise_key 作为备选标识）"
+        comment="练习题ID（可能为空，使用 exercise_key 作为备选标识）",
     )
     exercise_key: Mapped[Optional[str]] = mapped_column(
         String(100),
         nullable=True,
         index=True,
-        comment="练习题标识（格式：chapterId-subsectionIndex-exerciseId，用于前端硬编码习题）"
+        comment="练习题标识（格式：chapterId-subsectionIndex-exerciseId，用于前端硬编码习题）",
     )
     stage_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         nullable=True,
         index=True,
-        comment="关联关卡ID（已弃用，保留用于数据迁移）"
+        comment="关联关卡ID（已弃用，保留用于数据迁移）",
     )
     next_review_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False,
-        index=True,
-        comment="下次复习时间"
+        DateTime, nullable=False, index=True, comment="下次复习时间"
     )
     review_interval: Mapped[int] = mapped_column(
-        Integer,
-        default=1,
-        nullable=False,
-        comment="当前复习间隔（天）"
+        Integer, default=1, nullable=False, comment="当前复习间隔（天）"
     )
     ease_factor: Mapped[float] = mapped_column(
-        Float,
-        default=2.5,
-        nullable=False,
-        comment="难度因子（SM-2算法）"
+        Float, default=2.5, nullable=False, comment="难度因子（SM-2算法）"
     )
     review_count: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
-        nullable=False,
-        comment="已复习次数"
+        Integer, default=0, nullable=False, comment="已复习次数"
     )
     last_review_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime,
-        nullable=True,
-        comment="最近复习时间"
+        DateTime, nullable=True, comment="最近复习时间"
     )
-    last_review_result: Mapped[Optional[bool]] = mapped_column(
+    last_review_result: Mapped[Optional[int]] = mapped_column(
         Integer,  # SQLite没有Boolean类型，用Integer模拟
         nullable=True,
-        comment="最近复习结果（1=成功，0=失败）"
+        comment="最近复习结果（1=成功，0=失败）",
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=utc_now,
-        nullable=False
+        DateTime, default=utc_now, nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=utc_now,
-        onupdate=utc_now,
-        nullable=False
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False
     )
 
     # Relationships
@@ -158,7 +137,9 @@ class SpacedRepetition(Base):
         self.last_review_result = 1 if quality >= 3 else 0
 
     @classmethod
-    def create_new(cls, user_id: str, exercise_id: int, stage_id: Optional[int] = None) -> "SpacedRepetition":
+    def create_new(
+        cls, user_id: str, exercise_id: int, stage_id: Optional[int] = None
+    ) -> "SpacedRepetition":
         """创建新的复习记录"""
         return cls(
             user_id=user_id,
@@ -167,7 +148,7 @@ class SpacedRepetition(Base):
             next_review_at=utc_now() + timedelta(days=DEFAULT_INTERVALS[0]),
             review_interval=DEFAULT_INTERVALS[0],
             ease_factor=2.5,
-            review_count=0
+            review_count=0,
         )
 
     @property

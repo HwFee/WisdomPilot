@@ -17,13 +17,14 @@ import logging
 
 class LeaderboardEntry:
     """排行榜条目"""
+
     def __init__(
         self,
         rank: int,
         user_id: str,
         username: str,
         score: float,
-        extra_info: dict = None
+        extra_info: Optional[dict] = None,
     ):
         self.rank = rank
         self.user_id = user_id
@@ -39,9 +40,7 @@ class LeaderboardService:
         self.db = db
 
     async def get_mastery_leaderboard(
-        self,
-        course_id: int,
-        limit: int = 50
+        self, course_id: int, limit: int = 50
     ) -> List[LeaderboardEntry]:
         """
         获取精进榜
@@ -57,7 +56,7 @@ class LeaderboardService:
                 ChapterMastery.user_id,
                 func.sum(ChapterMastery.mastery_score).label("total_score"),
                 func.count(ChapterMastery.id).label("chapter_count"),
-                func.avg(ChapterMastery.mastery_score).label("avg_score")
+                func.avg(ChapterMastery.mastery_score).label("avg_score"),
             )
             .where(ChapterMastery.course_id == course_id)
             .group_by(ChapterMastery.user_id)
@@ -70,31 +69,29 @@ class LeaderboardService:
 
         # 获取用户名
         user_ids = [row.user_id for row in rows]
-        users_result = await self.db.execute(
-            select(User).where(User.id.in_(user_ids))
-        )
+        users_result = await self.db.execute(select(User).where(User.id.in_(user_ids)))
         users_map = {u.id: u.username for u in users_result.scalars().all()}
 
         # 构建排行榜
         entries = []
         for i, row in enumerate(rows):
-            entries.append(LeaderboardEntry(
-                rank=i + 1,
-                user_id=row.user_id,
-                username=users_map.get(row.user_id, "未知用户"),
-                score=row.total_score,
-                extra_info={
-                    "chapter_count": row.chapter_count,
-                    "avg_score": round(row.avg_score, 2)
-                }
-            ))
+            entries.append(
+                LeaderboardEntry(
+                    rank=i + 1,
+                    user_id=row.user_id,
+                    username=users_map.get(row.user_id, "未知用户"),
+                    score=row.total_score,
+                    extra_info={
+                        "chapter_count": row.chapter_count,
+                        "avg_score": round(row.avg_score, 2),
+                    },
+                )
+            )
 
         return entries
 
     async def get_arena_leaderboard(
-        self,
-        course_id: Optional[int] = None,
-        limit: int = 50
+        self, course_id: Optional[int] = None, limit: int = 50
     ) -> List[LeaderboardEntry]:
         """
         获取竞技榜
@@ -117,37 +114,33 @@ class LeaderboardService:
         # 构建排行榜
         entries = []
         for i, user in enumerate(users):
-            entries.append(LeaderboardEntry(
-                rank=i + 1,
-                user_id=user.id,
-                username=user.username,
-                score=float(user.total_xp or 0),
-                extra_info={
-                    "correct_exercises": user.correct_exercises or 0,
-                    "total_exercises": user.total_exercises or 0,
-                    "accuracy": round(user.accuracy_rate * 100, 2) if user.accuracy_rate else 0
-                }
-            ))
+            entries.append(
+                LeaderboardEntry(
+                    rank=i + 1,
+                    user_id=user.id,
+                    username=user.username,
+                    score=float(user.total_xp or 0),
+                    extra_info={
+                        "correct_exercises": user.correct_exercises or 0,
+                        "total_exercises": user.total_exercises or 0,
+                        "accuracy": round(user.accuracy_rate * 100, 2)
+                        if user.accuracy_rate
+                        else 0,
+                    },
+                )
+            )
 
         return entries
 
-    async def update_user_rank(
-        self,
-        user_id: str,
-        course_id: int
-    ) -> Optional[int]:
+    async def update_user_rank(self, user_id: str, course_id: int) -> Optional[int]:
         """
         更新用户排名
 
         返回用户在精进榜中的排名
         """
         # 计算用户总分
-        query = (
-            select(func.sum(ChapterMastery.mastery_score))
-            .where(
-                ChapterMastery.user_id == user_id,
-                ChapterMastery.course_id == course_id
-            )
+        query = select(func.sum(ChapterMastery.mastery_score)).where(
+            ChapterMastery.user_id == user_id, ChapterMastery.course_id == course_id
         )
         result = await self.db.execute(query)
         user_score = result.scalar() or 0
@@ -156,14 +149,12 @@ class LeaderboardService:
             return None
 
         # 计算排名（有多少人分数比用户高）
-        rank_query = (
-            select(func.count())
-            .select_from(
-                select(ChapterMastery.user_id)
-                .where(ChapterMastery.course_id == course_id)
-                .group_by(ChapterMastery.user_id)
-                .having(func.sum(ChapterMastery.mastery_score) > user_score)
-            )
+        rank_query = select(func.count()).select_from(
+            select(ChapterMastery.user_id)
+            .where(ChapterMastery.course_id == course_id)
+            .group_by(ChapterMastery.user_id)
+            .having(func.sum(ChapterMastery.mastery_score) > user_score)
+            .subquery()
         )
         rank_result = await self.db.execute(rank_query)
         higher_count = rank_result.scalar() or 0

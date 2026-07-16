@@ -46,8 +46,10 @@ router = APIRouter(prefix="/api/learning-path", tags=["learning-path"])
 
 # ========== Schemas ==========
 
+
 class MasteryOverviewResponse(BaseModel):
     """Response for mastery path overview"""
+
     course_id: int
     total_chapters: int
     mastered_chapters: int
@@ -59,6 +61,7 @@ class MasteryOverviewResponse(BaseModel):
 
 class ChapterMasteryResponse(BaseModel):
     """Response for chapter mastery details"""
+
     chapter_id: int
     chapter_title: str
     mastery_score: float
@@ -75,6 +78,7 @@ class ChapterMasteryResponse(BaseModel):
 
 class ChallengeSessionResponse(BaseModel):
     """Response for challenge session"""
+
     session_id: str
     difficulty_level: int
     exercises: list[dict]
@@ -85,6 +89,7 @@ class ChallengeSessionResponse(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     """Response for leaderboard"""
+
     leaderboard_type: str
     course_id: int
     entries: list[dict]
@@ -92,6 +97,7 @@ class LeaderboardResponse(BaseModel):
 
 
 # ========== Mastery Path Endpoints ==========
+
 
 @router.get("/mastery/{course_id}/overview", response_model=MasteryOverviewResponse)
 async def get_mastery_overview(
@@ -110,7 +116,9 @@ async def get_mastery_overview(
 
     # Get all chapters for the course
     chapters_result = await db.execute(
-        select(Chapter).where(Chapter.course_id == course_id).order_by(Chapter.order_index)
+        select(Chapter)
+        .where(Chapter.course_id == course_id)
+        .order_by(Chapter.order_index)
     )
     chapters = chapters_result.scalars().all()
 
@@ -141,11 +149,13 @@ async def get_mastery_overview(
     kp_count_result = await db.execute(
         select(
             SectionKnowledgePoint.section_id,
-            func.count(SectionKnowledgePoint.id).label("kp_count")
-        ).where(
+            func.count(SectionKnowledgePoint.id).label("kp_count"),
+        )
+        .where(
             SectionKnowledgePoint.section_id.in_(section_ids),
-            SectionKnowledgePoint.is_active
-        ).group_by(SectionKnowledgePoint.section_id)
+            SectionKnowledgePoint.is_active,
+        )
+        .group_by(SectionKnowledgePoint.section_id)
     )
     section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
 
@@ -154,7 +164,9 @@ async def get_mastery_overview(
     for section_id, kp_count in section_kp_counts.items():
         chapter_id = section_to_chapter.get(section_id)
         if chapter_id:
-            chapter_kp_counts[chapter_id] = chapter_kp_counts.get(chapter_id, 0) + kp_count
+            chapter_kp_counts[chapter_id] = (
+                chapter_kp_counts.get(chapter_id, 0) + kp_count
+            )
 
     # 获取每个小节的掌握度（已开始测试的）
     section_mastery_result = await db.execute(
@@ -236,14 +248,16 @@ async def get_mastery_overview(
         if current_chapter is None and not is_mastered:
             current_chapter = ch.order_index
 
-        chapter_list.append({
-            "chapter_id": ch.id,
-            "order_index": ch.order_index,
-            "title": ch.title,
-            "mastery_score": round(mastery_score, 2),
-            "mastery_level": mastery_level,
-            "can_advance": mastery_score >= 75,
-        })
+        chapter_list.append(
+            {
+                "chapter_id": ch.id,
+                "order_index": ch.order_index,
+                "title": ch.title,
+                "mastery_score": round(mastery_score, 2),
+                "mastery_level": mastery_level,
+                "can_advance": mastery_score >= 75,
+            }
+        )
 
     # 计算平均掌握度（按知识点数量加权）
     avg_mastery = weighted_mastery_sum / total_kp_count if total_kp_count > 0 else 0
@@ -259,7 +273,9 @@ async def get_mastery_overview(
     )
 
 
-@router.get("/mastery/{course_id}/chapter/{chapter_id}", response_model=ChapterMasteryResponse)
+@router.get(
+    "/mastery/{course_id}/chapter/{chapter_id}", response_model=ChapterMasteryResponse
+)
 async def get_chapter_mastery(
     course_id: int,
     chapter_id: int,
@@ -267,7 +283,10 @@ async def get_chapter_mastery(
     db: AsyncSession = Depends(get_db),
 ):
     """Get detailed mastery info for a specific chapter"""
-    from app.models.knowledge_point_mastery import KnowledgePointMastery, MASTERY_THRESHOLD
+    from app.models.knowledge_point_mastery import (
+        KnowledgePointMastery,
+        MASTERY_THRESHOLD,
+    )
 
     # Get chapter
     chapter_result = await db.execute(
@@ -357,16 +376,19 @@ async def recommend_mastery_exercises(
 
     # Use adaptive recommendation with chapter_id and mastery path
     request = ExerciseRecommendRequest(
-        course_id=course_id,
         chapter_id=chapter_id,
         learning_path="mastery",
         limit=limit,
     )
 
     service = AdaptiveRecommendationService(db)
-    exercises = await service.recommend_exercises(
-        user_id=current_user.id,
-        request=request,
+    exercises = await service.get_recommendations(
+        user=current_user,
+        limit=limit,
+        min_difficulty=1,
+        max_difficulty=5,
+        chapter_id=chapter_id,
+        learning_path="mastery",
     )
 
     return {
@@ -378,6 +400,7 @@ async def recommend_mastery_exercises(
 
 
 # ========== Leaderboard Endpoints ==========
+
 
 @router.get("/leaderboard/{course_id}/mastery", response_model=LeaderboardResponse)
 async def get_mastery_leaderboard(
@@ -449,9 +472,7 @@ async def get_chapter_knowledge(
     返回章节的知识点讲解内容，由 AI 生成。
     """
     result = await mastery_quiz_service.get_chapter_knowledge_content(
-        db=db,
-        chapter_id=chapter_id,
-        user_id=current_user.id
+        db=db, chapter_id=chapter_id, user_id=current_user.id
     )
 
     if not result:
@@ -476,9 +497,7 @@ async def generate_mastery_quiz(
     request.course_id = course_id
 
     result = await mastery_quiz_service.generate_quiz(
-        db=db,
-        user_id=current_user.id,
-        request=request
+        db=db, user_id=current_user.id, request=request
     )
 
     return result
@@ -497,9 +516,7 @@ async def submit_mastery_quiz(
     评估用户答案，更新学习进度，返回结果和建议。
     """
     result = await mastery_quiz_service.submit_quiz(
-        db=db,
-        user_id=current_user.id,
-        request=request
+        db=db, user_id=current_user.id, request=request
     )
 
     return result
@@ -544,16 +561,14 @@ async def get_section_knowledge_points(
         select(SectionKnowledgePoint)
         .where(
             SectionKnowledgePoint.section_id == section_id,
-            SectionKnowledgePoint.is_active
+            SectionKnowledgePoint.is_active,
         )
         .order_by(SectionKnowledgePoint.order_index)
     )
     knowledge_points = result.scalars().all()
 
     # 获取小节信息
-    section_result = await db.execute(
-        select(Section).where(Section.id == section_id)
-    )
+    section_result = await db.execute(select(Section).where(Section.id == section_id))
     section = section_result.scalar_one_or_none()
 
     return {
@@ -584,7 +599,10 @@ async def get_section_base_questions(
     return result
 
 
-@router.post("/mastery/{course_id}/chapter/{chapter_id}/submit-base", response_model=BaseAnswersSubmitResponse)
+@router.post(
+    "/mastery/{course_id}/chapter/{chapter_id}/submit-base",
+    response_model=BaseAnswersSubmitResponse,
+)
 async def submit_base_answers(
     course_id: int,
     chapter_id: int,
@@ -609,7 +627,10 @@ async def submit_base_answers(
     return result
 
 
-@router.post("/mastery/{course_id}/generate-enhanced", response_model=EnhancedQuizGenerateResponse)
+@router.post(
+    "/mastery/{course_id}/generate-enhanced",
+    response_model=EnhancedQuizGenerateResponse,
+)
 async def generate_enhanced_quiz(
     course_id: int,
     request: EnhancedQuizGenerateRequest,
@@ -621,7 +642,9 @@ async def generate_enhanced_quiz(
 
     根据基础测试识别的薄弱点，AI 生成个性化强化题目。
     """
-    logger.info(f"[API] generate_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., chapter={request.chapter_id}, weak_points={request.weak_points}")
+    logger.info(
+        f"[API] generate_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., chapter={request.chapter_id}, weak_points={request.weak_points}"
+    )
 
     request.course_id = course_id
     result = await section_base_question_service.generate_enhanced_quiz(
@@ -629,11 +652,14 @@ async def generate_enhanced_quiz(
         user_id=current_user.id,
         request=request,
     )
-    logger.info(f"[API] generate_enhanced_quiz 完成: success={result.success}, questions_count={len(result.questions) if result.questions else 0}")
+    logger.info(
+        f"[API] generate_enhanced_quiz 完成: success={result.success}, questions_count={len(result.questions) if result.questions else 0}"
+    )
 
     # 如果生成成功，注册WebSocket会话
     if result.success and result.session_id:
         from app.websockets.exercise import websocket_manager
+
         websocket_manager.register_session(result.session_id, current_user.id)
 
     return result
@@ -685,7 +711,9 @@ async def get_session_exercises(
 
     前端可以通过轮询此接口来获取新生成的题目。
     """
-    questions = await section_base_question_service.get_session_exercises(db, session_id)
+    questions = await section_base_question_service.get_session_exercises(
+        db, session_id
+    )
 
     return {
         "session_id": session_id,
@@ -694,7 +722,9 @@ async def get_session_exercises(
     }
 
 
-@router.post("/mastery/{course_id}/submit-enhanced", response_model=EnhancedQuizSubmitResponse)
+@router.post(
+    "/mastery/{course_id}/submit-enhanced", response_model=EnhancedQuizSubmitResponse
+)
 async def submit_enhanced_quiz(
     course_id: int,
     request: EnhancedQuizSubmitRequest,
@@ -707,19 +737,27 @@ async def submit_enhanced_quiz(
     评估答案，更新学习进度，返回最终结果。
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    logger.info(f"[API] submit_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., session={request.session_id}, answers={len(request.answers)}")
+    logger.info(
+        f"[API] submit_enhanced_quiz 开始: course_id={course_id}, user={current_user.id[:8]}..., session={request.session_id}, answers={len(request.answers)}"
+    )
 
     result = await section_base_question_service.submit_enhanced_quiz(
         db=db,
         user_id=current_user.id,
         request=request,
     )
-    logger.info(f"[API] submit_enhanced_quiz 完成: correct={result.correct_answers}/{result.total_questions}")
+    logger.info(
+        f"[API] submit_enhanced_quiz 完成: correct={result.correct_answers}/{result.total_questions}"
+    )
     return result
 
 
-@router.post("/mastery/{course_id}/persist-enhanced-question", response_model=PersistEnhancedQuestionResponse)
+@router.post(
+    "/mastery/{course_id}/persist-enhanced-question",
+    response_model=PersistEnhancedQuestionResponse,
+)
 async def persist_enhanced_question(
     course_id: int,
     request: PersistEnhancedQuestionRequest,
@@ -732,33 +770,46 @@ async def persist_enhanced_question(
     从 ExerciseGenerationSession 中获取指定索引的题目，
     保存到 SectionBaseQuestion 获得真实数据库ID，用于进度保存和错题本跳转。
     """
-    print(f"\n[ROUTE_DEBUG] === persist_enhanced_question ENDPOINT entered === "
-          f"course_id={course_id} user={current_user.id[:8] if current_user else 'NONE'} "
-          f"session={request.session_id[:8] if request.session_id else 'NONE'} "
-          f"index={request.question_index}", flush=True)
+    print(
+        f"\n[ROUTE_DEBUG] === persist_enhanced_question ENDPOINT entered === "
+        f"course_id={course_id} user={current_user.id[:8] if current_user else 'NONE'} "
+        f"session={request.session_id[:8] if request.session_id else 'NONE'} "
+        f"index={request.question_index}",
+        flush=True,
+    )
     try:
         result = await section_base_question_service.persist_enhanced_question(
             db=db,
             user_id=current_user.id,
             request=request,
         )
-        print(f"[ROUTE_DEBUG] === persist_enhanced_question RETURNED success={result.success} "
-              f"qid={result.question_id} ===", flush=True)
+        print(
+            f"[ROUTE_DEBUG] === persist_enhanced_question RETURNED success={result.success} "
+            f"qid={result.question_id} ===",
+            flush=True,
+        )
         return result
     except Exception as e:
         import traceback
-        print(f"\n[ROUTE_DEBUG] !!! Router-level exception: {type(e).__name__}: {e}", flush=True)
+
+        print(
+            f"\n[ROUTE_DEBUG] !!! Router-level exception: {type(e).__name__}: {e}",
+            flush=True,
+        )
         traceback.print_exc()
         return PersistEnhancedQuestionResponse(
             success=False,
             question_id=0,
-            message=f"路由层异常: {type(e).__name__}: {str(e)}"
+            message=f"路由层异常: {type(e).__name__}: {str(e)}",
         )
 
 
 # ========== Mastery Progress Endpoints (精进之路进度) ==========
 
-@router.post("/mastery/progress/exercise", response_model=MasteryExerciseProgressResponse)
+
+@router.post(
+    "/mastery/progress/exercise", response_model=MasteryExerciseProgressResponse
+)
 async def save_mastery_exercise_progress(
     request: MasteryExerciseProgressSaveRequest,
     current_user: User = Depends(get_current_user),
@@ -769,19 +820,30 @@ async def save_mastery_exercise_progress(
 
     当用户完成一道题（交卷）时调用。
     """
-    logger.debug("[ROUTE-DEBUG] ========== 收到 /mastery/progress/exercise 请求 ==========")
-    logger.debug(f"[ROUTE-DEBUG] course_id={request.course_id}, chapter_id={request.chapter_id}")
-    logger.debug(f"[ROUTE-DEBUG] section_id={request.section_id}, question_id={request.question_id}")
+    logger.debug(
+        "[ROUTE-DEBUG] ========== 收到 /mastery/progress/exercise 请求 =========="
+    )
+    logger.debug(
+        f"[ROUTE-DEBUG] course_id={request.course_id}, chapter_id={request.chapter_id}"
+    )
+    logger.debug(
+        f"[ROUTE-DEBUG] section_id={request.section_id}, question_id={request.question_id}"
+    )
     result = await mastery_progress_service.save_exercise_progress(
         db=db,
         user_id=current_user.id,
         request=request,
     )
-    logger.debug(f"[ROUTE-DEBUG] 返回结果: success={result.success}, bkt_debug={result.bkt_debug}")
+    logger.debug(
+        f"[ROUTE-DEBUG] 返回结果: success={result.success}, bkt_debug={result.bkt_debug}"
+    )
     return result
 
 
-@router.get("/mastery/{course_id}/{chapter_id}/progress", response_model=MasteryChapterProgressResponse)
+@router.get(
+    "/mastery/{course_id}/{chapter_id}/progress",
+    response_model=MasteryChapterProgressResponse,
+)
 async def get_mastery_chapter_progress(
     course_id: int,
     chapter_id: int,
@@ -870,20 +932,23 @@ async def get_mastery_progress_by_key(
             "question_index": progress.question_index,
             "is_completed": progress.is_completed,
             "is_correct": progress.is_correct,
-        }
+        },
     }
 
 
 # ========== Arena Infinite Mode Endpoints ==========
 
+
 class InfiniteSessionStartRequest(BaseModel):
     """Request to start infinite mode session"""
+
     difficulty_level: int = Field(default=3, ge=1, le=5)
     initial_count: int = Field(default=3, ge=1, le=50)
 
 
 class InfiniteProgressResponse(BaseModel):
     """Response for infinite mode progress"""
+
     session_id: str
     current_index: int
     total_exercises: int
@@ -895,6 +960,7 @@ class InfiniteProgressResponse(BaseModel):
 
 class SubmitExerciseRequest(BaseModel):
     """Request to submit exercise answer"""
+
     exercise_id: int
     code: str
     language: str
@@ -903,6 +969,7 @@ class SubmitExerciseRequest(BaseModel):
 
 class SubmitExerciseResponse(BaseModel):
     """Response for exercise submission"""
+
     is_correct: bool
     test_results: list[dict]
     stars_earned: int
@@ -920,6 +987,7 @@ class SubmitExerciseResponse(BaseModel):
 
 class SaveCodeRequest(BaseModel):
     """Request to save code"""
+
     exercise_id: int
     code: str
     language: str
@@ -927,17 +995,22 @@ class SaveCodeRequest(BaseModel):
 
 class SwitchExerciseRequest(BaseModel):
     """Request to switch to a different exercise"""
+
     target_index: int
 
 
 class AppendExercisesRequest(BaseModel):
     """Request to append more exercises"""
+
     count: int = Field(default=5, ge=1, le=20)
-    difficulty_level: Optional[int] = Field(default=None, ge=1, le=8, description="难度等级，不传则从用户现有题目推断")
+    difficulty_level: Optional[int] = Field(
+        default=None, ge=1, le=8, description="难度等级，不传则从用户现有题目推断"
+    )
 
 
 class ExitSaveRequest(BaseModel):
     """Request to save on exit"""
+
     current_exercise_id: int
     current_code: str
     current_language: str
@@ -946,6 +1019,7 @@ class ExitSaveRequest(BaseModel):
 # ========================================
 # Challenge Path APIs (No Session Concept)
 # ========================================
+
 
 @router.post("/challenge/infinite/start", response_model=ChallengeSessionResponse)
 async def start_infinite_session(
@@ -984,7 +1058,9 @@ async def start_infinite_session(
 async def get_challenge_path_progress(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    lite: bool = Query(True, description="Lite mode: skip full content/test_cases for faster loading"),
+    lite: bool = Query(
+        True, description="Lite mode: skip full content/test_cases for faster loading"
+    ),
 ):
     """Get challenge path progress (independent of courses)
 
@@ -1120,16 +1196,18 @@ async def get_challenge_exercise(
     )
 
     if not result:
-        raise HTTPException(status_code=404, detail="Exercise not found in challenge path")
+        raise HTTPException(
+            status_code=404, detail="Exercise not found in challenge path"
+        )
 
     total = await service._get_exercise_count(current_user.id)
 
     return map_exercise_detail_response(result, total_exercises=total)
 
 
-
 class RecentArenaExercise(BaseModel):
     """最近挑战之路练习"""
+
     exercise_id: int
     title: str
     is_correct: bool
@@ -1153,6 +1231,7 @@ async def get_recent_arena_exercises(
 
 class SectionMasteryResponse(BaseModel):
     """小节掌握度响应"""
+
     section_id: int
     chapter_id: int
     mastery_score: float
@@ -1165,6 +1244,7 @@ class SectionMasteryResponse(BaseModel):
 
 class CourseMasteryResponse(BaseModel):
     """课程掌握度响应"""
+
     course_id: int
     course_name: str  # 课程名称
     mastery_score: float
@@ -1187,9 +1267,7 @@ async def get_section_mastery(
     from app.models.knowledge_point_mastery import KnowledgePointMastery
 
     # 获取小节信息
-    section_result = await db.execute(
-        select(Section).where(Section.id == section_id)
-    )
+    section_result = await db.execute(select(Section).where(Section.id == section_id))
     section = section_result.scalar_one_or_none()
     if not section:
         raise HTTPException(status_code=404, detail="Section not found")
@@ -1214,13 +1292,15 @@ async def get_section_mastery(
 
     knowledge_points = []
     for kp in kp_masteries:
-        knowledge_points.append({
-            "name": kp.knowledge_point,
-            "p_l": kp.p_l,
-            "is_mastered": kp.p_l >= 0.95,
-            "total_attempts": kp.total_attempts,
-            "correct_attempts": kp.correct_attempts,
-        })
+        knowledge_points.append(
+            {
+                "name": kp.knowledge_point,
+                "p_l": kp.p_l,
+                "is_mastered": kp.p_l >= 0.95,
+                "total_attempts": kp.total_attempts,
+                "correct_attempts": kp.correct_attempts,
+            }
+        )
 
     if section_mastery:
         return SectionMasteryResponse(
@@ -1257,8 +1337,11 @@ async def get_course_mastery(
     from app.services.bkt_mastery import BKTMasteryService
 
     import logging
+
     logger = logging.getLogger(__name__)
-    logger.info(f"[API] get_course_mastery: course_id={course_id}, user={current_user.id[:8]}...")
+    logger.info(
+        f"[API] get_course_mastery: course_id={course_id}, user={current_user.id[:8]}..."
+    )
 
     # 获取课程名称
     course_result = await db.execute(select(Course).where(Course.id == course_id))
@@ -1266,9 +1349,13 @@ async def get_course_mastery(
     course_name = course.name if course else f"课程 {course_id}"
 
     bkt_service = BKTMasteryService(db)
-    summary = await bkt_service.get_course_mastery_summary(current_user.id, course_id)
+    summary = await getattr(bkt_service, "get_course_mastery_summary")(
+        current_user.id, course_id
+    )
 
-    logger.info(f"[API] get_course_mastery result: chapters_count={summary['chapters_count']}, chapters={len(summary.get('chapters', []))}")
+    logger.info(
+        f"[API] get_course_mastery result: chapters_count={summary['chapters_count']}, chapters={len(summary.get('chapters', []))}"
+    )
 
     return CourseMasteryResponse(
         course_id=course_id,

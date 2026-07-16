@@ -60,7 +60,9 @@ class TierTransactionService:
         self.db.add(tx)
         await self.db.flush()  # Get ID without committing
         await self.db.refresh(tx)
-        logger.info(f"[TierTx] User {user_id[:8]}... {tier_before} {sub_tier_before} {stars_before}⭐ → {tier_after} {sub_tier_after} {stars_after}⭐ ({stars_change:+d})")
+        logger.info(
+            f"[TierTx] User {user_id[:8]}... {tier_before} {sub_tier_before} {stars_before}⭐ → {tier_after} {sub_tier_after} {stars_after}⭐ ({stars_change:+d})"
+        )
         return tx
 
     async def get_transactions(
@@ -73,7 +75,11 @@ class TierTransactionService:
         """Get user's tier transaction history"""
         # Build query
         query = select(TierTransaction).where(TierTransaction.user_id == user_id)
-        count_query = select(func.count()).select_from(TierTransaction).where(TierTransaction.user_id == user_id)
+        count_query = (
+            select(func.count())
+            .select_from(TierTransaction)
+            .where(TierTransaction.user_id == user_id)
+        )
 
         if course_id:
             query = query.where(TierTransaction.course_id == course_id)
@@ -117,6 +123,6 @@ class TierTransactionService:
         }
 
 
-def get_tier_transaction_service(db: AsyncSession = None) -> TierTransactionService:
+def get_tier_transaction_service(db: AsyncSession) -> TierTransactionService:
     """Get TierTransactionService instance"""
     return TierTransactionService(db)

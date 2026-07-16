@@ -13,7 +13,7 @@ import asyncio
 import json
 import logging
 import httpx
-from typing import Optional
+from typing import Optional, Any
 from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -110,7 +110,7 @@ class EmbeddingService:
         try:
             # Build request body
             # Note: Some embedding models (like BAAI/bge-large-zh-v1.5) don't support dimensions parameter
-            request_body = {
+            request_body: dict[str, Any] = {
                 "model": self.config.model,
                 "input": text,
             }
@@ -120,7 +120,10 @@ class EmbeddingService:
             if self.config.provider == "openai" and self.config.dimensions:
                 request_body["dimensions"] = self.config.dimensions
 
-            response = await self._client.post(
+            client = self._client
+            if client is None:
+                return None
+            response = await client.post(
                 f"{base_url}/embeddings",
                 headers={
                     "Authorization": f"Bearer {self.config.api_key}",

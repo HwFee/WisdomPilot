@@ -69,7 +69,9 @@ class MasteryXpTransactionService:
         self.db.add(tx)
         await self.db.flush()  # Get ID without committing
         await self.db.refresh(tx)
-        logger.info(f"[MasteryXpTx] User {user_id[:8]}... {type} {amount} XP -> {balance_after} ({level_before} -> {level_after})")
+        logger.info(
+            f"[MasteryXpTx] User {user_id[:8]}... {type} {amount} XP -> {balance_after} ({level_before} -> {level_after})"
+        )
         return tx
 
     async def earn_xp(
@@ -144,8 +146,14 @@ class MasteryXpTransactionService:
     ) -> dict:
         """Get user's mastery XP transaction history"""
         # Build query
-        query = select(MasteryXpTransaction).where(MasteryXpTransaction.user_id == user_id)
-        count_query = select(func.count()).select_from(MasteryXpTransaction).where(MasteryXpTransaction.user_id == user_id)
+        query = select(MasteryXpTransaction).where(
+            MasteryXpTransaction.user_id == user_id
+        )
+        count_query = (
+            select(func.count())
+            .select_from(MasteryXpTransaction)
+            .where(MasteryXpTransaction.user_id == user_id)
+        )
 
         # Get total count
         count_result = await self.db.execute(count_query)
@@ -193,6 +201,6 @@ class MasteryXpTransactionService:
         }
 
 
-def get_mastery_xp_transaction_service(db: AsyncSession = None) -> MasteryXpTransactionService:
+def get_mastery_xp_transaction_service(db: AsyncSession) -> MasteryXpTransactionService:
     """Get MasteryXpTransactionService instance"""
     return MasteryXpTransactionService(db)

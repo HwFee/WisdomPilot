@@ -225,6 +225,27 @@ class TestUserRank:
 
 
 @pytest.mark.asyncio
+class TestPublicAchievementEndpoints:
+    """Document achievement endpoints that intentionally allow anonymous access."""
+
+    async def test_leaderboard_allows_anonymous_access(self, client):
+        response = await client.get("/api/achievements/leaderboard")
+
+        assert response.status_code == 200
+
+    async def test_achievement_detail_allows_anonymous_access(self, client, db_session):
+        from app.services.achievement import achievement_service
+
+        await achievement_service.create_default_achievements(db_session)
+        achievements = await achievement_service.get_active_achievements(db_session)
+
+        response = await client.get(f"/api/achievements/{achievements[0].id}")
+
+        assert response.status_code == 200
+        assert response.json()["achievement"]["earned"] is False
+
+
+@pytest.mark.asyncio
 class TestAchievementService:
     """Test achievement service logic"""
 

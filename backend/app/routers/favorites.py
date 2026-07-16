@@ -44,8 +44,12 @@ async def add_favorite(
     3. 存储完整信息快照
     """
     logger.info(f"[API] 添加收藏请求: user_id={current_user.id}")
-    logger.info(f"[API] 请求数据: exercise_key={request.exercise_key}, exercise_id={request.exercise_id}, course_id={request.course_id}")
-    logger.info(f"[API] 请求数据: chapter_id={request.chapter_id}, section_id={request.section_id}, exercise_type={request.exercise_type}")
+    logger.info(
+        f"[API] 请求数据: exercise_key={request.exercise_key}, exercise_id={request.exercise_id}, course_id={request.course_id}"
+    )
+    logger.info(
+        f"[API] 请求数据: chapter_id={request.chapter_id}, section_id={request.section_id}, exercise_type={request.exercise_type}"
+    )
 
     # 检查是否已存在（优先用 exercise_id 去重）
     existing = None
@@ -131,7 +135,9 @@ async def get_favorites(
         base_query = base_query.where(Favorite.folder == folder)
 
     # 获取总数
-    count_query = select(func.count(Favorite.id)).where(Favorite.user_id == current_user.id)
+    count_query = select(func.count(Favorite.id)).where(
+        Favorite.user_id == current_user.id
+    )
     if folder:
         count_query = count_query.where(Favorite.folder == folder)
     count_result = await db.execute(count_query)
@@ -180,7 +186,9 @@ async def get_favorite_folders(
     )
     rows = result.all()
 
-    folders = [FavoriteFolderResponse(name=row.folder, count=row.count) for row in rows]
+    folders = [
+        FavoriteFolderResponse(name=row.folder, count=int(row[1])) for row in rows
+    ]
 
     # Add "默认" folder for ungrouped favorites
     default_count_result = await db.execute(
@@ -209,8 +217,12 @@ async def create_folder(
 async def check_favorite(
     db: db_dependency,
     current_user: auth_dependency,
-    exercise_key: Optional[str] = Query(default=None, description="Exercise key to check"),
-    exercise_id: Optional[int] = Query(default=None, description="Exercise ID to check"),
+    exercise_key: Optional[str] = Query(
+        default=None, description="Exercise key to check"
+    ),
+    exercise_id: Optional[int] = Query(
+        default=None, description="Exercise ID to check"
+    ),
 ):
     """Check whether the current user has favorited a specific exercise.
 
@@ -223,7 +235,9 @@ async def check_favorite(
         is_favorited: True if a matching favorite record exists.
         favorite_id:  The UUID string of that record, or null when not found.
     """
-    logger.info(f"[API] check_favorite: user_id={current_user.id}, exercise_key={exercise_key}, exercise_id={exercise_id}")
+    logger.info(
+        f"[API] check_favorite: user_id={current_user.id}, exercise_key={exercise_key}, exercise_id={exercise_id}"
+    )
     favorite = None
 
     # 第一步：用 exercise_key 查询

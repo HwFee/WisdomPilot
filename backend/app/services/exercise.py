@@ -44,9 +44,7 @@ class ExerciseService:
     ) -> dict:
         """Generate exercises using AI"""
         # Get chapter info for context
-        chapter = await db.execute(
-            select(Chapter).where(Chapter.id == chapter_id)
-        )
+        chapter = await db.execute(select(Chapter).where(Chapter.id == chapter_id))
         chapter = chapter.scalar_one_or_none()
         if not chapter:
             raise ValueError(f"Chapter {chapter_id} not found")
@@ -97,8 +95,8 @@ class ExerciseService:
         exercise: Exercise,
         user_answer: Any,
         course_id: int = 0,
-        chapter_id: int = None,
-        stage_id: int = None,
+        chapter_id: Optional[int] = None,
+        stage_id: Optional[int] = None,
     ) -> dict:
         """Check user's answer and return feedback
 
@@ -125,7 +123,9 @@ class ExerciseService:
             elif isinstance(user_answer, str):
                 is_correct = user_answer == correct_answer
             elif isinstance(user_answer, list):
-                is_correct = set(user_answer) == set(correct_answer) if correct_answer else False
+                is_correct = (
+                    set(user_answer) == set(correct_answer) if correct_answer else False
+                )
             explanation = solution.get("explanation")
         elif exercise.type == "programming":
             # For programming, check via test cases
@@ -134,7 +134,9 @@ class ExerciseService:
             explanation = solution.get("explanation")
         else:
             # fill_blank or other types
-            is_correct = str(user_answer).strip().lower() == str(correct_answer).strip().lower()
+            is_correct = (
+                str(user_answer).strip().lower() == str(correct_answer).strip().lower()
+            )
             explanation = solution.get("explanation")
 
         # Update exercise usage stats
@@ -144,7 +146,9 @@ class ExerciseService:
 
         exercise.correct_rate["total"] = exercise.correct_rate.get("total", 0) + 1
         if is_correct:
-            exercise.correct_rate["correct"] = exercise.correct_rate.get("correct", 0) + 1
+            exercise.correct_rate["correct"] = (
+                exercise.correct_rate.get("correct", 0) + 1
+            )
 
         # Calculate XP earned
         xp_earned = 0
@@ -169,10 +173,12 @@ class ExerciseService:
                 )
 
             # 答对了：检查是否是曾经错过的题目，标记为已解决
-            existing_wrong = await wrong_question_service.get_wrong_question_by_exercise(
-                db=db,
-                user_id=user.id,
-                exercise_id=exercise.id,
+            existing_wrong = (
+                await wrong_question_service.get_wrong_question_by_exercise(
+                    db=db,
+                    user_id=user.id,
+                    exercise_id=exercise.id,
+                )
             )
             if existing_wrong:
                 await wrong_question_service.mark_resolved(
@@ -216,9 +222,7 @@ class ExerciseService:
         self, db: AsyncSession, exercise_id: int, verified: bool = True
     ) -> Exercise:
         """Mark an exercise as verified (admin)"""
-        result = await db.execute(
-            select(Exercise).where(Exercise.id == exercise_id)
-        )
+        result = await db.execute(select(Exercise).where(Exercise.id == exercise_id))
         exercise = result.scalar_one_or_none()
         if not exercise:
             raise ValueError(f"Exercise {exercise_id} not found")

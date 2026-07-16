@@ -19,7 +19,7 @@ BKT 是教育数据挖掘中经典的知识追踪模型，广泛应用于：
 
 import logging
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +37,19 @@ class BKTParams:
     - p_g: 猜测率 - 未掌握但猜对的概率（如选择题 4 选 1 理论猜测率 0.25）
     - p_s: 失误率 - 已掌握但答错的概率（如粗心、紧张等）
     """
-    p_l0: float = 0.15   # 初始掌握概率
-    p_t: float = 0.1     # 学习率（从未掌握到掌握）
-    p_g: float = 0.2     # 猜测率（未掌握但答对）
-    p_s: float = 0.05    # 失误率（已掌握但答错）
+
+    p_l0: float = 0.15  # 初始掌握概率
+    p_t: float = 0.1  # 学习率（从未掌握到掌握）
+    p_g: float = 0.2  # 猜测率（未掌握但答对）
+    p_s: float = 0.05  # 失误率（已掌握但答错）
     mastery_threshold: float = 0.80  # 掌握阈值 - 全对3题可达，答对概率约81%
 
     def validate(self) -> bool:
         """验证参数有效性"""
-        return all(0 <= v <= 1 for v in [
-            self.p_l0, self.p_t, self.p_g, self.p_s, self.mastery_threshold
-        ])
+        return all(
+            0 <= v <= 1
+            for v in [self.p_l0, self.p_t, self.p_g, self.p_s, self.mastery_threshold]
+        )
 
     def to_dict(self) -> dict:
         """转换为字典（用于存储）"""
@@ -74,9 +76,9 @@ class BKTParams:
 # 不同题型的默认参数
 # 根据实际系统情况：主要是选择题和填空题
 DEFAULT_BKT_PARAMS = {
-    "choice": BKTParams(p_g=0.25),      # 选择题猜测率较高（4选1理论猜测率）
-    "fill_blank": BKTParams(p_g=0.15),   # 填空题猜测率中等
-    "fill": BKTParams(p_g=0.15),         # 填空题别名
+    "choice": BKTParams(p_g=0.25),  # 选择题猜测率较高（4选1理论猜测率）
+    "fill_blank": BKTParams(p_g=0.15),  # 填空题猜测率中等
+    "fill": BKTParams(p_g=0.15),  # 填空题别名
     "default": BKTParams(),
 }
 
@@ -105,10 +107,12 @@ class BKTModel:
     ```
     """
 
-    def __init__(self, params: BKTParams = None):
+    def __init__(self, params: Optional[BKTParams] = None):
         self.params = params or BKTParams()
 
-    def update(self, p_l: float, is_correct: bool, knowledge_point: str = "") -> Tuple[float, bool]:
+    def update(
+        self, p_l: float, is_correct: bool, knowledge_point: str = ""
+    ) -> Tuple[float, bool]:
         """
         根据答题结果更新掌握概率
 
@@ -157,9 +161,13 @@ class BKTModel:
         logger.info("[BKT] ├─────────────────────────────────────────────────────")
         logger.info("[BKT] │ 计算结果:")
         logger.info(f"[BKT] │   后验概率 P(L|answer) = {p_l_given_answer:.4f}")
-        logger.info(f"[BKT] │   学习更新 P(L_new) = {p_l_given_answer:.4f} + (1 - {p_l_given_answer:.4f}) × {p.p_t:.2f}")
+        logger.info(
+            f"[BKT] │   学习更新 P(L_new) = {p_l_given_answer:.4f} + (1 - {p_l_given_answer:.4f}) × {p.p_t:.2f}"
+        )
         logger.info(f"[BKT] │                   = {p_l_new:.4f}")
-        logger.info(f"[BKT] │   掌握状态: {'✓ 已掌握 (>=0.95)' if is_mastered else '学习中 (<0.95)'}")
+        logger.info(
+            f"[BKT] │   掌握状态: {'✓ 已掌握 (>=0.95)' if is_mastered else '学习中 (<0.95)'}"
+        )
         logger.info("[BKT] └─────────────────────────────────────────────────────")
 
         return p_l_new, is_mastered
@@ -186,9 +194,15 @@ class BKTModel:
         result = numerator / denominator
 
         logger.info("[BKT] │ 答对，计算 P(L|correct):")
-        logger.info(f"[BKT] │   分子 = P(L) × (1 - P(S)) = {p_l:.4f} × {1-p.p_s:.2f} = {numerator:.4f}")
-        logger.info(f"[BKT] │   分母 = {p_l:.4f} × {1-p.p_s:.2f} + {1-p_l:.4f} × {p.p_g:.2f} = {denominator:.4f}")
-        logger.info(f"[BKT] │   P(L|correct) = {numerator:.4f} / {denominator:.4f} = {result:.4f}")
+        logger.info(
+            f"[BKT] │   分子 = P(L) × (1 - P(S)) = {p_l:.4f} × {1 - p.p_s:.2f} = {numerator:.4f}"
+        )
+        logger.info(
+            f"[BKT] │   分母 = {p_l:.4f} × {1 - p.p_s:.2f} + {1 - p_l:.4f} × {p.p_g:.2f} = {denominator:.4f}"
+        )
+        logger.info(
+            f"[BKT] │   P(L|correct) = {numerator:.4f} / {denominator:.4f} = {result:.4f}"
+        )
 
         return result
 
@@ -214,9 +228,15 @@ class BKTModel:
         result = numerator / denominator
 
         logger.info("[BKT] │ 答错，计算 P(L|wrong):")
-        logger.info(f"[BKT] │   分子 = P(L) × P(S) = {p_l:.4f} × {p.p_s:.2f} = {numerator:.4f}")
-        logger.info(f"[BKT] │   分母 = {p_l:.4f} × {p.p_s:.2f} + {1-p_l:.4f} × {1-p.p_g:.2f} = {denominator:.4f}")
-        logger.info(f"[BKT] │   P(L|wrong) = {numerator:.4f} / {denominator:.4f} = {result:.4f}")
+        logger.info(
+            f"[BKT] │   分子 = P(L) × P(S) = {p_l:.4f} × {p.p_s:.2f} = {numerator:.4f}"
+        )
+        logger.info(
+            f"[BKT] │   分母 = {p_l:.4f} × {p.p_s:.2f} + {1 - p_l:.4f} × {1 - p.p_g:.2f} = {denominator:.4f}"
+        )
+        logger.info(
+            f"[BKT] │   P(L|wrong) = {numerator:.4f} / {denominator:.4f} = {result:.4f}"
+        )
 
         return result
 

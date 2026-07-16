@@ -28,6 +28,7 @@ class ChallengeRewardService:
     async def get_stats(self, user_id: str) -> dict:
         """Get challenge path statistics."""
         from app.services.challenge_path.progress import ChallengeProgressService
+
         progress_service = ChallengeProgressService(self.db)
         progress_records = await progress_service._get_user_progress(user_id)
 
@@ -181,7 +182,8 @@ class ChallengeRewardService:
             )
             logger.info(
                 "[CORE] Awarded %s cores to user %s... for correct challenge exercise",
-                cores_earned, user_id[:8]
+                cores_earned,
+                user_id[:8],
             )
             return cores_earned
         except Exception as e:
@@ -215,32 +217,39 @@ class ChallengeRewardService:
 
         try:
             from app.services.tier_transaction_service import TierTransactionService
+
             tier_tx_service = TierTransactionService(self.db)
             used_protection = (
                 getattr(tier_result, "used_protection", False)
-                if tier_result and stars_earned < 0 else False
+                if tier_result and stars_earned < 0
+                else False
             )
             await tier_tx_service.record_transaction(
                 user_id=user_id,
                 course_id=None,
-                tier_before=current_tier.value if current_tier else TierRank.BRONZE.value,
-                sub_tier_before=current_sub_tier,
-                stars_before=current_stars,
+                tier_before=current_tier.value
+                if current_tier
+                else TierRank.BRONZE.value,
+                sub_tier_before=int(current_sub_tier or 0),
+                stars_before=int(current_stars or 0),
                 tier_after=new_tier_value if new_tier_value else TierRank.BRONZE.value,
-                sub_tier_after=new_sub_tier,
-                stars_after=new_stars,
+                sub_tier_after=int(new_sub_tier or 0),
+                stars_after=int(new_stars or 0),
                 stars_change=stars_earned,
                 promoted=promoted,
                 demoted=demoted,
                 used_protection=used_protection,
-                protection_remaining=profile.protection_remaining or 0 if profile else 0,
+                protection_remaining=profile.protection_remaining or 0
+                if profile
+                else 0,
                 source="arena_challenge",
                 reference_id=str(exercise.id) if exercise else "0",
                 description=f"挑战之路答题 - {'答对' if is_correct else '答错'}",
             )
             logger.info(
                 "[TierTx] Recorded tier transaction for user %s... stars_change=%s",
-                user_id[:8], stars_earned
+                user_id[:8],
+                stars_earned,
             )
         except Exception as e:
             logger.warning("Failed to record tier transaction: %s", e)
@@ -303,4 +312,6 @@ class ChallengeRewardService:
         profile.highest_difficulty = highest_difficulty
         profile.total_submissions = total_attempts
         profile.avg_accuracy = len(correct) / total if total > 0 else 0.0
-        profile.avg_time_spent = sum(times_spent) / len(times_spent) if times_spent else 0.0
+        profile.avg_time_spent = (
+            sum(times_spent) / len(times_spent) if times_spent else 0.0
+        )

@@ -60,13 +60,13 @@ async def get_tags(
 ):
     """Get all tags for current user"""
     result = await db.execute(
-        select(NoteTag)
-        .where(NoteTag.user_id == current_user.id)
-        .order_by(NoteTag.name)
+        select(NoteTag).where(NoteTag.user_id == current_user.id).order_by(NoteTag.name)
     )
     tags = list(result.scalars().all())
 
-    return NoteTagListResponse(tags=tags, total=len(tags))
+    return NoteTagListResponse(
+        tags=[NoteTagResponse.model_validate(t) for t in tags], total=len(tags)
+    )
 
 
 @router.put("/{tag_id}", response_model=NoteTagResponse)
@@ -99,7 +99,9 @@ async def update_tag(
         )
         existing = existing_result.scalar_one_or_none()
         if existing:
-            raise HTTPException(status_code=400, detail="Tag with this name already exists")
+            raise HTTPException(
+                status_code=400, detail="Tag with this name already exists"
+            )
         tag.name = request.name
 
     if request.color is not None:

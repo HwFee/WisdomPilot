@@ -24,6 +24,7 @@ from typing import Optional, List, Dict, Any
 from xml.etree import ElementTree as ET
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from sqlalchemy import select
@@ -41,13 +42,57 @@ COURSE_KEYWORDS = {
     "Python": ["python", "input()", "print(", "def ", "import ", "list(", "dict("],
     "Java": ["java", "public class", "system.out", "scanner", "import java"],
     "Rust": ["rust", "fn main", "let mut", "println!", "cargo"],
-    "DSA": ["数据结构", "算法", "链表", "栈", "队列", "树", "图", "排序", "查找",
-            "linked list", "stack", "queue", "tree", "graph", "sort", "search",
-            "递归", "recursion", "动态规划", "dynamic programming"],
-    "ADA": ["算法设计", "贪心", "分治", "回溯", "分支限界", "greedy", "divide conquer",
-            "backtracking", "branch and bound", "复杂度", "complexity"],
-    "DiscreteMath": ["离散", "集合", "逻辑", "命题", "谓词", "关系", "函数", "图论",
-                     "set", "logic", "proposition", "predicate", "relation", "function"]
+    "DSA": [
+        "数据结构",
+        "算法",
+        "链表",
+        "栈",
+        "队列",
+        "树",
+        "图",
+        "排序",
+        "查找",
+        "linked list",
+        "stack",
+        "queue",
+        "tree",
+        "graph",
+        "sort",
+        "search",
+        "递归",
+        "recursion",
+        "动态规划",
+        "dynamic programming",
+    ],
+    "ADA": [
+        "算法设计",
+        "贪心",
+        "分治",
+        "回溯",
+        "分支限界",
+        "greedy",
+        "divide conquer",
+        "backtracking",
+        "branch and bound",
+        "复杂度",
+        "complexity",
+    ],
+    "DiscreteMath": [
+        "离散",
+        "集合",
+        "逻辑",
+        "命题",
+        "谓词",
+        "关系",
+        "函数",
+        "图论",
+        "set",
+        "logic",
+        "proposition",
+        "predicate",
+        "relation",
+        "function",
+    ],
 }
 
 # Difficulty estimation keywords
@@ -56,7 +101,7 @@ DIFFICULTY_KEYWORDS = {
     2: ["初级", "初级算法", "elementary"],
     3: ["中等", "中级", "medium", "intermediate"],
     4: ["困难", "高级", "hard", "advanced", "困难"],
-    5: ["挑战", "专家", "expert", "challenge", "竞赛", "competition"]
+    5: ["挑战", "专家", "expert", "challenge", "竞赛", "competition"],
 }
 
 
@@ -80,131 +125,128 @@ def parse_fps_xml(file_path: Path) -> List[Dict[str, Any]]:
         return problems
 
     # FPS format: root is <fps>, items are <item>
-    for item in root.findall('.//item'):
+    for item in root.findall(".//item"):
         problem = {}
 
         # Title
-        title_elem = item.find('title')
+        title_elem = item.find("title")
         if title_elem is not None and title_elem.text:
-            problem['title'] = title_elem.text.strip()
+            problem["title"] = title_elem.text.strip()
         else:
-            problem['title'] = f"Problem {len(problems) + 1}"
+            problem["title"] = f"Problem {len(problems) + 1}"
 
         # Time limit (seconds)
-        time_limit = item.find('time_limit')
+        time_limit = item.find("time_limit")
         if time_limit is not None and time_limit.text:
             try:
-                problem['time_limit'] = int(float(time_limit.text.strip()))
+                problem["time_limit"] = int(float(time_limit.text.strip()))
             except ValueError:
-                problem['time_limit'] = 1
+                problem["time_limit"] = 1
         else:
-            problem['time_limit'] = 1
+            problem["time_limit"] = 1
 
         # Memory limit (MB)
-        memory_limit = item.find('memory_limit')
+        memory_limit = item.find("memory_limit")
         if memory_limit is not None and memory_limit.text:
             try:
-                problem['memory_limit'] = int(float(memory_limit.text.strip()))
+                problem["memory_limit"] = int(float(memory_limit.text.strip()))
             except ValueError:
-                problem['memory_limit'] = 128
+                problem["memory_limit"] = 128
         else:
-            problem['memory_limit'] = 128
+            problem["memory_limit"] = 128
 
         # Description
-        desc_elem = item.find('description')
+        desc_elem = item.find("description")
         if desc_elem is not None and desc_elem.text:
-            problem['description'] = desc_elem.text.strip()
+            problem["description"] = desc_elem.text.strip()
         else:
-            problem['description'] = ""
+            problem["description"] = ""
 
         # Input specification
-        input_elem = item.find('input')
+        input_elem = item.find("input")
         if input_elem is not None and input_elem.text:
-            problem['input_spec'] = input_elem.text.strip()
+            problem["input_spec"] = input_elem.text.strip()
         else:
-            problem['input_spec'] = ""
+            problem["input_spec"] = ""
 
         # Output specification
-        output_elem = item.find('output')
+        output_elem = item.find("output")
         if output_elem is not None and output_elem.text:
-            problem['output_spec'] = output_elem.text.strip()
+            problem["output_spec"] = output_elem.text.strip()
         else:
-            problem['output_spec'] = ""
+            problem["output_spec"] = ""
 
         # Sample input
-        sample_in = item.find('sample_input')
+        sample_in = item.find("sample_input")
         if sample_in is not None and sample_in.text:
-            problem['sample_input'] = sample_in.text.strip()
+            problem["sample_input"] = sample_in.text.strip()
         else:
-            problem['sample_input'] = ""
+            problem["sample_input"] = ""
 
         # Sample output
-        sample_out = item.find('sample_output')
+        sample_out = item.find("sample_output")
         if sample_out is not None and sample_out.text:
-            problem['sample_output'] = sample_out.text.strip()
+            problem["sample_output"] = sample_out.text.strip()
         else:
-            problem['sample_output'] = ""
+            problem["sample_output"] = ""
 
         # Hint
-        hint_elem = item.find('hint')
+        hint_elem = item.find("hint")
         if hint_elem is not None and hint_elem.text:
-            problem['hint'] = hint_elem.text.strip()
+            problem["hint"] = hint_elem.text.strip()
         else:
-            problem['hint'] = ""
+            problem["hint"] = ""
 
         # Source
-        source_elem = item.find('source')
+        source_elem = item.find("source")
         if source_elem is not None and source_elem.text:
-            problem['source'] = source_elem.text.strip()
+            problem["source"] = source_elem.text.strip()
         else:
-            problem['source'] = ""
+            problem["source"] = ""
 
         # Test cases (may have multiple)
         test_cases = []
-        test_inputs = item.findall('test_input')
-        test_outputs = item.findall('test_output')
+        test_inputs = item.findall("test_input")
+        test_outputs = item.findall("test_output")
 
         # Match test inputs with outputs by name attribute
         input_map = {}
         for ti in test_inputs:
-            name = ti.get('name', f'test{len(input_map)}')
+            name = ti.get("name", f"test{len(input_map)}")
             if ti.text:
                 input_map[name] = ti.text.strip()
 
         output_map = {}
         for to in test_outputs:
-            name = to.get('name', f'test{len(output_map)}')
+            name = to.get("name", f"test{len(output_map)}")
             if to.text:
                 output_map[name] = to.text.strip()
 
         # Create test case pairs
         for name in input_map:
             if name in output_map:
-                test_cases.append({
-                    'input': input_map[name],
-                    'output': output_map[name],
-                    'name': name
-                })
+                test_cases.append(
+                    {"input": input_map[name], "output": output_map[name], "name": name}
+                )
 
         # If no named test cases, try to use sample as test case
-        if not test_cases and problem['sample_input'] and problem['sample_output']:
-            test_cases.append({
-                'input': problem['sample_input'],
-                'output': problem['sample_output'],
-                'name': 'sample'
-            })
+        if not test_cases and problem["sample_input"] and problem["sample_output"]:
+            test_cases.append(
+                {
+                    "input": problem["sample_input"],
+                    "output": problem["sample_output"],
+                    "name": "sample",
+                }
+            )
 
-        problem['test_cases'] = test_cases
+        problem["test_cases"] = test_cases
 
         # Images (base64 encoded)
         images = []
-        for img in item.findall('img'):
+        for img in item.findall("img"):
             if img.text:
-                images.append({
-                    'src': img.get('src', ''),
-                    'data': img.text.strip()
-                })
-        problem['images'] = images
+                images.append({"src": img.get("src", ""), "data": img.text.strip()})
+        problem["images"] = images
 
         problems.append(problem)
 
@@ -229,7 +271,7 @@ def estimate_difficulty(problem: Dict[str, Any]) -> int:
                 return level
 
     # Default based on time/memory limits
-    time_limit = problem.get('time_limit', 1)
+    time_limit = problem.get("time_limit", 1)
     if time_limit >= 5:
         return 4
     elif time_limit >= 2:
@@ -253,7 +295,7 @@ def detect_course(problem: Dict[str, Any]) -> Optional[str]:
     text = f"{problem.get('title', '')} {problem.get('description', '')} {problem.get('source', '')}".lower()
 
     # Check source first (often contains course info)
-    source = problem.get('source', '').lower()
+    source = problem.get("source", "").lower()
     for course_code, keywords in COURSE_KEYWORDS.items():
         for keyword in keywords:
             if keyword.lower() in source:
@@ -267,7 +309,7 @@ def detect_course(problem: Dict[str, Any]) -> Optional[str]:
             matches[course_code] = score
 
     if matches:
-        return max(matches, key=matches.get)
+        return max(matches, key=lambda k: matches[k])
 
     return None
 
@@ -319,7 +361,7 @@ def extract_knowledge_points(problem: Dict[str, Any]) -> List[str]:
 def convert_to_exercise(
     problem: Dict[str, Any],
     course_id: Optional[int] = None,
-    chapter_id: Optional[int] = None
+    chapter_id: Optional[int] = None,
 ) -> Exercise:
     """
     Convert FPS problem to Exercise model
@@ -334,31 +376,31 @@ def convert_to_exercise(
     """
     # Build content for programming exercise
     content = {
-        "title": problem.get('title', 'Untitled'),
-        "description": problem.get('description', ''),
-        "input_format": problem.get('input_spec', ''),
-        "output_format": problem.get('output_spec', ''),
-        "sample_input": problem.get('sample_input', ''),
-        "sample_output": problem.get('sample_output', ''),
-        "time_limit": problem.get('time_limit', 1),
-        "memory_limit": problem.get('memory_limit', 128),
-        "source": problem.get('source', ''),
+        "title": problem.get("title", "Untitled"),
+        "description": problem.get("description", ""),
+        "input_format": problem.get("input_spec", ""),
+        "output_format": problem.get("output_spec", ""),
+        "sample_input": problem.get("sample_input", ""),
+        "sample_output": problem.get("sample_output", ""),
+        "time_limit": problem.get("time_limit", 1),
+        "memory_limit": problem.get("memory_limit", 128),
+        "source": problem.get("source", ""),
     }
 
     # Add images if present
-    if problem.get('images'):
-        content['images'] = problem['images']
+    if problem.get("images"):
+        content["images"] = problem["images"]
 
     # Build solution with hint
     solution = None
-    if problem.get('hint'):
+    if problem.get("hint"):
         solution = {
-            "explanation": problem.get('hint', ''),
-            "hint": problem.get('hint', '')
+            "explanation": problem.get("hint", ""),
+            "hint": problem.get("hint", ""),
         }
 
     # Build test cases
-    test_cases = problem.get('test_cases', [])
+    test_cases = problem.get("test_cases", [])
 
     # Determine difficulty
     difficulty = estimate_difficulty(problem)
@@ -370,7 +412,7 @@ def convert_to_exercise(
     exercise = Exercise(
         chapter_id=chapter_id,
         source="tk",
-        source_id=problem.get('source', ''),
+        source_id=problem.get("source", ""),
         type="programming",  # FPS format is typically programming problems
         difficulty=difficulty,
         difficulty_weight=1.0 + (difficulty - 3) * 0.2,  # Weight based on difficulty
@@ -378,7 +420,7 @@ def convert_to_exercise(
         content=content,
         solution=solution,
         test_cases=test_cases if test_cases else None,
-        hints=[problem.get('hint')] if problem.get('hint') else None,
+        hints=[problem.get("hint")] if problem.get("hint") else None,
         is_verified=True,  # FPS problems are pre-verified
     )
 
@@ -389,8 +431,8 @@ async def import_problems(
     problems: List[Dict[str, Any]],
     session: AsyncSession,
     course_code: Optional[str] = None,
-    auto_assign_course: bool = False
-) -> Dict[str, int]:
+    auto_assign_course: bool = False,
+) -> Dict[str, Any]:
     """
     Import problems into database
 
@@ -403,12 +445,12 @@ async def import_problems(
     Returns:
         Statistics dictionary
     """
-    stats = {
+    stats: Dict[str, Any] = {
         "total": len(problems),
         "imported": 0,
         "skipped": 0,
         "errors": 0,
-        "by_course": {}
+        "by_course": {},
     }
 
     # Get all courses for reference
@@ -429,8 +471,7 @@ async def import_problems(
 
             # Convert to Exercise
             exercise = convert_to_exercise(
-                problem,
-                course_id=target_course.id if target_course else None
+                problem, course_id=target_course.id if target_course else None
             )
 
             session.add(exercise)
@@ -450,10 +491,8 @@ async def import_problems(
 
 
 async def import_fps_file(
-    file_path: Path,
-    course_code: Optional[str] = None,
-    auto_assign_course: bool = False
-) -> Dict[str, int]:
+    file_path: Path, course_code: Optional[str] = None, auto_assign_course: bool = False
+) -> Dict[str, Any]:
     """
     Import problems from a single FPS file
 
@@ -476,20 +515,15 @@ async def import_fps_file(
 
     async with AsyncSessionLocal() as session:
         stats = await import_problems(
-            problems,
-            session,
-            course_code,
-            auto_assign_course
+            problems, session, course_code, auto_assign_course
         )
 
     return stats
 
 
 async def import_fps_directory(
-    directory: Path,
-    course_code: Optional[str] = None,
-    auto_assign_course: bool = False
-) -> Dict[str, int]:
+    directory: Path, course_code: Optional[str] = None, auto_assign_course: bool = False
+) -> Dict[str, Any]:
     """
     Import problems from all FPS files in a directory
 
@@ -501,13 +535,13 @@ async def import_fps_directory(
     Returns:
         Combined statistics dictionary
     """
-    total_stats = {
+    total_stats: Dict[str, Any] = {
         "total": 0,
         "imported": 0,
         "skipped": 0,
         "errors": 0,
         "by_course": {},
-        "files_processed": 0
+        "files_processed": 0,
     }
 
     # Find all XML files
@@ -526,10 +560,7 @@ async def import_fps_directory(
 
             if problems:
                 stats = await import_problems(
-                    problems,
-                    session,
-                    course_code,
-                    auto_assign_course
+                    problems, session, course_code, auto_assign_course
                 )
 
                 # Aggregate stats
@@ -540,13 +571,14 @@ async def import_fps_directory(
                 total_stats["files_processed"] += 1
 
                 for course, count in stats.get("by_course", {}).items():
-                    total_stats["by_course"][course] = \
+                    total_stats["by_course"][course] = (
                         total_stats["by_course"].get(course, 0) + count
+                    )
 
     return total_stats
 
 
-def print_stats(stats: Dict[str, int]):
+def print_stats(stats: Dict[str, Any]):
     """Print import statistics"""
     print("\n" + "=" * 50)
     print("Import Statistics")
@@ -556,12 +588,12 @@ def print_stats(stats: Dict[str, int]):
     print(f"Skipped:         {stats['skipped']}")
     print(f"Errors:          {stats['errors']}")
 
-    if stats.get('files_processed'):
+    if stats.get("files_processed"):
         print(f"Files processed: {stats['files_processed']}")
 
-    if stats.get('by_course'):
+    if stats.get("by_course"):
         print("\nBy Course:")
-        for course, count in sorted(stats['by_course'].items()):
+        for course, count in sorted(stats["by_course"].items()):
             print(f"  {course}: {count}")
 
     print("=" * 50)
@@ -572,31 +604,25 @@ async def main():
     parser = argparse.ArgumentParser(
         description="Import FPS format problems from tk.hustoj.com"
     )
+    parser.add_argument("--file", "-f", type=Path, help="Path to a single FPS XML file")
     parser.add_argument(
-        "--file", "-f",
-        type=Path,
-        help="Path to a single FPS XML file"
+        "--dir", "-d", type=Path, help="Path to directory containing FPS XML files"
     )
     parser.add_argument(
-        "--dir", "-d",
-        type=Path,
-        help="Path to directory containing FPS XML files"
-    )
-    parser.add_argument(
-        "--course", "-c",
+        "--course",
+        "-c",
         type=str,
         choices=["C", "CPP", "Python", "Java", "Rust", "DSA", "ADA", "DiscreteMath"],
-        help="Assign all problems to this course"
+        help="Assign all problems to this course",
     )
     parser.add_argument(
-        "--auto-assign", "-a",
+        "--auto-assign",
+        "-a",
         action="store_true",
-        help="Auto-detect course for each problem based on content"
+        help="Auto-detect course for each problem based on content",
     )
     parser.add_argument(
-        "--init-db",
-        action="store_true",
-        help="Initialize database before import"
+        "--init-db", action="store_true", help="Initialize database before import"
     )
 
     args = parser.parse_args()

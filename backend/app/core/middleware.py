@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.middleware import RateLimitMiddleware
 
-DEFAULT_CORS_ORIGINS = (
+DEFAULT_CORS_ORIGINS: tuple[str, ...] = (
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 )
@@ -26,9 +26,7 @@ def get_cors_origins() -> list[str]:
 
     if production_origins:
         cors_origins.extend(
-            origin.strip()
-            for origin in production_origins.split(",")
-            if origin.strip()
+            origin.strip() for origin in production_origins.split(",") if origin.strip()
         )
 
     return cors_origins

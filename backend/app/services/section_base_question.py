@@ -32,6 +32,8 @@ from app.schemas.section_base_question import (
     PersistEnhancedQuestionRequest,
     PersistEnhancedQuestionResponse,
 )
+
+
 class SectionBaseQuestionService:
     """小节基础测试题服务"""
 
@@ -39,7 +41,7 @@ class SectionBaseQuestionService:
         self,
         db: AsyncSession,
         section_id: int,
-        user_id: str = None,
+        user_id: Optional[str] = None,
     ) -> dict:
         """
         获取小节基础测试题（支持用户隔离）
@@ -68,19 +70,19 @@ class SectionBaseQuestionService:
                 "section_title": "",
                 "chapter_id": 0,
                 "total_questions": 0,
-                "questions": []
+                "questions": [],
             }
 
         # 构建查询 - 用户隔离
         query = select(SectionBaseQuestion).where(
             SectionBaseQuestion.section_id == section_id,
-            SectionBaseQuestion.is_active.is_(True)
+            SectionBaseQuestion.is_active.is_(True),
         )
         if user_id:
             query = query.where(
                 or_(
                     SectionBaseQuestion.user_id.is_(None),
-                    SectionBaseQuestion.user_id == user_id
+                    SectionBaseQuestion.user_id == user_id,
                 )
             )
         else:
@@ -103,7 +105,7 @@ class SectionBaseQuestionService:
         db: AsyncSession,
         section_id: int,
         request: BaseAnswersSubmitRequest,
-        user_id: str = None,
+        user_id: Optional[str] = None,
     ) -> BaseAnswersSubmitResponse:
         """
         提交小节基础题答案并分析薄弱点
@@ -128,7 +130,10 @@ class SectionBaseQuestionService:
         # 获取题目
         questions_result = await db.execute(
             select(SectionBaseQuestion)
-            .where(SectionBaseQuestion.section_id == section_id, SectionBaseQuestion.is_active)
+            .where(
+                SectionBaseQuestion.section_id == section_id,
+                SectionBaseQuestion.is_active,
+            )
             .order_by(SectionBaseQuestion.order_index)
         )
         questions = questions_result.scalars().all()
@@ -145,7 +150,10 @@ class SectionBaseQuestionService:
             if not question:
                 continue
 
-            is_correct = answer_submit.answer.strip().upper() == question.correct_answer.strip().upper()
+            is_correct = (
+                answer_submit.answer.strip().upper()
+                == question.correct_answer.strip().upper()
+            )
             if is_correct:
                 correct_count += 1
                 # 统计知识点正确次数
@@ -156,14 +164,16 @@ class SectionBaseQuestionService:
                 for kp in question.knowledge_points:
                     knowledge_point_stats[kp]["wrong"] += 1
 
-            results.append(BaseQuestionResult(
-                question_id=question.id,
-                is_correct=is_correct,
-                user_answer=answer_submit.answer,
-                correct_answer=question.correct_answer,
-                explanation=question.explanation,
-                knowledge_points=question.knowledge_points,
-            ))
+            results.append(
+                BaseQuestionResult(
+                    question_id=question.id,
+                    is_correct=is_correct,
+                    user_answer=answer_submit.answer,
+                    correct_answer=question.correct_answer,
+                    explanation=question.explanation,
+                    knowledge_points=question.knowledge_points,
+                )
+            )
 
         # 根据 BKT 掌握度分类知识点
         # 优先使用 BKT 掌握概率（p_l），阈值 0.80
@@ -172,7 +182,11 @@ class SectionBaseQuestionService:
         strong_points = []
 
         if user_id:
-            from app.models.knowledge_point_mastery import KnowledgePointMastery, MASTERY_THRESHOLD
+            from app.models.knowledge_point_mastery import (
+                KnowledgePointMastery,
+                MASTERY_THRESHOLD,
+            )
+
             all_kp_names = list(knowledge_point_stats.keys())
             if all_kp_names:
                 kp_result = await db.execute(
@@ -210,17 +224,21 @@ class SectionBaseQuestionService:
         # 更新用户精进之路经验值（如果提供了 user_id）
         xp_earned = 0
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.info(f"[基础题] 提交结果: user_id={user_id}, correct_count={correct_count}")
+        logger.info(
+            f"[基础题] 提交结果: user_id={user_id}, correct_count={correct_count}"
+        )
 
         if user_id and correct_count > 0:
-            user_result = await db.execute(
-                select(User).where(User.id == user_id)
-            )
+            user_result = await db.execute(select(User).where(User.id == user_id))
             user = user_result.scalar_one_or_none()
             logger.info(f"[基础题] 查询用户: user={'存在' if user else '不存在'}")
             if user:
-                from app.services.mastery_xp_transaction_service import MasteryXpTransactionService
+                from app.services.mastery_xp_transaction_service import (
+                    MasteryXpTransactionService,
+                )
+
                 xp_earned = correct_count * 10  # 每题 10 XP
                 logger.info(f"[基础题] 准备加经验: xp_earned={xp_earned}")
                 mastery_xp_service = MasteryXpTransactionService(db)
@@ -230,11 +248,13 @@ class SectionBaseQuestionService:
                     category="base_test",
                     reference_type="section",
                     reference_id=str(section_id),
-                    description=f"小节基础测试答对 {correct_count} 题"
+                    description=f"小节基础测试答对 {correct_count} 题",
                 )
                 logger.info(f"[基础题] 经验已添加: xp_earned={xp_earned}")
         else:
-            logger.info(f"[基础题] 跳过加经验: user_id={user_id}, correct_count={correct_count}")
+            logger.info(
+                f"[基础题] 跳过加经验: user_id={user_id}, correct_count={correct_count}"
+            )
 
         accuracy = correct_count / len(questions) if questions else 0
 
@@ -254,7 +274,9 @@ class SectionBaseQuestionService:
         db: AsyncSession,
         request: EnhancedQuizGenerateRequest,
         user_id: str,
-        progress_callback: Optional[Callable[[int, dict, int, int], Awaitable[None]]] = None,
+        progress_callback: Optional[
+            Callable[[int, dict, int, int], Awaitable[None]]
+        ] = None,
     ) -> EnhancedQuizGenerateResponse:
         """
         流式生成强化测试题 - 第一题立即可用，剩余异步生成
@@ -275,8 +297,7 @@ class SectionBaseQuestionService:
 
         if not request.weak_points:
             return EnhancedQuizGenerateResponse(
-                success=False,
-                message="没有识别到薄弱点，无需生成强化题"
+                success=False, message="没有识别到薄弱点，无需生成强化题"
             )
 
         # 获取小节信息
@@ -285,10 +306,7 @@ class SectionBaseQuestionService:
         )
         section = section_result.scalar_one_or_none()
         if not section:
-            return EnhancedQuizGenerateResponse(
-                success=False,
-                message="小节不存在"
-            )
+            return EnhancedQuizGenerateResponse(success=False, message="小节不存在")
 
         # 获取课程/章节信息用于上下文
         chapter_result = await db.execute(
@@ -303,7 +321,11 @@ class SectionBaseQuestionService:
 
             # 后台会并发生成所有题目，每道题在写入 ExerciseGenerationSession 前
             # 会先保存到 SectionBaseQuestion（获得真实数据库ID并更新 exercise.id）
-            session_id, first_exercise, remaining_count = await generator.generate_first_then_stream(
+            (
+                session_id,
+                first_exercise,
+                remaining_count,
+            ) = await generator.generate_first_then_stream(
                 user_id=user_id,
                 session_type="enhanced",
                 section_id=request.section_id,
@@ -329,27 +351,25 @@ class SectionBaseQuestionService:
                 difficulty=first_exercise.get("difficulty", 2),
             )
 
-            logger.info(f"[强化题生成-流式] 第一题已生成, session_id={session_id[:8]}..., 剩余{remaining_count}题在后台生成")
+            logger.info(
+                f"[强化题生成-流式] 第一题已生成, session_id={session_id[:8]}..., 剩余{remaining_count}题在后台生成"
+            )
 
             return EnhancedQuizGenerateResponse(
                 success=True,
                 session_id=session_id,
                 questions=[first_question],  # 只返回第一题
                 weak_points_addressed=request.weak_points,
-                message=f"已生成第1题，剩余{remaining_count}题正在生成中..."
+                message=f"已生成第1题，剩余{remaining_count}题正在生成中...",
             )
 
         except ValueError as e:
             logger.error(f"[强化题生成-流式] 生成失败: {e}")
-            return EnhancedQuizGenerateResponse(
-                success=False,
-                message=str(e)
-            )
+            return EnhancedQuizGenerateResponse(success=False, message=str(e))
         except Exception as e:
             logger.error(f"[强化题生成-流式] 异常: {e}")
             return EnhancedQuizGenerateResponse(
-                success=False,
-                message=f"生成强化题失败: {str(e)}"
+                success=False, message=f"生成强化题失败: {str(e)}"
             )
 
     async def get_session_exercises(
@@ -369,16 +389,18 @@ class SectionBaseQuestionService:
 
         questions = []
         for ex in exercises:
-            questions.append(EnhancedQuizQuestion(
-                id=str(ex.get("id", "")),
-                type=ex.get("type", "choice"),
-                text=ex.get("text", ""),
-                options=ex.get("options", []),
-                correct_answer=ex.get("correct_answer", ""),
-                explanation=ex.get("explanation", ""),
-                knowledge_points=ex.get("knowledge_points", []),
-                difficulty=ex.get("difficulty", 2),
-            ))
+            questions.append(
+                EnhancedQuizQuestion(
+                    id=str(ex.get("id", "")),
+                    type=ex.get("type", "choice"),
+                    text=ex.get("text", ""),
+                    options=ex.get("options", []),
+                    correct_answer=ex.get("correct_answer", ""),
+                    explanation=ex.get("explanation", ""),
+                    knowledge_points=ex.get("knowledge_points", []),
+                    difficulty=ex.get("difficulty", 2),
+                )
+            )
 
         return questions
 
@@ -418,7 +440,7 @@ class SectionBaseQuestionService:
                     total_questions=0,
                     correct_answers=0,
                     accuracy=0,
-                    message="会话不存在或已过期"
+                    message="会话不存在或已过期",
                 )
 
             questions = db_session.generated_exercises or []
@@ -432,8 +454,7 @@ class SectionBaseQuestionService:
 
                 # 主路径：按 id 精确匹配（持久化后 id 已是真实数据库ID）
                 question = next(
-                    (q for q in questions if str(q.get("id", "")) == answer_qid),
-                    None
+                    (q for q in questions if str(q.get("id", "")) == answer_qid), None
                 )
 
                 # 兜底 1：前端发来的还是 "temp_N"，按 N 取位置
@@ -455,15 +476,21 @@ class SectionBaseQuestionService:
                     )
 
                 if question:
-                    is_correct = answer.get("answer", "").strip().upper() == str(question.get("correct_answer", "")).strip().upper()
+                    is_correct = (
+                        answer.get("answer", "").strip().upper()
+                        == str(question.get("correct_answer", "")).strip().upper()
+                    )
                     if is_correct:
                         correct_count += 1
-                    results.append({
-                        "question_id": question.get("id") or answer.get("question_id"),
-                        "is_correct": is_correct,
-                        "user_answer": answer.get("answer"),
-                        "correct_answer": question.get("correct_answer"),
-                    })
+                    results.append(
+                        {
+                            "question_id": question.get("id")
+                            or answer.get("question_id"),
+                            "is_correct": is_correct,
+                            "user_answer": answer.get("answer"),
+                            "correct_answer": question.get("correct_answer"),
+                        }
+                    )
 
             accuracy = correct_count / len(questions) if questions else 0
             passed = accuracy >= 0.8
@@ -471,13 +498,14 @@ class SectionBaseQuestionService:
             # 更新用户精进之路经验值
             xp_earned = 0
             if correct_count > 0:
-                user_result = await db.execute(
-                    select(User).where(User.id == user_id)
-                )
+                user_result = await db.execute(select(User).where(User.id == user_id))
                 user = user_result.scalar_one_or_none()
                 if user:
                     try:
-                        from app.services.mastery_xp_transaction_service import MasteryXpTransactionService
+                        from app.services.mastery_xp_transaction_service import (
+                            MasteryXpTransactionService,
+                        )
+
                         xp_earned = correct_count * 15  # 强化题每题 15 XP
                         mastery_xp_service = MasteryXpTransactionService(db)
                         await mastery_xp_service.earn_xp(
@@ -486,7 +514,7 @@ class SectionBaseQuestionService:
                             category="enhanced_test",
                             reference_type="section",
                             reference_id=str(request.section_id),
-                            description=f"强化测试答对 {correct_count} 题"
+                            description=f"强化测试答对 {correct_count} 题",
                         )
                     except Exception as xp_err:
                         # 经验发放失败不应让整个提交失败
@@ -512,16 +540,19 @@ class SectionBaseQuestionService:
                 results=results,
                 recommendations=recommendations,
                 passed=passed,
-                message="强化测试完成"
+                message="强化测试完成",
             )
 
         except Exception as e:
             import traceback
+
             try:
                 await db.rollback()
             except Exception as rb_err:
                 logger.error(f"[submit_enhanced_quiz] rollback 失败: {rb_err}")
-            logger.error(f"[submit_enhanced_quiz] 提交失败: {e}\n{traceback.format_exc()}")
+            logger.error(
+                f"[submit_enhanced_quiz] 提交失败: {e}\n{traceback.format_exc()}"
+            )
             return EnhancedQuizSubmitResponse(
                 success=False,
                 session_id=request.session_id,
@@ -534,7 +565,7 @@ class SectionBaseQuestionService:
                 results=[],
                 recommendations=[],
                 passed=False,
-                message=f"提交失败: {type(e).__name__}: {str(e)}"
+                message=f"提交失败: {type(e).__name__}: {str(e)}",
             )
 
     async def persist_enhanced_question(
@@ -555,9 +586,12 @@ class SectionBaseQuestionService:
         logger = logging.getLogger(__name__)
 
         # >>> DEBUG MARKER: 确认新代码已加载 <<<
-        print(f"\n[PERSIST_DEBUG] === persist_enhanced_question called === "
-              f"session={request.session_id[:8] if request.session_id else 'NONE'} "
-              f"index={request.question_index} section={request.section_id}", flush=True)
+        print(
+            f"\n[PERSIST_DEBUG] === persist_enhanced_question called === "
+            f"session={request.session_id[:8] if request.session_id else 'NONE'} "
+            f"index={request.question_index} section={request.section_id}",
+            flush=True,
+        )
 
         try:
             # 1. 获取生成会话
@@ -566,21 +600,18 @@ class SectionBaseQuestionService:
 
             if not session:
                 return PersistEnhancedQuestionResponse(
-                    success=False,
-                    message="会话不存在或已过期"
+                    success=False, message="会话不存在或已过期"
                 )
 
             if session.user_id != user_id:
                 return PersistEnhancedQuestionResponse(
-                    success=False,
-                    message="无权访问该会话"
+                    success=False, message="无权访问该会话"
                 )
 
             exercises_list = session.generated_exercises or []
             if not exercises_list:
                 return PersistEnhancedQuestionResponse(
-                    success=False,
-                    message="会话尚未生成任何题目"
+                    success=False, message="会话尚未生成任何题目"
                 )
 
             # 2. 查找指定索引的题目
@@ -607,7 +638,7 @@ class SectionBaseQuestionService:
             if not exercise:
                 return PersistEnhancedQuestionResponse(
                     success=False,
-                    message=f"会话中未找到索引为 {request.question_index} 的题目"
+                    message=f"会话中未找到索引为 {request.question_index} 的题目",
                 )
 
             # 3. 检查是否已持久化（避免重复保存）
@@ -619,7 +650,7 @@ class SectionBaseQuestionService:
                     return PersistEnhancedQuestionResponse(
                         success=True,
                         question_id=int(existing_id),
-                        message="题目已持久化"
+                        message="题目已持久化",
                     )
                 except (ValueError, TypeError):
                     pass
@@ -633,8 +664,8 @@ class SectionBaseQuestionService:
                     SectionBaseQuestion.section_id == request.section_id,
                     SectionBaseQuestion.is_active.is_(True),
                     or_(
-                        SectionBaseQuestion.user_id.is_(None),    # 基础题
-                        SectionBaseQuestion.user_id == user_id,   # 自己的强化题
+                        SectionBaseQuestion.user_id.is_(None),  # 基础题
+                        SectionBaseQuestion.user_id == user_id,  # 自己的强化题
                     ),
                 )
             )
@@ -644,7 +675,7 @@ class SectionBaseQuestionService:
                 section_id=request.section_id,
                 chapter_id=request.chapter_id,
                 user_id=user_id,
-                question_source='enhanced',
+                question_source="enhanced",
                 order_index=max_order + 1,
                 question_type=exercise.get("type", "choice"),
                 question_text=exercise.get("text", ""),
@@ -680,14 +711,15 @@ class SectionBaseQuestionService:
             )
 
             return PersistEnhancedQuestionResponse(
-                success=True,
-                question_id=persisted_id,
-                message="题目已持久化"
+                success=True, question_id=persisted_id, message="题目已持久化"
             )
 
         except Exception as e:
             # 一旦抛异常，事务必须回滚，否则后续请求复用同一 session 会一直报错
-            print(f"\n[PERSIST_DEBUG] !!! EXCEPTION caught: {type(e).__name__}: {e}", flush=True)
+            print(
+                f"\n[PERSIST_DEBUG] !!! EXCEPTION caught: {type(e).__name__}: {e}",
+                flush=True,
+            )
             traceback.print_exc()
             try:
                 await db.rollback()
@@ -700,7 +732,7 @@ class SectionBaseQuestionService:
             return PersistEnhancedQuestionResponse(
                 success=False,
                 question_id=0,
-                message=f"持久化失败: {type(e).__name__}: {str(e)}"
+                message=f"持久化失败: {type(e).__name__}: {str(e)}",
             )
 
 

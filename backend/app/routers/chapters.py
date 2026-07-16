@@ -36,13 +36,13 @@ async def get_chapter_by_id(chapter_id: int, db: db_dependency):
     if not chapter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chapter {chapter_id} not found"
+            detail=f"Chapter {chapter_id} not found",
         )
 
     exercises = [
         ExerciseSummary(
             id=ex.id,
-            chapter_id=ex.chapter_id,
+            chapter_id=ex.chapter_id or 0,
             source=ex.source,
             source_id=ex.source_id,
             type=ex.type,

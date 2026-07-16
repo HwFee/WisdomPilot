@@ -86,5 +86,8 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 def register_exception_handlers(app: FastAPI) -> None:
     """Register application-wide exception handlers."""
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(
+        RequestValidationError,
+        validation_exception_handler,  # type: ignore[arg-type]
+    )
     app.add_exception_handler(Exception, global_exception_handler)

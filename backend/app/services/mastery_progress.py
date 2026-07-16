@@ -56,11 +56,21 @@ class MasteryProgressService:
         """
         try:
             # 调试：直接打印到控制台
-            logger.debug("[BKT-DEBUG] ==================== 后端收到答题请求 ====================")
-            logger.debug(f"[BKT-DEBUG] course_id={request.course_id}, chapter_id={request.chapter_id}")
-            logger.debug(f"[BKT-DEBUG] section_id={request.section_id}, question_id={request.question_id}")
-            logger.debug(f"[BKT-DEBUG] is_correct={request.is_correct}, question_type={request.question_type}")
-            logger.debug("[BKT-DEBUG] ============================================================")
+            logger.debug(
+                "[BKT-DEBUG] ==================== 后端收到答题请求 ===================="
+            )
+            logger.debug(
+                f"[BKT-DEBUG] course_id={request.course_id}, chapter_id={request.chapter_id}"
+            )
+            logger.debug(
+                f"[BKT-DEBUG] section_id={request.section_id}, question_id={request.question_id}"
+            )
+            logger.debug(
+                f"[BKT-DEBUG] is_correct={request.is_correct}, question_type={request.question_type}"
+            )
+            logger.debug(
+                "[BKT-DEBUG] ============================================================"
+            )
 
             # 构建exercise_key
             if not request.exercise_key:
@@ -133,22 +143,30 @@ class MasteryProgressService:
             # 获取 section_title 和 chapter_title
             section_title = None
             chapter_title = None
-            logger.info(f"[save_exercise_progress] section_id={request.section_id}, question_id={request.question_id}")
+            logger.info(
+                f"[save_exercise_progress] section_id={request.section_id}, question_id={request.question_id}"
+            )
             if request.section_id:
                 section_result = await db.execute(
                     select(Section).where(Section.id == request.section_id)
                 )
                 section = section_result.scalar_one_or_none()
-                logger.info(f"[save_exercise_progress] section result: {section}, title={section.title if section else None}")
+                logger.info(
+                    f"[save_exercise_progress] section result: {section}, title={section.title if section else None}"
+                )
                 if section:
                     section_title = section.title
                     # 直接查询章节标题（不依赖 relationship）
                     if section.chapter_id:
                         chapter_result = await db.execute(
-                            select(Chapter.title).where(Chapter.id == section.chapter_id)
+                            select(Chapter.title).where(
+                                Chapter.id == section.chapter_id
+                            )
                         )
                         chapter_title_result = chapter_result.scalar_one_or_none()
-                        logger.info(f"[save_exercise_progress] chapter_id={section.chapter_id}, chapter_title={chapter_title_result}")
+                        logger.info(
+                            f"[save_exercise_progress] chapter_id={section.chapter_id}, chapter_title={chapter_title_result}"
+                        )
                         if chapter_title_result:
                             chapter_title = chapter_title_result
 
@@ -158,13 +176,19 @@ class MasteryProgressService:
             # 所以"最近动态"和"小节题号"完全一致，不区分基础/强化，统一显示"练习题N"。
             if question and question.order_index:
                 display_index = question.order_index
-                logger.info(f"[save_exercise_progress] 题号: 使用 order_index={question.order_index}")
+                logger.info(
+                    f"[save_exercise_progress] 题号: 使用 order_index={question.order_index}"
+                )
             elif request.question_index and request.question_index > 0:
                 display_index = request.question_index
-                logger.info(f"[save_exercise_progress] 题号: 兜底使用前端 question_index={request.question_index}")
+                logger.info(
+                    f"[save_exercise_progress] 题号: 兜底使用前端 question_index={request.question_index}"
+                )
             else:
                 display_index = request.question_id
-                logger.info(f"[save_exercise_progress] 题号: 兜底使用 question_id={request.question_id}")
+                logger.info(
+                    f"[save_exercise_progress] 题号: 兜底使用 question_id={request.question_id}"
+                )
 
             question_title = f"练习题{display_index}"
             question_difficulty = question.difficulty if question else 1
@@ -185,7 +209,9 @@ class MasteryProgressService:
                 "difficulty": question_difficulty,
                 "exercise_key": request.exercise_key,
             }
-            logger.info(f"[save_exercise_progress] activity extra_data: {activity_extra_data}")
+            logger.info(
+                f"[save_exercise_progress] activity extra_data: {activity_extra_data}"
+            )
             activity = ActivityLog(
                 user_id=user_id,
                 activity_type="exercise_complete",
@@ -224,12 +250,14 @@ class MasteryProgressService:
                     knowledge_points = question.knowledge_points
 
                 logger.debug("[BKT-DEBUG] ========== 后端处理答题 ==========")
-                logger.debug(f"[BKT-DEBUG] 题目 {request.question_id} 知识点: {knowledge_points}")
+                logger.debug(
+                    f"[BKT-DEBUG] 题目 {request.question_id} 知识点: {knowledge_points}"
+                )
                 logger.debug(f"[BKT-DEBUG] section_id: {request.section_id}")
 
                 if knowledge_points:
                     # 获取题目难度
-                    difficulty = getattr(question, 'difficulty', 1) or 1
+                    difficulty = getattr(question, "difficulty", 1) or 1
 
                     logger.debug("[BKT-DEBUG] 调用 BKT process_answer...")
                     bkt_result = await bkt_service.process_answer(
@@ -260,6 +288,7 @@ class MasteryProgressService:
                 # BKT 更新失败不应影响进度保存
                 logger.error(f"[BKT-DEBUG] BKT更新失败: {bkt_error}")
                 import traceback
+
                 traceback.print_exc()
                 # 即使出错，也构建一个结果
                 bkt_result = {
@@ -281,8 +310,10 @@ class MasteryProgressService:
                     counted_for_mastery=bkt_result.get("counted", False),
                     not_counted_reason=bkt_result.get("not_counted_reason"),
                     mastery_changes=bkt_result.get("mastery_changes", []),
-                    section_mastery=bkt_result.get("section_mastery", 0.0) * 100,  # 转为百分比
-                    chapter_mastery=bkt_result.get("chapter_mastery", 0.0) * 100,  # 转为百分比
+                    section_mastery=bkt_result.get("section_mastery", 0.0)
+                    * 100,  # 转为百分比
+                    chapter_mastery=bkt_result.get("chapter_mastery", 0.0)
+                    * 100,  # 转为百分比
                 )
                 logger.debug(f"[BKT-DEBUG] 构建 bkt_debug: {bkt_debug}")
             else:
@@ -294,7 +325,9 @@ class MasteryProgressService:
                 message="进度保存成功" + ("，获得2智核" if core_earned else ""),
                 bkt_debug=bkt_debug,
             )
-            logger.debug(f"[BKT-DEBUG] 返回响应: success={response.success}, bkt_debug={response.bkt_debug}")
+            logger.debug(
+                f"[BKT-DEBUG] 返回响应: success={response.success}, bkt_debug={response.bkt_debug}"
+            )
             return response
 
         except Exception as e:
@@ -367,7 +400,10 @@ class MasteryProgressService:
         except Exception as e:
             # BKT 查询失败，回退到简单计算
             import logging
-            logging.getLogger(__name__).warning(f"[get_chapter_progress] BKT查询失败，回退到简单计算: {e}")
+
+            logging.getLogger(__name__).warning(
+                f"[get_chapter_progress] BKT查询失败，回退到简单计算: {e}"
+            )
             if total_questions > 0:
                 mastery_score = (correct_questions / total_questions) * 100
                 is_passed = mastery_score >= 80
@@ -417,6 +453,8 @@ class MasteryProgressService:
             for result in request.results:
                 question_id = result.get("question_id")
                 is_correct = result.get("is_correct", False)
+                if question_id is None:
+                    continue
                 question = questions.get(question_id)
 
                 if is_correct:

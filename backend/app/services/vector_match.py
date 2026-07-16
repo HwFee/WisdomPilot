@@ -12,7 +12,7 @@ import hashlib
 import numpy as np
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, true
 
 from app.models.exercise import Exercise
 from app.models.user import User
@@ -84,21 +84,24 @@ async def generate_user_vector(
     if weak_points:
         weak_point_texts = []
         for wp in weak_points:
-            wp.error_count / max(wp.mastery_level, 1)  # Higher weight for more errors
-            weak_point_texts.append(f"{wp.knowledge_point} (掌握度:{wp.mastery_level}/5, 错误:{wp.error_count}次)")
+            weak_point_texts.append(
+                f"{wp.knowledge_point} (掌握度:{wp.mastery_level}/5, 错误:{wp.error_count}次)"
+            )
         text_parts.append(f"薄弱知识点: {', '.join(weak_point_texts)}")
 
     # Add preferred difficulty
-    if hasattr(user, 'preferred_difficulty') and user.preferred_difficulty:
+    if hasattr(user, "preferred_difficulty") and user.preferred_difficulty:
         diff_labels = {1: "入门", 2: "简单", 3: "中等", 4: "困难", 5: "极难"}
-        text_parts.append(f"偏好难度: {diff_labels.get(user.preferred_difficulty, '中等')}")
+        text_parts.append(
+            f"偏好难度: {diff_labels.get(user.preferred_difficulty, '中等')}"
+        )
     else:
         # For new users, indicate preference for easier exercises
         diff_labels = {1: "入门", 2: "简单", 3: "中等", 4: "困难", 5: "极难"}
         text_parts.append(f"偏好难度: {diff_labels.get(preferred_difficulty, '简单')}")
 
     # Add preferred languages
-    if hasattr(user, 'preferred_languages') and user.preferred_languages:
+    if hasattr(user, "preferred_languages") and user.preferred_languages:
         text_parts.append(f"编程语言: {', '.join(user.preferred_languages)}")
 
     # If we have some user data, generate embedding
@@ -109,7 +112,9 @@ async def generate_user_vector(
             return embedding
 
     config = _get_embedding_config()
-    fallback_dimensions = len(embedding) if text_parts and embedding else config["dimensions"]
+    fallback_dimensions = (
+        len(embedding) if text_parts and embedding else config["dimensions"]
+    )
     return _generate_default_vector(str(user.id), fallback_dimensions)
 
 
@@ -146,18 +151,18 @@ async def _get_embedding_from_api(text: str) -> list[float]:
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                f'{config["base_url"]}/embeddings',
+                f"{config['base_url']}/embeddings",
                 headers={
-                    'Authorization': f'Bearer {config["api_key"]}',
-                    'Content-Type': 'application/json'
+                    "Authorization": f"Bearer {config['api_key']}",
+                    "Content-Type": "application/json",
                 },
                 json={
-                    'model': config["model"],
-                    'input': text[:8000]  # Limit text length
-                }
+                    "model": config["model"],
+                    "input": text[:8000],  # Limit text length
+                },
             )
             if response.status_code == 200:
-                return response.json()['data'][0]['embedding']
+                return response.json()["data"][0]["embedding"]
             else:
                 logger.error(f"Embedding API error: {response.status_code}")
                 return [0.0] * config["dimensions"]
@@ -197,9 +202,9 @@ async def recommend_exercises(
     # Build query for exercises
     query = select(Exercise).where(
         Exercise.source == source,
-        Exercise.is_verified,
-        Exercise.embedding is not None,
-        Exercise.embedding != '',
+        Exercise.is_verified == True,
+        Exercise.embedding.is_not(None),
+        Exercise.embedding != "",
         Exercise.difficulty >= min_difficulty,
         Exercise.difficulty <= max_difficulty,
     )
@@ -227,15 +232,17 @@ async def recommend_exercises(
             exercise_vector = json.loads(ex.embedding)
             similarity = cosine_similarity(user_vector, exercise_vector)
 
-            recommendations.append({
-                "exercise_id": ex.id,
-                "source_id": ex.source_id,
-                "similarity": round(similarity, 4),
-                "difficulty": ex.difficulty,
-                "type": ex.type,
-                "knowledge_points": ex.knowledge_points or [],
-                "title": ex.content.get("title", "") if ex.content else "",
-            })
+            recommendations.append(
+                {
+                    "exercise_id": ex.id,
+                    "source_id": ex.source_id,
+                    "similarity": round(similarity, 4),
+                    "difficulty": ex.difficulty,
+                    "type": ex.type,
+                    "knowledge_points": ex.knowledge_points or [],
+                    "title": ex.content.get("title", "") if ex.content else "",
+                }
+            )
         except (json.JSONDecodeError, TypeError):
             continue
 
@@ -253,14 +260,18 @@ async def recommend_exercises(
         # For new users: boost easier exercises, penalize hard ones
         if prefer_easy:
             # Lower difficulty = higher boost
-            difficulty_bonus = (6 - difficulty) * 0.1  # +0.5 for diff 1, +0.1 for diff 5
+            difficulty_bonus = (
+                6 - difficulty
+            ) * 0.1  # +0.5 for diff 1, +0.1 for diff 5
             score += difficulty_bonus
 
         return score
 
     # Determine if this is a new user (should prefer easy exercises)
     # This is passed from the service level
-    recommendations.sort(key=lambda x: calculate_score(x, prefer_easy=True), reverse=True)
+    recommendations.sort(
+        key=lambda x: calculate_score(x, prefer_easy=True), reverse=True
+    )
 
     # Return top N
     return recommendations[:limit]
@@ -313,9 +324,9 @@ class VectorMatchService:
 
         # Determine if user is new (no learning history)
         is_new_user = len(weak_points) == 0 and (
-            not hasattr(user, 'weak_points') or
-            user.weak_points is None or
-            len(user.weak_points) == 0
+            not hasattr(user, "weak_points")
+            or user.weak_points is None
+            or len(user.weak_points) == 0
         )
 
         # For new users, default to easier exercises (difficulty 1-3)
@@ -323,12 +334,15 @@ class VectorMatchService:
         if is_new_user:
             # Check if there are exercises with difficulty < 4
             from sqlalchemy import func
+
             result = await self.db.execute(
-                select(func.count()).select_from(Exercise).where(
+                select(func.count())
+                .select_from(Exercise)
+                .where(
                     Exercise.source == "loj",
                     Exercise.difficulty < 4,
-                    Exercise.embedding is not None,
-                    Exercise.embedding != '',
+                    true(),
+                    Exercise.embedding != "",
                 )
             )
             easier_count = result.scalar() or 0
@@ -342,7 +356,11 @@ class VectorMatchService:
             preferred_difficulty = 2  # 简单
         else:
             actual_max_difficulty = max_difficulty
-            preferred_difficulty = user.preferred_difficulty if hasattr(user, 'preferred_difficulty') and user.preferred_difficulty else 3
+            preferred_difficulty = (
+                user.preferred_difficulty
+                if hasattr(user, "preferred_difficulty") and user.preferred_difficulty
+                else 3
+            )
 
         # Generate user vector with preferred difficulty
         user_vector = await generate_user_vector(
@@ -362,9 +380,9 @@ class VectorMatchService:
         # Check if user vector was generated from actual data
         has_weak_points = len(weak_points) > 0
         has_user_weak_points_attr = (
-            hasattr(user, 'weak_points') and
-            user.weak_points is not None and
-            len(user.weak_points) > 0
+            hasattr(user, "weak_points")
+            and user.weak_points is not None
+            and len(user.weak_points) > 0
         )
         user_vector_generated = has_weak_points or has_user_weak_points_attr
 

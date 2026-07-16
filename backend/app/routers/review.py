@@ -37,16 +37,19 @@ from app.schemas.review import (
 
 logger = logging.getLogger(__name__)
 
+
 # Helper to ensure datetime is timezone-aware (for comparing with utc_now())
 def _make_aware(dt):
     """Convert naive datetime to UTC-aware datetime"""
     from datetime import timezone
+
     if dt is None:
         return None
     if dt.tzinfo is None:
         # Assume naive datetime is UTC
         return dt.replace(tzinfo=timezone.utc)
     return dt
+
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -59,11 +62,7 @@ auth_dependency = Annotated[User, Depends(_get_current_active_user)]
 
 
 @router.get("/queue", response_model=ReviewQueueResponse)
-async def get_review_queue(
-    db: db_dependency,
-    user: auth_dependency,
-    limit: int = 20
-):
+async def get_review_queue(db: db_dependency, user: auth_dependency, limit: int = 20):
     """
     Get the review queue for the current user.
 
@@ -82,13 +81,17 @@ async def get_review_queue(
     )
     all_repetitions = all_result.scalars().all()
 
-    # Filter due items (timezone-aware comparison)
-    due_repetitions = [r for r in all_repetitions if _make_aware(r.next_review_at) <= now]
-    due_repetitions.sort(key=lambda r: r.next_review_at)
+    # Filter due items (timezone-aware comparison, skip None)
+    due_repetitions = []
+    for r in all_repetitions:
+        next_review_aware = _make_aware(r.next_review_at)
+        if next_review_aware is not None and next_review_aware <= now:
+            due_repetitions.append(r)
+    due_repetitions.sort(key=lambda r: r.next_review_at or now)
     due_repetitions = due_repetitions[:limit]
 
     # Get exercise details
-    exercise_ids = [r.exercise_id for r in due_repetitions]
+    exercise_ids = [r.exercise_id for r in due_repetitions if r.exercise_id is not None]
     exercises = {}
     if exercise_ids:  # 只有在有 ID 时才查询，避免空列表查询错误
         exercises_result = await db.execute(
@@ -105,6 +108,8 @@ async def get_review_queue(
     # Build queue items
     items = []
     for rep in due_repetitions:
+        if rep.exercise_id is None:
+            continue
         exercise = exercises.get(rep.exercise_id)
         if not exercise:
             continue
@@ -112,34 +117,41 @@ async def get_review_queue(
         # Calculate priority
         priority = 0.0
         # Overdue factor
-        days_overdue = (now - _make_aware(rep.next_review_at)).days
+        next_review_aware = _make_aware(rep.next_review_at)
+        if next_review_aware is None:
+            continue
+        days_overdue = (now - next_review_aware).days
         priority += days_overdue * 0.5
         # Weak point factor
         for kp in exercise.knowledge_points:
             if kp in weak_points:
                 priority += weak_points[kp].weakness_score * 2
 
-        items.append(ReviewQueueItem(
-            repetition=SpacedRepetitionResponse.model_validate(rep),
-            exercise_id=exercise.id,
-            exercise_type=exercise.type,
-            exercise_difficulty=exercise.difficulty,
-            knowledge_points=exercise.knowledge_points,
-            stage_id=rep.stage_id,
-            priority=priority
-        ))
+        items.append(
+            ReviewQueueItem(
+                repetition=SpacedRepetitionResponse.model_validate(rep),
+                exercise_id=exercise.id,
+                exercise_type=exercise.type,
+                exercise_difficulty=exercise.difficulty,
+                knowledge_points=exercise.knowledge_points,
+                stage_id=rep.stage_id,
+                priority=priority,
+            )
+        )
 
     # Sort by priority (higher first)
     items.sort(key=lambda x: x.priority, reverse=True)
 
     # Get total counts
     total_scheduled = len(all_repetitions)
-    total_due = len([r for r in all_repetitions if _make_aware(r.next_review_at) <= now])
+    total_due = 0
+    for r in all_repetitions:
+        next_review_aware = _make_aware(r.next_review_at)
+        if next_review_aware is not None and next_review_aware <= now:
+            total_due += 1
 
     return ReviewQueueResponse(
-        items=items,
-        total_due=total_due,
-        total_scheduled=total_scheduled
+        items=items, total_due=total_due, total_scheduled=total_scheduled
     )
 
 
@@ -148,7 +160,7 @@ async def complete_review(
     exercise_id: int,
     request: CompleteReviewRequest,
     db: db_dependency,
-    user: auth_dependency
+    user: auth_dependency,
 ):
     """
     Complete a review for an exercise.
@@ -160,15 +172,14 @@ async def complete_review(
     result = await db.execute(
         select(SpacedRepetition).where(
             SpacedRepetition.user_id == user.id,
-            SpacedRepetition.exercise_id == exercise_id
+            SpacedRepetition.exercise_id == exercise_id,
         )
     )
     repetition = result.scalar_one_or_none()
 
     if not repetition:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Repetition record not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Repetition record not found"
         )
 
     # Update spaced repetition
@@ -186,14 +197,15 @@ async def complete_review(
     if exercise:
         # Update weak points
         for kp in exercise.knowledge_points:
-            wp_result = await db.execute(
-                select(UserWeakPoint).where(
-                    UserWeakPoint.user_id == user.id,
-                    UserWeakPoint.course_id == exercise.chapter.course_id
-                    if hasattr(exercise, 'chapter') and exercise.chapter else 0,
-                    UserWeakPoint.knowledge_point == kp
-                )
+            query = select(UserWeakPoint).where(
+                UserWeakPoint.user_id == user.id,
+                UserWeakPoint.knowledge_point == kp,
             )
+            if hasattr(exercise, "chapter") and exercise.chapter:
+                query = query.where(
+                    UserWeakPoint.course_id == exercise.chapter.course_id
+                )
+            wp_result = await db.execute(query)
             weak_point = wp_result.scalar_one_or_none()
 
             if weak_point:
@@ -208,7 +220,7 @@ async def complete_review(
         repetition=SpacedRepetitionResponse.model_validate(repetition),
         weak_point_updated=weak_point_updated,
         mastery_change=mastery_change,
-        message="Review completed successfully"
+        message="Review completed successfully",
     )
 
 
@@ -216,8 +228,8 @@ async def complete_review(
 async def get_weak_points(
     db: db_dependency,
     user: auth_dependency,
-    course_id: int = None,
-    limit: int = 20
+    course_id: Optional[int] = None,
+    limit: int = 20,
 ):
     """
     Get list of user's weak knowledge points.
@@ -229,22 +241,22 @@ async def get_weak_points(
     if course_id:
         query = query.where(UserWeakPoint.course_id == course_id)
 
-    query = query.order_by(UserWeakPoint.mastery_level, UserWeakPoint.error_count.desc()).limit(limit)
+    query = query.order_by(
+        UserWeakPoint.mastery_level, UserWeakPoint.error_count.desc()
+    ).limit(limit)
 
     result = await db.execute(query)
     weak_points = result.scalars().all()
 
     return WeakPointListResponse(
         weak_points=[WeakPointResponse.model_validate(wp) for wp in weak_points],
-        total=len(weak_points)
+        total=len(weak_points),
     )
 
 
 @router.post("/weak-points/target", response_model=TargetPracticeResponse)
 async def target_weak_points(
-    request: TargetPracticeRequest,
-    db: db_dependency,
-    user: auth_dependency
+    request: TargetPracticeRequest, db: db_dependency, user: auth_dependency
 ):
     """
     Get exercises for targeted practice on weak points.
@@ -266,47 +278,40 @@ async def target_weak_points(
     weak_points = result.scalars().all()
 
     if not weak_points:
-        return TargetPracticeResponse(
-            exercises=[],
-            weak_points=[],
-            total=0
-        )
+        return TargetPracticeResponse(exercises=[], weak_points=[], total=0)
 
     # Find exercises targeting these knowledge points
     kp_list = [wp.knowledge_point for wp in weak_points]
 
     # Use JSON query to find exercises with matching knowledge points
-    exercise_result = await db.execute(
-        select(Exercise).limit(request.limit)
-    )
+    exercise_result = await db.execute(select(Exercise).limit(request.limit))
     all_exercises = exercise_result.scalars().all()
 
     # Filter by knowledge points (SQLite JSON query is limited, filter in Python)
     exercises = []
     for ex in all_exercises:
         if any(kp in ex.knowledge_points for kp in kp_list):
-            exercises.append({
-                "id": ex.id,
-                "type": ex.type,
-                "difficulty": ex.difficulty,
-                "content": ex.content,
-                "knowledge_points": ex.knowledge_points
-            })
+            exercises.append(
+                {
+                    "id": ex.id,
+                    "type": ex.type,
+                    "difficulty": ex.difficulty,
+                    "content": ex.content,
+                    "knowledge_points": ex.knowledge_points,
+                }
+            )
             if len(exercises) >= request.limit:
                 break
 
     return TargetPracticeResponse(
         exercises=exercises,
         weak_points=[WeakPointResponse.model_validate(wp) for wp in weak_points],
-        total=len(exercises)
+        total=len(exercises),
     )
 
 
 @router.get("/stats", response_model=ReviewStatsResponse)
-async def get_review_stats(
-    db: db_dependency,
-    user: auth_dependency
-):
+async def get_review_stats(db: db_dependency, user: auth_dependency):
     """
     Get review statistics for the current user.
     """
@@ -322,14 +327,19 @@ async def get_review_stats(
     all_repetitions = result.scalars().all()
 
     # Calculate stats (use _make_aware for timezone-aware comparison)
-    total_due = len([r for r in all_repetitions if _make_aware(r.next_review_at) <= now])
+    total_due = 0
+    for r in all_repetitions:
+        next_review_aware = _make_aware(r.next_review_at)
+        if next_review_aware is not None and next_review_aware <= now:
+            total_due += 1
     total_scheduled = len(all_repetitions)
 
     # Reviewed today
-    reviewed_today = len([
-        r for r in all_repetitions
-        if _make_aware(r.last_review_at) and _make_aware(r.last_review_at) >= today_start
-    ])
+    reviewed_today = 0
+    for r in all_repetitions:
+        last_review_aware = _make_aware(r.last_review_at)
+        if last_review_aware is not None and last_review_aware >= today_start:
+            reviewed_today += 1
 
     # Get weak points count
     weak_result = await db.execute(
@@ -349,19 +359,20 @@ async def get_review_stats(
         reviewed_today=reviewed_today,
         streak_days=user.current_streak or 0,
         weak_points_count=len(weak_points),
-        mastery_distribution=mastery_dist
+        mastery_distribution=mastery_dist,
     )
 
 
 # ========== Wrong Questions Endpoints ==========
 
+
 @router.get("/wrong-questions", response_model=WrongQuestionListResponse)
 async def get_wrong_questions(
     db: db_dependency,
     user: auth_dependency,
-    course_id: int = None,
-    chapter_id: int = None,
-    is_resolved: bool = None,
+    course_id: Optional[int] = None,
+    chapter_id: Optional[int] = None,
+    is_resolved: Optional[bool] = None,
     limit: int = 50,
     offset: int = 0,
 ):
@@ -370,7 +381,9 @@ async def get_wrong_questions(
 
     Supports filtering by course, chapter, and resolution status.
     """
-    logger.info(f"[API] 获取错题列表: user_id={user.id}, course_id={course_id}, chapter_id={chapter_id}, is_resolved={is_resolved}")
+    logger.info(
+        f"[API] 获取错题列表: user_id={user.id}, course_id={course_id}, chapter_id={chapter_id}, is_resolved={is_resolved}"
+    )
 
     try:
         wrong_questions, total = await wrong_question_service.get_user_wrong_questions(
@@ -389,10 +402,14 @@ async def get_wrong_questions(
             course_id=course_id,
         )
 
-        logger.info(f"[API] 错题列表结果: total={total}, unresolved={unresolved_count}, 返回 {len(wrong_questions)} 条")
+        logger.info(
+            f"[API] 错题列表结果: total={total}, unresolved={unresolved_count}, 返回 {len(wrong_questions)} 条"
+        )
 
         return WrongQuestionListResponse(
-            wrong_questions=[WrongQuestionResponse.model_validate(wq) for wq in wrong_questions],
+            wrong_questions=[
+                WrongQuestionResponse.model_validate(wq) for wq in wrong_questions
+            ],
             total=total,
             unresolved_count=unresolved_count,
         )
@@ -418,8 +435,7 @@ async def get_wrong_question(
 
     if not wrong_question:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wrong question not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Wrong question not found"
         )
 
     return WrongQuestionResponse.model_validate(wrong_question)
@@ -437,7 +453,9 @@ async def collect_wrong_question(
     当前端使用硬编码习题（非数据库 Exercise）时，使用此端点收集错题。
     exercise_key 格式：chapterId-subsectionIndex-exerciseId
     """
-    logger.info(f"[API] 收集错题: user_id={user.id}, exercise_key={request.exercise_key}, course_id={request.course_id}")
+    logger.info(
+        f"[API] 收集错题: user_id={user.id}, exercise_key={request.exercise_key}, course_id={request.course_id}"
+    )
 
     try:
         wrong_question = await wrong_question_service.collect_wrong_question_by_key(
@@ -455,14 +473,18 @@ async def collect_wrong_question(
 
         await db.commit()
 
-        logger.info(f"[API] 错题收集成功: id={wrong_question.id}, error_count={wrong_question.error_count}")
+        logger.info(
+            f"[API] 错题收集成功: id={wrong_question.id}, error_count={wrong_question.error_count}"
+        )
 
         return CollectWrongQuestionResponse(
             id=wrong_question.id,
             exercise_key=request.exercise_key,
             error_count=wrong_question.error_count,
             is_resolved=wrong_question.is_resolved,
-            message="错题已记录" if wrong_question.error_count == 1 else f"错题已更新，累计错误 {wrong_question.error_count} 次",
+            message="错题已记录"
+            if wrong_question.error_count == 1
+            else f"错题已更新，累计错误 {wrong_question.error_count} 次",
         )
     except Exception as e:
         logger.error(f"[API] 收集错题失败: {e}", exc_info=True)
@@ -474,7 +496,11 @@ async def collect_wrong_question(
 
 class ResolveWrongQuestionRequest(BaseModel):
     """标记错题已解决请求"""
-    exercise_key: Optional[str] = Field(None, description="练习题标识（用于精进之路/挑战之路等 exercise_id 为 None 的情况）")
+
+    exercise_key: Optional[str] = Field(
+        None,
+        description="练习题标识（用于精进之路/挑战之路等 exercise_id 为 None 的情况）",
+    )
 
 
 @router.post("/wrong-questions/{exercise_id}/resolve")
@@ -490,7 +516,9 @@ async def resolve_wrong_question(
     当用户答对曾经错过的题目时调用此端点。
     支持通过 exercise_id 或 exercise_key 查找错题记录。
     """
-    logger.info(f"[API] 标记错题已解决: user_id={user.id}, exercise_id={exercise_id}, exercise_key={request.exercise_key}")
+    logger.info(
+        f"[API] 标记错题已解决: user_id={user.id}, exercise_id={exercise_id}, exercise_key={request.exercise_key}"
+    )
 
     try:
         # 如果提供了 exercise_key（如 mastery-1-2-3），优先用它查找
@@ -541,7 +569,9 @@ async def delete_wrong_question(
 
     删除指定的错题记录。
     """
-    logger.info(f"[API] 删除错题: user_id={user.id}, wrong_question_id={wrong_question_id}")
+    logger.info(
+        f"[API] 删除错题: user_id={user.id}, wrong_question_id={wrong_question_id}"
+    )
 
     try:
         deleted = await wrong_question_service.delete_wrong_question(
@@ -552,8 +582,7 @@ async def delete_wrong_question(
 
         if not deleted:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="错题记录不存在或无权删除"
+                status_code=status.HTTP_404_NOT_FOUND, detail="错题记录不存在或无权删除"
             )
 
         await db.commit()
@@ -576,11 +605,12 @@ async def delete_wrong_question(
 
 # ========== Analysis Endpoints ==========
 
+
 @router.get("/analysis/weak-points", response_model=WeakPointAnalysisResponse)
 async def get_weak_points_analysis(
     db: db_dependency,
     user: auth_dependency,
-    course_id: int = None,
+    course_id: Optional[int] = None,
     limit: int = 20,
 ):
     """
@@ -624,15 +654,17 @@ async def get_weak_points_analysis(
         mastery_factor = (6 - wp.mastery_level) / 5
         weak_score = (error_factor + mastery_factor) / 2
 
-        analyses.append(KnowledgePointAnalysis(
-            knowledge_point=wp.knowledge_point,
-            error_count=wp.error_count,
-            total_attempts=attempts,
-            error_rate=error_rate,
-            mastery_level=wp.mastery_level,
-            weak_score=weak_score,
-            rank=0,  # Will be set after sorting
-        ))
+        analyses.append(
+            KnowledgePointAnalysis(
+                knowledge_point=wp.knowledge_point,
+                error_count=wp.error_count,
+                total_attempts=attempts,
+                error_rate=error_rate,
+                mastery_level=wp.mastery_level,
+                weak_score=weak_score,
+                rank=0,  # Will be set after sorting
+            )
+        )
 
     # Sort by weak_score (descending) and assign ranks
     analyses.sort(key=lambda x: x.weak_score, reverse=True)
@@ -656,6 +688,7 @@ async def get_weak_points_analysis(
 
 
 # ========== Enhanced Practice Endpoints ==========
+
 
 @router.post("/practice/enhanced", response_model=EnhancedTargetPracticeResponse)
 async def enhanced_target_practice(
@@ -688,7 +721,9 @@ async def enhanced_target_practice(
         query = query.where(UserWeakPoint.knowledge_point.in_(request.knowledge_points))
 
     # Order by weakness (weakest first)
-    query = query.order_by(UserWeakPoint.mastery_level, UserWeakPoint.error_count.desc())
+    query = query.order_by(
+        UserWeakPoint.mastery_level, UserWeakPoint.error_count.desc()
+    )
 
     result = await db.execute(query)
     weak_points = list(result.scalars().all())
@@ -699,7 +734,7 @@ async def enhanced_target_practice(
             weak_points=[],
             mode=request.mode,
             total=0,
-            message="No weak points found matching the criteria"
+            message="No weak points found matching the criteria",
         )
 
     # Find exercises targeting these knowledge points
@@ -711,8 +746,7 @@ async def enhanced_target_practice(
     if request.difficulty_range:
         min_diff, max_diff = request.difficulty_range
         exercise_query = exercise_query.where(
-            Exercise.difficulty >= min_diff,
-            Exercise.difficulty <= max_diff
+            Exercise.difficulty >= min_diff, Exercise.difficulty <= max_diff
         )
 
     exercise_result = await db.execute(exercise_query)
@@ -728,15 +762,17 @@ async def enhanced_target_practice(
         if matched_kps:
             # Calculate match score based on how many weak KPs this addresses
             match_score = len(matched_kps)
-            exercises.append({
-                "id": ex.id,
-                "type": ex.type,
-                "difficulty": ex.difficulty,
-                "content": ex.content,
-                "knowledge_points": ex.knowledge_points,
-                "match_score": match_score,
-                "matched_knowledge_points": matched_kps,
-            })
+            exercises.append(
+                {
+                    "id": ex.id,
+                    "type": ex.type,
+                    "difficulty": ex.difficulty,
+                    "content": ex.content,
+                    "knowledge_points": ex.knowledge_points,
+                    "match_score": match_score,
+                    "matched_knowledge_points": matched_kps,
+                }
+            )
             for kp in matched_kps:
                 kp_coverage[kp].append(ex.id)
 
@@ -752,13 +788,15 @@ async def enhanced_target_practice(
         # Ensure variety - don't pick too many from same KPs
         ex_kps = ex.get("matched_knowledge_points", [])
         if len(selected) < 3 or not any(kp in covered_kps for kp in ex_kps):
-            selected.append({
-                "id": ex["id"],
-                "type": ex["type"],
-                "difficulty": ex["difficulty"],
-                "content": ex["content"],
-                "knowledge_points": ex["knowledge_points"],
-            })
+            selected.append(
+                {
+                    "id": ex["id"],
+                    "type": ex["type"],
+                    "difficulty": ex["difficulty"],
+                    "content": ex["content"],
+                    "knowledge_points": ex["knowledge_points"],
+                }
+            )
             covered_kps.update(ex_kps)
 
     return EnhancedTargetPracticeResponse(
@@ -766,11 +804,12 @@ async def enhanced_target_practice(
         weak_points=[WeakPointResponse.model_validate(wp) for wp in weak_points],
         mode=request.mode,
         total=len(selected),
-        message=f"Found {len(selected)} exercises for {request.mode} practice"
+        message=f"Found {len(selected)} exercises for {request.mode} practice",
     )
 
 
 # ========== Review Reminder Endpoints ==========
+
 
 @router.get("/reminders", response_model=ReviewReminderResponse)
 async def get_review_reminders(
@@ -826,12 +865,16 @@ async def get_review_reminders(
     schedule_counts = {eb["day"]: 0 for eb in ebbinghaus_intervals}
 
     for rep in all_repetitions:
-        exercise = exercises.get(rep.exercise_id)
+        exercise = (
+            exercises.get(rep.exercise_id) if rep.exercise_id is not None else None
+        )
         if not exercise:
             continue
 
         # Calculate priority (use _make_aware for timezone-aware comparison)
         next_review_aware = _make_aware(rep.next_review_at)
+        if next_review_aware is None:
+            continue
         priority = 0.0
         days_overdue = (now - next_review_aware).days if next_review_aware <= now else 0
         priority += days_overdue * 0.5
@@ -841,15 +884,17 @@ async def get_review_reminders(
 
         if next_review_aware <= now:
             # Due now
-            due_reviews.append(ReviewQueueItem(
-                repetition=SpacedRepetitionResponse.model_validate(rep),
-                exercise_id=exercise.id,
-                exercise_type=exercise.type,
-                exercise_difficulty=exercise.difficulty,
-                knowledge_points=exercise.knowledge_points,
-                stage_id=rep.stage_id,
-                priority=priority
-            ))
+            due_reviews.append(
+                ReviewQueueItem(
+                    repetition=SpacedRepetitionResponse.model_validate(rep),
+                    exercise_id=exercise.id,
+                    exercise_type=exercise.type,
+                    exercise_difficulty=exercise.difficulty,
+                    knowledge_points=exercise.knowledge_points,
+                    stage_id=rep.stage_id,
+                    priority=priority,
+                )
+            )
             schedule_counts[1] += 1  # Count as due
         else:
             # Future - categorize by interval
@@ -885,4 +930,3 @@ async def get_review_reminders(
         total_due=len(due_reviews),
         total_upcoming=sum(u["count"] for u in upcoming),
     )
-

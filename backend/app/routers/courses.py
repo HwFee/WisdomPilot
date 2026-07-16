@@ -1,7 +1,7 @@
 """Course API Router"""
 
 import logging
-from typing import Annotated, Optional, List
+from typing import Annotated, Optional, List, cast
 from fastapi import APIRouter, Depends, HTTPException, status
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,11 @@ router = APIRouter(prefix="/api/courses", tags=["courses"])
 db_dependency = Annotated[AsyncSession, Depends(get_db)]
 
 # Import dependencies directly from deps module
-from app.utils.deps import get_current_active_user, get_current_admin_user, get_optional_user
+from app.utils.deps import (
+    get_current_active_user,
+    get_current_admin_user,
+    get_optional_user,
+)
 
 auth_dependency = Annotated[User, Depends(get_current_active_user)]
 optional_user_dependency = Annotated[Optional[User], Depends(get_optional_user)]
@@ -52,7 +56,12 @@ optional_user_dependency = Annotated[Optional[User], Depends(get_optional_user)]
 COURSES_INIT_DATA = [
     {"code": "C", "name": "C语言程序设计", "difficulty_level": 1, "icon": "c"},
     {"code": "CPP", "name": "C++程序设计", "difficulty_level": 2, "icon": "cpp"},
-    {"code": "Python", "name": "Python程序设计", "difficulty_level": 1, "icon": "python"},
+    {
+        "code": "Python",
+        "name": "Python程序设计",
+        "difficulty_level": 1,
+        "icon": "python",
+    },
 ]
 
 
@@ -65,10 +74,7 @@ async def get_courses(db: db_dependency):
     This endpoint is public - no authentication required.
     """
     query = (
-        select(
-            Course,
-            func.count(Chapter.id).label("chapter_count")
-        )
+        select(Course, func.count(Chapter.id).label("chapter_count"))
         .outerjoin(Chapter, Course.id == Chapter.course_id)
         .where(Course.is_active, Course.code.in_(["C", "CPP", "Python"]))
         .group_by(Course.id)
@@ -80,25 +86,25 @@ async def get_courses(db: db_dependency):
 
     courses = []
     for course, chapter_count in rows:
-        courses.append(CourseSummary(
-            id=course.id,
-            code=course.code,
-            name=course.name,
-            description=course.description,
-            difficulty_level=course.difficulty_level,
-            icon=course.icon,
-            is_active=course.is_active,
-            chapter_count=chapter_count
-        ))
+        courses.append(
+            CourseSummary(
+                id=course.id,
+                code=course.code,
+                name=course.name,
+                description=course.description,
+                difficulty_level=course.difficulty_level,
+                icon=course.icon,
+                is_active=course.is_active,
+                chapter_count=chapter_count,
+            )
+        )
 
     return CourseListResponse(courses=courses, total=len(courses))
 
 
 @router.get("/{course_id}", response_model=CourseDetailResponse)
 async def get_course(
-    course_id: int,
-    db: db_dependency,
-    user: optional_user_dependency = None
+    course_id: int, db: db_dependency, user: optional_user_dependency = None
 ):
     """
     Get course details including chapters.
@@ -118,7 +124,7 @@ async def get_course(
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with id {course_id} not found"
+            detail=f"Course with id {course_id} not found",
         )
 
     chapters = [
@@ -148,9 +154,7 @@ async def get_course_by_code(code: str, db: db_dependency):
     This endpoint is public - no authentication required.
     """
     query = (
-        select(Course)
-        .where(Course.code == code)
-        .options(selectinload(Course.chapters))
+        select(Course).where(Course.code == code).options(selectinload(Course.chapters))
     )
 
     result = await db.execute(query)
@@ -159,7 +163,7 @@ async def get_course_by_code(code: str, db: db_dependency):
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with code '{code}' not found"
+            detail=f"Course with code '{code}' not found",
         )
 
     chapters = [
@@ -195,13 +199,13 @@ async def get_chapter_by_id(chapter_id: int, db: db_dependency):
     if not chapter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chapter {chapter_id} not found"
+            detail=f"Chapter {chapter_id} not found",
         )
 
     exercises = [
         ExerciseSummary(
             id=ex.id,
-            chapter_id=ex.chapter_id,
+            chapter_id=ex.chapter_id or 0,
             source=ex.source,
             source_id=ex.source_id,
             type=ex.type,
@@ -249,13 +253,13 @@ async def get_chapter(course_id: int, chapter_id: int, db: db_dependency):
     if not chapter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chapter {chapter_id} not found in course {course_id}"
+            detail=f"Chapter {chapter_id} not found in course {course_id}",
         )
 
     exercises = [
         ExerciseSummary(
             id=ex.id,
-            chapter_id=ex.chapter_id,
+            chapter_id=ex.chapter_id or 0,
             source=ex.source,
             source_id=ex.source_id,
             type=ex.type,
@@ -287,7 +291,7 @@ async def get_chapter(course_id: int, chapter_id: int, db: db_dependency):
 async def enroll_course(
     course_id: int,
     db: db_dependency,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Enroll current user in a course.
@@ -304,19 +308,16 @@ async def enroll_course(
         if not course:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Course {course_id} not found"
+                detail=f"Course {course_id} not found",
             )
 
         # Re-fetch user in current session to ensure it's attached
-        user_result = await db.execute(
-            select(User).where(User.id == current_user.id)
-        )
+        user_result = await db.execute(select(User).where(User.id == current_user.id))
         user = user_result.scalar_one_or_none()
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
         # Check if already enrolled - handle None case
@@ -326,7 +327,7 @@ async def enroll_course(
                 "message": f"Already enrolled in {course.name}",
                 "course_id": course_id,
                 "enrolled_courses": enrolled,
-                "already_enrolled": True
+                "already_enrolled": True,
             }
 
         # Add to enrolled courses - create new list to trigger SQLAlchemy change detection
@@ -335,6 +336,7 @@ async def enroll_course(
 
         # Mark the attribute as modified for SQLAlchemy (needed for JSON fields)
         from sqlalchemy.orm.attributes import flag_modified
+
         flag_modified(user, "courses_enrolled")
 
         await db.commit()
@@ -342,24 +344,22 @@ async def enroll_course(
         return {
             "message": f"Successfully enrolled in {course.name}",
             "course_id": course_id,
-            "enrolled_courses": enrolled
+            "enrolled_courses": enrolled,
         }
     except HTTPException:
         raise
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Enrollment failed: {str(e)}"
+            detail=f"Enrollment failed: {str(e)}",
         )
 
 
 @router.get("/users/me/course-progress")
-async def get_user_course_progress(
-    db: db_dependency,
-    current_user: auth_dependency
-):
+async def get_user_course_progress(db: db_dependency, current_user: auth_dependency):
     """
     Get progress for all courses for the current user.
 
@@ -382,19 +382,28 @@ async def get_user_course_progress(
 
     # Get total chapters per course
     total_chapters_result = await db.execute(
-        select(Chapter.course_id, func.count(Chapter.id).label('count'))
+        select(Chapter.course_id, func.count(Chapter.id).label("count"))
         .where(Chapter.is_active)
         .group_by(Chapter.course_id)
     )
-    total_chapters_map = {row.course_id: row.count for row in total_chapters_result.all()}
+    total_chapters_map = {
+        row.course_id: int(row[1]) for row in total_chapters_result.all()
+    }
 
     # Get user's mastery scores per course
     mastery_result = await db.execute(
-        select(ChapterMastery.course_id, func.sum(ChapterMastery.mastery_score).label('total_mastery'), func.count(ChapterMastery.id).label('chapter_count'))
+        select(
+            ChapterMastery.course_id,
+            func.sum(ChapterMastery.mastery_score).label("total_mastery"),
+            func.count(ChapterMastery.id).label("chapter_count"),
+        )
         .where(ChapterMastery.user_id == current_user.id)
         .group_by(ChapterMastery.course_id)
     )
-    mastery_map = {row.course_id: {"total": row.total_mastery, "chapters": row.chapter_count} for row in mastery_result.all()}
+    mastery_map = {
+        row.course_id: {"total": row.total_mastery, "chapters": row.chapter_count}
+        for row in mastery_result.all()
+    }
 
     # Get user's global arena profile (challenge path is global, not per-course)
     arena_result = await db.execute(
@@ -404,9 +413,16 @@ async def get_user_course_progress(
 
     # Get current chapter per course (first chapter with mastery < 75)
     current_chapter_result = await db.execute(
-        select(ChapterMastery.chapter_id, ChapterMastery.course_id, ChapterMastery.mastery_score, Chapter.title)
+        select(
+            ChapterMastery.chapter_id,
+            ChapterMastery.course_id,
+            ChapterMastery.mastery_score,
+            Chapter.title,
+        )
         .join(Chapter, ChapterMastery.chapter_id == Chapter.id)
-        .where(ChapterMastery.user_id == current_user.id, ChapterMastery.mastery_score < 75)
+        .where(
+            ChapterMastery.user_id == current_user.id, ChapterMastery.mastery_score < 75
+        )
         .order_by(ChapterMastery.course_id, Chapter.order_index)
     )
     current_chapter_map = {}
@@ -433,31 +449,41 @@ async def get_user_course_progress(
     # Build response
     courses_data = []
     for course in all_courses:
-        total_chapters = total_chapters_map.get(course.id, 0)
+        total_chapters = int(total_chapters_map.get(course.id, 0))
         mastery_data = mastery_map.get(course.id, {"total": 0, "chapters": 0})
 
         # Calculate progress based on mastered chapters (mastery >= 75)
-        mastered_chapters = mastery_data["chapters"] if mastery_data["total"] else 0
-        progress = round((mastered_chapters / total_chapters) * 100, 1) if total_chapters > 0 else 0
+        mastered_chapters = (
+            int(mastery_data["chapters"]) if mastery_data["total"] else 0
+        )
+        progress = (
+            round((mastered_chapters / total_chapters) * 100, 1)
+            if total_chapters > 0
+            else 0
+        )
 
         # Get mastery and arena data
-        mastery_score = round(mastery_data["total"], 2) if mastery_data["total"] else None
+        mastery_score = (
+            round(mastery_data["total"], 2) if mastery_data["total"] else None
+        )
 
-        courses_data.append({
-            "course_id": course.id,
-            "course_code": course.code,
-            "course_name": course.name,
-            "progress": progress,
-            "completed_stages": mastered_chapters,
-            "total_stages": total_chapters,
-            "current_chapter": current_chapter_map.get(course.id),
-            "current_section": current_section_map.get(course.id),
-            "mastery_score": mastery_score,
-            # Arena profile is global (same for all courses)
-            "arena_tier": arena_profile.tier if arena_profile else None,
-            "arena_sub_tier": arena_profile.sub_tier if arena_profile else None,
-            "arena_stars": arena_profile.stars if arena_profile else None,
-        })
+        courses_data.append(
+            {
+                "course_id": course.id,
+                "course_code": course.code,
+                "course_name": course.name,
+                "progress": progress,
+                "completed_stages": mastered_chapters,
+                "total_stages": total_chapters,
+                "current_chapter": current_chapter_map.get(course.id),
+                "current_section": current_section_map.get(course.id),
+                "mastery_score": mastery_score,
+                # Arena profile is global (same for all courses)
+                "arena_tier": arena_profile.tier if arena_profile else None,
+                "arena_sub_tier": arena_profile.sub_tier if arena_profile else None,
+                "arena_stars": arena_profile.stars if arena_profile else None,
+            }
+        )
 
     return {"courses": courses_data}
 
@@ -471,8 +497,7 @@ async def init_courses(db: db_dependency, user: auth_dependency):
     """
     if not user.is_admin:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
         )
 
     created = []
@@ -489,39 +514,33 @@ async def init_courses(db: db_dependency, user: auth_dependency):
                 name=course_data["name"],
                 difficulty_level=course_data["difficulty_level"],
                 icon=course_data["icon"],
-                is_active=True
+                is_active=True,
             )
             db.add(course)
             created.append(course_data["code"])
 
     await db.flush()
 
-    return {
-        "message": f"Created {len(created)} new courses",
-        "created": created
-    }
+    return {"message": f"Created {len(created)} new courses", "created": created}
 
 
 # ========== Section Endpoints ==========
 
+
 @router.get("/chapters/{chapter_id}/sections", response_model=SectionListResponse)
 async def get_chapter_sections(
-    chapter_id: int,
-    db: db_dependency,
-    current_user: auth_dependency
+    chapter_id: int, db: db_dependency, current_user: auth_dependency
 ):
     """
     Get all sections for a chapter with user's completion status and BKT mastery.
     """
     # Get chapter
-    chapter_result = await db.execute(
-        select(Chapter).where(Chapter.id == chapter_id)
-    )
+    chapter_result = await db.execute(select(Chapter).where(Chapter.id == chapter_id))
     chapter = chapter_result.scalar_one_or_none()
     if not chapter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chapter {chapter_id} not found"
+            detail=f"Chapter {chapter_id} not found",
         )
 
     # Get all sections for this chapter
@@ -537,17 +556,18 @@ async def get_chapter_sections(
     progress_result = await db.execute(
         select(SectionProgress).where(
             SectionProgress.user_id == current_user.id,
-            SectionProgress.section_id.in_(section_ids)
+            SectionProgress.section_id.in_(section_ids),
         )
     )
     progress_map = {p.section_id: p for p in progress_result.scalars().all()}
 
     # Get BKT mastery for these sections
     from app.models.section_mastery import SectionMastery
+
     mastery_result = await db.execute(
         select(SectionMastery).where(
             SectionMastery.user_id == current_user.id,
-            SectionMastery.section_id.in_(section_ids)
+            SectionMastery.section_id.in_(section_ids),
         )
     )
     mastery_map = {m.section_id: m for m in mastery_result.scalars().all()}
@@ -557,25 +577,25 @@ async def get_chapter_sections(
     for section in sections:
         progress = progress_map.get(section.id)
         mastery = mastery_map.get(section.id)
-        section_summaries.append(SectionSummary(
-            id=section.id,
-            chapter_id=section.chapter_id,
-            title=section.title,
-            description=section.description,
-            order_index=section.order_index,
-            estimated_minutes=section.estimated_minutes,
-            is_completed=progress.is_completed if progress else False,
-            mastery_score=mastery.mastery_score if mastery else None,
-        ))
+        section_summaries.append(
+            SectionSummary(
+                id=section.id,
+                chapter_id=section.chapter_id,
+                title=section.title,
+                description=section.description,
+                order_index=section.order_index,
+                estimated_minutes=section.estimated_minutes,
+                is_completed=progress.is_completed if progress else False,
+                mastery_score=mastery.mastery_score if mastery else None,
+            )
+        )
 
     return SectionListResponse(sections=section_summaries, total=len(section_summaries))
 
 
 @router.get("/sections/{section_id}", response_model=SectionDetailResponse)
 async def get_section(
-    section_id: int,
-    db: db_dependency,
-    current_user: auth_dependency
+    section_id: int, db: db_dependency, current_user: auth_dependency
 ):
     """
     Get section details including content and knowledge points.
@@ -592,6 +612,7 @@ async def get_section(
         if isinstance(value, str):
             # 尝试解析为 JSON
             import json
+
             try:
                 parsed = json.loads(value)
                 if isinstance(parsed, list):
@@ -604,27 +625,29 @@ async def get_section(
                 if not stripped:
                     return None
                 # 检查是否是编号列表格式 (如 "1. xxx\n2. xxx")
-                if '\n' in stripped and (stripped[0].isdigit() or stripped.startswith('-')):
-                    return [line.strip() for line in stripped.split('\n') if line.strip()]
+                if "\n" in stripped and (
+                    stripped[0].isdigit() or stripped.startswith("-")
+                ):
+                    return [
+                        line.strip() for line in stripped.split("\n") if line.strip()
+                    ]
                 return [stripped]
         return None
 
     # Get section
-    result = await db.execute(
-        select(Section).where(Section.id == section_id)
-    )
+    result = await db.execute(select(Section).where(Section.id == section_id))
     section = result.scalar_one_or_none()
     if not section:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Section {section_id} not found"
+            detail=f"Section {section_id} not found",
         )
 
     # Get user's progress
     progress_result = await db.execute(
         select(SectionProgress).where(
             SectionProgress.user_id == current_user.id,
-            SectionProgress.section_id == section_id
+            SectionProgress.section_id == section_id,
         )
     )
     progress = progress_result.scalar_one_or_none()
@@ -665,7 +688,7 @@ async def get_section(
         content=section.content,
         order_index=section.order_index,
         estimated_minutes=section.estimated_minutes,
-        learning_objectives=section.learning_objectives,
+        learning_objectives=cast(Optional[List[str]], section.learning_objectives),
         is_completed=progress.is_completed if progress else False,
         last_position=progress.last_position if progress else "content",
         knowledge_points=kp_list,
@@ -679,27 +702,25 @@ async def save_section_progress(
     section_id: int,
     request: SaveSectionProgressRequest,
     db: db_dependency,
-    current_user: auth_dependency
+    current_user: auth_dependency,
 ):
     """
     Save user's learning progress for a section.
     """
     # Verify section exists
-    section_result = await db.execute(
-        select(Section).where(Section.id == section_id)
-    )
+    section_result = await db.execute(select(Section).where(Section.id == section_id))
     section = section_result.scalar_one_or_none()
     if not section:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Section {section_id} not found"
+            detail=f"Section {section_id} not found",
         )
 
     # Get or create progress record
     progress_result = await db.execute(
         select(SectionProgress).where(
             SectionProgress.user_id == current_user.id,
-            SectionProgress.section_id == section_id
+            SectionProgress.section_id == section_id,
         )
     )
     progress = progress_result.scalar_one_or_none()
@@ -733,9 +754,7 @@ async def save_section_progress(
 
 @router.get("/{course_id}/current-position", response_model=CurrentPositionResponse)
 async def get_current_position(
-    course_id: int,
-    db: db_dependency,
-    current_user: auth_dependency
+    course_id: int, db: db_dependency, current_user: auth_dependency
 ):
     """
     Get user's current learning position for a course.
@@ -753,7 +772,7 @@ async def get_current_position(
     if not chapters:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No chapters found for course {course_id}"
+            detail=f"No chapters found for course {course_id}",
         )
 
     # Get all sections for these chapters
@@ -781,7 +800,7 @@ async def get_current_position(
     progress_result = await db.execute(
         select(SectionProgress).where(
             SectionProgress.user_id == current_user.id,
-            SectionProgress.section_id.in_(section_ids)
+            SectionProgress.section_id.in_(section_ids),
         )
     )
     progress_map = {p.section_id: p for p in progress_result.scalars().all()}
@@ -830,6 +849,7 @@ import logging
 
 class HybridRecommendationRequest:
     """Request model for hybrid recommendation"""
+
     course_id: int
     limit: int = 10
     min_difficulty: int = 1
@@ -838,6 +858,7 @@ class HybridRecommendationRequest:
 
 class EmbeddingConfigRequest:
     """Request model for updating embedding configuration"""
+
     provider: str = "siliconflow"
     model: str = "BAAI/bge-large-zh-v1.5"
     api_key: Optional[str] = None
@@ -930,15 +951,13 @@ async def extract_exercise_tags(
     Extract structured tags from an exercise using AI.
     """
     # Get exercise
-    result = await db.execute(
-        select(Exercise).where(Exercise.id == exercise_id)
-    )
+    result = await db.execute(select(Exercise).where(Exercise.id == exercise_id))
     exercise = result.scalar_one_or_none()
 
     if not exercise:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Exercise {exercise_id} not found"
+            detail=f"Exercise {exercise_id} not found",
         )
 
     # Extract tags
@@ -1033,7 +1052,9 @@ async def debug_recommendation_system(
 
     # Get exercises with embeddings count
     exercises_with_embedding = await db.execute(
-        select(func.count()).select_from(Exercise).where(
+        select(func.count())
+        .select_from(Exercise)
+        .where(
             Exercise.is_verified,
             Exercise.embedding.isnot(None),
         )
@@ -1047,6 +1068,7 @@ async def debug_recommendation_system(
     total = total_exercises.scalar() or 0
 
     from app.config import get_settings
+
     settings = get_settings()
     embedding_configured = bool(settings.EMBEDDING_API_KEY)
 
@@ -1057,7 +1079,9 @@ async def debug_recommendation_system(
         "system_status": {
             "total_exercises": total,
             "exercises_with_embedding": total_with_embedding,
-            "embedding_coverage": f"{(total_with_embedding / total * 100):.1f}%" if total > 0 else "N/A",
+            "embedding_coverage": f"{(total_with_embedding / total * 100):.1f}%"
+            if total > 0
+            else "N/A",
             "embedding_service_configured": embedding_configured,
             "embedding_provider": settings.EMBEDDING_PROVIDER,
             "embedding_model": settings.EMBEDDING_MODEL,

@@ -38,7 +38,9 @@ async def get_chapter_exercises(
     chapter_id: int,
     db: db_dependency,
     subsection: Optional[int] = Query(default=None, description="Subsection index"),
-    difficulty: Optional[int] = Query(default=None, ge=1, le=5, description="Filter by difficulty"),
+    difficulty: Optional[int] = Query(
+        default=None, ge=1, le=5, description="Filter by difficulty"
+    ),
     limit: int = Query(default=50, ge=1, le=100),
 ):
     """
@@ -80,9 +82,7 @@ async def get_exercise_detail(
 
     Public endpoint - no authentication required.
     """
-    result = await db.execute(
-        select(Exercise).where(Exercise.id == exercise_id)
-    )
+    result = await db.execute(select(Exercise).where(Exercise.id == exercise_id))
     exercise = result.scalar_one_or_none()
 
     if not exercise:
@@ -91,9 +91,7 @@ async def get_exercise_detail(
             detail=f"Exercise {exercise_id} not found",
         )
 
-    return {
-        "exercise": ExerciseSummary.model_validate(exercise)
-    }
+    return {"exercise": ExerciseSummary.model_validate(exercise)}
 
 
 # Keep old route for backward compatibility
@@ -102,7 +100,9 @@ async def get_chapter_exercises_compat(
     chapter_id: int,
     db: db_dependency,
     subsection: Optional[int] = Query(default=None, description="Subsection index"),
-    difficulty: Optional[int] = Query(default=None, ge=1, le=5, description="Filter by difficulty"),
+    difficulty: Optional[int] = Query(
+        default=None, ge=1, le=5, description="Filter by difficulty"
+    ),
     limit: int = Query(default=50, ge=1, le=100),
 ):
     """
@@ -187,7 +187,9 @@ async def verify_exercise(
         return ExerciseVerifyResponse(
             id=exercise.id,
             is_verified=exercise.is_verified,
-            message="Exercise verified successfully" if exercise.is_verified else "Exercise unverified",
+            message="Exercise verified successfully"
+            if exercise.is_verified
+            else "Exercise unverified",
         )
     except ValueError as e:
         raise HTTPException(
@@ -209,9 +211,7 @@ async def submit_exercise_answer(
     Requires authentication.
     """
 
-    exercise = await db.execute(
-        select(Exercise).where(Exercise.id == exercise_id)
-    )
+    exercise = await db.execute(select(Exercise).where(Exercise.id == exercise_id))
     exercise = exercise.scalar_one_or_none()
 
     if not exercise:
@@ -238,7 +238,7 @@ async def submit_exercise_answer(
         exercise=exercise,
         user_answer=request.answer,
         course_id=course_id,
-        chapter_id=chapter_id,
+        chapter_id=chapter_id or 0,
     )
     return ExerciseSubmitResponse(**result)
 
@@ -278,9 +278,7 @@ async def recommend_exercises(
     )
 
     # Convert to response format
-    recommendations = [
-        ExerciseRecommendItem(**r) for r in result["recommendations"]
-    ]
+    recommendations = [ExerciseRecommendItem(**r) for r in result["recommendations"]]
 
     return ExerciseRecommendResponse(
         user_vector_generated=result["user_vector_generated"],

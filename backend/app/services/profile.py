@@ -1,6 +1,7 @@
 """Learning Profile Service - Manages user learning statistics and XP"""
 
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,17 +21,17 @@ class ProfileService:
 
     # Streak multiplier tiers (streak_days range: multiplier)
     STREAK_TIERS = [
-        ((1, 6), 1.0),      # 1-6 days: 1x XP
-        ((7, 13), 1.2),     # 7-13 days: 1.2x XP
-        ((14, 29), 1.5),    # 14-29 days: 1.5x XP
-        ((30, float('inf')), 2.0),  # 30+ days: 2x XP
+        ((1, 6), 1.0),  # 1-6 days: 1x XP
+        ((7, 13), 1.2),  # 7-13 days: 1.2x XP
+        ((14, 29), 1.5),  # 14-29 days: 1.5x XP
+        ((30, float("inf")), 2.0),  # 30+ days: 2x XP
     ]
 
     # Check-in Core (智核) rewards by streak
     CHECKIN_CORE_REWARDS = {
-        1: 5,    # Day 1: 5 cores
-        3: 10,   # 3+ day streak: 10 cores
-        7: 20,   # 7+ day streak: 20 cores
+        1: 5,  # Day 1: 5 cores
+        3: 10,  # 3+ day streak: 10 cores
+        7: 20,  # 7+ day streak: 20 cores
         14: 35,  # 14+ day streak: 35 cores
         30: 55,  # 30+ day streak: 55 cores
     }
@@ -79,13 +80,23 @@ class ProfileService:
                 return level_name
         return "入门"
 
-    async def add_mastery_xp(self, db: AsyncSession, user: User, xp_amount: int, category: str = "bonus", description: str = None) -> User:
+    async def add_mastery_xp(
+        self,
+        db: AsyncSession,
+        user: User,
+        xp_amount: int,
+        category: str = "bonus",
+        description: Optional[str] = None,
+    ) -> User:
         """Add mastery XP to user and update mastery level
 
         Note: This method records a transaction. For simple XP updates without
         transaction recording, use MasteryXpTransactionService.earn_xp directly.
         """
-        from app.services.mastery_xp_transaction_service import MasteryXpTransactionService, get_mastery_level
+        from app.services.mastery_xp_transaction_service import (
+            MasteryXpTransactionService,
+            get_mastery_level,
+        )
 
         # Record before state
         level_before = get_mastery_level(user.mastery_xp)
@@ -152,7 +163,7 @@ class ProfileService:
 
         if user.last_activity_date:
             last_date = user.last_activity_date
-            if hasattr(last_date, 'tzinfo') and last_date.tzinfo:
+            if hasattr(last_date, "tzinfo") and last_date.tzinfo:
                 last_date = last_date.replace(tzinfo=None)
             # 将 UTC 时间转换为北京时间后取日期
             last_beijing = last_date + timedelta(hours=8)
@@ -175,9 +186,27 @@ class ProfileService:
 
     # Supported programming languages
     SUPPORTED_LANGUAGES = [
-        "C", "C++", "Python", "Java", "JavaScript", "TypeScript",
-        "Rust", "Go", "Ruby", "Swift", "Kotlin", "C#", "PHP", "Scala",
-        "R", "MATLAB", "Julia", "Perl", "Haskell", "Lua", "Shell"
+        "C",
+        "C++",
+        "Python",
+        "Java",
+        "JavaScript",
+        "TypeScript",
+        "Rust",
+        "Go",
+        "Ruby",
+        "Swift",
+        "Kotlin",
+        "C#",
+        "PHP",
+        "Scala",
+        "R",
+        "MATLAB",
+        "Julia",
+        "Perl",
+        "Haskell",
+        "Lua",
+        "Shell",
     ]
 
     async def set_preferred_languages(
@@ -218,7 +247,7 @@ class ProfileService:
 
         # 将 last_activity_date（UTC 存储）转换为北京时间后取日期
         last_date = user.last_activity_date
-        if hasattr(last_date, 'tzinfo') and last_date.tzinfo:
+        if hasattr(last_date, "tzinfo") and last_date.tzinfo:
             last_date = last_date.replace(tzinfo=None)
         # last_activity_date 是 UTC 时间，+8小时得到北京时间
         last_beijing = last_date + timedelta(hours=8)
@@ -254,7 +283,7 @@ class ProfileService:
         # Calculate streak
         if user.last_activity_date:
             last_date = user.last_activity_date
-            if hasattr(last_date, 'tzinfo') and last_date.tzinfo:
+            if hasattr(last_date, "tzinfo") and last_date.tzinfo:
                 last_date = last_date.replace(tzinfo=None)
             # 将 UTC 时间转换为北京时间后取日期
             last_beijing = last_date + timedelta(hours=8)
@@ -280,7 +309,9 @@ class ProfileService:
 
         # Add streak bonus (every 7 days gives extra XP)
         if user.streak_days >= 7:
-            streak_bonus = (user.streak_days // 7) * self.CHECKIN_STREAK_BONUS_MULTIPLIER
+            streak_bonus = (
+                user.streak_days // 7
+            ) * self.CHECKIN_STREAK_BONUS_MULTIPLIER
             xp_earned += streak_bonus
 
         # Calculate core reward
@@ -342,9 +373,13 @@ class ProfileService:
         for threshold, code in streak_achievements:
             if user.streak_days >= threshold:
                 try:
-                    achievement = await achievement_service.get_achievement_by_code(db, code)
+                    achievement = await achievement_service.get_achievement_by_code(
+                        db, code
+                    )
                     if achievement:
-                        await achievement_service.earn_achievement(db, user, achievement.id)
+                        await achievement_service.earn_achievement(
+                            db, user, achievement.id
+                        )
                         earned_codes.append(code)
                 except ValueError:
                     # Already earned, skip

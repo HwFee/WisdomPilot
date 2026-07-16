@@ -43,9 +43,11 @@ class BKTMasteryService:
     """
 
     # 防刷分阈值（适配 AI 生成题目场景）
-    MAX_KP_ATTEMPTS_PER_SECTION = 15     # 每小节每知识点最多计入次数（提高上限，避免正常答题被限制）
-    MAX_KP_ATTEMPTS_PER_HOUR = 50        # 每小时每知识点最多计入次数
-    MIN_ANSWER_TIME_SECONDS = 3          # 最短答题时间（秒）- 降低以适应快速答题
+    MAX_KP_ATTEMPTS_PER_SECTION = (
+        15  # 每小节每知识点最多计入次数（提高上限，避免正常答题被限制）
+    )
+    MAX_KP_ATTEMPTS_PER_HOUR = 50  # 每小时每知识点最多计入次数
+    MIN_ANSWER_TIME_SECONDS = 3  # 最短答题时间（秒）- 降低以适应快速答题
     MAX_P_L_INCREASE_PER_SESSION = 0.35  # 单次会话掌握度增长上限
 
     def __init__(self, db: AsyncSession):
@@ -105,14 +107,18 @@ class BKTMasteryService:
         logger.info(f"[BKT] 用户: {user_id[:8]}...")
         logger.info(f"[BKT] 题目ID: {question_id} | 来源: {question_source}")
         logger.info(f"[BKT] 章节: {chapter_id} | 小节: {section_id}")
-        logger.info(f"[BKT] 答题结果: {'[OK] 正确' if is_correct else '[X] 错误'} | 耗时: {time_spent_seconds}s")
+        logger.info(
+            f"[BKT] 答题结果: {'[OK] 正确' if is_correct else '[X] 错误'} | 耗时: {time_spent_seconds}s"
+        )
         logger.info(f"[BKT] 知识点: {knowledge_points}")
         logger.info("[BKT] ==========================================================")
         logger.info("[BKT] ==================== BKT 答题处理开始 ====================")
         logger.info(f"[BKT] 用户: {user_id[:8]}...")
         logger.info(f"[BKT] 题目ID: {question_id} | 来源: {question_source}")
         logger.info(f"[BKT] 章节: {chapter_id} | 小节: {section_id}")
-        logger.info(f"[BKT] 答题结果: {'[OK] 正确' if is_correct else '[X] 错误'} | 耗时: {time_spent_seconds}s")
+        logger.info(
+            f"[BKT] 答题结果: {'[OK] 正确' if is_correct else '[X] 错误'} | 耗时: {time_spent_seconds}s"
+        )
         logger.info(f"[BKT] 知识点: {knowledge_points}")
         logger.info("[BKT] ==========================================================")
 
@@ -131,8 +137,12 @@ class BKTMasteryService:
 
         # Step 1: 防刷分检查
         counted, not_counted_reason = await self._check_should_count(
-            user_id, question_source, question_id, knowledge_points,
-            section_id=section_id, time_spent_seconds=time_spent_seconds
+            user_id,
+            question_source,
+            question_id,
+            knowledge_points,
+            section_id=section_id,
+            time_spent_seconds=time_spent_seconds,
         )
 
         logger.info("[BKT] ┌─────────────────────────────────────────────────")
@@ -150,8 +160,12 @@ class BKTMasteryService:
         logger.info("[BKT] ┌─────────────────────────────────────────────────")
         logger.info("[BKT] │ BKT 参数设置")
         logger.info(f"[BKT] │ 题型: {question_type} | 难度: {difficulty}")
-        logger.info(f"[BKT] │ P(L0)={adjusted_params.p_l0:.2f}, P(T)={adjusted_params.p_t:.2f}")
-        logger.info(f"[BKT] │ P(G)={adjusted_params.p_g:.2f}, P(S)={adjusted_params.p_s:.2f}")
+        logger.info(
+            f"[BKT] │ P(L0)={adjusted_params.p_l0:.2f}, P(T)={adjusted_params.p_t:.2f}"
+        )
+        logger.info(
+            f"[BKT] │ P(G)={adjusted_params.p_g:.2f}, P(S)={adjusted_params.p_s:.2f}"
+        )
         logger.info("[BKT] └─────────────────────────────────────────────────")
 
         # Step 3: 更新各知识点状态
@@ -188,22 +202,28 @@ class BKTMasteryService:
 
                 if is_mastered and not kp_mastery.mastered_at:
                     kp_mastery.mastered_at = utc_now()
-                    logger.info(f"[BKT] [*] 知识点 '{kp}' 达到掌握阈值！P(L) = {p_l_after:.4f}")
+                    logger.info(
+                        f"[BKT] [*] 知识点 '{kp}' 达到掌握阈值！P(L) = {p_l_after:.4f}"
+                    )
             else:
                 p_l_after = p_l_before
                 logger.info(f"[BKT] │ 知识点 '{kp}' 未计入掌握度（防刷分）")
                 logger.info(f"[BKT] │ P(L) 保持不变 = {p_l_before:.4f}")
 
             p_l_sum_after += p_l_after
-            mastery_changes.append({
-                "knowledge_point": kp,
-                "p_l_before": p_l_before,
-                "p_l_after": p_l_after,
-                "is_mastered": kp_mastery.p_l >= MASTERY_THRESHOLD,
-            })
+            mastery_changes.append(
+                {
+                    "knowledge_point": kp,
+                    "p_l_before": p_l_before,
+                    "p_l_after": p_l_after,
+                    "is_mastered": kp_mastery.p_l >= MASTERY_THRESHOLD,
+                }
+            )
 
         # 计算平均掌握概率
-        avg_p_l_before = p_l_sum_before / len(knowledge_points) if knowledge_points else 0
+        avg_p_l_before = (
+            p_l_sum_before / len(knowledge_points) if knowledge_points else 0
+        )
         avg_p_l_after = p_l_sum_after / len(knowledge_points) if knowledge_points else 0
 
         logger.info("[BKT] ┌─────────────────────────────────────────────────")
@@ -239,8 +259,10 @@ class BKTMasteryService:
             section_mastery, is_section_completed = await self._update_section_mastery(
                 user_id, section_id, chapter_id, course_id
             )
-            logger.info(f"[BKT] │ 小节掌握度 = {section_mastery*100:.1f}%")
-            logger.info(f"[BKT] │ 小节状态: {'[OK] 已完成' if is_section_completed else '学习中'}")
+            logger.info(f"[BKT] │ 小节掌握度 = {section_mastery * 100:.1f}%")
+            logger.info(
+                f"[BKT] │ 小节状态: {'[OK] 已完成' if is_section_completed else '学习中'}"
+            )
             logger.info("[BKT] └─────────────────────────────────────────────────")
 
         # Step 6: 更新章节聚合掌握度（由所有小节聚合）
@@ -253,8 +275,10 @@ class BKTMasteryService:
             chapter_mastery, is_chapter_completed = await self._update_chapter_mastery(
                 user_id, chapter_id, course_id
             )
-            logger.info(f"[BKT] │ 章节掌握度 = {chapter_mastery*100:.1f}%")
-            logger.info(f"[BKT] │ 章节状态: {'[OK] 已完成' if is_chapter_completed else '学习中'}")
+            logger.info(f"[BKT] │ 章节掌握度 = {chapter_mastery * 100:.1f}%")
+            logger.info(
+                f"[BKT] │ 章节状态: {'[OK] 已完成' if is_chapter_completed else '学习中'}"
+            )
             logger.info("[BKT] └─────────────────────────────────────────────────")
 
         # Step 7: 更新课程聚合掌握度（由所有章节聚合）
@@ -268,14 +292,22 @@ class BKTMasteryService:
 
         await self.db.commit()
 
-        logger.info("[BKT] ╔══════════════════════════════════════════════════════════════════")
-        logger.info("[BKT] ║                    BKT 答题处理完成                              ║")
-        logger.info("[BKT] ╠══════════════════════════════════════════════════════════════════")
+        logger.info(
+            "[BKT] ╔══════════════════════════════════════════════════════════════════"
+        )
+        logger.info(
+            "[BKT] ║                    BKT 答题处理完成                              ║"
+        )
+        logger.info(
+            "[BKT] ╠══════════════════════════════════════════════════════════════════"
+        )
         logger.info(f"[BKT] ║ 计入掌握度: {counted}")
-        logger.info(f"[BKT] ║ 小节掌握度: {section_mastery*100:.1f}%")
-        logger.info(f"[BKT] ║ 章节掌握度: {chapter_mastery*100:.1f}%")
-        logger.info(f"[BKT] ║ 课程掌握度: {course_mastery*100:.1f}%")
-        logger.info("[BKT] ╚══════════════════════════════════════════════════════════════════")
+        logger.info(f"[BKT] ║ 小节掌握度: {section_mastery * 100:.1f}%")
+        logger.info(f"[BKT] ║ 章节掌握度: {chapter_mastery * 100:.1f}%")
+        logger.info(f"[BKT] ║ 课程掌握度: {course_mastery * 100:.1f}%")
+        logger.info(
+            "[BKT] ╚══════════════════════════════════════════════════════════════════"
+        )
 
         return {
             "counted": counted,
@@ -324,8 +356,13 @@ class BKTMasteryService:
             return False, "duplicate_question"
 
         # 规则2：答题时间过短检测
-        if time_spent_seconds is not None and time_spent_seconds < self.MIN_ANSWER_TIME_SECONDS:
-            logger.info(f"[BKT] 答题时间过短 ({time_spent_seconds}s < {self.MIN_ANSWER_TIME_SECONDS}s)，不计入")
+        if (
+            time_spent_seconds is not None
+            and time_spent_seconds < self.MIN_ANSWER_TIME_SECONDS
+        ):
+            logger.info(
+                f"[BKT] 答题时间过短 ({time_spent_seconds}s < {self.MIN_ANSWER_TIME_SECONDS}s)，不计入"
+            )
             return False, "answer_too_fast"
 
         # 规则3：每小节每知识点限制（如果有小节信息）
@@ -342,8 +379,13 @@ class BKTMasteryService:
                     )
                 )
                 kp_record = kp_mastery.scalar_one_or_none()
-                if kp_record and kp_record.total_attempts >= self.MAX_KP_ATTEMPTS_PER_SECTION:
-                    logger.info(f"[BKT] 小节 {section_id} 内知识点 '{kp}' 已计入 {kp_record.total_attempts} 次，触发限制")
+                if (
+                    kp_record
+                    and kp_record.total_attempts >= self.MAX_KP_ATTEMPTS_PER_SECTION
+                ):
+                    logger.info(
+                        f"[BKT] 小节 {section_id} 内知识点 '{kp}' 已计入 {kp_record.total_attempts} 次，触发限制"
+                    )
                     return False, "section_rate_limited"
 
         # 规则4：每小时知识点频率限制
@@ -361,8 +403,13 @@ class BKTMasteryService:
                 kp_record = kp_mastery.scalar_one_or_none()
                 # 如果最近有练习且尝试次数很高，才限制
                 # 这里用 total_attempts 作为简单判断，因为每小时限制主要用于防止刷分
-                if kp_record and kp_record.total_attempts >= self.MAX_KP_ATTEMPTS_PER_HOUR:
-                    logger.info(f"[BKT] 知识点 '{kp}' 总计入次数 {kp_record.total_attempts} 达到上限，触发限制")
+                if (
+                    kp_record
+                    and kp_record.total_attempts >= self.MAX_KP_ATTEMPTS_PER_HOUR
+                ):
+                    logger.info(
+                        f"[BKT] 知识点 '{kp}' 总计入次数 {kp_record.total_attempts} 达到上限，触发限制"
+                    )
                     return False, "rate_limited"
 
         return True, None
@@ -434,7 +481,9 @@ class BKTMasteryService:
         p_l_after: float,
     ) -> AnswerHistory:
         """记录答题历史"""
-        exercise_key = f"{question_source}-{course_id or 0}-{chapter_id or 0}-{question_id}"
+        exercise_key = (
+            f"{question_source}-{course_id or 0}-{chapter_id or 0}-{question_id}"
+        )
 
         history = AnswerHistory(
             user_id=user_id,
@@ -459,7 +508,7 @@ class BKTMasteryService:
         self,
         user_id: str,
         section_id: int,
-        chapter_id: int,
+        chapter_id: Optional[int],
         course_id: Optional[int],
     ) -> Tuple[float, bool]:
         """
@@ -525,8 +574,12 @@ class BKTMasteryService:
                 # 用户已练习过该知识点
                 kp_mastery = user_kp_map[kp_name]
                 p_l = kp_mastery.p_l
-                status = "[OK] 已掌握" if kp_mastery.p_l >= MASTERY_THRESHOLD else "学习中"
-                logger.info(f"[BKT] │   知识点 '{kp_name}': P(L)={p_l:.4f} ({status}, 已练习)")
+                status = (
+                    "[OK] 已掌握" if kp_mastery.p_l >= MASTERY_THRESHOLD else "学习中"
+                )
+                logger.info(
+                    f"[BKT] │   知识点 '{kp_name}': P(L)={p_l:.4f} ({status}, 已练习)"
+                )
             else:
                 # 用户未练习过该知识点，使用初始掌握度
                 p_l = DEFAULT_P_L0
@@ -540,7 +593,7 @@ class BKTMasteryService:
         avg_p_l = total_p_l / len(all_kp_list)
 
         logger.info(f"[BKT] │ 总 P(L) = {total_p_l:.4f}, 知识点数 = {len(all_kp_list)}")
-        logger.info(f"[BKT] │ 平均 P(L) = {avg_p_l:.4f} ({avg_p_l*100:.2f}%)")
+        logger.info(f"[BKT] │ 平均 P(L) = {avg_p_l:.4f} ({avg_p_l * 100:.2f}%)")
         logger.info(f"[BKT] │ 已掌握知识点: {mastered_count} / {len(all_kp_list)}")
 
         # 更新小节掌握度
@@ -567,7 +620,7 @@ class BKTMasteryService:
         self,
         user_id: str,
         section_id: int,
-        chapter_id: int,
+        chapter_id: Optional[int],
         course_id: Optional[int],
     ) -> SectionMastery:
         """获取或创建小节掌握记录"""
@@ -623,13 +676,17 @@ class BKTMasteryService:
         kp_count_result = await self.db.execute(
             select(
                 SectionKnowledgePoint.section_id,
-                func.count(SectionKnowledgePoint.id).label("kp_count")
-            ).where(
+                func.count(SectionKnowledgePoint.id).label("kp_count"),
+            )
+            .where(
                 SectionKnowledgePoint.section_id.in_(section_ids),
-                SectionKnowledgePoint.is_active
-            ).group_by(SectionKnowledgePoint.section_id)
+                SectionKnowledgePoint.is_active,
+            )
+            .group_by(SectionKnowledgePoint.section_id)
         )
-        section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
+        section_kp_counts = {
+            row.section_id: row.kp_count for row in kp_count_result.all()
+        }
 
         # 计算章节总知识点数
         total_kp_count = sum(section_kp_counts.values())
@@ -675,11 +732,15 @@ class BKTMasteryService:
                 # 小节已开始测试，使用实际掌握度
                 section_p_l = sm.bkt_aggregated_p_l
                 started_sections += 1
-                logger.info(f"[BKT] │   小节 {section_id}: P(L)={section_p_l:.4f} (已开始, {kp_count}个知识点)")
+                logger.info(
+                    f"[BKT] │   小节 {section_id}: P(L)={section_p_l:.4f} (已开始, {kp_count}个知识点)"
+                )
             else:
                 # 小节未开始，掌握度为 0
                 section_p_l = 0.0
-                logger.info(f"[BKT] │   小节 {section_id}: P(L)={section_p_l:.4f} (未开始, {kp_count}个知识点)")
+                logger.info(
+                    f"[BKT] │   小节 {section_id}: P(L)={section_p_l:.4f} (未开始, {kp_count}个知识点)"
+                )
 
             weighted_sum += section_p_l * kp_count
 
@@ -687,7 +748,7 @@ class BKTMasteryService:
         avg_p_l = weighted_sum / total_kp_count if total_kp_count > 0 else 0.0
 
         logger.info(f"[BKT] │ 加权和 = {weighted_sum:.4f}, 总知识点 = {total_kp_count}")
-        logger.info(f"[BKT] │ 章节掌握度 = {avg_p_l:.4f} ({avg_p_l*100:.1f}%)")
+        logger.info(f"[BKT] │ 章节掌握度 = {avg_p_l:.4f} ({avg_p_l * 100:.1f}%)")
         logger.info(f"[BKT] │ 已开始小节数: {started_sections} / {len(sections)}")
 
         # Step 5: 计算已掌握知识点数（用于统计）
@@ -708,15 +769,24 @@ class BKTMasteryService:
         chapter_mastery.mastered_points_count = mastered_count
 
         from app.services.chapter_mastery import ChapterMasteryService
-        chapter_mastery.mastery_level = ChapterMasteryService(None).get_mastery_level(avg_p_l * 100)
+
+        chapter_mastery.mastery_level = ChapterMasteryService(None).get_mastery_level(
+            avg_p_l * 100
+        )
         chapter_mastery.last_practiced_at = utc_now()
 
         # 判断是否完成：所有知识点都掌握（需要所有小节都开始并掌握）
-        is_completed = mastered_count == total_kp_count and total_kp_count > 0 and started_sections == len(sections)
+        is_completed = (
+            mastered_count == total_kp_count
+            and total_kp_count > 0
+            and started_sections == len(sections)
+        )
 
         if is_completed and not chapter_mastery.mastered_at:
             chapter_mastery.mastered_at = utc_now()
-            logger.info(f"[BKT] [*] 章节 {chapter_id} 完成！所有 {total_kp_count} 个知识点已掌握！")
+            logger.info(
+                f"[BKT] [*] 章节 {chapter_id} 完成！所有 {total_kp_count} 个知识点已掌握！"
+            )
 
         return avg_p_l, is_completed
 
@@ -928,13 +998,17 @@ class BKTMasteryService:
         kp_count_result = await self.db.execute(
             select(
                 SectionKnowledgePoint.section_id,
-                func.count(SectionKnowledgePoint.id).label("kp_count")
-            ).where(
+                func.count(SectionKnowledgePoint.id).label("kp_count"),
+            )
+            .where(
                 SectionKnowledgePoint.section_id.in_(section_ids),
-                SectionKnowledgePoint.is_active
-            ).group_by(SectionKnowledgePoint.section_id)
+                SectionKnowledgePoint.is_active,
+            )
+            .group_by(SectionKnowledgePoint.section_id)
         )
-        section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
+        section_kp_counts = {
+            row.section_id: row.kp_count for row in kp_count_result.all()
+        }
 
         # 构建小节到章节的映射，并计算每章的知识点数
         section_to_chapter = {s.id: s.chapter_id for s in sections}
@@ -942,7 +1016,9 @@ class BKTMasteryService:
         for section_id, kp_count in section_kp_counts.items():
             chapter_id = section_to_chapter.get(section_id)
             if chapter_id:
-                chapter_kp_counts[chapter_id] = chapter_kp_counts.get(chapter_id, 0) + kp_count
+                chapter_kp_counts[chapter_id] = (
+                    chapter_kp_counts.get(chapter_id, 0) + kp_count
+                )
 
         # 计算课程总知识点数
         total_kp_count = sum(chapter_kp_counts.values())
@@ -971,6 +1047,7 @@ class BKTMasteryService:
 
         # Step 5: 计算每个章节的掌握度（加权平均）
         from collections import defaultdict
+
         chapter_sections = defaultdict(list)
         for s in sections:
             chapter_sections[s.chapter_id].append(s)
@@ -1015,9 +1092,13 @@ class BKTMasteryService:
             chapter_p_l = chapter_mastery_map.get(chapter_id, 0.0)
             if chapter_p_l > 0:
                 started_chapters += 1
-                logger.info(f"[BKT] │   章节 {chapter_id}: P(L)={chapter_p_l:.4f} (已开始, {kp_count}个知识点)")
+                logger.info(
+                    f"[BKT] │   章节 {chapter_id}: P(L)={chapter_p_l:.4f} (已开始, {kp_count}个知识点)"
+                )
             else:
-                logger.info(f"[BKT] │   章节 {chapter_id}: P(L)={chapter_p_l:.4f} (未开始, {kp_count}个知识点)")
+                logger.info(
+                    f"[BKT] │   章节 {chapter_id}: P(L)={chapter_p_l:.4f} (未开始, {kp_count}个知识点)"
+                )
 
             weighted_sum += chapter_p_l * kp_count
 
@@ -1025,7 +1106,7 @@ class BKTMasteryService:
         avg_p_l = weighted_sum / total_kp_count if total_kp_count > 0 else 0.0
 
         logger.info(f"[BKT] │ 加权和 = {weighted_sum:.4f}, 总知识点 = {total_kp_count}")
-        logger.info(f"[BKT] │ 课程掌握度 = {avg_p_l:.4f} ({avg_p_l*100:.1f}%)")
+        logger.info(f"[BKT] │ 课程掌握度 = {avg_p_l:.4f} ({avg_p_l * 100:.1f}%)")
         logger.info(f"[BKT] │ 已开始章节数: {started_chapters} / {chapters_count}")
 
         # Step 7: 计算已完成章节数和已掌握知识点数
@@ -1064,12 +1145,18 @@ class BKTMasteryService:
             course_mastery.first_practiced_at = utc_now()
 
         # 判断是否完成：所有知识点都掌握（需要所有章节都开始并掌握）
-        is_completed = mastered_count == total_kp_count and total_kp_count > 0 and started_chapters == chapters_count
+        is_completed = (
+            mastered_count == total_kp_count
+            and total_kp_count > 0
+            and started_chapters == chapters_count
+        )
         course_mastery.is_completed = is_completed
 
         if is_completed and not course_mastery.completed_at:
             course_mastery.completed_at = utc_now()
-            logger.info(f"[BKT] 课程 {course_id} 完成！所有 {total_kp_count} 个知识点已掌握！")
+            logger.info(
+                f"[BKT] 课程 {course_id} 完成！所有 {total_kp_count} 个知识点已掌握！"
+            )
 
         return avg_p_l, is_completed
 
@@ -1149,7 +1236,9 @@ class BKTMasteryService:
         all_chapters = chapters_result.scalars().all()
         chapters_count = len(all_chapters)
 
-        logger.info(f"[BKT] get_course_mastery_summary: course_id={course_id}, chapters_count={chapters_count}")
+        logger.info(
+            f"[BKT] get_course_mastery_summary: course_id={course_id}, chapters_count={chapters_count}"
+        )
 
         # Step 2: 获取所有章节的小节
         chapter_ids = [ch.id for ch in all_chapters]
@@ -1163,13 +1252,17 @@ class BKTMasteryService:
         kp_count_result = await self.db.execute(
             select(
                 SectionKnowledgePoint.section_id,
-                func.count(SectionKnowledgePoint.id).label("kp_count")
-            ).where(
+                func.count(SectionKnowledgePoint.id).label("kp_count"),
+            )
+            .where(
                 SectionKnowledgePoint.section_id.in_(section_ids),
-                SectionKnowledgePoint.is_active
-            ).group_by(SectionKnowledgePoint.section_id)
+                SectionKnowledgePoint.is_active,
+            )
+            .group_by(SectionKnowledgePoint.section_id)
         )
-        section_kp_counts = {row.section_id: row.kp_count for row in kp_count_result.all()}
+        section_kp_counts = {
+            row.section_id: row.kp_count for row in kp_count_result.all()
+        }
 
         # Step 4: 获取每个小节的掌握度（已开始测试的）
         section_mastery_result = await self.db.execute(
@@ -1189,13 +1282,18 @@ class BKTMasteryService:
         for section_id, kp_count in section_kp_counts.items():
             chapter_id = section_to_chapter.get(section_id)
             if chapter_id:
-                chapter_kp_counts[chapter_id] = chapter_kp_counts.get(chapter_id, 0) + kp_count
+                chapter_kp_counts[chapter_id] = (
+                    chapter_kp_counts.get(chapter_id, 0) + kp_count
+                )
 
         total_kp_count = sum(chapter_kp_counts.values())
-        logger.info(f"[BKT] get_course_mastery_summary: 课程总知识点数={total_kp_count}")
+        logger.info(
+            f"[BKT] get_course_mastery_summary: 课程总知识点数={total_kp_count}"
+        )
 
         # Step 7: 计算各章节掌握度（加权平均）
         from collections import defaultdict
+
         chapter_sections = defaultdict(list)
         for s in sections:
             chapter_sections[s.chapter_id].append(s)
@@ -1209,11 +1307,13 @@ class BKTMasteryService:
             ch_sections_list = chapter_sections.get(chapter.id, [])
 
             if ch_kp_count == 0:
-                chapters.append({
-                    "chapter_id": chapter.id,
-                    "mastery_score": 0.0,
-                    "is_completed": False,
-                })
+                chapters.append(
+                    {
+                        "chapter_id": chapter.id,
+                        "mastery_score": 0.0,
+                        "is_completed": False,
+                    }
+                )
                 continue
 
             # 计算章节加权掌握度 = Σ(小节掌握度 × 小节知识点数) / 章节总知识点数
@@ -1244,16 +1344,24 @@ class BKTMasteryService:
             ch_mastery_score = ch_avg_p_l * 100
 
             # 判断是否完成：所有小节都开始且掌握
-            is_completed = ch_started_sections == len([s for s in ch_sections_list if section_kp_counts.get(s.id, 0) > 0]) and ch_avg_p_l >= MASTERY_THRESHOLD
+            is_completed = (
+                ch_started_sections
+                == len(
+                    [s for s in ch_sections_list if section_kp_counts.get(s.id, 0) > 0]
+                )
+                and ch_avg_p_l >= MASTERY_THRESHOLD
+            )
 
             if is_completed:
                 completed_chapters += 1
 
-            chapters.append({
-                "chapter_id": chapter.id,
-                "mastery_score": round(ch_mastery_score, 2),
-                "is_completed": is_completed,
-            })
+            chapters.append(
+                {
+                    "chapter_id": chapter.id,
+                    "mastery_score": round(ch_mastery_score, 2),
+                    "is_completed": is_completed,
+                }
+            )
 
             # 累加到课程加权平均
             course_weighted_sum += ch_avg_p_l * ch_kp_count
@@ -1274,9 +1382,13 @@ class BKTMasteryService:
         mastered_count = sum(1 for kp in kp_masteries if kp.p_l >= MASTERY_THRESHOLD)
 
         # 进度百分比 = 已掌握知识点 / 总知识点
-        progress_percentage = (mastered_count / total_kp_count) * 100 if total_kp_count > 0 else 0.0
+        progress_percentage = (
+            (mastered_count / total_kp_count) * 100 if total_kp_count > 0 else 0.0
+        )
 
-        logger.info(f"[BKT] get_course_mastery_summary 课程整体: mastery_score={mastery_score:.2f}%, progress_percentage={progress_percentage:.2f}%")
+        logger.info(
+            f"[BKT] get_course_mastery_summary 课程整体: mastery_score={mastery_score:.2f}%, progress_percentage={progress_percentage:.2f}%"
+        )
 
         if total_kp_count == 0:
             return {

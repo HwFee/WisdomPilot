@@ -106,11 +106,18 @@ class TagExtractionService:
 
         # Build prompt
         prompt = self._build_extraction_prompt(
-            question_text, exercise_type, options, code_template, existing_knowledge_points
+            question_text,
+            exercise_type,
+            options,
+            code_template,
+            existing_knowledge_points,
         )
 
         try:
-            response = await ai_service._provider.generate_explanation(prompt)
+            provider = ai_service._provider
+            if provider is None:
+                return self._default_tags(question_text, existing_knowledge_points)
+            response = await provider.generate_explanation(prompt)
             tags = self._parse_response(response)
 
             # Merge with existing knowledge points
@@ -151,7 +158,9 @@ class TagExtractionService:
             context_parts.append(f"代码模板：\n{code_template}")
 
         if existing_knowledge_points:
-            context_parts.append(f"已有知识点标签：{', '.join(existing_knowledge_points)}")
+            context_parts.append(
+                f"已有知识点标签：{', '.join(existing_knowledge_points)}"
+            )
 
         context = "\n".join(context_parts)
 
@@ -222,9 +231,26 @@ class TagExtractionService:
 
         # Common programming keywords to look for
         keyword_patterns = [
-            "数组", "链表", "树", "图", "排序", "搜索", "递归", "迭代",
-            "动态规划", "贪心", "分治", "回溯", "双指针", "滑动窗口",
-            "哈希", "栈", "队列", "堆", "二叉树", "二分查找",
+            "数组",
+            "链表",
+            "树",
+            "图",
+            "排序",
+            "搜索",
+            "递归",
+            "迭代",
+            "动态规划",
+            "贪心",
+            "分治",
+            "回溯",
+            "双指针",
+            "滑动窗口",
+            "哈希",
+            "栈",
+            "队列",
+            "堆",
+            "二叉树",
+            "二分查找",
         ]
 
         for kw in keyword_patterns:

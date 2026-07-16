@@ -1,6 +1,6 @@
 """Achievement API Router"""
 
-from typing import Annotated
+from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,13 +16,14 @@ from app.schemas.achievement import (
     UserAchievementDetail,
     UserRankResponse,
 )
-from app.utils.deps import get_current_active_user
+from app.utils.deps import get_current_active_user, get_optional_user
 import logging
 
 router = APIRouter(prefix="/api/achievements", tags=["achievements"])
 
 db_dependency = Annotated[AsyncSession, Depends(get_db)]
 auth_dependency = Annotated[User, Depends(get_current_active_user)]
+optional_user_dependency = Annotated[Optional[User], Depends(get_optional_user)]
 
 
 @router.get("", response_model=AchievementListResponse)
@@ -140,7 +141,7 @@ async def get_earned_achievements(
                     earned_at=ua.earned_at,
                     progress=ua.progress,
                     is_notified=ua.is_notified,
-                    achievement=ua.achievement,
+                    achievement=AchievementSummary.model_validate(ua.achievement),
                 )
             )
 
@@ -155,7 +156,7 @@ async def get_earned_achievements(
 async def get_leaderboard(
     db: db_dependency,
     limit: int = Query(default=10, ge=1, le=100),
-    current_user: auth_dependency = None,
+    current_user: optional_user_dependency = None,
 ):
     """
     Get leaderboard with top users by XP.
@@ -193,7 +194,7 @@ async def get_my_rank(
 async def get_achievement(
     achievement_id: int,
     db: db_dependency,
-    current_user: auth_dependency = None,
+    current_user: optional_user_dependency = None,
 ):
     """
     Get single achievement details.
@@ -218,7 +219,10 @@ async def get_achievement(
         user_achievements = await achievement_service.get_user_achievements(
             db, current_user.id
         )
-        ua = next((ua for ua in user_achievements if ua.achievement_id == achievement_id), None)
+        ua = next(
+            (ua for ua in user_achievements if ua.achievement_id == achievement_id),
+            None,
+        )
         if ua:
             earned = True
             earned_at = ua.earned_at

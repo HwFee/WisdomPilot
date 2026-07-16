@@ -18,7 +18,8 @@ def map_exercise_summary(exercise: Exercise, index: int | None = None) -> dict:
     return {
         "id": exercise.id,
         "z_id": exercise.z_id,
-        "title": content.get("title", "") or (text[:_FALLBACK_TITLE_MAX_LENGTH] if text else fallback_title),
+        "title": content.get("title", "")
+        or (text[:_FALLBACK_TITLE_MAX_LENGTH] if text else fallback_title),
         "type": exercise.type,
         "difficulty": exercise.difficulty,
         "knowledge_points": exercise.knowledge_points or [],
@@ -30,7 +31,9 @@ def map_exercise_summary(exercise: Exercise, index: int | None = None) -> dict:
             "description": content.get("description"),
             "samples": content.get("samples", []),
         },
-        "test_cases": exercise.test_cases if exercise.type == _EXERCISE_TYPE_PROGRAMMING else None,
+        "test_cases": exercise.test_cases
+        if exercise.type == _EXERCISE_TYPE_PROGRAMMING
+        else None,
     }
 
 
@@ -43,6 +46,17 @@ def map_switch_response(result: dict) -> dict:
 
 def map_exercise_detail_response(result: dict, total_exercises: int) -> dict:
     exercise = result.get("exercise")
+    if exercise is None:
+        return {
+            "exercise": None,
+            "exercise_index": result.get("exercise_index"),
+            "is_unlocked": result.get("is_unlocked"),
+            "is_completed": result.get("is_completed"),
+            "is_correct": result.get("is_correct"),
+            "saved_code": result.get("saved_code"),
+            "current_language": result.get("current_language"),
+            "total_exercises": total_exercises,
+        }
     content = exercise.content or {}
     return {
         "exercise": {
@@ -65,7 +79,9 @@ def map_exercise_detail_response(result: dict, total_exercises: int) -> dict:
                 "time_limit": content.get("time_limit", 1000),
                 "memory_limit": content.get("memory_limit", 256),
             },
-            "test_cases": exercise.test_cases if exercise.type == _EXERCISE_TYPE_PROGRAMMING else None,
+            "test_cases": exercise.test_cases
+            if exercise.type == _EXERCISE_TYPE_PROGRAMMING
+            else None,
         },
         "exercise_index": result["exercise_index"],
         "is_unlocked": result["is_unlocked"],

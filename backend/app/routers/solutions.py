@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
+from typing import Annotated, cast
 
 from app.database import get_db
 from app.schemas.solution import (
@@ -32,7 +32,9 @@ async def create_solution(
     # 只有管理员可以发布公告
     if solution_data.is_announcement and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="只有管理员可以发布公告")
-    solution = await solution_service.create_solution(db, solution_data, current_user.id)
+    solution = await solution_service.create_solution(
+        db, solution_data, current_user.id
+    )
     return await solution_service.get_solution_with_username(db, solution)
 
 
@@ -62,7 +64,9 @@ async def get_solution_summary(
     limit: int = Query(10, ge=1, le=50, description="返回数量"),
 ):
     """获取题解摘要（用于Dashboard展示，需要登录）"""
-    solutions, _ = await solution_service.get_solutions(db, page=1, limit=limit, sort="hot")
+    solutions, _ = await solution_service.get_solutions(
+        db, page=1, limit=limit, sort="hot"
+    )
     # 使用批量查询优化
     return await solution_service.get_solutions_with_usernames(db, solutions)
 
@@ -92,7 +96,7 @@ async def update_solution(
     solution = await solution_service.get_solution_by_id(db, solution_id)
     if not solution:
         raise HTTPException(status_code=404, detail="题解不存在")
-    if solution.user_id != current_user.id:
+    if cast(bool, solution.user_id != current_user.id):
         raise HTTPException(status_code=403, detail="无权修改此题解")
     updated = await solution_service.update_solution(db, solution, update_data)
     return await solution_service.get_solution_with_username(db, updated)
@@ -109,7 +113,7 @@ async def delete_solution(
     if not solution:
         raise HTTPException(status_code=404, detail="题解不存在")
     # 作者或管理员可以删除
-    if solution.user_id != current_user.id and not current_user.is_admin:
+    if cast(bool, solution.user_id != current_user.id and not current_user.is_admin):
         raise HTTPException(status_code=403, detail="无权删除此题解")
     await solution_service.delete_solution(db, solution)
     return {"message": "删除成功"}

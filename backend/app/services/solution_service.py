@@ -4,7 +4,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, cast
 
 from app.models.solution import Solution
 from app.models.solution_like import SolutionLike
@@ -21,12 +21,14 @@ def calculate_hot_score(solution: Solution) -> float:
     算法：点赞数权重较高 + 浏览数权重较低 + 时间衰减奖励
     """
     try:
-        if solution.created_at:
-            if solution.created_at.tzinfo:
-                now = datetime.now(solution.created_at.tzinfo)
+        created_at = cast(Optional[datetime], solution.created_at)
+        if created_at:
+            tzinfo = created_at.tzinfo
+            if tzinfo:
+                now = datetime.now(tzinfo)
             else:
                 now = datetime.utcnow()
-            age = now - solution.created_at
+            age = now - created_at
         else:
             age = timedelta(days=365)
 
@@ -41,10 +43,14 @@ def calculate_hot_score(solution: Solution) -> float:
         elif age < timedelta(days=30):
             recency_bonus = 1.0
 
-        return solution.like_count * 2 + solution.view_count * 0.1 + recency_bonus
+        like_count = cast(int, solution.like_count)
+        view_count = cast(int, solution.view_count)
+        return float(like_count * 2 + view_count * 0.1 + recency_bonus)
     except Exception as e:
         logger.error(f"计算热度分数失败: {e}")
-        return float(solution.like_count * 2 + solution.view_count * 0.1)
+        like_count = cast(int, solution.like_count)
+        view_count = cast(int, solution.view_count)
+        return float(like_count * 2 + view_count * 0.1)
 
 
 async def get_solution_with_username(db: AsyncSession, solution: Solution) -> dict:
@@ -93,7 +99,7 @@ async def get_solutions_with_usernames(
         {
             "id": s.id,
             "user_id": s.user_id,
-            "username": users.get(s.user_id, "未知用户"),
+            "username": users.get(cast(str, s.user_id), "未知用户"),
             "title": s.title,
             "content": s.content,
             "problem_link": s.problem_link,
@@ -146,9 +152,7 @@ async def get_solutions(
     if sort == "new":
         query = query.order_by(desc(Solution.created_at))
     elif sort == "pinned":
-        query = query.where(Solution.is_pinned).order_by(
-            desc(Solution.created_at)
-        )
+        query = query.where(Solution.is_pinned).order_by(desc(Solution.created_at))
     else:  # hot
         query = query.order_by(
             desc(Solution.is_pinned),
@@ -197,8 +201,7 @@ async def toggle_like(db: AsyncSession, solution: Solution, user_id: str) -> Sol
     # 先尝试查找是否已点赞
     existing = await db.execute(
         select(SolutionLike).where(
-            SolutionLike.user_id == user_id,
-            SolutionLike.solution_id == solution.id
+            SolutionLike.user_id == user_id, SolutionLike.solution_id == solution.id
         )
     )
     existing_like = existing.scalar_one_or_none()
@@ -206,17 +209,24 @@ async def toggle_like(db: AsyncSession, solution: Solution, user_id: str) -> Sol
     if existing_like:
         # 已点赞，取消点赞
         await db.delete(existing_like)
-        solution.like_count = max(0, solution.like_count - 1)
-        logger.info(f"用户 {user_id} 取消点赞题解 {solution.id}，当前点赞数: {solution.like_count}")
+        current_like_count = cast(int, solution.like_count)
+        setattr(solution, "like_count", max(0, current_like_count - 1))
+        logger.info(
+            f"用户 {user_id} 取消点赞题解 {solution.id}，当前点赞数: {solution.like_count}"
+        )
     else:
         # 未点赞，先确保 solution.like_count 已同步（处理并发情况）
         actual_count = await db.execute(
-            select(func.count()).select_from(SolutionLike).where(SolutionLike.solution_id == solution.id)
+            select(func.count())
+            .select_from(SolutionLike)
+            .where(SolutionLike.solution_id == solution.id)
         )
-        solution.like_count = actual_count.scalar() + 1
+        setattr(solution, "like_count", (actual_count.scalar() or 0) + 1)
         new_like = SolutionLike(user_id=user_id, solution_id=solution.id)
         db.add(new_like)
-        logger.info(f"用户 {user_id} 点赞题解 {solution.id}，当前点赞数: {solution.like_count}")
+        logger.info(
+            f"用户 {user_id} 点赞题解 {solution.id}，当前点赞数: {solution.like_count}"
+        )
 
     await db.commit()
     await db.refresh(solution)
@@ -225,17 +235,20 @@ async def toggle_like(db: AsyncSession, solution: Solution, user_id: str) -> Sol
 
 async def toggle_pin(db: AsyncSession, solution: Solution) -> Solution:
     """切换置顶状态"""
-    solution.is_pinned = not solution.is_pinned
+    current_is_pinned = cast(bool, solution.is_pinned)
+    setattr(solution, "is_pinned", not current_is_pinned)
     await db.commit()
     await db.refresh(solution)
-    status = "置顶" if solution.is_pinned else "取消置顶"
+    current_is_pinned = cast(bool, solution.is_pinned)
+    status = "置顶" if current_is_pinned else "取消置顶"
     logger.info(f"题解 {solution.id} {status}")
     return solution
 
 
 async def increment_view(db: AsyncSession, solution: Solution) -> Solution:
     """增加浏览数"""
-    solution.view_count += 1
+    current_view_count = cast(int, solution.view_count)
+    setattr(solution, "view_count", current_view_count + 1)
     await db.commit()
     await db.refresh(solution)
     return solution

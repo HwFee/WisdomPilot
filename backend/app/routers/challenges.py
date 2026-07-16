@@ -11,8 +11,10 @@ from app.schemas.challenge import (
     ChallengeListResponse,
     ChallengeDetailResponse,
     ChallengeSummary,
+    ChallengeDetail,
     UserChallengeResponse,
     UserChallengesResponse,
+    UserChallengeSummary,
     UserChallengeDetail,
 )
 from app.utils.deps import get_current_active_user
@@ -34,7 +36,7 @@ async def get_challenges(db: db_dependency):
     challenges = await challenge_service.get_active_challenges(db)
     return ChallengeListResponse(
         challenges=[ChallengeSummary.model_validate(c) for c in challenges],
-        total=len(challenges)
+        total=len(challenges),
     )
 
 
@@ -56,23 +58,23 @@ async def get_my_challenges(
     details = []
     for uc in user_challenges:
         if uc.challenge:
-            details.append(UserChallengeDetail(
-                id=uc.id,
-                user_id=uc.user_id,
-                challenge_id=uc.challenge_id,
-                status=uc.status,
-                current_progress=uc.current_progress,
-                target_value=uc.target_value,
-                attempts=uc.attempts,
-                started_at=uc.started_at,
-                completed_at=uc.completed_at,
-                challenge=uc.challenge,
-            ))
+            details.append(
+                UserChallengeDetail(
+                    id=uc.id,
+                    user_id=uc.user_id,
+                    challenge_id=uc.challenge_id,
+                    status=uc.status,
+                    current_progress=uc.current_progress,
+                    target_value=uc.target_value,
+                    attempts=uc.attempts,
+                    started_at=uc.started_at,
+                    completed_at=uc.completed_at,
+                    challenge=ChallengeSummary.model_validate(uc.challenge),
+                )
+            )
 
     return UserChallengesResponse(
-        challenges=details,
-        total=len(user_challenges),
-        completed_count=len(completed)
+        challenges=details, total=len(user_challenges), completed_count=len(completed)
     )
 
 
@@ -88,9 +90,9 @@ async def get_challenge(challenge_id: int, db: db_dependency):
     if not challenge:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Challenge {challenge_id} not found"
+            detail=f"Challenge {challenge_id} not found",
         )
-    return ChallengeDetailResponse(challenge=challenge)
+    return ChallengeDetailResponse(challenge=ChallengeDetail.model_validate(challenge))
 
 
 @router.post("/{challenge_id}/start", response_model=UserChallengeResponse)
@@ -109,14 +111,11 @@ async def start_challenge(
             db, current_user, challenge_id
         )
         return UserChallengeResponse(
-            user_challenge=user_challenge,
-            is_completed=user_challenge.status == "completed"
+            user_challenge=UserChallengeSummary.model_validate(user_challenge),
+            is_completed=user_challenge.status == "completed",
         )
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/{challenge_id}/progress")
@@ -143,10 +142,7 @@ async def update_challenge_progress(
             "status": user_challenge.status,
         }
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 logger = logging.getLogger(__name__)

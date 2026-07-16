@@ -96,9 +96,4 @@ __all__ = [
     "TargetPracticeResponse",
     "WeakPointListResponse",
     "ReviewStatsResponse",
-    # Achievements
-    "AchievementListResponse",
-    "AchievementWithEarnedResponse",
-    "UserAchievementsResponse",
-    "UserRankResponse",
 ]

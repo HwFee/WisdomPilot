@@ -14,9 +14,13 @@ from app.schemas.stats import (
     ChapterExerciseAnswersResponse,
     ChapterProgressResponse,
     DailyAccuracyTrendResponse,
+    DailyAccuracyTrendPoint,
     DailyExercisesTrendResponse,
     DailyTimeTrendResponse,
+    DailyTimeTrendPoint,
+    DailyTrendPoint,
     EndSessionRequest,
+    ExerciseAnswer,
     LearningSessionResponse,
     LearningStatistics,
     StartSessionRequest,
@@ -79,6 +83,7 @@ async def start_session(
 ):
     """Start a new learning session"""
     import logging
+
     logger = logging.getLogger(__name__)
 
     logger.info("[学习时长-API] ========== POST /sessions/start ==========")
@@ -102,6 +107,7 @@ async def end_session(
     completes a session to preserve the recorded time.
     """
     import logging
+
     logger = logging.getLogger(__name__)
 
     logger.info("[学习时长-API] ========== POST /sessions/end ==========")
@@ -110,7 +116,9 @@ async def end_session(
     logger.info(f"[学习时长-API] chapter_id: {data.chapter_id}")
 
     active_session = await service.get_active_session(current_user.id)
-    logger.info(f"[学习时长-API] active_session: {active_session.id if active_session else None}")
+    logger.info(
+        f"[学习时长-API] active_session: {active_session.id if active_session else None}"
+    )
 
     if active_session is None:
         # No active session found — create a completed one to preserve the time
@@ -123,7 +131,9 @@ async def end_session(
         logger.info(f"[学习时长-API] 找到活跃会话 {active_session.id}，结束它")
         result = await service.end_session(current_user.id, active_session.id, data)
 
-    logger.info(f"[学习时长-API] 会话结束完成, session_id: {result.id if result else None}")
+    logger.info(
+        f"[学习时长-API] 会话结束完成, session_id: {result.id if result else None}"
+    )
     return result
 
 
@@ -202,7 +212,10 @@ async def get_chapter_exercise_answers(
 ):
     """Get exercise answers for a chapter (for grading choice questions)"""
     answers = await service.get_chapter_exercise_answers(chapter_id)
-    return ChapterExerciseAnswersResponse(chapter_id=chapter_id, answers=answers)
+    return ChapterExerciseAnswersResponse(
+        chapter_id=chapter_id,
+        answers=[ExerciseAnswer.model_validate(a) for a in answers],
+    )
 
 
 # Additional stats endpoints using the new stats_service
@@ -277,7 +290,9 @@ async def get_exercises_trend(
 ):
     """Get daily exercises count trend for the past N days"""
     trends = await service.get_daily_exercises_trend(current_user.id, days)
-    return DailyExercisesTrendResponse(trends=trends)
+    return DailyExercisesTrendResponse(
+        trends=[DailyTrendPoint.model_validate(t) for t in trends]
+    )
 
 
 @router.get("/trends/accuracy", response_model=DailyAccuracyTrendResponse)
@@ -288,7 +303,9 @@ async def get_accuracy_trend(
 ):
     """Get daily accuracy rate trend for the past N days"""
     trends = await service.get_daily_accuracy_trend(current_user.id, days)
-    return DailyAccuracyTrendResponse(trends=trends)
+    return DailyAccuracyTrendResponse(
+        trends=[DailyAccuracyTrendPoint.model_validate(t) for t in trends]
+    )
 
 
 @router.get("/trends/time", response_model=DailyTimeTrendResponse)
@@ -299,7 +316,9 @@ async def get_time_trend(
 ):
     """Get daily learning time trend for the past N days"""
     trends = await service.get_daily_time_trend(current_user.id, days)
-    return DailyTimeTrendResponse(trends=trends)
+    return DailyTimeTrendResponse(
+        trends=[DailyTimeTrendPoint.model_validate(t) for t in trends]
+    )
 
 
 # ========================================
@@ -414,7 +433,9 @@ async def get_today_stats(
     logger.info(f"[学习时长-Today] 今日会话记录数: {len(today_sessions)}")
 
     for i, s in enumerate(today_sessions):
-        logger.info(f"[学习时长-Today]   会话 {i+1}: id={s.id}, duration={s.duration_seconds}秒, started_at={s.started_at}, ended_at={s.ended_at}, is_active={s.is_active}")
+        logger.info(
+            f"[学习时长-Today]   会话 {i + 1}: id={s.id}, duration={s.duration_seconds}秒, started_at={s.started_at}, ended_at={s.ended_at}, is_active={s.is_active}"
+        )
 
     time_seconds = sum(s.duration_seconds or 0 for s in today_sessions)
     time_minutes = round(time_seconds / 60, 1)

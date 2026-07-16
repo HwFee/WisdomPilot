@@ -9,8 +9,10 @@ This replaces the old QuotaService. The new Core system:
 """
 
 import logging
+from typing import cast
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.engine import CursorResult
 
 from app.models.user import User
 
@@ -49,10 +51,13 @@ class QuotaService:
             cost = 1
 
         # Atomic deduct: UPDATE ... WHERE cores >= cost
-        result = await db.execute(
-            update(User)
-            .where(User.id == user.id, User.cores >= cost)
-            .values(cores=User.cores - cost)
+        result = cast(
+            CursorResult,
+            await db.execute(
+                update(User)
+                .where(User.id == user.id, User.cores >= cost)
+                .values(cores=User.cores - cost)
+            ),
         )
         await db.commit()
 
@@ -62,10 +67,14 @@ class QuotaService:
 
         # Refresh user to get updated value
         await db.refresh(user)
-        logger.info(f"[Core] Deducted {cost} cores from user {user.id[:8]}... Balance: {user.cores}")
+        logger.info(
+            f"[Core] Deducted {cost} cores from user {user.id[:8]}... Balance: {user.cores}"
+        )
         return True
 
-    async def reset_quota(self, user: User, db: AsyncSession, amount: int = DEFAULT_QUOTA) -> None:
+    async def reset_quota(
+        self, user: User, db: AsyncSession, amount: int = DEFAULT_QUOTA
+    ) -> None:
         """Reset user's cores to specified amount (admin operation)"""
         if amount < 0:
             amount = 0
@@ -83,7 +92,9 @@ class QuotaService:
         db.add(user)
         await db.commit()
 
-    async def get_or_create_user_quota(self, user_id: str, db: AsyncSession) -> User | None:
+    async def get_or_create_user_quota(
+        self, user_id: str, db: AsyncSession
+    ) -> User | None:
         """Get user by ID for quota operations"""
         result = await db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()

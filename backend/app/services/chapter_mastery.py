@@ -114,7 +114,7 @@ class ChapterMasteryService:
         accuracies = []
 
         for i in range(len(exercises) - window_size + 1):
-            window = exercises[i:i + window_size]
+            window = exercises[i : i + window_size]
             correct = sum(1 for ex in window if ex.get("is_correct", False))
             accuracies.append(correct / window_size)
 
@@ -132,9 +132,7 @@ class ChapterMasteryService:
         return consistency
 
     def calculate_depth_score(
-        self,
-        objectives: list[str],
-        covered_objectives: set[str]
+        self, objectives: list[str], covered_objectives: set[str]
     ) -> float:
         """
         Calculate depth score based on learning objective coverage.
@@ -152,10 +150,7 @@ class ChapterMasteryService:
         coverage = len(covered_objectives) / len(objectives)
         return coverage * 100
 
-    def calculate_recency_score(
-        self,
-        last_practiced_at: Optional[datetime]
-    ) -> float:
+    def calculate_recency_score(self, last_practiced_at: Optional[datetime]) -> float:
         """
         Calculate recency score based on time since last practice.
 
@@ -183,8 +178,8 @@ class ChapterMasteryService:
     def calculate_mastery_score(
         self,
         exercises: list[dict],
-        objectives: list[str] = None,
-        covered_objectives: set[str] = None,
+        objectives: Optional[list[str]] = None,
+        covered_objectives: Optional[set[str]] = None,
         last_practiced_at: Optional[datetime] = None,
     ) -> dict:
         """
@@ -207,18 +202,12 @@ class ChapterMasteryService:
         accuracy = self.calculate_weighted_accuracy(exercises)
         consistency = self.calculate_consistency(exercises)
         depth = self.calculate_depth_score(
-            objectives or [],
-            covered_objectives or set()
+            objectives or [], covered_objectives or set()
         )
         recency = self.calculate_recency_score(last_practiced_at)
 
         # Weighted total
-        total = (
-            0.35 * accuracy +
-            0.25 * consistency +
-            0.20 * depth +
-            0.20 * recency
-        )
+        total = 0.35 * accuracy + 0.25 * consistency + 0.20 * depth + 0.20 * recency
 
         return {
             "total": round(total, 2),

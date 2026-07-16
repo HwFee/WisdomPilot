@@ -59,7 +59,10 @@ async def get_notes(
     db: db_dependency,
     current_user: auth_dependency,
     chapter_id: Optional[int] = Query(default=None),
-    tags: Optional[str] = Query(default=None, description="Comma-separated tags (notes must have ALL specified tags)"),
+    tags: Optional[str] = Query(
+        default=None,
+        description="Comma-separated tags (notes must have ALL specified tags)",
+    ),
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ):
@@ -89,7 +92,9 @@ async def get_notes(
     )
     notes = list(result.scalars().all())
 
-    return NoteListResponse(notes=notes, total=total)
+    return NoteListResponse(
+        notes=[NoteResponse.model_validate(n) for n in notes], total=total
+    )
 
 
 @router.get("/search", response_model=NoteSearchResponse)
@@ -108,7 +113,7 @@ async def search_notes(
             Note.title.ilike(f"%{q}%"),
             Note.content.ilike(f"%{q}%"),
             Note.knowledge_points.ilike(f"%{q}%"),
-        )
+        ),
     )
     count_query = select(func.count(Note.id)).where(
         Note.user_id == current_user.id,
@@ -116,7 +121,7 @@ async def search_notes(
             Note.title.ilike(f"%{q}%"),
             Note.content.ilike(f"%{q}%"),
             Note.knowledge_points.ilike(f"%{q}%"),
-        )
+        ),
     )
 
     if tags:
@@ -134,12 +139,12 @@ async def search_notes(
     total = count_result.scalar() or 0
 
     # Get notes
-    result = await db.execute(
-        query.order_by(Note.updated_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(Note.updated_at.desc()).limit(limit))
     notes = list(result.scalars().all())
 
-    return NoteSearchResponse(notes=notes, total=total, query=q)
+    return NoteSearchResponse(
+        notes=[NoteResponse.model_validate(n) for n in notes], total=total, query=q
+    )
 
 
 @router.get("/count", response_model=NoteCountResponse)
@@ -242,8 +247,12 @@ async def create_note_from_question(
     """Create a note from a question or AI answer content with AI processing"""
     logging.info("[笔记-创建] ========== 收到创建笔记请求 ==========")
     logging.info(f"[笔记-创建] request.source: {request.source}")
-    logging.info(f"[笔记-创建] request.ai_answer_content 长度: {len(request.ai_answer_content) if request.ai_answer_content else 0}")
-    logging.info(f"[笔记-创建] request.ai_answer_content 是否有值: {bool(request.ai_answer_content)}")
+    logging.info(
+        f"[笔记-创建] request.ai_answer_content 长度: {len(request.ai_answer_content) if request.ai_answer_content else 0}"
+    )
+    logging.info(
+        f"[笔记-创建] request.ai_answer_content 是否有值: {bool(request.ai_answer_content)}"
+    )
     logging.info(f"[笔记-创建] source == 'ai_answer': {request.source == 'ai_answer'}")
 
     content = request.content
@@ -276,7 +285,9 @@ async def create_note_from_question(
     await db.commit()
     await db.refresh(note)
 
-    logging.info(f"[笔记-创建] 笔记已创建: id={note.id}, processing_status={note.processing_status}")
+    logging.info(
+        f"[笔记-创建] 笔记已创建: id={note.id}, processing_status={note.processing_status}"
+    )
 
     # If pending, trigger background AI processing using FastAPI BackgroundTasks
     if processing_status == "pending":
@@ -288,12 +299,14 @@ async def create_note_from_question(
     return note
 
 
-async def _process_note_ai(note_id: str, ai_answer_content: str):
+async def _process_note_ai(note_id: str, ai_answer_content: Optional[str]):
     """Background task to process note with AI"""
     from app.services.ai import ai_service
 
     logging.info(f"[笔记] ========== 开始处理笔记 {note_id} ==========")
-    logging.info(f"[笔记] ai_answer_content 长度: {len(ai_answer_content) if ai_answer_content else 0}")
+    logging.info(
+        f"[笔记] ai_answer_content 长度: {len(ai_answer_content) if ai_answer_content else 0}"
+    )
 
     try:
         # Check if AI is configured
@@ -340,9 +353,12 @@ AI回答内容：
         # Parse AI response
         import json
         import re
+
         new_title = None
         new_content = None
-        json_match = re.search(r'\{[^{}]*"title"[^{}]*"content"[^{}]*\}', ai_response, re.DOTALL)
+        json_match = re.search(
+            r'\{[^{}]*"title"[^{}]*"content"[^{}]*\}', ai_response, re.DOTALL
+        )
         if json_match:
             try:
                 parsed = json.loads(json_match.group())
@@ -406,9 +422,7 @@ async def export_note(
     return Response(
         content=md_content,
         media_type="text/markdown",
-        headers={
-            "Content-Disposition": f"attachment; filename=note_{note_id}.md"
-        }
+        headers={"Content-Disposition": f"attachment; filename=note_{note_id}.md"},
     )
 
 
@@ -440,18 +454,19 @@ async def export_notes(
             if note.knowledge_points:
                 md_content += f"**知识点:** {', '.join(note.knowledge_points)}\n\n"
             md_content += f"---\n\n{note.content}\n\n"
-            md_content += f"*Created: {note.created_at.strftime('%Y-%m-%d %H:%M:%S')}*\n\n"
+            md_content += (
+                f"*Created: {note.created_at.strftime('%Y-%m-%d %H:%M:%S')}*\n\n"
+            )
 
         return Response(
             content=md_content,
             media_type="text/markdown",
-            headers={
-                "Content-Disposition": "attachment; filename=notes_export.md"
-            }
+            headers={"Content-Disposition": "attachment; filename=notes_export.md"},
         )
     else:
         # JSON format
         import json
+
         notes_data = [
             {
                 "id": note.id,
@@ -468,9 +483,7 @@ async def export_notes(
         return Response(
             content=json.dumps(notes_data, ensure_ascii=False, indent=2),
             media_type="application/json",
-            headers={
-                "Content-Disposition": "attachment; filename=notes_export.json"
-            }
+            headers={"Content-Disposition": "attachment; filename=notes_export.json"},
         )
 
 
