@@ -321,6 +321,52 @@ async def test_tier_failure_rolls_back_wrong_attempt_side_effects(
 
 
 @pytest.mark.asyncio
+async def test_profile_failure_rolls_back_entire_correct_submission(
+    db_session, auth_user
+) -> None:
+    exercise, progress, next_progress = await persist_arena_pair(
+        db_session, auth_user.id
+    )
+    service = ChallengeSubmissionService(db_session)
+    initial_cores = auth_user.cores
+    initial_cores_total_earned = auth_user.cores_total_earned
+    profile_failure = AsyncMock(side_effect=RuntimeError("profile update failed"))
+
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(return_value=passing_judge_result()),
+    ), patch.object(
+        UserProfileService, "update_after_exercise", new=profile_failure
+    ):
+        with pytest.raises(RuntimeError, match="profile update failed"):
+            await service.submit_exercise(
+                user_id=auth_user.id,
+                exercise_id=exercise.id,
+                code="print(42)",
+                language="python",
+                test_results=[],
+            )
+    profile_failure.assert_awaited_once()
+    await db_session.rollback()
+
+    await db_session.refresh(progress)
+    await db_session.refresh(next_progress)
+    await db_session.refresh(auth_user)
+    assert progress.attempt_count == 0
+    assert progress.is_completed is False
+    assert progress.is_correct is False
+    assert next_progress.is_unlocked is False
+    assert auth_user.cores == initial_cores
+    assert auth_user.cores_total_earned == initial_cores_total_earned
+    assert list((await db_session.execute(select(ActivityLog))).scalars()) == []
+    assert list((await db_session.execute(select(WrongQuestion))).scalars()) == []
+    assert list((await db_session.execute(select(SpacedRepetition))).scalars()) == []
+    assert list((await db_session.execute(select(UserArenaProfile))).scalars()) == []
+    assert list((await db_session.execute(select(CoreTransaction))).scalars()) == []
+    assert list((await db_session.execute(select(TierTransaction))).scalars()) == []
+
+
+@pytest.mark.asyncio
 async def test_repeat_correct_does_not_duplicate_reward_ledgers(
     db_session, auth_user
 ) -> None:
@@ -385,6 +431,36 @@ async def test_first_correct_updates_profile_streak_once(
     assert profile.best_streak == 1
     assert profile.total_challenges == 1
     assert profile.wins == 1
+    assert profile.losses == 0
+    assert profile.avg_accuracy == 1.0
+    assert profile.highest_difficulty == exercise.difficulty
+
+
+@pytest.mark.asyncio
+async def test_first_wrong_counts_as_attempted_profile_result(
+    db_session, auth_user
+) -> None:
+    exercise, _, _ = await persist_arena_pair(db_session, auth_user.id)
+    service = ChallengeSubmissionService(db_session)
+
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(return_value=failing_judge_result()),
+    ):
+        await service.submit_exercise(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+            code="print(0)",
+            language="python",
+            test_results=[],
+        )
+
+    profile = await UserProfileService(db_session).get_or_create_profile(auth_user.id)
+    assert profile.total_challenges == 1
+    assert profile.wins == 0
+    assert profile.losses == 1
+    assert profile.avg_accuracy == 0.0
+    assert profile.highest_difficulty == exercise.difficulty
 
 
 @pytest.mark.asyncio

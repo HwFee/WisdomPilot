@@ -189,6 +189,7 @@ class UserProfileService:
         profile: UserArenaProfile,
     ) -> None:
         """Recompute arena statistics from ordered progress records."""
+        # Load one ordered snapshot for all aggregate and streak calculations.
         rows = list(
             (
                 await self.db.execute(
@@ -207,31 +208,36 @@ class UserProfileService:
             progress.exercise_id: exercise for progress, exercise in rows
         }
 
-        # Aggregate every persisted Arena statistic from the same ordered snapshot.
-        completed = [progress for progress in progresses if progress.is_completed]
-        correct = [progress for progress in progresses if progress.is_correct]
-        profile.total_challenges = len(completed)
+        # Unattempted future rows do not contribute to Arena result statistics.
+        attempted_progresses = [
+            progress for progress in progresses if progress.attempt_count > 0
+        ]
+        correct = [progress for progress in attempted_progresses if progress.is_correct]
+        profile.total_challenges = len(attempted_progresses)
         profile.wins = len(correct)
-        profile.losses = len(completed) - len(correct)
+        profile.losses = len(attempted_progresses) - len(correct)
         profile.total_submissions = sum(
             progress.attempt_count for progress in progresses
         )
-        profile.avg_accuracy = len(correct) / len(progresses) if progresses else 0.0
-        times = [progress.time_spent for progress in progresses if progress.time_spent]
+        profile.avg_accuracy = (
+            len(correct) / len(attempted_progresses) if attempted_progresses else 0.0
+        )
+        times = [
+            progress.time_spent
+            for progress in attempted_progresses
+            if progress.time_spent
+        ]
         profile.avg_time_spent = sum(times) / len(times) if times else 0.0
         profile.highest_difficulty = max(
             (
                 exercise_by_id[progress.exercise_id].difficulty
-                for progress in completed
+                for progress in attempted_progresses
                 if progress.exercise_id in exercise_by_id
             ),
             default=0,
         )
 
-        # Future unlocked exercises have no attempts and must not break a streak.
-        attempted_progresses = [
-            progress for progress in progresses if progress.attempt_count > 0
-        ]
+        # Streaks follow the same attempted-row ordering as other result statistics.
         best_streak = 0
         current_run = 0
         for progress in attempted_progresses:

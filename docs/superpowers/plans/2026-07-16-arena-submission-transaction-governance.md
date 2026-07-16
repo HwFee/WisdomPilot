@@ -1049,19 +1049,27 @@ rows = list((await self.db.execute(
 )).all())
 progresses = [progress for progress, _ in rows]
 exercise_by_id = {progress.exercise_id: exercise for progress, exercise in rows}
-completed = [progress for progress in progresses if progress.is_completed]
-correct = [progress for progress in progresses if progress.is_correct]
-profile.total_challenges = len(completed)
+attempted_progresses = [
+    progress for progress in progresses if progress.attempt_count > 0
+]
+correct = [progress for progress in attempted_progresses if progress.is_correct]
+profile.total_challenges = len(attempted_progresses)
 profile.wins = len(correct)
-profile.losses = len(completed) - len(correct)
+profile.losses = len(attempted_progresses) - len(correct)
 profile.total_submissions = sum(progress.attempt_count for progress in progresses)
-profile.avg_accuracy = len(correct) / len(progresses) if progresses else 0.0
-times = [progress.time_spent for progress in progresses if progress.time_spent]
+profile.avg_accuracy = (
+    len(correct) / len(attempted_progresses) if attempted_progresses else 0.0
+)
+times = [
+    progress.time_spent
+    for progress in attempted_progresses
+    if progress.time_spent
+]
 profile.avg_time_spent = sum(times) / len(times) if times else 0.0
 profile.highest_difficulty = max(
     (
         exercise_by_id[progress.exercise_id].difficulty
-        for progress in completed
+        for progress in attempted_progresses
         if progress.exercise_id in exercise_by_id
     ),
     default=0,
@@ -1073,7 +1081,7 @@ Complete `_update_statistics` with these exact streak assignments. Do not increm
 ```python
 best_streak = 0
 current_run = 0
-for progress in progresses:
+for progress in attempted_progresses:
     if progress.is_correct:
         current_run += 1
         best_streak = max(best_streak, current_run)
@@ -1082,7 +1090,7 @@ for progress in progresses:
 profile.best_streak = best_streak
 
 current_streak = 0
-for progress in reversed(progresses):
+for progress in reversed(attempted_progresses):
     if not progress.is_correct:
         break
     current_streak += 1
@@ -1305,6 +1313,7 @@ git commit -m "docs: record arena submission governance batch"
 - Task 3 RED was `2 failed, 6 passed in 2.53s`, proving core and tier ledger failures were swallowed; focused GREEN was `8 passed in 2.24s`, and the required reward regression gate was `59 passed in 7.42s`.
 - Task 4 RED was `1 failed, 17 passed in 3.04s`, proving the profile path committed instead of flushing. Focused GREEN was `18 passed in 2.62s`; an explicit correct/correct/wrong/correct regression also failed when future unattempted rows were included and passed after the approved attempted-row filter. The final profile regression gate was `65 passed in 4.99s`.
 - Task 5 produced two structural RED runs of `1 failed, 12 passed`: first the FastAPI lazy-router lookup was corrected, then the route correctly failed because `response_model` was `None`. GREEN was `13 passed`; the final focused governance gate was `152 passed in 19.73s`.
+- Final review found that non-streak profile aggregates still mixed completed, correct, and all-row populations. Follow-up regressions now cover a wrong-only attempt, a correct attempt beside a future unattempted row, and rollback after a profile failure that occurs after state and rewards flush. All result statistics use attempted rows; `total_submissions` remains the sum of every row's `attempt_count`.
 
 ### Final Gates
 
@@ -1326,7 +1335,7 @@ git commit -m "docs: record arena submission governance batch"
 
 - Implementation commits: `36edbff` (typed failures), `0b6461a` (corrected exception-contract plan text), `366bfd2` (locked state extraction), `835e8be` (atomic rewards), `6517680` (stale reward logger cleanup), `daa67dc` (single-owned profile updates), `53a65ff` (response/transaction contract), and `50fa5b7` (aggregate whitespace gate correction).
 - Approved Task 4 deviation: streaks use rows with `attempt_count > 0`. Future unattempted rows do not reset a streak, while attempted incorrect rows remain in sequence and do reset it. Unit and integration tests cover both cases.
-- All task review gates approved. Review findings for a stale docstring/logger and Task 4 P3 stale-import/mixed-state/attempted-wrong coverage were corrected before completion.
+- Task review findings for a stale docstring/logger and Task 4 P3 stale-import/mixed-state/attempted-wrong coverage were corrected before the original completion record. Final review then identified and corrected the remaining mixed-population aggregate defect and added the missing profile-failure rollback proof; the controller owns the final full-suite verification count for this follow-up.
 - Residual SQLite risk: SQLite does not exercise production `SELECT ... FOR UPDATE` contention, so concurrency behavior still requires a production-dialect integration gate. Future 3B-2 work should govern the remaining non-submit challenge paths and broad/`ValueError` mappings without reopening this submission transaction or changing selection/navigation behavior opportunistically.
 
 ## Plan Self-Review

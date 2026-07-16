@@ -312,10 +312,10 @@ class TestUpdateAfterExercise:
         assert result["total_submissions"] == 3
         assert result["avg_accuracy"] == 0.5
         assert result["avg_time_spent"] == 150
-        assert mock_profile.total_challenges == 1
+        assert mock_profile.total_challenges == 2
         assert mock_profile.wins == 1
-        assert mock_profile.losses == 0
-        assert mock_profile.highest_difficulty == 3
+        assert mock_profile.losses == 1
+        assert mock_profile.highest_difficulty == 5
         assert mock_profile.best_streak == 1
         assert mock_profile.current_streak == 0
 

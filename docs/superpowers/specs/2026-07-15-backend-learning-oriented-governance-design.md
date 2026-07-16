@@ -138,7 +138,7 @@ SQLAlchemy 模型表示持久化状态，Pydantic schema 表示 API 契约。禁
 
 - 重构前：Arena 提交同时存在新旧两条状态修改路径；Service 泄漏 HTTP 语义，奖励账本异常可被吞掉，状态、奖励和画像内部提交点会破坏请求级回滚，奖励与画像还重复统计同一份进度。
 - 重构后：Router 只校验响应并映射五种类型化提交错误；`ChallengeSubmissionService` 依次协调后端权威判题、加锁状态更新、原子奖励和画像重算；状态、奖励、账本和画像只 `flush`，由请求数据库依赖统一提交或回滚。旧 `_submit_exercise_impl` 与旧提交代理已经移除。
-- 原子性与幂等边界：当前及下一进度行和 Arena 画像按需加锁；智核、星级、段位账本失败向上传播；顺序重复答对不重复写奖励账本。画像统计只有一个所有者，连续答题按 `attempt_count > 0` 的有序记录计算，因此未来未作答行不截断连续答对，已作答错误行仍会截断。
+- 原子性与幂等边界：当前及下一进度行和 Arena 画像按需加锁；智核、星级、段位账本失败向上传播；顺序重复答对不重复写奖励账本。画像统计只有一个所有者；除 `total_submissions` 汇总所有行的 `attempt_count` 外，挑战数、胜负、准确率、平均用时、最高难度与连续答题都只按 `attempt_count > 0` 的有序记录计算，因此未来未作答行不稀释统计或截断连续答对，已作答错误行仍计为失败并截断连续答对。
 - 契约与范围：提交成功响应由 `SubmitExerciseResponse` 强制校验并包含 `cores_earned`；缺题精确返回 `400` 和 `Exercise 99999 not found`。Judge0 传输边界保留一处既有 `except Exception`，只用于转换为 `JudgeUnavailableError`。未修改前端、数据库模式、迁移、Mastery、ChallengeSession、选择、进度或导航行为。
-- 证明：各任务先红后绿，最终聚焦门槛为 152 项通过；完整后端为 649 项通过且零跳过，Pyright 零诊断。FastAPI、Next.js 编译和五个真实 HTTP 契约通过；CodeGraph 证明 Router -> Submission -> State/Reward/Profile 单向链路并确认旧实现无结果；所有审查在修复陈旧说明、日志和 Task 4 覆盖问题后批准。
+- 证明：各任务先红后绿，最终聚焦门槛为 152 项通过；完整后端为 649 项通过且零跳过，Pyright 零诊断。FastAPI、Next.js 编译和五个真实 HTTP 契约通过；CodeGraph 证明 Router -> Submission -> State/Reward/Profile 单向链路并确认旧实现无结果。最终审查又修正了画像混合统计总体，并补充错误单次尝试、未来未作答行和画像失败后的完整回滚证明；本轮最终完整测试计数由控制器验证后追加。
 - 剩余风险：SQLite 能证明编排、账本数量和回滚结果，但不能模拟生产数据库的 `SELECT ... FOR UPDATE` 竞争；应在生产方言集成门槛中补充并发验证。3B-2 应继续治理非提交挑战路径及其宽泛异常映射，不应顺带重开本批次已稳定的提交事务边界。
