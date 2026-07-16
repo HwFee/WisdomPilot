@@ -1,7 +1,7 @@
 """Code execution API endpoints"""
 
 import logging
-from typing import Annotated
+from typing import Annotated, AsyncGenerator
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,7 +16,14 @@ from app.schemas.code import (
     BatchCodeExecutionResponse,
     TestCaseResult,
 )
-from app.services.judge0 import Judge0Service, LANGUAGE_PYTHON, LANGUAGE_JAVASCRIPT, LANGUAGE_TYPESCRIPT, LANGUAGE_C, LANGUAGE_CPP
+from app.services.judge0 import (
+    Judge0Service,
+    LANGUAGE_PYTHON,
+    LANGUAGE_JAVASCRIPT,
+    LANGUAGE_TYPESCRIPT,
+    LANGUAGE_C,
+    LANGUAGE_CPP,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +38,37 @@ SUPPORTED_LANGUAGES = [
     {"id": LANGUAGE_CPP, "name": "C++", "monaco_language": "cpp"},
 ]
 
+MAX_BATCH_TEST_CASES = 50
+SUPPORTED_LANGUAGE_IDS = frozenset(language["id"] for language in SUPPORTED_LANGUAGES)
 
-async def get_judge0_service() -> Judge0Service:
-    """Dependency to get Judge0 service instance"""
-    return Judge0Service()
+
+def validate_supported_language(language_id: int) -> None:
+    if language_id not in SUPPORTED_LANGUAGE_IDS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported language_id. Supported: {sorted(SUPPORTED_LANGUAGE_IDS)}",
+        )
+
+
+def validate_batch_size(test_case_count: int) -> None:
+    if test_case_count > MAX_BATCH_TEST_CASES:
+        raise HTTPException(
+            status_code=400,
+            detail="Too many test cases. Maximum 50 test cases allowed per submission.",
+        )
+    if test_case_count == 0:
+        raise HTTPException(
+            status_code=400, detail="At least one test case is required."
+        )
+
+
+async def get_judge0_service() -> AsyncGenerator[Judge0Service, None]:
+    """Dependency to get a request-scoped Judge0 service instance."""
+    service = Judge0Service()
+    try:
+        yield service
+    finally:
+        await service.close()
 
 
 @router.post("/execute", response_model=CodeExecutionResponse)
@@ -49,13 +83,7 @@ async def execute_code(
     Returns execution result including stdout, stderr, and status.
     """
     try:
-        # Validate language_id
-        valid_language_ids = [lang["id"] for lang in SUPPORTED_LANGUAGES]
-        if request.language_id not in valid_language_ids:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported language_id. Supported: {valid_language_ids}"
-            )
+        validate_supported_language(request.language_id)
 
         result = await judge0.execute_code(
             code=request.code,
@@ -86,17 +114,17 @@ async def execute_code(
         if e.response.status_code == 429:
             raise HTTPException(
                 status_code=429,
-                detail="请求过于频繁，请稍后再试。Judge0 API 有限流保护。"
+                detail="请求过于频繁，请稍后再试。Judge0 API 有限流保护。",
             )
         raise HTTPException(
             status_code=503,
-            detail="Code execution service returned an error. Please try again later."
+            detail="Code execution service returned an error. Please try again later.",
         )
     except httpx.RequestError as e:
         logger.error("Judge0 request failed: %s", e)
         raise HTTPException(
             status_code=503,
-            detail="Code execution service is unavailable. Please try again later."
+            detail="Code execution service is unavailable. Please try again later.",
         )
 
 
@@ -120,26 +148,8 @@ async def execute_code_batch(
     - test_cases: List of {input: str, expected_output: str}
     """
     try:
-        # Validate language_id
-        valid_language_ids = [lang["id"] for lang in SUPPORTED_LANGUAGES]
-        if request.language_id not in valid_language_ids:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported language_id. Supported: {valid_language_ids}"
-            )
-
-        # Validate test case count (max 50 to avoid large payloads)
-        if len(request.test_cases) > 50:
-            raise HTTPException(
-                status_code=400,
-                detail="Too many test cases. Maximum 50 test cases allowed per submission."
-            )
-
-        if len(request.test_cases) == 0:
-            raise HTTPException(
-                status_code=400,
-                detail="At least one test case is required."
-            )
+        validate_supported_language(request.language_id)
+        validate_batch_size(len(request.test_cases))
 
         # Convert test cases to dict format
         test_cases = [
@@ -172,25 +182,19 @@ async def execute_code_batch(
     except httpx.HTTPStatusError as e:
         logger.error("Judge0 HTTP error: %s %s", e.response.status_code, e)
         if e.response.status_code == 429:
-            raise HTTPException(
-                status_code=429,
-                detail="请求过于频繁，请稍后再试。"
-            )
+            raise HTTPException(status_code=429, detail="请求过于频繁，请稍后再试。")
         raise HTTPException(
-            status_code=503,
-            detail="Code execution service returned an error."
+            status_code=503, detail="Code execution service returned an error."
         )
     except httpx.RequestError as e:
         logger.error("Judge0 request failed: %s", e)
         raise HTTPException(
-            status_code=503,
-            detail="Code execution service is unavailable."
+            status_code=503, detail="Code execution service is unavailable."
         )
     except Exception:
         logger.exception("Batch execution error")
         raise HTTPException(
-            status_code=500,
-            detail="代码执行服务内部错误，请稍后重试。"
+            status_code=500, detail="代码执行服务内部错误，请稍后重试。"
         )
 
 
@@ -201,9 +205,7 @@ async def get_supported_languages(
     """Get list of supported programming languages"""
     return [
         LanguageInfo(
-            id=lang["id"],
-            name=lang["name"],
-            monaco_language=lang["monaco_language"]
+            id=lang["id"], name=lang["name"], monaco_language=lang["monaco_language"]
         )
         for lang in SUPPORTED_LANGUAGES
     ]

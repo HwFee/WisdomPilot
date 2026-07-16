@@ -1,9 +1,9 @@
 """Judge0 API service for code execution"""
 
 import httpx
-import asyncio
-import base64
-import logging
+from typing import Protocol
+
+from app.services.judge0_client import Judge0Client
 
 # Judge0 API configuration
 JUDGE0_BASE_URL = "https://ce.judge0.com"
@@ -35,170 +35,23 @@ STATUS_MESSAGES = {
 }
 
 
+class _Judge0Client(Protocol):
+    async def submit(
+        self, code: str, language_id: int, stdin: str = "", expected_output: str = ""
+    ) -> dict[str, object]: ...
+
+    async def submit_batch(
+        self, code: str, language_id: int, test_cases: list[dict[str, str]]
+    ) -> list[dict[str, object]]: ...
+
+    async def close(self) -> None: ...
+
+
 class Judge0Service:
     """Service for interacting with Judge0 API"""
 
-    def __init__(self):
-        self.base_url = JUDGE0_BASE_URL
-        self._client: httpx.AsyncClient | None = None
-
-    @property
-    def client(self) -> httpx.AsyncClient:
-        """Lazily initialized HTTP client."""
-        if self._client is None:
-            self._client = httpx.AsyncClient(timeout=60.0)
-        return self._client
-
-    async def create_submission(
-        self,
-        code: str,
-        language_id: int,
-        stdin: str = "",
-        expected_output: str = "",
-        wait: bool = False,
-    ) -> dict:
-        """Create a new code submission with base64 encoding."""
-        # Judge0 需要 base64 编码来正确处理非 ASCII 字符
-        payload = {
-            "source_code": base64.b64encode(code.encode()).decode(),
-            "language_id": language_id,
-            "stdin": base64.b64encode(stdin.encode()).decode(),
-            "cpu_time_limit": 10,
-            "memory_limit": 256000,
-        }
-
-        # 如果有期望输出，也添加
-        if expected_output:
-            payload["expected_output"] = base64.b64encode(expected_output.encode()).decode()
-
-        url = f"{self.base_url}/submissions"
-        # 使用 base64_encoded=true
-        url += "?base64_encoded=true&wait=true"
-
-        response = await self.client.post(url, json=payload)
-        response.raise_for_status()
-        result = response.json()
-
-        # 解码输出
-        if result.get("stdout"):
-            result["stdout"] = base64.b64decode(result["stdout"]).decode()
-        if result.get("stderr"):
-            result["stderr"] = base64.b64decode(result["stderr"]).decode()
-        if result.get("compile_output"):
-            result["compile_output"] = base64.b64decode(result["compile_output"]).decode()
-
-        return result
-
-    async def create_batch_submissions(
-        self,
-        code: str,
-        language_id: int,
-        test_cases: list[dict],
-    ) -> list[dict]:
-        """
-        Create multiple submissions in a single batch request.
-
-        Uses Judge0's /submissions/batch endpoint to create multiple
-        submissions at once, then waits for all to complete.
-
-        Args:
-            code: Source code to execute
-            language_id: Language ID
-            test_cases: List of {"input": str, "expected_output": str}
-
-        Returns:
-            List of submission results (in same order as test_cases)
-        """
-        # 构建批量提交请求
-        submissions = []
-        for tc in test_cases:
-            submissions.append({
-                "source_code": base64.b64encode(code.encode()).decode(),
-                "language_id": language_id,
-                "stdin": base64.b64encode(tc.get("input", "").encode()).decode(),
-                "cpu_time_limit": 10,
-                "memory_limit": 256000,
-            })
-
-        # 使用批量创建端点
-        url = f"{self.base_url}/submissions/batch?base64_encoded=true"
-
-        logger.info(f"[Judge0] Creating batch submissions: {len(submissions)} test cases")
-        logger.info(f"[Judge0] URL: {url}")
-
-        try:
-            response = await self.client.post(url, json={"submissions": submissions})
-            logger.info(f"[Judge0] Batch create response status: {response.status_code}")
-            response.raise_for_status()
-            tokens_data = response.json()
-            logger.info(f"[Judge0] Batch create response: {str(tokens_data)[:200]}")
-        except Exception as e:
-            logger.error(f"[Judge0] Batch create FAILED: {e}")
-            raise
-
-        # Judge0 CE 直接返回列表，不是 {"submissions": [...]}
-        if isinstance(tokens_data, list):
-            tokens = [item.get("token") for item in tokens_data]
-        else:
-            tokens = [item.get("token") for item in tokens_data.get("submissions", [])]
-
-        if not tokens:
-            return []
-
-        # 等待所有 submission 完成
-        # Judge0 批量获取结果，需要轮询直到完成
-        results = []
-        for token in tokens:
-            if not token:
-                results.append({"status_id": 13, "message": "Invalid token"})
-                continue
-
-            # 轮询获取结果，直到完成或超时
-            max_attempts = 20
-            result = None
-            for attempt in range(max_attempts):
-                get_url = f"{self.base_url}/submissions/{token}?base64_encoded=true&wait=true"
-                get_response = await self.client.get(get_url)
-                get_response.raise_for_status()
-                result = get_response.json()
-
-                # 提取 status_id
-                if "status" in result and isinstance(result["status"], dict):
-                    status_id = result["status"].get("id", 13)
-                else:
-                    status_id = result.get("status_id", 13)
-
-                # status_id <= 2 表示还在队列或处理中
-                if status_id > 2:
-                    break
-
-                # 等待一小段时间再重试
-                await asyncio.sleep(0.3)
-
-            # 解码输出
-            if result.get("stdout"):
-                result["stdout"] = base64.b64decode(result["stdout"]).decode()
-            if result.get("stderr"):
-                result["stderr"] = base64.b64decode(result["stderr"]).decode()
-            if result.get("compile_output"):
-                result["compile_output"] = base64.b64decode(result["compile_output"]).decode()
-
-            # 提取 status_id
-            if "status" in result and isinstance(result["status"], dict):
-                result["status_id"] = result["status"].get("id", 13)
-            elif "status_id" not in result:
-                result["status_id"] = 13
-
-            results.append(result)
-
-        return results
-
-    async def get_submission(self, token: str) -> dict:
-        """Get submission result by token"""
-        url = f"{self.base_url}/submissions/{token}?base64_encoded=false"
-        response = await self.client.get(url)
-        response.raise_for_status()
-        return response.json()
+    def __init__(self, client: _Judge0Client | None = None) -> None:
+        self._client = client or Judge0Client(JUDGE0_BASE_URL)
 
     async def execute_code(
         self,
@@ -207,14 +60,10 @@ class Judge0Service:
         stdin: str = "",
         poll_interval: float = 0.5,
         max_polls: int = 40,
-    ) -> dict:
+    ) -> dict[str, object]:
         """Execute code and wait for result."""
-        result = await self.create_submission(code, language_id, stdin, wait=True)
-        if "status" in result and isinstance(result["status"], dict):
-            result["status_id"] = result["status"].get("id", 13)
-        elif "status_id" not in result:
-            result["status_id"] = 13
-        return result
+        del poll_interval, max_polls
+        return await self._client.submit(code, language_id, stdin)
 
     async def execute_batch(
         self,
@@ -224,10 +73,6 @@ class Judge0Service:
     ) -> dict:
         """
         Execute code against multiple test cases using Judge0 batch API.
-
-        Uses the official /submissions/batch endpoint to create multiple
-        independent submissions in one request. Each test case runs
-        independently with its own stdin.
 
         Args:
             code: Source code to execute
@@ -247,66 +92,69 @@ class Judge0Service:
                 "results": [],
             }
 
-        # 使用 Judge0 批量提交 API
-        try:
-            results = await self.create_batch_submissions(
-                code=code,
-                language_id=language_id,
-                test_cases=test_cases,
-            )
-        except Exception as e:
-            # 如果批量提交失败，返回错误
-            import traceback
-            error_detail = traceback.format_exc()
-            logger.error(f"Judge0 batch execution error: {error_detail}")
-            return {
-                "token": "",
-                "status_id": 13,
-                "status": "Batch Execution Failed",
-                "passed_count": 0,
-                "total_count": len(test_cases),
-                "results": [],
-                "message": f"批量执行失败: {str(e)}",
-            }
+        results = await self._client.submit_batch(code, language_id, test_cases)
 
-        # 处理每个测试用例的结果
+        if len(results) < len(test_cases):
+            raise httpx.RequestError(
+                f"Judge0 batch result count mismatch: expected {len(test_cases)}, got {len(results)}"
+            )
+
         processed_results = []
         passed_count = 0
 
-        for i, (result, tc) in enumerate(zip(results, test_cases)):
-            status_id = result.get("status_id", 13)
-            expected = tc.get("expected_output", "").strip()
-            actual = (result.get("stdout") or "").strip()
-
-            # 编译错误或运行时错误
-            if status_id != 3:
-                error_msg = self._get_status_message(
-                    status_id,
-                    result.get("compile_output") or result.get("stderr") or ""
-                )
-                processed_results.append({
-                    "passed": False,
-                    "input": tc.get("input", ""),
-                    "expected": expected,
-                    "actual": "",
-                    "message": error_msg,
-                })
-                continue
-
-            # 检查输出是否匹配
-            passed = actual == expected
-            if passed:
+        for result, tc in zip(results, test_cases):
+            case_result = self._build_case_result(result, tc)
+            processed_results.append(case_result)
+            if case_result["passed"]:
                 passed_count += 1
 
-            processed_results.append({
+        return self._build_batch_response(
+            results, test_cases, passed_count, processed_results
+        )
+
+    def _build_case_result(self, result: dict, tc: dict) -> dict:
+        """Build a single test-case verdict from a Judge0 result."""
+        status_id = result.get("status_id", 13)
+        expected = tc.get("expected_output", "").strip()
+        actual = (result.get("stdout") or "").strip()
+
+        if status_id == 3:
+            passed = actual == expected
+            return {
                 "passed": passed,
                 "input": tc.get("input", ""),
                 "expected": expected,
                 "actual": actual,
                 "message": "通过" if passed else "输出错误",
-            })
+            }
 
-        # 计算总体状态
+        if status_id == 4:
+            return {
+                "passed": False,
+                "input": tc.get("input", ""),
+                "expected": expected,
+                "actual": actual,
+                "message": "输出错误",
+            }
+
+        error_detail = result.get("compile_output") or result.get("stderr") or ""
+        error_msg = self._get_status_message(status_id, error_detail)
+        return {
+            "passed": False,
+            "input": tc.get("input", ""),
+            "expected": expected,
+            "actual": "",
+            "message": error_msg,
+        }
+
+    def _build_batch_response(
+        self,
+        results: list[dict],
+        test_cases: list[dict],
+        passed_count: int,
+        processed_results: list[dict],
+    ) -> dict:
+        """Aggregate individual case results into the overall batch response."""
         all_passed = passed_count == len(test_cases)
         overall_status = "Accepted" if all_passed else "Wrong Answer"
         overall_status_id = 3 if all_passed else 4
@@ -321,7 +169,9 @@ class Judge0Service:
             "time": results[0].get("time") if results else None,
             "memory": results[0].get("memory") if results else None,
             "compile_output": None,
-            "message": f"通过 {passed_count}/{len(test_cases)} 个测试点" if not all_passed else None,
+            "message": f"通过 {passed_count}/{len(test_cases)} 个测试点"
+            if not all_passed
+            else None,
         }
 
     def _get_status_message(self, status_id: int, detail: str = "") -> str:
@@ -386,11 +236,6 @@ class Judge0Service:
         formatted_result["message"] = message
         return formatted_result
 
-    async def close(self):
-        """Close the HTTP client."""
-        if self._client:
-            await self.client.aclose()
-            self._client = None
-
-
-logger = logging.getLogger(__name__)
+    async def close(self) -> None:
+        """Close the underlying Judge0 client."""
+        await self._client.close()

@@ -1,5 +1,6 @@
 """Tests that challenge rewards require backend-authoritative judging."""
 
+import httpx
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -7,7 +8,11 @@ from sqlalchemy import select
 from app.models.exercise import Exercise
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.user_arena import UserArenaProfile
-from app.services.challenge_path.submission import JudgeUnavailableError, run_authoritative_judge
+from app.services.challenge_path.submission import (
+    JudgeUnavailableError,
+    run_authoritative_judge,
+)
+from app.services.judge0 import Judge0Service
 from app.utils.security import decode_token
 
 
@@ -65,7 +70,13 @@ async def test_forged_client_passing_results_do_not_award_progress(
             "passed_count": 0,
             "total_count": 1,
             "results": [
-                {"passed": False, "input": "", "expected": "42", "actual": "0", "message": "Wrong Answer"}
+                {
+                    "passed": False,
+                    "input": "",
+                    "expected": "42",
+                    "actual": "0",
+                    "message": "Wrong Answer",
+                }
             ],
         }
 
@@ -116,7 +127,11 @@ async def test_test_account_does_not_override_authoritative_failure(
     monkeypatch,
 ):
     exercise = Exercise(
-        content={"title": "测试账号也要权威判题", "text": "输出 42", "code_template": "print(0)"},
+        content={
+            "title": "测试账号也要权威判题",
+            "text": "输出 42",
+            "code_template": "print(0)",
+        },
         type="programming",
         difficulty=3,
         is_verified=True,
@@ -141,7 +156,13 @@ async def test_test_account_does_not_override_authoritative_failure(
             "passed_count": 0,
             "total_count": 1,
             "results": [
-                {"passed": False, "input": "", "expected": "42", "actual": "0", "message": "Wrong Answer"}
+                {
+                    "passed": False,
+                    "input": "",
+                    "expected": "42",
+                    "actual": "0",
+                    "message": "Wrong Answer",
+                }
             ],
         }
 
@@ -232,6 +253,68 @@ async def test_unavailable_judge_does_not_award_progress(
 
 
 @pytest.mark.asyncio
+async def test_request_error_from_judge_service_reaches_challenge_as_judge_unavailable_error():
+    class _FakeJudge0ClientRaisingRequestError:
+        async def submit(
+            self,
+            code: str,
+            language_id: int,
+            stdin: str = "",
+            expected_output: str = "",
+        ) -> dict[str, object]:
+            raise NotImplementedError
+
+        async def submit_batch(
+            self, code: str, language_id: int, test_cases: list[dict[str, str]]
+        ) -> list[dict[str, object]]:
+            raise httpx.RequestError("Connection refused")
+
+        async def close(self) -> None:
+            pass
+
+    judge0_service = Judge0Service(client=_FakeJudge0ClientRaisingRequestError())
+
+    with pytest.raises(JudgeUnavailableError, match="Judge service unavailable"):
+        await run_authoritative_judge(
+            code="print(42)",
+            language="python",
+            test_cases=[{"input": "", "output": "42"}],
+            judge0=judge0_service,
+        )
+
+
+@pytest.mark.asyncio
+async def test_result_count_mismatch_from_judge_service_reaches_challenge_as_judge_unavailable_error():
+    class _FakeJudge0ClientReturningPartialBatch:
+        async def submit(
+            self,
+            code: str,
+            language_id: int,
+            stdin: str = "",
+            expected_output: str = "",
+        ) -> dict[str, object]:
+            raise NotImplementedError
+
+        async def submit_batch(
+            self, code: str, language_id: int, test_cases: list[dict[str, str]]
+        ) -> list[dict[str, object]]:
+            return [{"token": "one", "status_id": 3, "stdout": "42\n"}]
+
+        async def close(self) -> None:
+            pass
+
+    judge0_service = Judge0Service(client=_FakeJudge0ClientReturningPartialBatch())
+
+    with pytest.raises(JudgeUnavailableError, match="Judge service unavailable"):
+        await run_authoritative_judge(
+            code="print(42)",
+            language="python",
+            test_cases=[{"input": "", "output": "42"}, {"input": "1", "output": "43"}],
+            judge0=judge0_service,
+        )
+
+
+@pytest.mark.asyncio
 async def test_programming_exercise_without_backend_test_cases_is_rejected(
     client: AsyncClient,
     auth_headers: dict,
@@ -293,7 +376,9 @@ class _FakeJudge0Service:
         self.expected_language_id = expected_language_id
         self.captured_language_id = None
 
-    async def execute_batch(self, code: str, language_id: int, test_cases: list[dict]) -> dict:
+    async def execute_batch(
+        self, code: str, language_id: int, test_cases: list[dict]
+    ) -> dict:
         self.captured_language_id = language_id
         return {
             "passed_count": len(test_cases),
@@ -331,7 +416,7 @@ async def test_java_submission_uses_judge0_language_id_62():
 async def test_rust_submission_uses_judge0_language_id_73():
     judge0 = _FakeJudge0Service(expected_language_id=73)
     result = await run_authoritative_judge(
-        code="fn main() { println!(\"42\"); }",
+        code='fn main() { println!("42"); }',
         language="rust",
         test_cases=[{"input": "", "output": "42"}],
         judge0=judge0,

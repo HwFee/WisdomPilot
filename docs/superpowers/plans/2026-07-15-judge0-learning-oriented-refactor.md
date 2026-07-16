@@ -41,7 +41,7 @@
 - Produces: `async Judge0Client.submit_batch(code: str, language_id: int, test_cases: list[dict[str, str]]) -> list[dict[str, object]]`.
 - Produces: `async Judge0Client.close() -> None`.
 
-- [ ] **Step 1: Write a failing single-submission protocol test**
+- [x] **Step 1: Write a failing single-submission protocol test**
 
 ```python
 import json
@@ -79,13 +79,13 @@ async def test_submit_encodes_request_and_decodes_execution_output() -> None:
     assert result["status_id"] == 3
 ```
 
-- [ ] **Step 2: Run the focused test and confirm it fails because the client does not exist**
+- [x] **Step 2: Run the focused test and confirm it fails because the client does not exist**
 
 Run: `py -3 -m pytest tests/test_judge0_client.py::test_submit_encodes_request_and_decodes_execution_output -v`
 
 Expected: FAIL during collection with `ModuleNotFoundError: No module named 'app.services.judge0_client'`.
 
-- [ ] **Step 3: Add the minimal client implementation and shared protocol helpers**
+- [x] **Step 3: Add the minimal client implementation and shared protocol helpers**
 
 ```python
 # backend/app/services/judge0_client.py
@@ -117,7 +117,7 @@ class Judge0Client:
 
 Implement `_get_client`, `_submission_payload`, `_encode_text`, `_decode_output_fields`, `_status_id`, `_normalize_result`, `submit_batch`, `_poll_submission`, and `close` in the same module. `submit_batch` must accept both Judge0 batch token response shapes (`[{"token": ...}]` and `{"submissions": [{"token": ...}]}`), return one normalized result for every token, and use `status_id=13` with `message="Invalid token"` for missing tokens. `close` only closes an internally created HTTPX client; injected test clients remain owned by the test.
 
-- [ ] **Step 4: Add failing batch-shape, polling, and resource ownership tests**
+- [x] **Step 4: Add failing batch-shape, polling, and resource ownership tests**
 
 ```python
 @pytest.mark.asyncio
@@ -151,7 +151,7 @@ async def test_close_does_not_close_an_injected_http_client() -> None:
         assert http_client.is_closed is False
 ```
 
-- [ ] **Step 5: Implement polling and ownership handling, then run the client test module**
+- [x] **Step 5: Implement polling and ownership handling, then run the client test module**
 
 Run: `py -3 -m pytest tests/test_judge0_client.py -v`
 
@@ -169,7 +169,7 @@ Expected: PASS. The test must not issue a real network request.
 - Produces: `Judge0Service.execute_batch(code: str, language_id: int, test_cases: list[dict[str, str]]) -> dict[str, object]`.
 - Produces: `Judge0Service.format_output(result: dict[str, object]) -> dict[str, object]`.
 
-- [ ] **Step 1: Write failing service tests against a fake client**
+- [x] **Step 1: Write failing service tests against a fake client**
 
 ```python
 class FakeJudge0Client:
@@ -204,13 +204,13 @@ async def test_execute_batch_reports_each_case_and_aggregates_verdict() -> None:
     ]
 ```
 
-- [ ] **Step 2: Run the focused service test and confirm the constructor cannot accept a client**
+- [x] **Step 2: Run the focused service test and confirm the constructor cannot accept a client**
 
 Run: `py -3 -m pytest tests/test_judge0_service.py::test_execute_batch_reports_each_case_and_aggregates_verdict -v`
 
 Expected: FAIL with `TypeError` because the current `Judge0Service` constructor does not accept `client`.
 
-- [ ] **Step 3: Replace mixed protocol logic with facade delegation**
+- [x] **Step 3: Replace mixed protocol logic with facade delegation**
 
 ```python
 class Judge0Service:
@@ -234,7 +234,7 @@ class Judge0Service:
 
 Keep language IDs and `STATUS_MESSAGES` in `judge0.py`, because they are application-facing constants imported by the router and challenge path. Extract batch comparison into private helpers named `_build_case_result` and `_build_batch_response`; neither helper performs HTTP I/O. Preserve the existing empty-input batch result and public message text. Remove `create_submission`, `create_batch_submissions`, `get_submission`, and the raw HTTPX client property because their protocol role moves to `Judge0Client` and no application code calls them.
 
-- [ ] **Step 4: Add formatting and error-result regression tests**
+- [x] **Step 4: Add formatting and error-result regression tests**
 
 ```python
 def test_format_output_includes_compiler_detail_for_compilation_error() -> None:
@@ -255,7 +255,7 @@ def test_format_output_includes_compiler_detail_for_compilation_error() -> None:
     assert formatted["message"] == "编译错误: main.c:1: error"
 ```
 
-- [ ] **Step 5: Run service tests and existing authoritative challenge tests**
+- [x] **Step 5: Run service tests and existing authoritative challenge tests**
 
 Run: `py -3 -m pytest tests/test_judge0_service.py tests/test_challenge_authoritative_submission.py -v`
 
@@ -272,7 +272,7 @@ Expected: PASS. The challenge tests prove the unchanged `execute_batch` contract
 - Produces: `async get_judge0_service() -> AsyncGenerator[Judge0Service, None]`.
 - Produces: `validate_supported_language(language_id: int) -> None` and `validate_batch_size(test_case_count: int) -> None`.
 
-- [ ] **Step 1: Write a failing request-lifecycle regression test**
+- [x] **Step 1: Write a failing request-lifecycle regression test**
 
 ```python
 @pytest.mark.asyncio
@@ -299,13 +299,13 @@ async def test_execute_closes_request_scoped_judge_service(
     judge0.close.assert_awaited_once()
 ```
 
-- [ ] **Step 2: Run the lifecycle test and confirm it fails because the dependency returns instead of yielding**
+- [x] **Step 2: Run the lifecycle test and confirm it fails because the dependency returns instead of yielding**
 
 Run: `py -3 -m pytest tests/test_code_execution.py::test_execute_closes_request_scoped_judge_service -v`
 
 Expected: FAIL because `get_judge0_service` is not an async-generator dependency and cannot guarantee cleanup.
 
-- [ ] **Step 3: Implement the request-scoped dependency and remove duplicated validation**
+- [x] **Step 3: Implement the request-scoped dependency and remove duplicated validation**
 
 ```python
 MAX_BATCH_TEST_CASES = 50
@@ -330,7 +330,7 @@ def validate_supported_language(language_id: int) -> None:
 
 Add `validate_batch_size` that rejects zero cases and counts above `MAX_BATCH_TEST_CASES` with the existing response text. Both execution endpoints call `validate_supported_language`; only the batch endpoint calls `validate_batch_size`. Keep `httpx.HTTPStatusError` mapped to `429` or `503` and `httpx.RequestError` mapped to `503`. Keep the unexpected batch exception mapping to `500`, but log it with `logger.exception`.
 
-- [ ] **Step 4: Update API tests to mock the stable facade and assert validation contracts**
+- [x] **Step 4: Update API tests to mock the stable facade and assert validation contracts**
 
 Replace nested patches of `Judge0Service.execute_code` and `Judge0Service.format_output` with a dependency override returning a `MagicMock(spec=Judge0Service)`. Retain the existing success, runtime-error, unavailable-service, empty-batch, over-limit, unsupported-language, and auth tests. Add this assertion to the unsupported-language tests:
 
@@ -338,7 +338,7 @@ Replace nested patches of `Judge0Service.execute_code` and `Judge0Service.format
 assert response.json()["detail"] == "Unsupported language_id. Supported: [50, 54, 63, 71, 74]"
 ```
 
-- [ ] **Step 5: Run route tests**
+- [x] **Step 5: Run route tests**
 
 Run: `py -3 -m pytest tests/test_code_execution.py tests/test_rate_limit.py -v`
 
@@ -354,7 +354,7 @@ Expected: PASS, including the request-scoped client close regression test.
 - Consumes: completed Tasks 1-3.
 - Produces: recorded validation evidence and a concise completed-batch learning note.
 
-- [ ] **Step 1: Run the full backend quality gate**
+- [x] **Step 1: Run the full backend quality gate**
 
 Run: `py -3 -m pytest -q`
 
@@ -364,7 +364,7 @@ Run: `pyright`
 
 Expected: `0 errors, 0 warnings, 0 informations`.
 
-- [ ] **Step 2: Start FastAPI and verify protected routes without external Judge0 access**
+- [x] **Step 2: Start FastAPI and verify protected routes without external Judge0 access**
 
 Run: `py -3 -m uvicorn app.main:app --host 127.0.0.1 --port 8001`
 
@@ -378,7 +378,7 @@ In a second terminal, run: `curl -i http://127.0.0.1:8001/api/code/languages`
 
 Expected: HTTP `401`, proving the router loads and authentication remains required. Stop the server with `Ctrl+C` after both checks.
 
-- [ ] **Step 3: Record the completed learning note**
+- [x] **Step 3: Record the completed learning note**
 
 Append a `## Judge0 首批实施记录` section to the design document containing exactly these points:
 
@@ -389,7 +389,7 @@ Append a `## Judge0 首批实施记录` section to the design document containin
 - 证明：客户端模拟 HTTP 测试、服务聚合测试、路由契约测试、挑战权威判题回归测试、完整后端测试、Pyright 和服务启动检查均通过。
 ```
 
-- [ ] **Step 4: Synchronize CodeGraph after source movement and inspect change impact**
+- [x] **Step 4: Synchronize CodeGraph after source movement and inspect change impact**
 
 Run: `npx codegraph sync`
 
@@ -404,3 +404,11 @@ Expected: output includes `routers/code.py` and `services/challenge_path/submiss
 - Spec coverage: Tasks 1-3 implement external-client isolation, stable service boundary, router-only HTTP concerns, resource cleanup, validation, and regression tests. Task 4 validates and documents the batch.
 - Completeness scan: no incomplete-work markers or ambiguous handling instructions remain.
 - Type consistency: the public `Judge0Service` methods used by `routers/code.py` and `challenge_path/submission.py` retain their names and argument contracts; `Judge0Client` is internal and injected only through the service constructor in tests.
+
+## Completion Evidence
+
+- Focused Judge0 client, service, route, and authoritative challenge tests: 59 passed.
+- Complete backend suite: 591 passed with zero skipped tests.
+- Pyright: 0 errors, 0 warnings, 0 informations.
+- FastAPI startup: `/health` returned HTTP 200 and unauthenticated `/api/code/languages` returned HTTP 401.
+- CodeGraph synchronization completed; impact analysis retains `routers/code.py` and `services/challenge_path/submission.py` as `Judge0Service` consumers.
