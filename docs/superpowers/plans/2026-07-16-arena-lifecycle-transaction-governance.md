@@ -1623,3 +1623,136 @@ git commit -m "docs: record arena lifecycle governance batch"
 - TDD order: every production behavior change follows an explicit failing test; characterization-only contracts are identified when they already pass.
 - Transaction proof: tests cover no service commit, structural locks, idempotent start, append index/unlock behavior, JSON replacement, typed missing-progress errors, and request rollback after detail attachment.
 - Placeholder scan: no unfinished implementation instruction remains.
+
+## Completion Evidence
+
+### Result And Commits
+
+Arena 3B-2 was implemented on `codex/arena-lifecycle-transaction-governance`
+from the corrected plan baseline `63af5ee`:
+
+- Task 1: `861e6f8` (`refactor: type arena lifecycle failures`).
+- Task 2: `dde029b` (`refactor: isolate arena start lifecycle`).
+- Task 3: `b714838` (`refactor: govern arena append lifecycle`).
+- Task 4: `90487aa` (`fix: make arena lifecycle writes atomic`).
+- Task 5: `ed885a7` (`refactor: enforce arena lifecycle contracts`).
+- Task 6 gate repair: `33a3db6` (`style: clean arena router whitespace`).
+  This changes only six blank-line end-of-line sequences; `git show
+  --ignore-space-at-eol --exit-code` reports no semantic diff.
+
+### TDD And Focused Gates
+
+- Task 1 RED: lifecycle error imports failed collection; GREEN was `7 passed`,
+  with the final focused gate `45 passed`.
+- Task 2 RED: `ModuleNotFoundError` for the absent lifecycle module; GREEN was
+  `9 passed`, final focused `78 passed`, and additional compatibility `16
+  passed`.
+- Task 3 RED: `2 failed, 9 passed` because
+  `select_append_exercises` did not exist; GREEN was `11 passed`, final focused
+  `80 passed`.
+- Task 4 RED: collection failed for absent `challenge_progress_lock_query`;
+  facade regression tests then failed on removed progress methods. GREEN was
+  `20 passed`, final focused `67 passed`, and the complete backend gate at that
+  checkpoint was `671 passed`.
+- Task 5 RED progressed from the absent `app.schemas.arena` module to `3 failed,
+  20 passed`, then focused missing-exercise and Router-mapping failures. GREEN
+  was `23 passed`; the final focused compatibility gate was `117 passed`.
+- After the Task 6 whitespace-only repair, the lifecycle and submission gate
+  was rerun: `38 passed in 10.55s`; Pyright remained clean.
+
+### Final Automated And Scope Gates
+
+- `py -3 -m pytest backend/tests -q -rs` -> `674 passed in 104.28s`; no
+  skipped-test reason section was printed.
+- `pyright -p backend/pyrightconfig.json` -> `0 errors, 0 warnings, 0
+  informations`.
+- `git diff --check dd50e05..HEAD` exits 0 after `33a3db6`. The initial Task 6
+  run exposed six historical CRLF blank lines as trailing whitespace in the
+  batch diff; they were repaired and committed separately so the documentation
+  commit remains docs-only.
+- Scoped search finds no `commit(`, FastAPI/HTTP dependency, broad
+  `ValueError` mapping, or legacy facade symbol under
+  `backend/app/services/challenge_path`; HTTP translation remains in the
+  Router. Repository source has no `arena_infinite`, `ChallengePathService`, or
+  legacy factory result.
+- The batch changed no frontend, model/schema database definition, migration,
+  Mastery, `ChallengeSession`, submission/state, profile, or recommendation
+  engine file. `selection.py` structurally extracts append recommendation and
+  fallback helpers while preserving recommendation decisions and ordering.
+
+Rule 10 review found one-way Router -> Lifecycle -> Selection/Progress
+dependencies with no cycle; shared row construction and response mapping are
+centralized; new identifiers are descriptive; append windows, multipliers,
+bounds, and sample size use named constants; new lifecycle and append helpers
+are focused around one operation; legacy facade/stale callers are absent; and
+the full type/runtime gates above are clean. The longer pre-existing initial
+selection decision tree delegates query and fixed-exercise work to focused
+helpers and was not expanded. No database or AGENTS.md maintenance was needed.
+
+### Live Contracts
+
+Dedicated free ports `18176` and `13176`, explicit secret
+`task6-arena-lifecycle-smoke-secret-20260717`, and a worktree-local isolated
+SQLite database produced:
+
+| Contract | Status | Exact body/result |
+|---|---:|---|
+| `GET /health` | 200 | `{"status":"healthy"}` |
+| `POST /api/auth/register` | 201 | bearer token present |
+| `POST /api/learning-path/challenge/infinite/start` | 400 | `{"detail":"Not enough verified exercises available (found 0, need 1)"}` |
+| `POST /api/learning-path/challenge/save-code` | 404 | `{"detail":"Progress record for exercise 99999 not found"}` |
+| `POST /api/learning-path/challenge/exit` | 404 | `{"detail":"Progress record for exercise 99999 not found"}` |
+| `POST /api/learning-path/challenge/switch` | 400 | `{"detail":"Invalid exercise index"}` |
+| `GET /api/learning-path/challenge/exercise/99999` | 404 | `{"detail":"Exercise not found in challenge path"}` |
+| `GET /api/learning-path/challenge/progress` | 200 | `{"total_exercises":0,"exercises":[],"correct_count":0,"completed_count":0,"total_stars_earned":0,"current_index":0}` |
+| `GET /api/learning-path/challenge/recent` | 200 | `[]` |
+| `POST /api/learning-path/challenge/append` | 200 | `{"new_exercise_ids":[],"count":0}` |
+
+Next.js 15.5.18 compiled `/` in 3.5 seconds (1592 modules) and `/arena` in 4.3
+seconds (2791 modules); both returned 200 (`13597` and `47920` bytes) and
+frontend stderr was empty. Backend logs contained the existing expected
+request-transaction rollback trace for handled 400/404 responses and no
+`ResponseValidationError`.
+
+Listener command lines and ownership were inspected before stopping only the
+verified Python/Node process trees. Ports then had zero listeners. The resolved
+`.tmp-task6-live` database/log directory was proven inside the worktree and
+removed. The pre-existing `frontend/.next` directory was preserved, and
+`frontend/node_modules` remains a junction to the main checkout dependency
+tree.
+
+### CodeGraph, Reviews, And Deviations
+
+- `npx codegraph init .` reported already initialized; `npx codegraph sync .`
+  synchronized the one whitespace-only Router change (`67` nodes).
+- Impact counts are Lifecycle `25`, Selection `20`, and Progress `39`.
+  Start/save/append/exit and the mutating detail GET enter Lifecycle;
+  Lifecycle calls Selection/Progress. Progress/recent and the read-only switch
+  POST call Progress directly. No mutating Router path bypasses Lifecycle.
+- Queries for `ChallengePathService` and `get_arena_infinite_service` both
+  return `No results found`.
+- Task reviews 1, 2, 4, and 5 were clean. Task 3 was approved with one Minor:
+  source comparison and existing suites establish compatibility, but no new
+  focused tests specifically lock recommendation ordering, fallback
+  escalation, or the 100-row sampling size. The Task 6 pre-document read-only
+  batch review found no Critical or Important issue and no finding beyond that
+  known Minor; its assessment was ready with the coverage gap accepted as
+  follow-up.
+- Task 2 necessarily changed `challenge_path/rewards.py` only to rename the
+  focused progress-read call; no reward behavior or formula changed. Task 4
+  necessarily changed `tests/conftest.py` so the shared client database
+  override mirrors production commit/rollback/re-raise and makes the prescribed
+  post-flush rollback test real. Tasks 2-4 minimally redirected the legacy
+  facade before Task 5 deleted it.
+- Task 5 uses equality, not identity, for the recent route's `GenericAlias`
+  response model because Python 3.10 creates a fresh alias for each
+  `list[RecentArenaExercise]` subscription; concrete response-model assertions
+  still use identity.
+
+Two residual risks remain explicit. First,
+`GET /challenge/exercise/{exercise_id}` can attach a verified exercise and is
+therefore a compatibility mutating GET; a future API revision should move that
+write behind an explicit command. Second, SQLite accepts the structural
+`SELECT ... FOR UPDATE` statements and proves orchestration/rollback, but does
+not provide production row-lock contention semantics; production-dialect
+concurrency integration tests remain necessary.
