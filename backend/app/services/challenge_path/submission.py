@@ -2,11 +2,16 @@
 
 import logging
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.exercise import Exercise
+from app.services.challenge_path.errors import (
+    ChallengeExerciseNotFoundError,
+    JudgeUnavailableError,
+    MissingChallengeTestCasesError,
+    UnsupportedChallengeLanguageError,
+)
 from app.services.judge0 import (
     Judge0Service,
     LANGUAGE_C,
@@ -31,14 +36,6 @@ LANGUAGE_NAME_TO_JUDGE0_ID = {
     "java": LANGUAGE_JAVA,
     "rust": LANGUAGE_RUST,
 }
-
-
-class JudgeUnavailableError(Exception):
-    """Raised when the judge service is unavailable or fails."""
-
-    def __init__(self, message: str = "Judge service unavailable"):
-        self.message = message
-        super().__init__(self.message)
 
 
 async def run_authoritative_judge(
@@ -72,7 +69,7 @@ async def run_authoritative_judge(
     """
     language_id = LANGUAGE_NAME_TO_JUDGE0_ID.get(language.lower())
     if language_id is None:
-        raise ValueError(f"Unsupported language for judging: {language}")
+        raise UnsupportedChallengeLanguageError(language)
 
     if not test_cases:
         return {
@@ -152,28 +149,18 @@ class ChallengeSubmissionService:
         )
         exercise = exercise_result.scalar_one_or_none()
         if not exercise:
-            raise ValueError("Exercise not found")
+            raise ChallengeExerciseNotFoundError(exercise_id)
 
         # Run authoritative judge on backend-owned test cases
         backend_test_cases = exercise.test_cases or []
         if exercise.type == "programming":
             if not backend_test_cases:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Programming exercise has no backend test cases",
-                )
-            try:
-                authoritative_result = await run_authoritative_judge(
-                    code=code,
-                    language=language,
-                    test_cases=backend_test_cases,
-                )
-            except JudgeUnavailableError as exc:
-                logger.warning("Authoritative judge unavailable for exercise %s: %s", exercise_id, exc)
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Judge service unavailable",
-                ) from exc
+                raise MissingChallengeTestCasesError(exercise_id)
+            authoritative_result = await run_authoritative_judge(
+                code=code,
+                language=language,
+                test_cases=backend_test_cases,
+            )
 
             authoritative_test_results = authoritative_result["results"]
         else:

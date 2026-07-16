@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.models.exercise import Exercise
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.user_arena import UserArenaProfile
+from app.services.challenge_path.errors import UnsupportedChallengeLanguageError
 from app.services.challenge_path.submission import (
     JudgeUnavailableError,
     run_authoritative_judge,
@@ -429,8 +430,11 @@ async def test_rust_submission_uses_judge0_language_id_73():
 
 
 @pytest.mark.asyncio
-async def test_unsupported_language_raises_value_error():
-    with pytest.raises(ValueError, match="Unsupported language for judging: kotlin"):
+async def test_unsupported_language_raises_typed_error():
+    with pytest.raises(
+        UnsupportedChallengeLanguageError,
+        match="Unsupported language for judging: kotlin",
+    ):
         await run_authoritative_judge(
             code="println(42)",
             language="kotlin",

@@ -29,9 +29,14 @@ from app.services.leaderboard_service import (
 from app.services.adaptive_recommendation import AdaptiveRecommendationService
 from app.services.arena_infinite import get_arena_infinite_service
 from app.services.challenge_path import (
+    ChallengeExerciseNotFoundError,
     ChallengeProgressService,
+    ChallengeProgressNotFoundError,
     ChallengeSelectionService,
     ChallengeSubmissionService,
+    JudgeUnavailableError,
+    MissingChallengeTestCasesError,
+    UnsupportedChallengeLanguageError,
 )
 from app.services.challenge_path.responses import (
     map_exercise_detail_response,
@@ -1096,8 +1101,18 @@ async def submit_challenge_exercise(
             language=request.language,
             test_results=request.test_results,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (
+        ChallengeExerciseNotFoundError,
+        ChallengeProgressNotFoundError,
+        MissingChallengeTestCasesError,
+        UnsupportedChallengeLanguageError,
+    ) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except JudgeUnavailableError as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Judge service unavailable",
+        ) from error
 
     return result
 
