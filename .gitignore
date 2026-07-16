@@ -93,6 +93,9 @@ frontend/package-lock.json
 # Superpowers brainstorm artifacts
 .superpowers/
 
+# Isolated agent worktrees
+.worktrees/
+
 # Empty accidental file
 EOF
 
