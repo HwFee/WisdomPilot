@@ -1,6 +1,5 @@
 """Challenge reward service - handles stars, tiers, cores, and profile stats."""
 
-import logging
 from typing import Optional
 
 from sqlalchemy import select
@@ -14,8 +13,6 @@ from app.services.core_service import CoreService
 from app.services.tier_transaction_service import TierTransactionService
 from app.services.wrong_question import wrong_question_service
 from app.core.tier_config import TierRank
-
-logger = logging.getLogger(__name__)
 
 CORE_REWARD_CHALLENGE_CORRECT = 3
 CORE_REWARD_CATEGORY = "arena"
