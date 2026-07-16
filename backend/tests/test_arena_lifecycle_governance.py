@@ -1,8 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.dialects import postgresql
 
+from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
 from app.services.challenge_path.errors import (
     ChallengeExerciseLockedError,
@@ -125,11 +127,7 @@ async def test_unknown_selection_value_error_is_not_mapped_to_400(
     payload: dict,
 ) -> None:
     with patch.object(
-        (
-            ChallengePathLifecycleService
-            if service_method == "start_path"
-            else ChallengeSelectionService
-        ),
+        ChallengePathLifecycleService,
         service_method,
         new=AsyncMock(side_effect=ValueError("unexpected selection failure")),
     ):
@@ -212,3 +210,84 @@ async def test_sequential_start_reuses_existing_path(
     assert second_is_new is False
     assert [item.id for item in second] == [item.id for item in first]
     selector.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_append_allocates_indexes_and_flushes_without_commit(
+    db_session, auth_user
+) -> None:
+    existing, appended = await persist_verified_exercises(db_session, count=2)
+    existing_progress = ArenaExerciseProgress(
+        user_id=auth_user.id,
+        exercise_id=existing.id,
+        exercise_index=0,
+        is_unlocked=True,
+        is_completed=True,
+    )
+    db_session.add(existing_progress)
+    await db_session.commit()
+    service = ChallengePathLifecycleService(db_session)
+
+    with patch.object(
+        service.selection,
+        "select_append_exercises",
+        new=AsyncMock(return_value=[appended]),
+    ), patch.object(db_session, "commit", new=AsyncMock()) as commit_mock:
+        new_ids = await service.append_exercises(
+            user_id=auth_user.id,
+            difficulty_level=3,
+            count=1,
+        )
+
+    assert new_ids == [appended.id]
+    rows = list(
+        (
+            await db_session.execute(
+                select(ArenaExerciseProgress)
+                .where(ArenaExerciseProgress.user_id == auth_user.id)
+                .order_by(ArenaExerciseProgress.exercise_index)
+            )
+        ).scalars()
+    )
+    assert [row.exercise_index for row in rows] == [0, 1]
+    assert rows[1].is_unlocked is True
+    commit_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_append_keeps_first_new_exercise_locked_after_incomplete_tail(
+    db_session, auth_user
+) -> None:
+    existing, appended = await persist_verified_exercises(db_session, count=2)
+    db_session.add(
+        ArenaExerciseProgress(
+            user_id=auth_user.id,
+            exercise_id=existing.id,
+            exercise_index=0,
+            is_unlocked=True,
+            is_completed=False,
+        )
+    )
+    await db_session.commit()
+    service = ChallengePathLifecycleService(db_session)
+
+    with patch.object(
+        service.selection,
+        "select_append_exercises",
+        new=AsyncMock(return_value=[appended]),
+    ):
+        await service.append_exercises(
+            user_id=auth_user.id,
+            difficulty_level=3,
+            count=1,
+        )
+
+    appended_row = (
+        await db_session.execute(
+            select(ArenaExerciseProgress).where(
+                ArenaExerciseProgress.user_id == auth_user.id,
+                ArenaExerciseProgress.exercise_id == appended.id,
+            )
+        )
+    ).scalar_one()
+    assert appended_row.is_unlocked is False

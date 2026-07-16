@@ -34,7 +34,6 @@ from app.services.challenge_path import (
     ChallengeProgressIndexNotFoundError,
     ChallengeProgressService,
     ChallengeProgressNotFoundError,
-    ChallengeSelectionService,
     ChallengeSubmissionService,
     InsufficientChallengeExercisesError,
     InvalidChallengeExerciseIndexError,
@@ -1171,7 +1170,7 @@ async def append_challenge_exercises(
     db: AsyncSession = Depends(get_db),
 ):
     """Append more exercises to challenge path"""
-    service = ChallengeSelectionService(db)
+    service = ChallengePathLifecycleService(db)
 
     new_ids = await service.append_exercises(
         user_id=current_user.id,

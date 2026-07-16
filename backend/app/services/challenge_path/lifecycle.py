@@ -71,3 +71,40 @@ class ChallengePathLifecycleService:
         )
         await self.db.flush()
         return exercises, True
+
+    async def append_exercises(
+        self,
+        *,
+        user_id: str,
+        difficulty_level: int | None,
+        count: int,
+    ) -> list[int]:
+        await self._lock_owner(user_id)
+        progress_records = await self.progress.list_user_progress(user_id)
+        existing_ids = [progress.exercise_id for progress in progress_records]
+        selected = await self.selection.select_append_exercises(
+            user_id=user_id,
+            existing_ids=existing_ids,
+            difficulty_level=difficulty_level,
+            count=count,
+        )
+        if not selected:
+            return []
+
+        last_progress = max(
+            progress_records,
+            key=lambda progress: progress.exercise_index,
+            default=None,
+        )
+        start_index = (
+            last_progress.exercise_index + 1 if last_progress is not None else 0
+        )
+        unlock_first = last_progress is None or bool(last_progress.is_completed)
+        self._add_progress_rows(
+            user_id=user_id,
+            exercises=selected,
+            start_index=start_index,
+            unlock_first=unlock_first,
+        )
+        await self.db.flush()
+        return [exercise.id for exercise in selected]

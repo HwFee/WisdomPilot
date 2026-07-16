@@ -18,10 +18,12 @@ from app.services.hybrid_recommendation import HybridRecommendationService
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_APPEND_COUNT = 5
 MIN_CHALLENGE_DIFFICULTY = 1
 MAX_CHALLENGE_DIFFICULTY = 8
 CHALLENGE_CANDIDATE_MULTIPLIER = 3
+APPEND_DIFFICULTY_WINDOW = 2
+APPEND_CANDIDATE_MULTIPLIER = 2
+MAX_EXISTING_DIFFICULTY_SAMPLE = 100
 # Fixed first two exercises
 HELLO_WORLD_EXERCISE_ID = 211
 A_PLUS_B_EXERCISE_ID = 207
@@ -272,146 +274,158 @@ class ChallengeSelectionService:
             count,
         )
 
-    async def append_exercises(
+    async def _infer_append_difficulty(
         self,
+        existing_ids: list[int],
+        requested_difficulty: int | None,
+    ) -> int:
+        if requested_difficulty is not None:
+            return requested_difficulty
+        if not existing_ids:
+            return MIN_CHALLENGE_DIFFICULTY
+        result = await self.db.execute(
+            select(Exercise)
+            .where(Exercise.id.in_(existing_ids))
+            .limit(MAX_EXISTING_DIFFICULTY_SAMPLE)
+        )
+        sampled = list(result.scalars().all())
+        if not sampled:
+            return MIN_CHALLENGE_DIFFICULTY
+        average = sum(exercise.difficulty for exercise in sampled) / len(sampled)
+        return max(
+            MIN_CHALLENGE_DIFFICULTY,
+            min(MAX_CHALLENGE_DIFFICULTY, round(average)),
+        )
+
+    async def _recommended_append_exercises(
+        self,
+        *,
         user_id: str,
-        difficulty_level: Optional[int] = None,
-        count: int = DEFAULT_APPEND_COUNT,
-    ) -> list[int]:
-        """Append more exercises to the challenge path."""
-        max_index_result = await self.db.execute(
-            select(func.max(ArenaExerciseProgress.exercise_index)).where(
-                ArenaExerciseProgress.user_id == user_id,
-            )
-        )
-        max_index = max_index_result.scalar() or -1
-
-        existing_result = await self.db.execute(
-            select(ArenaExerciseProgress.exercise_id).where(
-                ArenaExerciseProgress.user_id == user_id,
-            )
-        )
-        existing_ids = list(set(row[0] for row in existing_result.fetchall()))
-
-        if difficulty_level is None:
-            existing_exercises_result = await self.db.execute(
-                select(Exercise)
-                .where(Exercise.id.in_(existing_ids))
-                .limit(100)
-            )
-            existing_exercises = list(existing_exercises_result.scalars().all())
-            if existing_exercises:
-                avg_difficulty = sum(ex.difficulty for ex in existing_exercises) / len(existing_exercises)
-                difficulty_level = max(1, min(8, round(avg_difficulty)))
-            else:
-                difficulty_level = 1
-
+        difficulty_level: int,
+        count: int,
+        existing_ids: list[int],
+    ) -> list[Exercise]:
         user_result = await self.db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
-
-        selected = []
-
-        if user:
-            adaptive_service = AdaptiveRecommendationService(self.db)
-            recommendation = await adaptive_service.get_recommendations(
-                user=user,
-                limit=count,
-                min_difficulty=max(1, difficulty_level - 2),
-                max_difficulty=min(8, difficulty_level + 2),
-                learning_path="challenge",
-                exclude_ids=existing_ids,
-            )
-
-            recommended_ids = [
-                rec["exercise_id"] for rec in recommendation.get("recommendations", [])
-            ]
-
-            if recommended_ids:
-                result = await self.db.execute(
-                    select(Exercise).where(Exercise.id.in_(recommended_ids))
-                )
-                exercises_map = {ex.id: ex for ex in result.scalars().all()}
-                selected = [
-                    exercises_map[eid]
-                    for eid in recommended_ids
-                    if eid in exercises_map
-                ]
-
-        if len(selected) < count:
-            all_exclude = existing_ids + [ex.id for ex in selected]
-
-            exercises_result = await self.db.execute(
-                select(Exercise)
-                .where(
-                    Exercise.is_verified,
-                    Exercise.difficulty == difficulty_level,
-                    ~Exercise.id.in_(all_exclude),
-                )
-                .limit(count * 2)
-            )
-            all_exercises = exercises_result.scalars().all()
-
-            if len(all_exercises) < count - len(selected):
-                exercises_result = await self.db.execute(
-                    select(Exercise)
-                    .where(
-                        Exercise.is_verified,
-                        Exercise.difficulty >= max(1, difficulty_level - 2),
-                        Exercise.difficulty <= min(8, difficulty_level + 2),
-                        ~Exercise.id.in_(all_exclude),
-                    )
-                    .limit(count * 2)
-                )
-                all_exercises = exercises_result.scalars().all()
-
-            if len(all_exercises) < count - len(selected):
-                exercises_result = await self.db.execute(
-                    select(Exercise)
-                    .where(
-                        Exercise.is_verified,
-                        Exercise.difficulty >= 1,
-                        Exercise.difficulty <= min(8, difficulty_level + 2),
-                        ~Exercise.id.in_(all_exclude),
-                    )
-                    .limit(count * 2)
-                )
-                all_exercises = exercises_result.scalars().all()
-
-            remaining = (
-                random.sample(
-                    list(all_exercises), min(count - len(selected), len(all_exercises))
-                )
-                if all_exercises
-                else []
-            )
-            selected.extend(remaining)
-
-        if not selected:
+        if user is None:
             return []
+        recommendation = await AdaptiveRecommendationService(
+            self.db
+        ).get_recommendations(
+            user=user,
+            limit=count,
+            min_difficulty=max(
+                MIN_CHALLENGE_DIFFICULTY,
+                difficulty_level - APPEND_DIFFICULTY_WINDOW,
+            ),
+            max_difficulty=min(
+                MAX_CHALLENGE_DIFFICULTY,
+                difficulty_level + APPEND_DIFFICULTY_WINDOW,
+            ),
+            learning_path="challenge",
+            exclude_ids=existing_ids,
+        )
+        recommended_ids = [
+            item["exercise_id"]
+            for item in recommendation.get("recommendations", [])
+        ]
+        if not recommended_ids:
+            return []
+        result = await self.db.execute(
+            select(Exercise).where(Exercise.id.in_(recommended_ids))
+        )
+        exercises_by_id = {
+            exercise.id: exercise for exercise in result.scalars().all()
+        }
+        return [
+            exercises_by_id[exercise_id]
+            for exercise_id in recommended_ids
+            if exercise_id in exercises_by_id
+        ]
 
-        last_exercise_completed = False
-        if max_index >= 0:
-            last_result = await self.db.execute(
-                select(ArenaExerciseProgress).where(
-                    ArenaExerciseProgress.user_id == user_id,
-                    ArenaExerciseProgress.exercise_index == max_index,
-                )
+    async def _fallback_append_exercises(
+        self,
+        *,
+        difficulty_level: int,
+        remaining_count: int,
+        requested_count: int,
+        excluded_ids: list[int],
+    ) -> list[Exercise]:
+        candidate_limit = requested_count * APPEND_CANDIDATE_MULTIPLIER
+        statements = (
+            select(Exercise)
+            .where(
+                Exercise.is_verified,
+                Exercise.difficulty == difficulty_level,
+                ~Exercise.id.in_(excluded_ids),
             )
-            last_progress = last_result.scalar_one_or_none()
-            last_exercise_completed = (
-                last_progress.is_completed if last_progress else False
+            .limit(candidate_limit),
+            select(Exercise)
+            .where(
+                Exercise.is_verified,
+                Exercise.difficulty
+                >= max(
+                    MIN_CHALLENGE_DIFFICULTY,
+                    difficulty_level - APPEND_DIFFICULTY_WINDOW,
+                ),
+                Exercise.difficulty
+                <= min(
+                    MAX_CHALLENGE_DIFFICULTY,
+                    difficulty_level + APPEND_DIFFICULTY_WINDOW,
+                ),
+                ~Exercise.id.in_(excluded_ids),
             )
+            .limit(candidate_limit),
+            select(Exercise)
+            .where(
+                Exercise.is_verified,
+                Exercise.difficulty >= MIN_CHALLENGE_DIFFICULTY,
+                Exercise.difficulty
+                <= min(
+                    MAX_CHALLENGE_DIFFICULTY,
+                    difficulty_level + APPEND_DIFFICULTY_WINDOW,
+                ),
+                ~Exercise.id.in_(excluded_ids),
+            )
+            .limit(candidate_limit),
+        )
+        candidates: list[Exercise] = []
+        for statement in statements:
+            result = await self.db.execute(statement)
+            candidates = list(result.scalars().all())
+            if len(candidates) >= remaining_count:
+                break
+        if not candidates:
+            return []
+        return random.sample(
+            candidates,
+            min(remaining_count, len(candidates)),
+        )
 
-        new_ids = []
-        for i, ex in enumerate(selected):
-            progress = ArenaExerciseProgress(
-                user_id=user_id,
-                exercise_id=ex.id,
-                exercise_index=max_index + 1 + i,
-                is_unlocked=(i == 0 and (max_index < 0 or last_exercise_completed)),
-            )
-            self.db.add(progress)
-            new_ids.append(ex.id)
-
-        await self.db.commit()
-        return new_ids
+    async def select_append_exercises(
+        self,
+        *,
+        user_id: str,
+        existing_ids: list[int],
+        difficulty_level: int | None,
+        count: int,
+    ) -> list[Exercise]:
+        effective_difficulty = await self._infer_append_difficulty(
+            existing_ids,
+            difficulty_level,
+        )
+        selected = await self._recommended_append_exercises(
+            user_id=user_id,
+            difficulty_level=effective_difficulty,
+            count=count,
+            existing_ids=existing_ids,
+        )
+        if len(selected) >= count:
+            return selected[:count]
+        fallback = await self._fallback_append_exercises(
+            difficulty_level=effective_difficulty,
+            remaining_count=count - len(selected),
+            requested_count=count,
+            excluded_ids=existing_ids + [exercise.id for exercise in selected],
+        )
+        return selected + fallback

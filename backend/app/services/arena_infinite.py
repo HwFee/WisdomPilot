@@ -58,7 +58,7 @@ class ChallengePathService:
         count: int = 5,
     ) -> list[int]:
         """Append more exercises to the challenge path."""
-        return await self.selection.append_exercises(
+        return await self.lifecycle.append_exercises(
             user_id=user_id,
             difficulty_level=difficulty_level,
             count=count,
