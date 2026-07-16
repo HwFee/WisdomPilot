@@ -99,49 +99,25 @@ class UserProfileService:
         hint_used: bool = False,
         first_attempt_correct: Optional[bool] = None,
     ) -> dict:
-        """
-        Update user profile after completing an exercise.
-
-        Args:
-            user_id: User ID
-            exercise_id: Exercise ID
-            is_correct: Whether the answer was correct
-            course_id: Course ID (optional, None for global Arena)
-            time_spent: Time spent in seconds
-            hint_used: Whether hint was used
-            first_attempt_correct: Whether first attempt was correct
-
-        Returns:
-            Updated profile stats
-        """
-        profile = await self.get_or_create_profile(user_id, course_id=course_id or 0)
-
-        # Get exercise embedding
+        profile = await self.get_or_create_profile_for_update(user_id)
         exercise_result = await self.db.execute(
             select(Exercise).where(Exercise.id == exercise_id)
         )
         exercise = exercise_result.scalar_one_or_none()
-
         exercise_embedding = None
         if exercise and exercise.embedding:
             try:
                 exercise_embedding = json.loads(exercise.embedding)
             except json.JSONDecodeError:
-                logger.warning("Failed to parse exercise embedding for %s", exercise_id)
-
-        # Update behavior embedding
+                logger.warning(
+                    "Failed to parse exercise embedding for %s", exercise_id
+                )
         if exercise_embedding:
             await self._update_behavior_embedding(
                 profile, exercise_embedding, is_correct, time_spent
             )
-
-        # Update statistics
-        await self._update_statistics(
-            profile, is_correct, time_spent, hint_used
-        )
-
-        await self.db.commit()
-
+        await self._update_statistics(profile)
+        await self.db.flush()
         return {
             "avg_accuracy": profile.avg_accuracy,
             "avg_time_spent": profile.avg_time_spent,
@@ -211,40 +187,67 @@ class UserProfileService:
     async def _update_statistics(
         self,
         profile: UserArenaProfile,
-        is_correct: bool,
-        time_spent: Optional[int],
-        hint_used: bool,
     ) -> None:
-        """Update user statistics."""
-        # Get all progress for challenge path
-        result = await self.db.execute(
-            select(ArenaExerciseProgress).where(
-                ArenaExerciseProgress.user_id == profile.user_id,
-            )
+        """Recompute arena statistics from ordered progress records."""
+        rows = list(
+            (
+                await self.db.execute(
+                    select(ArenaExerciseProgress, Exercise)
+                    .join(
+                        Exercise,
+                        ArenaExerciseProgress.exercise_id == Exercise.id,
+                    )
+                    .where(ArenaExerciseProgress.user_id == profile.user_id)
+                    .order_by(ArenaExerciseProgress.exercise_index)
+                )
+            ).all()
         )
-        progresses = list(result.scalars().all())
+        progresses = [progress for progress, _ in rows]
+        exercise_by_id = {
+            progress.exercise_id: exercise for progress, exercise in rows
+        }
 
-        # Calculate statistics
-        total = len(progresses)
-        correct = sum(1 for p in progresses if p.is_correct)
-        total_submissions = sum(p.attempt_count for p in progresses)
+        # Aggregate every persisted Arena statistic from the same ordered snapshot.
+        completed = [progress for progress in progresses if progress.is_completed]
+        correct = [progress for progress in progresses if progress.is_correct]
+        profile.total_challenges = len(completed)
+        profile.wins = len(correct)
+        profile.losses = len(completed) - len(correct)
+        profile.total_submissions = sum(
+            progress.attempt_count for progress in progresses
+        )
+        profile.avg_accuracy = len(correct) / len(progresses) if progresses else 0.0
+        times = [progress.time_spent for progress in progresses if progress.time_spent]
+        profile.avg_time_spent = sum(times) / len(times) if times else 0.0
+        profile.highest_difficulty = max(
+            (
+                exercise_by_id[progress.exercise_id].difficulty
+                for progress in completed
+                if progress.exercise_id in exercise_by_id
+            ),
+            default=0,
+        )
 
-        # Update profile
-        profile.avg_accuracy = correct / total if total > 0 else 0.0
-        profile.total_submissions = total_submissions
+        # Future unlocked exercises have no attempts and must not break a streak.
+        attempted_progresses = [
+            progress for progress in progresses if progress.attempt_count > 0
+        ]
+        best_streak = 0
+        current_run = 0
+        for progress in attempted_progresses:
+            if progress.is_correct:
+                current_run += 1
+                best_streak = max(best_streak, current_run)
+            else:
+                current_run = 0
+        profile.best_streak = best_streak
 
-        # Calculate average time spent
-        times = [p.time_spent for p in progresses if p.time_spent]
-        if times:
-            profile.avg_time_spent = sum(times) / len(times)
-
-        # Update streak
-        if is_correct:
-            profile.current_streak += 1
-            if profile.current_streak > profile.best_streak:
-                profile.best_streak = profile.current_streak
-        else:
-            profile.current_streak = 0
+        current_streak = 0
+        for progress in reversed(attempted_progresses):
+            if not progress.is_correct:
+                break
+            current_streak += 1
+        profile.current_streak = current_streak
 
     async def recalculate_full_embedding(
         self,

@@ -1,13 +1,11 @@
-"""Challenge reward service - handles stars, tiers, cores, and profile stats."""
+"""Challenge reward service - handles stars, tiers, and cores."""
 
 from typing import Optional
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.arena_exercise_progress import ArenaExerciseProgress
 from app.models.exercise import Exercise
-from app.models.user_arena import UserArenaProfile
 from app.services.challenge_path.tier_rewards import ChallengeTierRewardCalculator
 from app.services.core_service import CoreService
 from app.services.tier_transaction_service import TierTransactionService
@@ -21,7 +19,7 @@ TIER_TRANSACTION_SOURCE = "arena_challenge"
 
 
 class ChallengeRewardService:
-    """Service for challenge path rewards and statistics."""
+    """Service for challenge path rewards."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -63,7 +61,7 @@ class ChallengeRewardService:
         """Apply all reward-related side effects for a challenge submission.
 
         Handles: wrong-book collection, star/tier updates, core rewards,
-        tier transaction recording, and arena profile stats updates.
+        and tier transaction recording.
 
         Returns a dict with all reward fields used by the API response.
         """
@@ -96,8 +94,6 @@ class ChallengeRewardService:
             is_correct=is_correct,
             reward_result=reward_result,
         )
-
-        await self._update_profile_stats(user_id=user_id)
 
         first_time_correct = is_correct and progress.attempt_count == 1
         first_time_wrong = not is_correct and progress.attempt_count == 1
@@ -222,66 +218,4 @@ class ChallengeRewardService:
             source=TIER_TRANSACTION_SOURCE,
             reference_id=str(exercise.id),
             description=f"挑战之路答题 - {'答对' if is_correct else '答错'}",
-        )
-
-    async def _update_profile_stats(self, user_id: str) -> None:
-        """Update arena profile statistics from progress records."""
-        result = await self.db.execute(
-            select(ArenaExerciseProgress, Exercise)
-            .join(Exercise, ArenaExerciseProgress.exercise_id == Exercise.id)
-            .where(ArenaExerciseProgress.user_id == user_id)
-            .order_by(ArenaExerciseProgress.exercise_index)
-        )
-        rows = list(result.all())
-        if not rows:
-            return
-
-        progresses = [p for p, _ in rows]
-        exercises_map = {p.exercise_id: ex for p, ex in rows}
-
-        total = len(progresses)
-        completed = [p for p in progresses if p.is_completed]
-        correct = [p for p in progresses if p.is_correct]
-        total_attempts = sum(p.attempt_count for p in progresses)
-        times_spent = [p.time_spent for p in progresses if p.time_spent]
-
-        best_streak = 0
-        current_run = 0
-        for p in progresses:
-            if p.is_correct:
-                current_run += 1
-                best_streak = max(best_streak, current_run)
-            else:
-                current_run = 0
-
-        current_streak = 0
-        for p in reversed(progresses):
-            if p.is_correct:
-                current_streak += 1
-            else:
-                break
-
-        highest_difficulty = 0
-        for p in completed:
-            ex = exercises_map.get(p.exercise_id)
-            if ex and ex.difficulty > highest_difficulty:
-                highest_difficulty = ex.difficulty
-
-        profile_result = await self.db.execute(
-            select(UserArenaProfile).where(UserArenaProfile.user_id == user_id)
-        )
-        profile = profile_result.scalar_one_or_none()
-        if not profile:
-            return
-
-        profile.total_challenges = len(completed)
-        profile.wins = len(correct)
-        profile.losses = len(completed) - len(correct)
-        profile.best_streak = best_streak
-        profile.current_streak = current_streak
-        profile.highest_difficulty = highest_difficulty
-        profile.total_submissions = total_attempts
-        profile.avg_accuracy = len(correct) / total if total > 0 else 0.0
-        profile.avg_time_spent = (
-            sum(times_spent) / len(times_spent) if times_spent else 0.0
         )

@@ -255,6 +255,9 @@ class TestUpdateAfterExercise:
         # Mock exercise with embedding
         mock_exercise = MagicMock()
         mock_exercise.embedding = json.dumps([0.5, 0.3, 0.2])
+        mock_exercise.difficulty = 3
+        harder_exercise = MagicMock()
+        harder_exercise.difficulty = 5
 
         profile_result = MagicMock()
         profile_result.scalar_one_or_none.return_value = mock_profile
@@ -264,17 +267,24 @@ class TestUpdateAfterExercise:
 
         # Mock progress records for statistics calculation
         mock_progress1 = MagicMock()
+        mock_progress1.exercise_id = 1
+        mock_progress1.is_completed = True
         mock_progress1.is_correct = True
         mock_progress1.attempt_count = 1
         mock_progress1.time_spent = 100
 
         mock_progress2 = MagicMock()
-        mock_progress2.is_correct = True
+        mock_progress2.exercise_id = 2
+        mock_progress2.is_completed = False
+        mock_progress2.is_correct = False
         mock_progress2.attempt_count = 2
         mock_progress2.time_spent = 200
 
         progress_result = MagicMock()
-        progress_result.scalars.return_value.all.return_value = [mock_progress1, mock_progress2]
+        progress_result.all.return_value = [
+            (mock_progress1, mock_exercise),
+            (mock_progress2, harder_exercise),
+        ]
 
         call_count = [0]
         async def mock_execute(query):
@@ -287,6 +297,7 @@ class TestUpdateAfterExercise:
 
         mock_db.execute = mock_execute
         mock_db.commit = AsyncMock()
+        mock_db.flush = AsyncMock()
 
         result = await service.update_after_exercise(
             user_id="user123",
@@ -296,8 +307,17 @@ class TestUpdateAfterExercise:
             time_spent=150,
         )
 
-        # Verify commit was called
-        mock_db.commit.assert_called_once()
+        mock_db.flush.assert_awaited_once()
+        mock_db.commit.assert_not_awaited()
+        assert result["total_submissions"] == 3
+        assert result["avg_accuracy"] == 0.5
+        assert result["avg_time_spent"] == 150
+        assert mock_profile.total_challenges == 1
+        assert mock_profile.wins == 1
+        assert mock_profile.losses == 0
+        assert mock_profile.highest_difficulty == 3
+        assert mock_profile.best_streak == 1
+        assert mock_profile.current_streak == 0
 
 
 class TestBehaviorEmbeddingUpdate:

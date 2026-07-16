@@ -22,6 +22,7 @@ from app.services.challenge_path.submission_state import (
 )
 from app.services.core_service import CoreService
 from app.services.tier_transaction_service import TierTransactionService
+from app.services.user_profile import UserProfileService
 
 
 async def persist_arena_pair(db_session, user_id: str):
@@ -56,6 +57,38 @@ async def persist_arena_pair(db_session, user_id: str):
     db_session.add_all([progress, next_progress])
     await db_session.commit()
     return exercise, progress, next_progress
+
+
+async def persist_arena_streak_chain(db_session, user_id: str) -> list[Exercise]:
+    first_exercise, _, next_progress = await persist_arena_pair(db_session, user_id)
+    second_exercise = await db_session.get(Exercise, next_progress.exercise_id)
+    assert second_exercise is not None
+
+    extra_exercises = [
+        Exercise(
+            content={"title": f"Arena Streak {exercise_number}"},
+            type="programming",
+            difficulty=3,
+            is_verified=True,
+            test_cases=[{"input": "", "output": "42"}],
+        )
+        for exercise_number in range(3, 6)
+    ]
+    db_session.add_all(extra_exercises)
+    await db_session.flush()
+    db_session.add_all(
+        [
+            ArenaExerciseProgress(
+                user_id=user_id,
+                exercise_id=exercise.id,
+                exercise_index=exercise_index,
+                is_unlocked=False,
+            )
+            for exercise_index, exercise in enumerate(extra_exercises, start=2)
+        ]
+    )
+    await db_session.commit()
+    return [first_exercise, second_exercise, *extra_exercises[:2]]
 
 
 def passing_judge_result() -> dict:
@@ -325,3 +358,59 @@ async def test_repeat_correct_does_not_duplicate_reward_ledgers(
     assert second["cores_earned"] == 0
     assert len(core_transactions) == 1
     assert len(tier_transactions) == 1
+
+
+@pytest.mark.asyncio
+async def test_first_correct_updates_profile_streak_once(
+    db_session, auth_user
+) -> None:
+    exercise, _, _ = await persist_arena_pair(db_session, auth_user.id)
+    service = ChallengeSubmissionService(db_session)
+
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(return_value=passing_judge_result()),
+    ):
+        await service.submit_exercise(
+            user_id=auth_user.id,
+            exercise_id=exercise.id,
+            code="print(42)",
+            language="python",
+            test_results=[],
+        )
+
+    profile = await UserProfileService(db_session).get_or_create_profile(auth_user.id)
+    assert profile.current_streak == 1
+    assert profile.best_streak == 1
+    assert profile.total_challenges == 1
+    assert profile.wins == 1
+
+
+@pytest.mark.asyncio
+async def test_attempted_wrong_splits_streak_and_future_rows_are_ignored(
+    db_session, auth_user
+) -> None:
+    submitted_exercises = await persist_arena_streak_chain(db_session, auth_user.id)
+    service = ChallengeSubmissionService(db_session)
+    judge_results = [
+        passing_judge_result(),
+        passing_judge_result(),
+        failing_judge_result(),
+        passing_judge_result(),
+    ]
+    with patch(
+        "app.services.challenge_path.submission.run_authoritative_judge",
+        new=AsyncMock(side_effect=judge_results),
+    ):
+        for exercise in submitted_exercises:
+            await service.submit_exercise(
+                user_id=auth_user.id,
+                exercise_id=exercise.id,
+                code="print(42)",
+                language="python",
+                test_results=[],
+            )
+
+    profile = await UserProfileService(db_session).get_or_create_profile(auth_user.id)
+    assert profile.best_streak == 2
+    assert profile.current_streak == 1
