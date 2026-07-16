@@ -9,7 +9,12 @@ from app.utils.security import (
     create_access_token,
 )
 from app.config import get_settings
-import logging
+from app.services.auth_errors import (
+    EmailAlreadyRegisteredError,
+    InactiveAccountError,
+    InvalidCredentialsError,
+    UsernameAlreadyRegisteredError,
+)
 
 settings = get_settings()
 
@@ -22,9 +27,6 @@ class AuthService:
 
     async def register(self, user_data: UserCreate) -> tuple[User, Token]:
         """Register a new user and return user + token"""
-        # Debug: log password length
-        logger.info(f"Register attempt - email: {user_data.email}, username: {user_data.username}, password length: {len(user_data.password)} bytes: {len(user_data.password.encode('utf-8'))}")
-
         # Check if user already exists
         result = await self.db.execute(
             select(User).where(
@@ -35,9 +37,8 @@ class AuthService:
 
         if existing_user:
             if existing_user.email == user_data.email:
-                raise ValueError("该邮箱已被注册")
-            else:
-                raise ValueError("该用户名已被使用")
+                raise EmailAlreadyRegisteredError
+            raise UsernameAlreadyRegisteredError
 
         # Create new user
         hashed_password = get_password_hash(user_data.password)
@@ -72,10 +73,10 @@ class AuthService:
         user = result.scalar_one_or_none()
 
         if not user or not verify_password(login_data.password, user.hashed_password):
-            raise ValueError("用户名或密码错误")
+            raise InvalidCredentialsError
 
         if not user.is_active:
-            raise ValueError("Account is inactive")
+            raise InactiveAccountError
 
         # Use longer expiration if remember_me is True
         if login_data.remember_me:
@@ -99,20 +100,7 @@ class AuthService:
         return result.scalar_one_or_none()
 
     async def forgot_password(self, email: str) -> None:
-        """Send password reset email (stub implementation).
-
-        Does NOT raise an error if the user is not found -- the
-        caller is responsible for returning a uniform 200 response
-        to prevent user enumeration (C6).
-        """
-        result = await self.db.execute(select(User).where(User.email == email))
-        user = result.scalar_one_or_none()
-
-        if not user:
-            raise ValueError("User with this email not found")
-
-        # TODO: Implement actual email sending logic
+        """Look up a reset recipient without revealing whether it exists."""
+        await self.db.execute(select(User.id).where(User.email == email))
+        # Password-reset delivery is not configured in this application yet.
         return None
-
-
-logger = logging.getLogger(__name__)
