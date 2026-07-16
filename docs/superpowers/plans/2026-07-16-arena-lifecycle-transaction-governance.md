@@ -1659,13 +1659,23 @@ from the corrected plan baseline `63af5ee`:
   was `23 passed`; the final focused compatibility gate was `117 passed`.
 - After the Task 6 whitespace-only repair, the lifecycle and submission gate
   was rerun: `38 passed in 10.55s`; Pyright remained clean.
+- The `test: close arena lifecycle review coverage` final review fix added
+  four focused tests with one
+  parameterized over two bounds, for five deterministic characterization
+  cases total. They cover recommended-ID output ordering, the inference query
+  `LIMIT 100`, all three fallback stages with the `count * 2` candidate limit,
+  and both `random.sample` bounds: remaining request count and candidate-pool
+  size. The final-form lifecycle governance module gate was `28 passed in
+  6.87s`.
 
 ### Final Automated And Scope Gates
 
-- `py -3 -m pytest backend/tests -q -rs` -> `674 passed in 104.28s`; no
-  skipped-test reason section was printed.
-- `pyright -p backend/pyrightconfig.json` -> `0 errors, 0 warnings, 0
-  informations`.
+- Historical Task 6 checkpoint: `py -3 -m pytest backend/tests -q -rs` -> `674
+  passed in 104.28s`; no skipped-test reason section was printed. Pyright was
+  `0 errors, 0 warnings, 0 informations`.
+- Latest post-review-fix gate: `py -3 -m pytest backend/tests -q -rs` -> `679
+  passed in 103.67s`; no skipped-test reason section was printed. `pyright -p
+  backend/pyrightconfig.json` -> `0 errors, 0 warnings, 0 informations`.
 - `git diff --check dd50e05..HEAD` exits 0 after `33a3db6`. The initial Task 6
   run exposed six historical CRLF blank lines as trailing whitespace in the
   batch diff; they were repaired and committed separately so the documentation
@@ -1723,21 +1733,26 @@ tree.
 
 ### CodeGraph, Reviews, And Deviations
 
-- `npx codegraph init .` reported already initialized; `npx codegraph sync .`
-  synchronized the one whitespace-only Router change (`67` nodes).
-- Impact counts are Lifecycle `25`, Selection `20`, and Progress `39`.
+- At the historical Task 6 checkpoint, `npx codegraph init .` reported already
+  initialized and `npx codegraph sync .` synchronized the one whitespace-only
+  Router change (`67` nodes). Impact counts were Lifecycle `25`, Selection
+  `20`, and Progress `39`.
+- After the final review fix, `npx codegraph sync` indexed one changed test
+  file (`42` nodes), and final Selection impact is `24`, including all four
+  new focused test functions.
   Start/save/append/exit and the mutating detail GET enter Lifecycle;
   Lifecycle calls Selection/Progress. Progress/recent and the read-only switch
   POST call Progress directly. No mutating Router path bypasses Lifecycle.
 - Queries for `ChallengePathService` and `get_arena_infinite_service` both
   return `No results found`.
-- Task reviews 1, 2, 4, and 5 were clean. Task 3 was approved with one Minor:
-  source comparison and existing suites establish compatibility, but no new
-  focused tests specifically lock recommendation ordering, fallback
-  escalation, or the 100-row sampling size. The Task 6 pre-document read-only
-  batch review found no Critical or Important issue and no finding beyond that
-  known Minor; its assessment was ready with the coverage gap accepted as
-  follow-up.
+- Task reviews 1, 2, 4, and 5 were clean. Task 3 was originally approved with
+  one coverage Minor because no new focused tests locked recommendation
+  ordering, fallback escalation, or the 100-row inference query bound. That
+  prior Minor is closed by the `test: close arena lifecycle review coverage`
+  commit through the five deterministic characterization cases above and is
+  no longer outstanding. The Task 6
+  pre-document read-only batch review found no other Critical or Important
+  issue.
 - Task 2 necessarily changed `challenge_path/rewards.py` only to rename the
   focused progress-read call; no reward behavior or formula changed. Task 4
   necessarily changed `tests/conftest.py` so the shared client database

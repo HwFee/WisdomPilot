@@ -33,25 +33,174 @@ from app.services.challenge_path.lifecycle import (
 )
 from app.services.challenge_path.progress import ChallengeProgressService
 from app.services.challenge_path.responses import map_switch_response
-from app.services.challenge_path.selection import ChallengeSelectionService
+from app.services.challenge_path.selection import (
+    MAX_EXISTING_DIFFICULTY_SAMPLE,
+    ChallengeSelectionService,
+)
 
 
 async def persist_verified_exercises(
-    db_session, count: int = 2
+    db_session,
+    count: int = 2,
+    *,
+    difficulties: list[int] | None = None,
 ) -> list[Exercise]:
+    exercise_difficulties = [3] * count if difficulties is None else difficulties
     exercises = [
         Exercise(
             content={"title": f"Lifecycle {index}"},
             type="programming",
-            difficulty=3,
+            difficulty=difficulty,
             is_verified=True,
             test_cases=[{"input": "", "output": str(index)}],
         )
-        for index in range(count)
+        for index, difficulty in enumerate(exercise_difficulties)
     ]
     db_session.add_all(exercises)
     await db_session.commit()
     return exercises
+
+
+def compile_postgresql(statement) -> str:
+    return str(
+        statement.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_append_recommendations_preserve_recommended_id_order(
+    db_session, auth_user
+) -> None:
+    first, second = await persist_verified_exercises(db_session)
+    recommendation = {
+        "recommendations": [
+            {"exercise_id": second.id},
+            {"exercise_id": first.id},
+        ]
+    }
+
+    with patch(
+        "app.services.challenge_path.selection."
+        "AdaptiveRecommendationService.get_recommendations",
+        new=AsyncMock(return_value=recommendation),
+    ):
+        selected = await ChallengeSelectionService(
+            db_session
+        )._recommended_append_exercises(
+            user_id=auth_user.id,
+            difficulty_level=3,
+            count=2,
+            existing_ids=[],
+        )
+
+    assert [exercise.id for exercise in selected] == [second.id, first.id]
+
+
+@pytest.mark.asyncio
+async def test_append_difficulty_inference_limits_existing_query_to_100(
+    db_session,
+) -> None:
+    exercises = await persist_verified_exercises(
+        db_session,
+        difficulties=[4] * (MAX_EXISTING_DIFFICULTY_SAMPLE + 1),
+    )
+
+    with patch.object(
+        db_session,
+        "execute",
+        wraps=db_session.execute,
+    ) as execute_spy:
+        inferred = await ChallengeSelectionService(db_session)._infer_append_difficulty(
+            existing_ids=[exercise.id for exercise in exercises],
+            requested_difficulty=None,
+        )
+
+    statement = execute_spy.await_args.args[0]
+    assert inferred == 4
+    assert MAX_EXISTING_DIFFICULTY_SAMPLE == 100
+    assert "LIMIT 100" in compile_postgresql(statement)
+
+
+@pytest.mark.asyncio
+async def test_append_fallback_escalates_through_all_three_query_stages(
+    db_session,
+) -> None:
+    exercises = await persist_verified_exercises(
+        db_session,
+        difficulties=[5, 3, 1],
+    )
+
+    with patch.object(
+        db_session,
+        "execute",
+        wraps=db_session.execute,
+    ) as execute_spy, patch(
+        "app.services.challenge_path.selection.random.sample",
+        side_effect=lambda population, sample_count: list(population)[:sample_count],
+    ):
+        selected = await ChallengeSelectionService(
+            db_session
+        )._fallback_append_exercises(
+            difficulty_level=5,
+            remaining_count=3,
+            requested_count=4,
+            excluded_ids=[],
+        )
+
+    statements = [call.args[0] for call in execute_spy.await_args_list]
+    compiled_statements = [compile_postgresql(statement) for statement in statements]
+    assert {exercise.id for exercise in selected} == {
+        exercise.id for exercise in exercises
+    }
+    assert len(compiled_statements) == 3
+    assert "exercises.difficulty = 5" in compiled_statements[0]
+    assert "exercises.difficulty >= 3" in compiled_statements[1]
+    assert "exercises.difficulty <= 7" in compiled_statements[1]
+    assert "exercises.difficulty >= 1" in compiled_statements[2]
+    assert "exercises.difficulty <= 7" in compiled_statements[2]
+    assert all("LIMIT 8" in statement for statement in compiled_statements)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("candidate_count", "remaining_count", "expected_sample_count"),
+    [(4, 2, 2), (2, 4, 2)],
+)
+async def test_append_sampling_is_bounded_by_request_and_candidate_pool(
+    db_session,
+    candidate_count: int,
+    remaining_count: int,
+    expected_sample_count: int,
+) -> None:
+    exercises = await persist_verified_exercises(
+        db_session,
+        difficulties=[5] * candidate_count,
+    )
+
+    with patch(
+        "app.services.challenge_path.selection.random.sample",
+        side_effect=lambda population, sample_count: list(population)[:sample_count],
+    ) as sample_spy:
+        selected = await ChallengeSelectionService(
+            db_session
+        )._fallback_append_exercises(
+            difficulty_level=5,
+            remaining_count=remaining_count,
+            requested_count=4,
+            excluded_ids=[],
+        )
+
+    sampled_population, sample_count = sample_spy.call_args.args
+    assert {exercise.id for exercise in sampled_population} == {
+        exercise.id for exercise in exercises
+    }
+    assert sample_count == expected_sample_count
+    assert [exercise.id for exercise in selected] == [
+        exercise.id for exercise in sampled_population[:expected_sample_count]
+    ]
 
 
 @pytest.mark.asyncio
