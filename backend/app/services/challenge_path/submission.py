@@ -64,7 +64,7 @@ async def run_authoritative_judge(
         }
 
     Raises:
-        ValueError: If the language is not supported for judging.
+        UnsupportedChallengeLanguageError: If the language is not supported.
         JudgeUnavailableError: If the judge service fails or is unreachable.
     """
     language_id = LANGUAGE_NAME_TO_JUDGE0_ID.get(language.lower())
