@@ -53,7 +53,7 @@
 - Preserves: all Task 1 status codes and details.
 - Guarantees: unrelated `ValueError` is not translated to HTTP 400.
 
-- [ ] **Step 1: Add failing typed-error and Router tests**
+- [x] **Step 1: Add failing typed-error and Router tests**
 
 Create `backend/tests/test_arena_lifecycle_governance.py`:
 
@@ -186,7 +186,7 @@ async def test_unknown_switch_value_error_is_not_mapped_to_400(
             )
 ```
 
-- [ ] **Step 2: Run tests and confirm the lifecycle types are absent**
+- [x] **Step 2: Run tests and confirm the lifecycle types are absent**
 
 Run from `backend`:
 
@@ -196,7 +196,7 @@ py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
 
 Expected: collection fails because the new error classes do not exist.
 
-- [ ] **Step 3: Add the FastAPI-independent hierarchy**
+- [x] **Step 3: Add the FastAPI-independent hierarchy**
 
 Replace the hierarchy header in `errors.py` and retain existing submission
 constructors below it:
@@ -240,7 +240,7 @@ class ChallengeExerciseDetailNotFoundError(ChallengePathError):
 Change `ChallengeProgressNotFoundError` to inherit `ChallengePathError`
 directly. Export every new class from `challenge_path/__init__.py`.
 
-- [ ] **Step 4: Raise typed selection and switch failures**
+- [x] **Step 4: Raise typed selection and switch failures**
 
 In `selection.py`, replace the capacity `ValueError` with:
 
@@ -264,7 +264,7 @@ if not progress.is_unlocked:
     raise ChallengeExerciseLockedError()
 ```
 
-- [ ] **Step 5: Map only known lifecycle failures**
+- [x] **Step 5: Map only known lifecycle failures**
 
 Replace start and switch broad catches in `learning_path.py`:
 
@@ -285,7 +285,7 @@ except (
 Remove the unused append `try/except`; empty selection remains a successful
 empty response and unknown failures propagate.
 
-- [ ] **Step 6: Verify and commit Task 1**
+- [x] **Step 6: Verify and commit Task 1**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py tests/test_learning_path_challenge.py tests/test_arena_submission_governance.py -q
@@ -315,7 +315,7 @@ still contain broad mappings, but the included Arena endpoints do not.
 - Produces: `ChallengeProgressService.list_user_progress(...)` and `get_exercises_for_progress(...)`.
 - Guarantees: start locks the owner, flushes without commit, and is sequentially idempotent.
 
-- [ ] **Step 1: Add failing lifecycle, lock, and no-commit tests**
+- [x] **Step 1: Add failing lifecycle, lock, and no-commit tests**
 
 Append:
 
@@ -406,7 +406,7 @@ async def test_sequential_start_reuses_existing_path(
     selector.assert_awaited_once()
 ```
 
-- [ ] **Step 2: Run and confirm the lifecycle module is absent**
+- [x] **Step 2: Run and confirm the lifecycle module is absent**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
@@ -414,7 +414,7 @@ py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
 
 Expected: collection fails with `ModuleNotFoundError` for `lifecycle`.
 
-- [ ] **Step 3: Make initial selection persistence-free**
+- [x] **Step 3: Make initial selection persistence-free**
 
 In `selection.py`:
 
@@ -437,7 +437,7 @@ return self._ensure_fixed_first_two(
 )
 ```
 
-- [ ] **Step 4: Expose focused progress reads**
+- [x] **Step 4: Expose focused progress reads**
 
 Rename the two private methods without changing their queries:
 
@@ -456,7 +456,7 @@ async def get_exercises_for_progress(
 
 Update internal callers to the new names.
 
-- [ ] **Step 5: Implement the locked start use case**
+- [x] **Step 5: Implement the locked start use case**
 
 Create `lifecycle.py`:
 
@@ -542,7 +542,7 @@ class ChallengePathLifecycleService:
 
 Export the service from `challenge_path/__init__.py`.
 
-- [ ] **Step 6: Route start through lifecycle and update the unknown-error test**
+- [x] **Step 6: Route start through lifecycle and update the unknown-error test**
 
 Instantiate `ChallengePathLifecycleService(db)` and call `start_path(...)`.
 Change the start case in the parameterized unknown-error test to patch
@@ -550,7 +550,7 @@ Change the start case in the parameterized unknown-error test to patch
 until Task 3. Also change the direct capacity test to call
 `select_initial_exercises(...)` after the selection method rename.
 
-- [ ] **Step 7: Verify and commit Task 2**
+- [x] **Step 7: Verify and commit Task 2**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py tests/test_learning_path_challenge.py tests/test_arena_submission_governance.py tests/test_hybrid_recommendation.py -q
@@ -578,7 +578,7 @@ matches and lifecycle has no commit.
 - Produces: `ChallengeSelectionService.select_append_exercises(...)`.
 - Guarantees: owner-locked index allocation, preserved selection and unlock behavior, no service commit.
 
-- [ ] **Step 1: Add failing append transaction tests**
+- [x] **Step 1: Add failing append transaction tests**
 
 Append:
 
@@ -667,7 +667,7 @@ async def test_append_keeps_first_new_exercise_locked_after_incomplete_tail(
     assert appended_row.is_unlocked is False
 ```
 
-- [ ] **Step 2: Run and confirm lifecycle append is absent**
+- [x] **Step 2: Run and confirm lifecycle append is absent**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
@@ -676,7 +676,7 @@ py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
 Expected: append tests fail because lifecycle lacks `append_exercises` and
 selection lacks `select_append_exercises`.
 
-- [ ] **Step 3: Split append selection into focused helpers**
+- [x] **Step 3: Split append selection into focused helpers**
 
 Add constants:
 
@@ -854,7 +854,7 @@ async def select_append_exercises(
     return selected + fallback
 ```
 
-- [ ] **Step 4: Implement owner-locked lifecycle append**
+- [x] **Step 4: Implement owner-locked lifecycle append**
 
 Add:
 
@@ -899,12 +899,12 @@ async def append_exercises(
     return [exercise.id for exercise in selected]
 ```
 
-- [ ] **Step 5: Route append through lifecycle**
+- [x] **Step 5: Route append through lifecycle**
 
 Use `ChallengePathLifecycleService(db).append_exercises(...)`. Update the
 unknown append `ValueError` test to patch the lifecycle method.
 
-- [ ] **Step 6: Verify recommendation compatibility and commit Task 3**
+- [x] **Step 6: Verify recommendation compatibility and commit Task 3**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py tests/test_learning_path_challenge.py tests/test_hybrid_recommendation.py tests/test_arena_submission_governance.py -q
@@ -932,7 +932,7 @@ lifecycle and no service commit remains.
 - Produces: `ChallengePathLifecycleService.get_or_attach_exercise(...) -> dict`.
 - Guarantees: progress-row lock for save, owner lock for attachment, exact 404s, request rollback.
 
-- [ ] **Step 1: Add failing save/detail transaction tests**
+- [x] **Step 1: Add failing save/detail transaction tests**
 
 Append:
 
@@ -1094,7 +1094,7 @@ async def test_detail_failure_after_flush_rolls_back_attachment(
     assert attached is None
 ```
 
-- [ ] **Step 2: Run and confirm lifecycle methods are absent or old save commits**
+- [x] **Step 2: Run and confirm lifecycle methods are absent or old save commits**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
@@ -1103,7 +1103,7 @@ py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
 Expected: tests fail because lifecycle lacks save/detail and old progress save
 still owns persistence.
 
-- [ ] **Step 3: Implement locked code saving**
+- [x] **Step 3: Implement locked code saving**
 
 Add this query builder above the lifecycle class:
 
@@ -1151,7 +1151,7 @@ async def save_code(
 
 Delete `ChallengeProgressService.save_code`.
 
-- [ ] **Step 4: Implement owner-locked detail attachment**
+- [x] **Step 4: Implement owner-locked detail attachment**
 
 Add private helpers that query an existing `(progress, exercise)` pair and map
 the exact service dictionary. Implement:
@@ -1230,7 +1230,7 @@ async def get_existing_exercise_detail(
 Move the existing dictionary construction into synchronous
 `build_exercise_detail(*, progress, exercise) -> dict`.
 
-- [ ] **Step 5: Route save, exit, and detail through lifecycle**
+- [x] **Step 5: Route save, exit, and detail through lifecycle**
 
 Both save endpoints call `save_code` and return success only after it returns.
 Map `ChallengeProgressNotFoundError` to 404. Detail calls
@@ -1238,7 +1238,7 @@ Map `ChallengeProgressNotFoundError` to 404. Detail calls
 existing 404 detail, and obtains `total_exercises` from
 `ChallengeProgressService._get_exercise_count` until Task 5 exposes the count.
 
-- [ ] **Step 6: Verify and commit Task 4**
+- [x] **Step 6: Verify and commit Task 4**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py tests/test_learning_path_challenge.py tests/test_arena_submission_governance.py tests/test_review_api.py -q
@@ -1268,7 +1268,7 @@ the lifecycle/progress services have no commit.
 - Produces: explicit request/response models for all included endpoints.
 - Guarantees: progress/switch/recent are read-only, mappers do not mutate inputs, no compatibility facade remains.
 
-- [ ] **Step 1: Add failing response-model, mapper, and facade tests**
+- [x] **Step 1: Add failing response-model, mapper, and facade tests**
 
 Append:
 
@@ -1344,7 +1344,7 @@ def test_legacy_arena_facade_is_absent() -> None:
     assert not Path("app/services/arena_infinite.py").exists()
 ```
 
-- [ ] **Step 2: Run and confirm the schema exists only in the Router and facade remains**
+- [x] **Step 2: Run and confirm the schema exists only in the Router and facade remains**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
@@ -1352,7 +1352,7 @@ py -3 -m pytest tests/test_arena_lifecycle_governance.py -q
 
 Expected: collection fails for `app.schemas.arena` and facade absence fails.
 
-- [ ] **Step 3: Create Arena schemas and preserve dynamic payload shapes**
+- [x] **Step 3: Create Arena schemas and preserve dynamic payload shapes**
 
 Create `backend/app/schemas/arena.py` with the moved request models plus:
 
@@ -1458,7 +1458,7 @@ Import every schema into the Router at module scope so existing imports from
 it has no consumer. Keep `SubmitExerciseRequest` and `SubmitExerciseResponse`
 in the Router unchanged; moving or editing them is outside 3B-2.
 
-- [ ] **Step 4: Declare response models and make progress helpers focused**
+- [x] **Step 4: Declare response models and make progress helpers focused**
 
 Set the exact response model on every route from the test table. Rename
 `_get_exercise_count` to `get_exercise_count` and update Router/lifecycle
@@ -1489,7 +1489,7 @@ exercise row is unexpectedly absent so the response model cannot silently
 drop `exercise`. Add a separate Router catch that maps this error to 404 with
 its existing detail; do not add it to the 400 navigation-error tuple.
 
-- [ ] **Step 5: Make response mapping non-mutating**
+- [x] **Step 5: Make response mapping non-mutating**
 
 Replace `map_switch_response`:
 
@@ -1506,7 +1506,7 @@ def map_switch_response(result: dict) -> dict:
     return mapped
 ```
 
-- [ ] **Step 6: Delete the compatibility facade and clean its stale test**
+- [x] **Step 6: Delete the compatibility facade and clean its stale test**
 
 Delete `arena_infinite.py`. In `test_star_logic.py`:
 
@@ -1516,7 +1516,7 @@ Delete `arena_infinite.py`. In `test_star_logic.py`:
   than `arena_infinite.py`;
 - replace `== True` assertions with direct boolean assertions.
 
-- [ ] **Step 7: Verify complete lifecycle contracts and commit Task 5**
+- [x] **Step 7: Verify complete lifecycle contracts and commit Task 5**
 
 ```powershell
 py -3 -m pytest tests/test_arena_lifecycle_governance.py tests/test_learning_path_challenge.py tests/test_arena_submission_governance.py tests/test_arena_submission_result.py tests/test_star_logic.py tests/test_hybrid_recommendation.py tests/test_user_profile.py -q
@@ -1537,7 +1537,7 @@ included-endpoint broad mapping remains.
 - Modify: `docs/superpowers/specs/2026-07-15-backend-learning-oriented-governance-design.md`
 - Modify: `docs/superpowers/plans/2026-07-16-arena-lifecycle-transaction-governance.md`
 
-- [ ] **Step 1: Run the full backend gate**
+- [x] **Step 1: Run the full backend gate**
 
 From the repository root:
 
@@ -1549,7 +1549,7 @@ pyright -p backend/pyrightconfig.json
 Expected: every backend test passes, no skipped section is printed, and
 Pyright reports `0 errors, 0 warnings, 0 informations`.
 
-- [ ] **Step 2: Run scope, transaction, and dead-code searches**
+- [x] **Step 2: Run scope, transaction, and dead-code searches**
 
 ```powershell
 rg -n "commit\(|except ValueError|from fastapi|HTTPException|arena_infinite|ChallengePathService|get_arena_infinite_service" backend/app/services/challenge_path backend/app/routers/learning_path.py backend/tests
@@ -1563,7 +1563,7 @@ Confirm no submit/reward/profile, frontend, database, migration, Mastery,
 10 DRY, dependency, naming, magic-value, function-length, dead-code, and type
 safety review.
 
-- [ ] **Step 3: Start FastAPI and Next.js and request live contracts**
+- [x] **Step 3: Start FastAPI and Next.js and request live contracts**
 
 Use dedicated SQLite smoke data, a test-only secret, hidden managed processes,
 and free ports. Verify:
@@ -1585,7 +1585,7 @@ Inspect logs and listener command lines, stop only managed process trees, prove
 ports free, remove only resolved smoke artifacts inside the worktree, and keep
 the `frontend/node_modules` junction intact.
 
-- [ ] **Step 4: Synchronize and inspect CodeGraph**
+- [x] **Step 4: Synchronize and inspect CodeGraph**
 
 ```powershell
 npx codegraph init .
@@ -1601,14 +1601,14 @@ Expected: Router write endpoints -> Lifecycle -> Selection/Progress edges
 exist; Router read endpoints call Progress directly; no Router write endpoint
 bypasses Lifecycle and legacy facade queries have no result.
 
-- [ ] **Step 5: Record completion evidence**
+- [x] **Step 5: Record completion evidence**
 
 Append an Arena 3B-2 record to the global governance design. Add
 `## Completion Evidence` here with TDD red/green outputs, focused/full counts,
 Pyright, live statuses/details, CodeGraph edges, commits, deviations, task/final
 review findings, the mutating-GET compatibility debt, and SQLite lock risk.
 
-- [ ] **Step 6: Commit completion records**
+- [x] **Step 6: Commit completion records**
 
 ```powershell
 git add docs/superpowers/specs/2026-07-15-backend-learning-oriented-governance-design.md docs/superpowers/plans/2026-07-16-arena-lifecycle-transaction-governance.md
