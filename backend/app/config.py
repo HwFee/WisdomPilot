@@ -46,9 +46,6 @@ class Settings(BaseSettings):
     AUTH_RATE_PER_MINUTE: int = 10
     CODE_EXEC_RATE_PER_MINUTE: int = 30  # Reasonable limit for code execution
 
-    # Test sandbox (disable in production)
-    ENABLE_TEST_SANDBOX: bool = False
-
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_required(cls, v: str) -> str:

@@ -39,6 +39,11 @@ export default function RootLayout({
       className={`${inter.variable} ${spaceGrotesk.variable} ${notoSansSC.variable} h-full antialiased`}
     >
       <body className="h-full font-sans">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('deck-theme')==='light'){document.documentElement.setAttribute('data-theme','light')}}catch(e){}`,
+          }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

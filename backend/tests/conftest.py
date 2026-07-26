@@ -47,10 +47,8 @@ def _set_test_sqlite_pragma(dbapi_connection, connection_record):
 # Replace app.database.engine BEFORE importing app.main
 app_database.engine = test_engine
 
-# Import models
-from app.models import User, LoginSession, ChapterProgress, LearningSession, ActivityLog
-from app.models import Course, Chapter, Exercise, Challenge, UserChallenge, Achievement, UserAchievement
-from app.models import UserWeakPoint, SpacedRepetition, CoreTransaction
+# Import models (训练舱：仅认证 User；领域模型在 app.deck.models，随 app.main 导入注册)
+from app.models import User
 from app.utils.security import get_password_hash, create_access_token
 
 # Import app.main AFTER engine replacement
@@ -237,30 +235,3 @@ def _reset_rate_limiters_between_tests():
     import app.middleware as mw
     mw.reset_rate_limiters()
     yield
-
-
-@pytest_asyncio.fixture
-async def init_courses(db_session):
-    """Initialize the 8 courses for testing."""
-    courses_data = [
-        {"code": "C", "name": "C语言程序设计", "difficulty_level": 1, "icon": "c"},
-        {"code": "CPP", "name": "C++程序设计", "difficulty_level": 2, "icon": "cpp"},
-        {"code": "Python", "name": "Python程序设计", "difficulty_level": 1, "icon": "python"},
-        {"code": "Java", "name": "Java程序设计", "difficulty_level": 2, "icon": "java"},
-        {"code": "Rust", "name": "Rust程序设计", "difficulty_level": 4, "icon": "rust"},
-        {"code": "DSA", "name": "数据结构与算法", "difficulty_level": 3, "icon": "dsa"},
-        {"code": "ADA", "name": "算法设计与分析", "difficulty_level": 4, "icon": "ada"},
-        {"code": "DiscreteMath", "name": "离散数学", "difficulty_level": 3, "icon": "math"},
-    ]
-
-    for course_data in courses_data:
-        course = Course(
-            code=course_data["code"],
-            name=course_data["name"],
-            difficulty_level=course_data["difficulty_level"],
-            icon=course_data["icon"],
-            is_active=True
-        )
-        db_session.add(course)
-
-    await db_session.commit()

@@ -5,9 +5,14 @@ import logging
 
 from fastapi import FastAPI
 
-import app.models  # noqa: F401 - register SQLAlchemy models before init_db
+from app import models as _register_auth_models  # noqa: F401 - 注册 User 进 Base.metadata
+from app.deck import models as _register_deck_models  # noqa: F401 - register deck models before init_db
 from app.config import Settings
-from app.database import init_db
+
+# 显式引用副作用 import：二者仅为在建表前把模型注册进 Base.metadata
+_MODELS_REGISTERED = (_register_auth_models, _register_deck_models)
+from app.database import AsyncSessionLocal, init_db
+from app.deck.seed import seed_deck
 from app.schemas.ai import AIProviderConfig
 from app.services.ai import ai_service
 
@@ -42,6 +47,8 @@ def create_lifespan(settings: Settings):
     async def lifespan(app: FastAPI):
         configure_logging()
         await init_db()
+        async with AsyncSessionLocal() as db:
+            await seed_deck(db)
         configure_ai_service(settings)
         try:
             yield

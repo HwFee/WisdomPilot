@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
-import ReviewClient from './page-client'
+import { ReviewClient } from '@/components/review/ReviewClient'
 
 export const metadata: Metadata = {
-  title: '错题本 - 智码领航',
-  description: '回顾与复习历史错题，巩固薄弱知识点',
+  title: '复盘 · 智码领航',
 }
 
-export default function Page() {
+export default function ReviewPage() {
   return <ReviewClient />
 }

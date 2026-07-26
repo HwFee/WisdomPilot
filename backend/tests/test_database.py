@@ -19,35 +19,19 @@ class TestSQLiteForeignKeyEnforcement:
 
 
 class TestForeignKeyConstraintWithORM:
-    """Test FK enforcement through actual ORM models using the test fixture."""
+    """Test FK enforcement through a live ORM model (deck_mastery_events -> users)."""
 
     @pytest.mark.asyncio
-    async def test_chapter_progress_requires_valid_user(self, db_session):
-        """ChapterProgress with invalid user_id should fail with IntegrityError."""
+    async def test_mastery_event_requires_valid_user(self, db_session):
+        """DeckMasteryEvent with invalid user_id should fail with IntegrityError."""
         from sqlalchemy.exc import IntegrityError
-        from app.models.stats import ChapterProgress
+        from app.deck.models import DeckMasteryEvent
 
-        orphan = ChapterProgress(
+        orphan = DeckMasteryEvent(
             user_id="nonexistent-user-id-00000",
-            chapter_id=1,
-            status="not_started",
-        )
-        db_session.add(orphan)
-
-        with pytest.raises(IntegrityError):
-            await db_session.flush()
-            await db_session.commit()
-
-    @pytest.mark.asyncio
-    async def test_login_session_requires_valid_user(self, db_session):
-        """LoginSession with invalid user_id should fail with IntegrityError."""
-        from sqlalchemy.exc import IntegrityError
-        from app.models.session import LoginSession
-
-        orphan = LoginSession(
-            user_id="nonexistent-user-id-00000",
-            token="test-token-unique-12345",
-            is_active=True,
+            kp_id="nonexistent-kp-id-00000",
+            source="feynman",
+            correct=True,
         )
         db_session.add(orphan)
 
@@ -57,28 +41,17 @@ class TestForeignKeyConstraintWithORM:
 
 
 class TestForeignKeyViaRawQuery:
-    """Test FK enforcement via raw SQL."""
+    """Test FK enforcement via raw SQL on a live table."""
 
     @pytest.mark.asyncio
-    async def test_orphaned_login_session_rejected(self, db_session):
-        """Inserting a login_session with nonexistent user_id should fail."""
+    async def test_orphaned_mastery_event_rejected(self, db_session):
+        """Inserting a deck_mastery_events row with nonexistent user_id should fail."""
         from sqlalchemy.exc import IntegrityError
 
         with pytest.raises(IntegrityError):
             await db_session.execute(text(
-                "INSERT INTO login_sessions (id, user_id, token, is_active, created_at) "
-                "VALUES ('test-id-raw-001', 'nonexistent-user', 'tok-raw-123', 1, '2024-01-01 00:00:00')"
-            ))
-            await db_session.commit()
-
-    @pytest.mark.asyncio
-    async def test_orphaned_activity_log_rejected(self, db_session):
-        """Inserting an activity_log with nonexistent user_id should fail."""
-        from sqlalchemy.exc import IntegrityError
-
-        with pytest.raises(IntegrityError):
-            await db_session.execute(text(
-                "INSERT INTO activity_logs (id, user_id, activity_type, description, extra_data, created_at) "
-                "VALUES ('test-id-raw-002', 'nonexistent-user', 'test', 'testing', '{}', '2024-01-01 00:00:00')"
+                "INSERT INTO deck_mastery_events (id, user_id, kp_id, created_at, source, correct, hints_used) "
+                "VALUES ('test-id-raw-001', 'nonexistent-user', 'nonexistent-kp', "
+                "'2024-01-01 00:00:00', 'feynman', 1, 0)"
             ))
             await db_session.commit()

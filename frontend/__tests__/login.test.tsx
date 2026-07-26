@@ -10,6 +10,7 @@
  *   - renders the login form (email + password + submit + register link)
  *   - calls the auth API on submit and navigates to /dashboard on success
  */
+import '@testing-library/jest-dom'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import LoginPageClient from '../app/login/page-client'
 

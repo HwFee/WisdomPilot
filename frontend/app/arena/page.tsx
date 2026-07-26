@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
-import { ArenaPageClient } from "./page-client";
+import type { Metadata } from 'next'
+import { ArenaClient } from '@/components/arena/ArenaClient'
 
 export const metadata: Metadata = {
-  title: "竞技场 - 智码领航",
-  description: "与其他学习者切磋，在实战中检验知识掌握程度",
-};
+  title: '调试竞技场 · 智码领航',
+}
 
-export default function Page() {
-  return <ArenaPageClient />;
+export default function ArenaPage() {
+  return <ArenaClient />
 }

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>智码领航 · 训练舱 — 素笺</title>
+<style>
+  /* ============================================
+     字体声明 — JetBrains Mono（与训练舱模板一致）
+     ============================================ */
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: url('./fonts/JetBrainsMono.woff2') format('woff2');
+    font-weight: 400 500;
+    font-display: swap;
+  }
+
+  /* ============================================
+     素笺 Vellum — 设计令牌
+     ============================================ */
+  :root {
+    --primary: #1B365D;
+    --parchment: #f5f4ed;
+    --ivory: #faf9f5;
+    --warm-sand: #e8e6dc;
+    --near-black: #141413;
+    --dark-warm: #3d3d3a;
+    --olive: #504e49;
+    --stone: #6b6a64;
+    --border: #e8e6dc;
+    --border-soft: #e5e3d8;
+    --hairline: #dddacc;
+
+    --radius-xs: 2px;
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+
+    --font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", Consolas, Monaco,
+      monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    background: var(--parchment);
+    color: var(--near-black);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.55;
+  }
+
+  ::selection { background: rgba(27, 54, 93, 0.18); color: var(--primary); }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--stone); }
+
+  /* ============================================
+     动效 — 文房意象：落墨 · 150–250ms
+     ============================================ */
+  @keyframes fresh-ink {
+    from { opacity: 0; filter: blur(5px); }
+    to   { opacity: 1; filter: blur(0); }
+  }
+  .ink { animation: fresh-ink 0.55s ease both; }
+  .ink-1 { animation-delay: 0.05s; }
+  .ink-2 { animation-delay: 0.16s; }
+  .ink-3 { animation-delay: 0.27s; }
+  .ink-4 { animation-delay: 0.38s; }
+
+  @keyframes blink {
+    0%, 55% { opacity: 1; }
+    56%, 100% { opacity: 0; }
+  }
+  .cursor {
+    display: inline-block;
+    width: 6px; height: 11px;
+    background: var(--primary);
+    vertical-align: -1px;
+    animation: blink 1.1s steps(1) infinite;
+  }
+
+  @keyframes kbd-flash {
+    0%   { box-shadow: inset 0 0 0 1px var(--primary), 0 0 0 3px rgba(27,54,93,0.12); }
+    100% { box-shadow: inset 0 0 0 1px var(--border-soft); }
+  }
+  .module.flash { animation: kbd-flash 0.6s ease-out; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0s !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ── 顶栏 46px ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 46px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 0 22px;
+    background: var(--parchment);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--near-black);
+  }
+  .brand-seal {
+    width: 20px; height: 20px;
+    border-radius: var(--radius-xs);
+    background: var(--primary);
+    color: var(--ivory);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+  .brand-name { font-size: 15px; font-weight: 500; letter-spacing: 2px; }
+  .brand-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--stone);
+    letter-spacing: 1px;
+  }
+
+  .nav { display: flex; justify-content: center; gap: 26px; }
+  .nav a {
+    color: var(--stone);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 3px 2px;
+    border-bottom: 1px solid transparent;
+    transition: color 0.18s ease;
+  }
+  .nav a:hover { color: var(--primary); }
+  .nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .cores-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+  }
+  .cores-pill b { color: var(--dark-warm); font-weight: 500; }
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 14px;
+    border-left: 1px solid var(--hairline);
+    color: var(--dark-warm);
+    font-size: 13px;
+  }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 50px 40px 72px;
+  }
+  @media (max-width: 720px) {
+    .page { padding: 30px 20px 56px; }
+    .nav { display: none; }
+  }
+
+  /* ── 面板：ivory 纸面 + 发丝内描边 ── */
+  .panel {
+    background: var(--ivory);
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 0 0 1px var(--border-soft);
+  }
+
+  .panel-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--stone);
+    text-transform: uppercase;
+  }
+  .panel-tag::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 1px;
+    background: var(--stone);
+  }
+  .panel-tag.on { color: var(--primary); }
+  .panel-tag.on::before { background: var(--primary); }
+
+  /* ── 今日主任务 ── */
+  .hero {
+    padding: 36px 40px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 36px;
+    align-items: center;
+  }
+  .hero .task-id {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+    letter-spacing: 1px;
+    margin-top: 12px;
+  }
+  .hero h1 {
+    margin-top: 10px;
+    padding-left: 16px;
+    border-left: 3px solid var(--primary);
+    font-size: 27px;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: 0.5px;
+  }
+  .hero h1 em { font-style: normal; color: var(--primary); }
+  .hero .desc {
+    margin-top: 12px;
+    padding-left: 19px;
+    color: var(--olive);
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 520px;
+  }
+  .hero .meta-row {
+    margin-top: 16px;
+    padding-left: 19px;
+    display: flex;
+    gap: 22px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+  }
+  .hero .meta-row b { color: var(--dark-warm); font-weight: 500; }
+
+  .hero-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* 印章主按钮：靛青描边 · 4px 字距 · 按下落定 */
+  .seal-primary {
+    padding: 13px 30px;
+    border: 1.8px solid var(--primary);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-indent: 4px;
+    cursor: pointer;
+    transition: background-color 0.18s ease, transform 0.12s ease;
+  }
+  .seal-primary:hover { background: rgba(27, 54, 93, 0.06); }
+  .seal-primary:active { transform: scale(0.97); }
+
+  .btn-ghost-text {
+    border: none;
+    background: transparent;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    color: var(--stone);
+    letter-spacing: 2px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-bottom: 1px solid transparent;
+    transition: color 0.18s ease, border-color 0.18s ease;
+  }
+  .btn-ghost-text:hover { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* ── 区块标题 ── */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 42px 0 16px;
+  }
+  .section-head h2 {
+    font-size: 17px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-head h2::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 1px;
+    background: var(--primary);
+  }
+  .section-head h2 .en {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--stone);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .section-head .note {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+    letter-spacing: 1px;
+  }
+  .section-head .note kbd {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm);
+    padding: 0 4px;
+    color: var(--olive);
+  }
+
+  /* ── 能力图谱 ── */
+  .abilities { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .ability {
+    padding: 22px 24px;
+    transition: background-color 0.18s ease;
+  }
+  .ability:hover { background: #f3f1e8; }
+  .ability .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .ability .name { font-size: 16px; font-weight: 500; color: var(--near-black); }
+  .ability .name .en {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--stone);
+    letter-spacing: 2px;
+    margin-left: 8px;
+    text-transform: uppercase;
+  }
+  .ability .level {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--primary);
+  }
+  /* 发丝进度条：3px 靛青 */
+  .track {
+    margin-top: 14px;
+    height: 3px;
+    border-radius: var(--radius-xs);
+    background: var(--warm-sand);
+    overflow: hidden;
+  }
+  .track .fill {
+    height: 100%;
+    border-radius: var(--radius-xs);
+    background: var(--primary);
+    transform-origin: left;
+    animation: ink-fill 0.9s ease both;
+    animation-delay: 0.5s;
+  }
+  @keyframes ink-fill {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  .ability .xp-line {
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+  }
+  .ability .focus {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--stone);
+  }
+  .ability .focus b { color: var(--dark-warm); font-weight: 500; }
+
+  /* ── 训练模块 ── */
+  .modules { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .module {
+    padding: 24px 26px;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 18px;
+    transition: background-color 0.18s ease;
+  }
+  .module:hover { background: #f3f1e8; }
+  .module:hover .title { color: var(--primary); }
+  .module:hover .go { color: var(--primary); transform: translateX(4px); }
+  .module .title {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--near-black);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: color 0.18s ease;
+  }
+  .module .title .en {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--stone);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .module .desc { grid-column: 1; color: var(--olive); font-size: 13px; line-height: 1.7; }
+  .module .go {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--hairline);
+    transition: color 0.18s ease, transform 0.18s ease;
+  }
+  .module .stat-line {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--hairline);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+    display: flex;
+    gap: 18px;
+    align-items: center;
+  }
+  .module .stat-line b { color: var(--dark-warm); font-weight: 500; }
+  .module .stat-line .up { color: var(--primary); }
+  .module .kbd-hint {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--stone);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm);
+    padding: 0 4px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .module:hover .kbd-hint { color: var(--primary); border-color: var(--primary); }
+
+  /* ── 情报三栏 ── */
+  .bottom-grid { display: grid; grid-template-columns: 5fr 3fr 4fr; gap: 18px; }
+  .side-panel { padding: 20px 22px; }
+  .side-panel .panel-tag { margin-bottom: 10px; }
+
+  .weak-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 14px;
+  }
+  .weak-item + .weak-item { border-top: 1px solid var(--hairline); }
+  .weak-item .kp { color: var(--dark-warm); }
+  .weak-item .kp small { display: block; color: var(--stone); font-size: 11px; margin-top: 1px; }
+  .weak-item .p {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--stone);
+    margin-left: auto;
+  }
+  .train-btn {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--stone);
+    background: transparent;
+    border: none;
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    border-radius: var(--radius-md);
+    padding: 5px 12px;
+    cursor: pointer;
+    margin-left: 14px;
+    opacity: 0.4;
+    transform: translateX(4px);
+    transition: opacity 0.18s ease, transform 0.18s ease,
+                color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+  .weak-item:hover .train-btn, .train-btn:focus-visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  .train-btn:hover {
+    color: var(--primary);
+    box-shadow: inset 0 0 0 1px var(--primary);
+    background: rgba(27, 54, 93, 0.04);
+  }
+
+  .mini-stat { padding: 8px 0; display: flex; justify-content: space-between; font-size: 13px; }
+  .mini-stat + .mini-stat { border-top: 1px solid var(--hairline); }
+  .mini-stat .k { color: var(--stone); }
+  .mini-stat .v { font-family: var(--font-mono); color: var(--dark-warm); font-size: 12px; }
+  .mini-stat .v em { font-style: normal; color: var(--primary); }
+
+  .mini-stat.actionable {
+    margin: 0 -8px;
+    padding: 8px 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+  }
+  .mini-stat.actionable:hover { background: var(--warm-sand); }
+  .mini-stat.actionable .go-mini {
+    color: var(--hairline);
+    font-family: var(--font-mono);
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+  .mini-stat.actionable:hover .go-mini { color: var(--primary); transform: translateX(3px); }
+  .mini-stat.actionable .due {
+    color: var(--olive);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    margin-left: 6px;
+  }
+
+  /* 本周节奏：墨条 */
+  .rhythm {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    align-items: end;
+    height: 52px;
+    padding: 6px 0 2px;
+  }
+  .rhythm .bar {
+    background: var(--warm-sand);
+    border-radius: 2px 2px 0 0;
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    transform-origin: bottom;
+    animation: bar-up 0.5s ease both;
+    animation-delay: calc(0.6s + var(--i) * 0.06s);
+    transition: background-color 0.15s ease;
+    cursor: default;
+  }
+  @keyframes bar-up {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+  .rhythm .bar:hover { background: #dfddd1; }
+  .rhythm .bar.today { background: var(--primary); box-shadow: none; }
+  .rhythm-labels {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--stone);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .rhythm-labels .today-l { color: var(--primary); }
+
+  .feed-item {
+    padding: 9px 8px;
+    margin: 0 -8px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    display: flex;
+    gap: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .feed-item:hover { background: var(--warm-sand); }
+  .feed-item + .feed-item { border-top: 1px solid var(--hairline); }
+  .feed-item .t { font-family: var(--font-mono); font-size: 11px; color: var(--stone); flex-shrink: 0; }
+  .feed-item .what { color: var(--olive); }
+  .feed-item .what b { color: var(--dark-warm); font-weight: 500; }
+  .feed-item .what .ok { color: var(--primary); }
+
+  /* ── 状态栏 ── */
+  .statusbar {
+    margin-top: 46px;
+    padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    gap: 26px;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--stone);
+  }
+  .statusbar .ok { color: var(--primary); }
+
+  @media (max-width: 900px) {
+    .abilities, .modules { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-cta { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 顶栏 ═══════════ -->
+<header class="topbar">
+  <a class="brand" href="#">
+    <span class="brand-seal">智</span>
+    <span class="brand-name">智码领航</span>
+    <span class="brand-sub">// 训练舱</span>
+  </a>
+  <nav class="nav">
+    <a href="#" class="active">训练舱</a>
+    <a href="#">代码审查室</a>
+    <a href="#">调试竞技场</a>
+    <a href="#">能力图谱</a>
+    <a href="#">档案</a>
+  </nav>
+  <div class="topbar-right">
+    <span class="cores-pill">◈ 智核 <b data-count="86">0</b></span>
+    <span class="user-chip">清源</span>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ═══════════ 今日主任务 ═══════════ -->
+  <section class="panel hero ink ink-1">
+    <div>
+      <span class="panel-tag on">今日主任务</span>
+      <div class="task-id">REVIEW-0247 · 代码审查室 · 第 12 关</div>
+      <h1>这段快速排序里有 <em>2 处缺陷</em>，<br />它们藏得很像「能跑的代码」。</h1>
+      <p class="desc">
+        AI 生成的代码七成能直接运行，但其中三分之一藏着边界错误。
+        找出它们——这比写出它们更值钱。
+      </p>
+      <div class="meta-row">
+        <span>预计 <b>8 分钟</b></span>
+        <span>难度 <b>★★★☆☆</b></span>
+        <span>关联弱点 <b>边界条件处理</b></span>
+      </div>
+    </div>
+    <div class="hero-cta">
+      <button class="seal-primary">开始审查</button>
+      <button class="btn-ghost-text">换一个任务</button>
+    </div>
+  </section>
+
+  <!-- ═══════════ 能力图谱 ═══════════ -->
+  <div class="section-head ink ink-2">
+    <h2>能力图谱 <span class="en">Ability Profile</span></h2>
+    <span class="note">由掌握度驱动 · 实时</span>
+  </div>
+  <section class="abilities ink ink-2">
+    <div class="panel ability">
+      <div class="head">
+        <span class="name">审阅<span class="en">Review</span></span>
+        <span class="level">LV.4</span>
+      </div>
+      <div class="track"><div class="fill" style="width:70%"></div></div>
+      <div class="xp-line"><span data-count="1240">0</span> / 1,600 至 LV.5</div>
+      <div class="focus">短板 <b>并发代码审阅</b></div>
+    </div>
+    <div class="panel ability">
+      <div class="head">
+        <span class="name">调试<span class="en">Debug</span></span>
+        <span class="level">LV.3</span>
+      </div>
+      <div class="track"><div class="fill" style="width:50%"></div></div>
+      <div class="xp-line"><span data-count="860">0</span> / 1,200 至 LV.4</div>
+      <div class="focus">短板 <b>指针与内存错误定位</b></div>
+    </div>
+    <div class="panel ability">
+      <div class="head">
+        <span class="name">实现<span class="en">Implement</span></span>
+        <span class="level">LV.5</span>
+      </div>
+      <div class="track"><div class="fill" style="width:80%"></div></div>
+      <div class="xp-line"><span data-count="2050">0</span> / 2,400 至 LV.6</div>
+      <div class="focus">短板 <b>动态规划状态设计</b></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 训练模块 ═══════════ -->
+  <div class="section-head ink ink-3">
+    <h2>训练模块 <span class="en">Modules</span></h2>
+    <span class="note">按 <kbd>1</kbd>–<kbd>4</kbd> 快速进入</span>
+  </div>
+  <section class="modules ink ink-3">
+    <div class="panel module" data-key="1">
+      <div class="title">代码审查室 <span class="en">Review Gym</span></div>
+      <span class="go">→</span>
+      <div class="desc">AI 生成的代码里被注入了缺陷，像 code review 一样把它们全部揪出来。</div>
+      <div class="stat-line">
+        <span>今日完成 <b data-count="3">0</b></span>
+        <span>命中率 <b><span data-count="82">0</span>%</b></span>
+        <span class="up">▲ 连续 5 天</span>
+        <span class="kbd-hint">1</span>
+      </div>
+    </div>
+    <div class="panel module" data-key="2">
+      <div class="title">调试竞技场 <span class="en">Debug Arena</span></div>
+      <span class="go">→</span>
+      <div class="desc">测试全挂的程序加失败输出，限时修复。唯一的排行榜，只认修 bug 的速度与准确率。</div>
+      <div class="stat-line">
+        <span>段位 <b>铂金 II</b></span>
+        <span>本周排名 <b>#<span data-count="47">0</span></b></span>
+        <span class="up">▲ 上升 12 名</span>
+        <span class="kbd-hint">2</span>
+      </div>
+    </div>
+    <div class="panel module" data-key="3">
+      <div class="title">苏格拉底导师 <span class="en">AI Tutor</span></div>
+      <span class="go">→</span>
+      <div class="desc">不给你答案的 AI。它只会追问，直到你自己把问题想明白。每次对话消耗智核。</div>
+      <div class="stat-line">
+        <span>智核余额 <b>86</b></span>
+        <span>今日已用 <b>4</b></span>
+        <span class="kbd-hint">3</span>
+      </div>
+    </div>
+    <div class="panel module" data-key="4">
+      <div class="title">基本功认证 <span class="en">No-AI Zone</span></div>
+      <span class="go">→</span>
+      <div class="desc">关闭一切辅助的限时手写测试。通过后获得可分享的能力凭证——证明你不靠 AI 也会。</div>
+      <div class="stat-line">
+        <span>已认证 <b>链表 / 排序</b></span>
+        <span>下次可考 <b>3 天后</b></span>
+        <span class="kbd-hint">4</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 情报 ═══════════ -->
+  <div class="section-head ink ink-4">
+    <h2>情报 <span class="en">Intel</span></h2>
+  </div>
+  <section class="bottom-grid ink ink-4">
+
+    <div class="panel side-panel">
+      <span class="panel-tag">待攻克弱点</span>
+      <div class="weak-item">
+        <span class="kp">边界条件处理<small>数据结构 · 排序</small></span>
+        <span class="p">掌握 42%</span>
+        <button class="train-btn">针对训练</button>
+      </div>
+      <div class="weak-item">
+        <span class="kp">指针的内存布局<small>C 程序设计 · 指针</small></span>
+        <span class="p">掌握 55%</span>
+        <button class="train-btn">针对训练</button>
+      </div>
+      <div class="weak-item">
+        <span class="kp">递归出口设计<small>通用 · 递归</small></span>
+        <span class="p">掌握 61%</span>
+        <button class="train-btn">针对训练</button>
+      </div>
+    </div>
+
+    <div class="panel side-panel">
+      <span class="panel-tag">本周节奏</span>
+      <div class="rhythm">
+        <div class="bar" style="--i:0; height: 40%" title="周一 · 25 分钟"></div>
+        <div class="bar" style="--i:1; height: 65%" title="周二 · 40 分钟"></div>
+        <div class="bar" style="--i:2; height: 30%" title="周三 · 18 分钟"></div>
+        <div class="bar" style="--i:3; height: 80%" title="周四 · 52 分钟"></div>
+        <div class="bar" style="--i:4; height: 55%" title="周五 · 34 分钟"></div>
+        <div class="bar" style="--i:5; height: 90%" title="周六 · 61 分钟"></div>
+        <div class="bar today" style="--i:6; height: 70%" title="今天 · 45 分钟"></div>
+      </div>
+      <div class="rhythm-labels">
+        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span class="today-l">日</span>
+      </div>
+      <div class="mini-stat"><span class="k">连续训练</span><span class="v"><em>7</em> 天</span></div>
+      <a class="mini-stat actionable" href="#" title="进入错题复习">
+        <span class="k">错题待复习</span>
+        <span class="v">5 道<span class="due">2 道今日到期</span> <span class="go-mini">→</span></span>
+      </a>
+    </div>
+
+    <div class="panel side-panel">
+      <span class="panel-tag">最近动态</span>
+      <div class="feed-item"><span class="t">09:41</span><span class="what">审查 <b>REVIEW-0246</b> 找出 <span class="ok">3/3</span> 处缺陷</span></div>
+      <div class="feed-item"><span class="t">昨天</span><span class="what">调试竞技场修复 <b>死循环</b> · <span class="ok">+23 分</span></span></div>
+      <div class="feed-item"><span class="t">昨天</span><span class="what">费曼检验「指针」· 理解度 <span class="ok">良好</span></span></div>
+      <div class="feed-item"><span class="t">2天前</span><span class="what">审查 <b>REVIEW-0241</b> 漏掉 1 处缺陷</span></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 状态栏 ═══════════ -->
+  <footer class="statusbar ink ink-4">
+    <span class="ok">● 系统正常</span>
+    <span>掌握度引擎 运行中</span>
+    <span>判题服务 已连接</span>
+    <span id="status-clock">--</span>
+    <span class="cursor"></span>
+  </footer>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── 数字滚动计数 ── */
+  function countUp(el) {
+    var target = parseInt(el.getAttribute('data-count'), 10);
+    if (reduceMotion || isNaN(target)) {
+      el.textContent = target.toLocaleString('en-US');
+      return;
+    }
+    var duration = 900;
+    var start = null;
+    function frame(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased).toLocaleString('en-US');
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  var counters = document.querySelectorAll('[data-count]');
+  setTimeout(function () {
+    for (var i = 0; i < counters.length; i++) countUp(counters[i]);
+  }, reduceMotion ? 0 : 500);
+
+  /* ── 状态栏实时时钟 ── */
+  var clockEl = document.getElementById('status-clock');
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function tickClock() {
+    var d = new Date();
+    clockEl.textContent =
+      d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  /* ── 键盘 1-4 快速进入模块 ── */
+  var modules = document.querySelectorAll('.module[data-key]');
+  document.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    for (var i = 0; i < modules.length; i++) {
+      if (modules[i].getAttribute('data-key') === e.key) {
+        var m = modules[i];
+        m.classList.remove('flash');
+        void m.offsetWidth;
+        m.classList.add('flash');
+        m.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+        break;
+      }
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

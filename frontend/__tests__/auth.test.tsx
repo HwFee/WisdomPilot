@@ -13,6 +13,7 @@
  *   - renders the register form (name + email + password + confirm-password)
  *   - calls the auth API on submit and navigates to /dashboard on success
  */
+import '@testing-library/jest-dom'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import RegisterPageClient from '../app/register/page-client'
 
