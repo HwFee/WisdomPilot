@@ -15,7 +15,7 @@ from sqlalchemy.dialects.sqlite import dialect as sqlite_dialect
 
 from app.database import engine
 from app.config import get_settings
-from app.models import *  # noqa: F401,F403 - register all models with Base
+from app.auth.models import *  # noqa: F401,F403 - register all models with Base
 from app.database import Base
 
 

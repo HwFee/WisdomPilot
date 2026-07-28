@@ -8,6 +8,7 @@ import { NEXT_SESSION } from '@/lib/api/deck/mock/review-gym'
 import type { DefectType, ReviewMark, ReviewSession, ReviewVerdict } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { CountUp, PanelTag } from '../deck/kit'
+import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 import { CodeViewer, DefectExplanations } from './CodeViewer'
 import { defectMeta } from './defect-meta'
 
@@ -154,6 +155,7 @@ export function ReviewGymClient() {
   const [activeLine, setActiveLine] = useState<number | null>(null)
   const [verdict, setVerdict] = useState<ReviewVerdict | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const { celebrate, celebrationElement } = useBadgeCelebration()
 
   const loadSession = useCallback((id?: string) => {
     setPhase('loading')
@@ -196,11 +198,13 @@ export function ReviewGymClient() {
       setVerdict(v)
       setSubmitting(false)
       setPhase('revealed')
+      celebrate(v.new_badges)
     })
   }
 
   return (
     <DeckShell>
+      {celebrationElement}
       <div className="deck-boot deck-boot-1">
         <PanelTag label="REVIEW GYM · 代码审查室" variant="on" />
         <h1 className="mt-3 text-xl font-semibold">

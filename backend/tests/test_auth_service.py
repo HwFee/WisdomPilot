@@ -1,10 +1,10 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User
-from app.schemas import UserCreate, UserLogin
-from app.services.auth import AuthService
-from app.services.auth_errors import (
+from app.auth.models import User
+from app.auth.schemas import UserCreate, UserLogin
+from app.auth.service import AuthService
+from app.auth.errors import (
     EmailAlreadyRegisteredError,
     InactiveAccountError,
     InvalidCredentialsError,

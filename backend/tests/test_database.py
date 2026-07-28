@@ -25,7 +25,7 @@ class TestForeignKeyConstraintWithORM:
     async def test_mastery_event_requires_valid_user(self, db_session):
         """DeckMasteryEvent with invalid user_id should fail with IntegrityError."""
         from sqlalchemy.exc import IntegrityError
-        from app.deck.models import DeckMasteryEvent
+        from app.training.models import DeckMasteryEvent
 
         orphan = DeckMasteryEvent(
             user_id="nonexistent-user-id-00000",

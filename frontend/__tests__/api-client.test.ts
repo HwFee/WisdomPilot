@@ -124,22 +124,4 @@ describe('Type definitions', () => {
     expect(user.email).toBe('test@example.com')
   })
 
-  it('ChapterProgress type has required fields', async () => {
-    const progress = {
-      id: '1',
-      user_id: '1',
-      chapter_id: 1,
-      status: 'not_started' as const,
-      progress_percent: 0,
-      completed_subsections: [],
-      completed_exercise_count: 0,
-      completed_exercises_by_subsection: {},
-      exercise_results: {},
-      started_at: null,
-      completed_at: null,
-      updated_at: '2024-01-01T00:00:00Z',
-    }
-    expect(progress.chapter_id).toBe(1)
-    expect(progress.status).toBe('not_started')
-  })
 })

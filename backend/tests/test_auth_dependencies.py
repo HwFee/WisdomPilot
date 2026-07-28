@@ -5,14 +5,13 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User
-from app.utils.deps import (
+from app.auth.models import User
+from app.auth.dependencies import (
     _find_user_from_credentials,
     get_current_active_user,
     get_current_user,
-    get_optional_user,
 )
-from app.utils.security import create_access_token
+from app.auth.security import create_access_token
 
 
 def bearer_credentials(token: str) -> HTTPAuthorizationCredentials:
@@ -56,17 +55,6 @@ async def test_required_user_rejects_unresolvable_subject(
     assert exception_info.value.status_code == 401
     assert exception_info.value.detail == "Could not validate credentials"
     assert exception_info.value.headers == {"WWW-Authenticate": "Bearer"}
-
-
-@pytest.mark.asyncio
-async def test_optional_user_hides_inactive_account(
-    db_session: AsyncSession, auth_user: User
-) -> None:
-    auth_user.is_active = False
-    await db_session.commit()
-    credentials = bearer_credentials(create_access_token({"sub": auth_user.id}))
-
-    assert await get_optional_user(credentials, db_session) is None
 
 
 class UserWhoseActiveStateMustNotBeRead:

@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient
 
-from app.models import User
-from app.utils.security import get_password_hash
+from app.auth.models import User
+from app.auth.security import get_password_hash
 
 
 class TestAuthRegister:
@@ -139,7 +139,7 @@ class TestAuthRegister:
     async def test_unexpected_register_error_is_not_mapped_to_bad_request(
         self, client: AsyncClient
     ) -> None:
-        with patch("app.routers.auth.AuthService") as service_class:
+        with patch("app.auth.router.AuthService") as service_class:
             service_class.return_value.register = AsyncMock(
                 side_effect=ValueError("unexpected persistence failure")
             )

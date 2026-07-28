@@ -6,7 +6,7 @@ from app.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.lifespan import create_lifespan
 from app.core.middleware import configure_middleware
-from app.core.routes import include_routers, register_health_routes, register_websocket_routes
+from app.core.routes import include_routers, register_health_routes
 
 APP_TITLE = "智码领航 API"
 APP_DESCRIPTION = "AI-powered Programming Teaching Platform API"
@@ -25,7 +25,6 @@ def create_app() -> FastAPI:
 
     configure_middleware(app)
     include_routers(app, settings)
-    register_websocket_routes(app)
     register_health_routes(app)
     register_exception_handlers(app)
 

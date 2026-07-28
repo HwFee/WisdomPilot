@@ -8,6 +8,7 @@ import { getArenaHome, runArenaCode } from '@/lib/api/deck/arena'
 import type { ArenaHome, ArenaRunResult } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { PanelTag } from '../deck/kit'
+import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
@@ -82,6 +83,7 @@ export function ArenaClient() {
   const [result, setResult] = useState<ArenaRunResult | null>(null)
   const [running, setRunning] = useState(false)
   const submittedRef = useRef(false)
+  const { celebrate, celebrationElement } = useBadgeCelebration()
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -103,9 +105,10 @@ export function ArenaClient() {
       runArenaCode(home.challenge.id, currentCode).then((r) => {
         setResult(r)
         setRunning(false)
+        celebrate(r.new_badges)
       })
     },
-    [home]
+    [home, celebrate]
   )
 
   // 倒计时：到 0 自动交卷
@@ -129,6 +132,7 @@ export function ArenaClient() {
 
   return (
     <DeckShell>
+      {celebrationElement}
       {!home ? (
         <div className="deck-panel p-8 font-mono text-sm text-dim">
           正在接入竞技场<span className="deck-cursor ml-2" />

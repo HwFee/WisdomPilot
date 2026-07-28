@@ -1,6 +1,7 @@
 /* 调试竞技场 mock：今日挑战 + 本地判题（真实后端就位后由 Judge0 判定） */
 
 import type { ArenaChallenge, ArenaHome, ArenaRunResult } from '../types'
+import { awardMockBadges, isNightHour } from './badges'
 
 /** 今日挑战：Python 中位数 —— 偶数分支死循环 + 右中位索引错 */
 export const CHALLENGE_0091: ArenaChallenge = {
@@ -37,8 +38,9 @@ test_median.py::test_even_unsorted  TIMEOUT  [100%] 执行超过 5s（疑似死�
  * - rule_loop：包含 "lo=mid-1"（删掉死循环，直接取左中位）
  * - rule_index：包含 "nums[lo]+nums[mid])"（右中位是 nums[mid] 不是 nums[mid+1]）
  * 两条都修 → 5/5 通过；只修死循环 → 3/5；都没修 → 2/5。
+ * （不含徽章判定，保持纯函数）
  */
-export function judgeArenaCode(code: string): ArenaRunResult {
+export function judgeArenaCode(code: string): Omit<ArenaRunResult, 'new_badges'> {
   const normalized = code.replace(/\s+/g, '')
   const ruleLoop = normalized.includes('lo=mid-1')
   const ruleIndex = normalized.includes('nums[lo]+nums[mid])')
@@ -80,6 +82,17 @@ test_median.py::test_even_negative  FAILED   assert -4.0 == -4.5
     solved: false,
     score_delta: 0,
   }
+}
+
+/** 提交判题 + 徽章评估（胜场 / 连胜上下文喂给判定引擎） */
+export function submitMockArena(code: string): ArenaRunResult {
+  const result = judgeArenaCode(code)
+  const new_badges = awardMockBadges({
+    arenaSolved: result.solved,
+    arenaWinStreak: result.solved ? ARENA_HOME_MOCK.profile.win_streak + 1 : 0,
+    isNight: isNightHour(),
+  })
+  return { ...result, new_badges }
 }
 
 export const ARENA_HOME_MOCK: ArenaHome = {

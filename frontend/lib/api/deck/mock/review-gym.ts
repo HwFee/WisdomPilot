@@ -1,6 +1,7 @@
 /* 代码审查室 mock：内置两关，判定逻辑本地运行（真实后端就位后由服务端判定） */
 
 import type { InjectedDefect, ReviewMark, ReviewSession, ReviewVerdict } from '../types'
+import { awardMockBadges, isNightHour } from './badges'
 
 interface MockSession extends ReviewSession {
   injected: InjectedDefect[]
@@ -113,9 +114,12 @@ export function getMockSession(id?: string): ReviewSession {
 
 /**
  * 判定：标注行与注入缺陷行相差 ≤1 且类型一致 → 命中；
- * 无标注覆盖的注入缺陷 → 漏报；其余标注 → 误报。
+ * 无标注覆盖的注入缺陷 → 漏报；其余标注 → 误报。（不含徽章判定，保持纯函数）
  */
-export function judgeMarks(defects: InjectedDefect[], marks: ReviewMark[]): ReviewVerdict {
+export function judgeMarks(
+  defects: InjectedDefect[],
+  marks: ReviewMark[]
+): Omit<ReviewVerdict, 'new_badges'> {
   const hits: InjectedDefect[] = []
   const missed: InjectedDefect[] = []
   const falseAlarms: ReviewMark[] = []
@@ -149,5 +153,11 @@ export function judgeMarks(defects: InjectedDefect[], marks: ReviewMark[]): Revi
 
 export function submitMockReview(id: string, marks: ReviewMark[]): ReviewVerdict {
   const session = SESSIONS[id] ?? SESSION_0247
-  return judgeMarks(session.injected, marks)
+  const verdict = judgeMarks(session.injected, marks)
+  const new_badges = awardMockBadges({
+    reviewSubmitted: true,
+    reviewPerfect: verdict.missed.length === 0 && verdict.false_alarms.length === 0,
+    isNight: isNightHour(),
+  })
+  return { ...verdict, new_badges }
 }

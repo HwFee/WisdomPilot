@@ -119,6 +119,11 @@ After completing every task, **you MUST perform the following maintenance action
   纯函数在 `backend/app/deck/mastery.py`，事实源是 `deck_mastery_events` 事件表，
   `deck_user_mastery.p_l/level` 只是缓存读模型。**BKT 已弃用**，新增掌握度逻辑一律写事件 +
   重算，禁止固定 delta 直改 p_l。
+- 徽章系统（2026-07-27 起，spec：`docs/superpowers/specs/2026-07-27-badge-system-design.md`）：
+  定义+判定引擎在 `backend/app/deck/badges.py`（纯函数 `evaluate_and_award`，幂等），
+  事实表只有 `deck_user_badges`，徽章定义**在代码内不入库**；四个提交端点 commit 前统一评估，
+  响应带 `new_badges`，认证页徽章墙走 `/certification/home` 的 `badges` 字段。契约全链路
+  **snake_case**（deckCall 无 key 转换层），新增契约字段不要用 camelCase。
 
 ### 前端硬规则
 

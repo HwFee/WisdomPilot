@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import event
 from sqlalchemy.pool import StaticPool
 
-# Import Base and app.database BEFORE app.models or app.main
+# Import Base and app.database BEFORE app.auth.models or app.main
 from app.database import Base, get_db
 import app.database as app_database
 
@@ -47,9 +47,9 @@ def _set_test_sqlite_pragma(dbapi_connection, connection_record):
 # Replace app.database.engine BEFORE importing app.main
 app_database.engine = test_engine
 
-# Import models (训练舱：仅认证 User；领域模型在 app.deck.models，随 app.main 导入注册)
-from app.models import User
-from app.utils.security import get_password_hash, create_access_token
+# Import models (训练舱：仅认证 User；领域模型在 app.training.models，随 app.main 导入注册)
+from app.auth.models import User
+from app.auth.security import get_password_hash, create_access_token
 
 # Import app.main AFTER engine replacement
 from app.main import app as _app
@@ -232,6 +232,6 @@ async def admin_token(admin_user) -> str:
 @pytest.fixture(autouse=True)
 def _reset_rate_limiters_between_tests():
     """Reset global rate limiter counters between tests."""
-    import app.middleware as mw
+    from app.core import middleware as mw
     mw.reset_rate_limiters()
     yield

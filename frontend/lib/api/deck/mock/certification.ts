@@ -7,8 +7,10 @@ import type {
   CertResult,
   CertificationHome,
 } from '../types'
+import { awardMockBadges, getMockBadgeWall, isNightHour } from './badges'
 
-export const CERT_HOME_MOCK: CertificationHome = {
+/** home 静态部分；badges 字段由 getMockCertHome 按当前解锁状态实时拼装 */
+export const CERT_HOME_MOCK: Omit<CertificationHome, 'badges'> = {
   has_placement: true,
   certified: [
     { topic: '链表', level: '熟练', date: '2026-07-12', score: 92, verify_code: 'WP-LIST-7F3A' },
@@ -138,8 +140,8 @@ export function getMockExam(id: string): CertExam {
   }
 }
 
-/** 本地判分：mcq 对答案表，code 检查关键片段 */
-export function judgeExam(examId: string, answers: CertAnswer[]): CertResult {
+/** 本地判分：mcq 对答案表，code 检查关键片段（不含徽章判定，保持纯函数） */
+export function judgeExam(examId: string, answers: CertAnswer[]): Omit<CertResult, 'new_badges'> {
   const exam = getMockExam(examId)
   const perQuestion = exam.questions.map((q) => {
     const answer = answers.find((a) => a.question_id === q.id)?.answer ?? ''
@@ -169,6 +171,24 @@ export function judgeExam(examId: string, answers: CertAnswer[]): CertResult {
     }
   }
   return { score, passed, certificate, per_question: perQuestion }
+}
+
+/** 认证 home：静态部分 + 实时徽章墙 */
+export function getMockCertHome(): CertificationHome {
+  return { ...CERT_HOME_MOCK, badges: getMockBadgeWall() }
+}
+
+/** 交卷：判分 + 徽章评估（本次提交上下文喂给判定引擎） */
+export function submitMockExam(examId: string, answers: CertAnswer[]): CertResult {
+  const result = judgeExam(examId, answers)
+  const new_badges = awardMockBadges({
+    placementDone: examId === 'placement',
+    examPassed: result.passed,
+    examScore: result.score,
+    examLevel: result.certificate?.level,
+    isNight: isNightHour(),
+  })
+  return { ...result, new_badges }
 }
 
 /** 定级结果 → 三轴初始等级（1-5） */

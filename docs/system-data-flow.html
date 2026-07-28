@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智码领航 · 系统数据流可视化</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d0f;color:#d4d4d4;font-family:"Microsoft YaHei","PingFang SC",sans-serif;padding:24px 32px;line-height:1.7}
+h1{font-size:22px;margin-bottom:4px}
+h2{font-size:18px;margin:20px 0 8px}
+.intro{color:#888;font-size:14px;margin-bottom:20px}
+.main-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #2a2a2e;padding-bottom:0}
+.mtab{padding:10px 20px;background:transparent;border:none;border-bottom:2px solid transparent;color:#888;cursor:pointer;font-size:14px;font-family:inherit}
+.mtab:hover{color:#d4d4d4}
+.mtab.active{color:#4ade80;border-bottom-color:#4ade80}
+.panel{display:none}
+.panel.active{display:block}
+.sub-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.stab{padding:6px 14px;background:#16161a;border:1px solid #2a2a2e;color:#888;cursor:pointer;font-size:13px;font-family:inherit;border-radius:4px}
+.stab:hover{color:#d4d4d4}
+.stab.active{background:#1e3a1e;border-color:#4ade80;color:#4ade80}
+.sub-panel{display:none}
+.sub-panel.active{display:block}
+.mermaid{display:flex;justify-content:center;margin:16px 0;overflow-x:auto;padding:12px;background:#111114;border:1px solid #1e1e22;border-radius:8px}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin:12px 0;font-size:13px}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-dot{width:12px;height:12px;border-radius:2px;display:inline-block}
+.dot-green{background:#4ade80}
+.dot-red{background:#f87171}
+.dot-amber{background:#fbbf24}
+.dot-blue{background:#60a5fa}
+.dot-gray{background:#6b7280}
+.notes{background:#111114;border:1px solid #1e1e22;border-radius:8px;padding:16px;margin:12px 0}
+.notes h3{font-size:14px;color:#60a5fa;margin-bottom:8px}
+.notes p{font-size:13px;color:#aaa;margin-bottom:6px}
+.notes .warn{color:#fbbf24}
+.notes .danger{color:#f87171}
+.notes .ok{color:#4ade80}
+.section-desc{font-size:14px;color:#888;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<h1>智码领航 · 系统数据流可视化</h1>
+<p class="intro">这个页面展示系统内部的数据流向：用户每一步操作背后发生了什么、数据写到了哪里、哪里是通的、哪里断了。</p>
+
+<div class="main-tabs">
+  <button class="mtab active" onclick="switchMain('overview')">系统全景</button>
+  <button class="mtab" onclick="switchMain('actions')">用户操作流</button>
+  <button class="mtab" onclick="switchMain('mastery')">掌握度引擎</button>
+  <button class="mtab" onclick="switchMain('gaps')">数据断裂点</button>
+</div>
+
+<!-- ════════ Tab 1: 系统全景 ════════ -->
+<div id="overview" class="panel active">
+  <h2>系统全景：四个模块如何连接知识点</h2>
+  <p class="section-desc">绿色 = 数据流通畅 &nbsp; 红色 = 数据流断裂 &nbsp; 黄色 = 数据流有问题</p>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot dot-green"></span> 正常写入</span>
+    <span class="legend-item"><span class="legend-dot dot-red"></span> 未写入（断裂）</span>
+    <span class="legend-item"><span class="legend-dot dot-amber"></span> 写入但质量有问题</span>
+    <span class="legend-item"><span class="legend-dot dot-blue"></span> 读取/消费</span>
+  </div>
+
+  <div class="mermaid">
+graph TB
+    User((用户))
+
+    subgraph modules [四大训练模块]
+        RG["📝 代码审查室<br/>2个关卡"]
+        AR["🐛 调试竞技场<br/>1个挑战"]
+        TU["🧠 苏格拉底导师<br/>+ 费曼检验"]
+        CERT["🏅 基本功认证<br/>+ 定级测试"]
+    end
+
+    subgraph mastery [知识点掌握度系统 — 核心]
+        EVENTS["事件表 deck_mastery_events<br/>每次答题写一条事件<br/>这是事实源"]
+        HLR["HLR 记忆模型<br/>重放事件 → 算出 p_l"]
+        CACHE["缓存 deck_user_mastery<br/>p_l + 等级<br/>只是读模型"]
+        KPS["12个固定知识点<br/>审阅轴 4个 / 调试轴 4个 / 实现轴 5个"]
+    end
+
+    subgraph reads [前端页面 — 读取数据]
+        DASH["仪表盘<br/>推荐主任务+显示弱点"]
+        ABIL["能力图谱<br/>12个知识点掌握度网格"]
+        REV["复盘页<br/>弱知识点+失败项聚合"]
+    end
+
+    User --> RG & AR & TU & CERT
+
+    RG -->|"✅ 命中缺陷→写事件<br/>source=review_gym"| EVENTS
+    TU -->|"✅ 费曼通过→写事件<br/>source=feynman"| EVENTS
+    CERT -->|"✅ 定级→全12知识点<br/>初始事件"| EVENTS
+    AR -.->|"❌ 完全不写掌握度事件!"| EVENTS
+
+    EVENTS --> HLR
+    HLR --> CACHE
+    KPS --- EVENTS
+
+    CACHE -->|"读取 p_l 最低3个"| DASH
+    CACHE -->|"读取全部掌握度"| ABIL
+    CACHE -->|"p_l&lt;0.6→推费曼"| REV
+
+    classDef greenNode fill:#1a2e1a,stroke:#4ade80,color:#4ade80
+    classDef redNode fill:#2e1a1a,stroke:#f87171,color:#f87171
+    classDef amberNode fill:#2e2e1a,stroke:#fbbf24,color:#fbbf24
+    classDef blueNode fill:#1a1e2e,stroke:#60a5fa,color:#60a5fa
+    classDef normalNode fill:#16161a,stroke:#3a3a3e,color:#d4d4d4
+
+    class RG,TU,CERT,EVENTS,HLR greenNode
+    class AR redNode
+    class DASH,ABIL,REV blueNode
+    class CACHE,KPS normalNode
+  </div>
+
+  <div class="notes">
+    <h3>这张图在说什么</h3>
+    <p>用户在四个模块里做练习 → 每次练习会产生「掌握度事件」写入事件表 → HLR 模型重放事件算出每个知识点的回忆概率(p_l)和等级 → 缓存起来 → 仪表盘/能力图谱/复盘页读取这些数据给用户看。</p>
+    <p class="ok">✅ 代码审查室、费曼检验、定级测试：会写掌握度事件，数据流是通的。</p>
+    <p class="danger">❌ 调试竞技场：完全不写掌握度事件。用户在竞技场练了再多，知识点掌握度也不会变。调试轴的4个知识点只有定级测试写过一次初始值，之后永远停滞。</p>
+    <p class="warn">⚠️ 认证考试：除了定级测试，正式认证也不写掌握度事件，只写认证记录和经验值。</p>
+  </div>
+
+  <h2>用户完整旅程</h2>
+  <div class="mermaid">
+graph LR
+    A["1.注册"] --> B["2.定级测试<br/>5道题定初始能力"]
+    B --> C["3.日常练习<br/>审查/调试/费曼"]
+    C --> D["4.掌握度增长<br/>事件积累→p_l上升"]
+    D --> E["5.弱点浮现<br/>仪表盘显示低p_l知识点"]
+    E --> F["6.复盘<br/>重做错题+费曼补弱"]
+    F --> C
+    D --> G["7.认证<br/>无AI环境验证"]
+    G --> H["8.徽章<br/>成就解锁"]
+
+    classDef stepNode fill:#16161a,stroke:#3a3a3e,color:#d4d4d4
+    class A,B,C,D,E,F,G,H stepNode
+  </div>
+  <div class="notes">
+    <h3>理想流程</h3>
+    <p>注册 → 定级测试冷启动 → 日常练习积累掌握度 → 弱点浮现 → 针对性补弱 → 认证验证 → 徽章激励 → 继续练习。这是一个闭环。</p>
+    <p class="warn">⚠️ 但实际上：定级测试之后，只有代码审查和费曼能更新掌握度。如果用户只做竞技场，掌握度永远不变，闭环就断了。</p>
+  </div>
+</div>
+
+<!-- ════════ Tab 2: 用户操作流 ════════ -->
+<div id="actions" class="panel">
+  <h2>用户操作流：每一步操作背后发生了什么</h2>
+  <p class="section-desc">点击下方按钮查看每个模块的详细数据流。每张图从上到下展示：用户做了什么 → 系统怎么处理 → 数据写到哪 → 返回什么给用户。</p>
+
+  <div class="sub-tabs">
+    <button class="stab active" onclick="switchSub('placement')">定级测试</button>
+    <button class="stab" onclick="switchSub('review')">代码审查</button>
+    <button class="stab" onclick="switchSub('arena')">调试竞技场</button>
+    <button class="stab" onclick="switchSub('feynman')">费曼检验</button>
+    <button class="stab" onclick="switchSub('socratic')">苏格拉底对话</button>
+    <button class="stab" onclick="switchSub('cert')">认证考试</button>
+  </div>
+
+  <!-- 定级测试 -->
+  <div id="placement" class="sub-panel active">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant API as POST /api/certification/submit
+    participant S as 后端逻辑
+    participant DB as 数据库
+
+    U->>API: 提交5道题答案 (exam_id=placement)
+    API->>S: 判分
+    S->>DB: 查题目正确答案
+    DB-->>S: 返回答案
+    S->>S: 计算总分(0-100)
+
+    Note over S,DB: 关键步骤：给全部12个知识点各写一条初始事件
+    loop 12个知识点
+        S->>DB: 写 deck_mastery_events<br/>source=placement<br/>correct = 总分≥60 ? true : false
+    end
+
+    Note over S,DB: 写三轴初始经验值
+    S->>DB: 写 deck_ability_axes<br/>review轴: (分数÷25)级 × 400 + 200 XP<br/>implement轴: 同上<br/>debug轴: 低一档
+    S->>DB: 写动态流 "完成定级测试"
+    S->>DB: 记录每日活动
+    S->>DB: 评估徽章
+
+    S-->>U: 返回分数 + "能力图谱已生成"
+    </div>
+    <div class="notes">
+      <h3>定级测试做了什么</h3>
+      <p>用户做5道题（读代码找bug + 手写小函数），系统算出一个总分。然后给<b>全部12个知识点</b>各写一条初始事件。</p>
+      <p class="warn">⚠️ 问题：12个知识点写的是<b>同一条 correct 值</b>（总分≥60就全部correct=true，否则全部false）。没有区分度——用户可能指针很强但排序很弱，定级看不出来。</p>
+      <p>定级之后，三轴经验值也按总分一刀切设置。这就是用户能力图谱的初始状态。</p>
+    </div>
+  </div>
+
+  <!-- 代码审查 -->
+  <div id="review" class="sub-panel">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant API as POST /api/review-gym/submit
+    participant S as 后端逻辑
+    participant DB as 数据库
+
+    U->>API: 标注缺陷（行号+类型）
+
+    API->>S: 查这道题的秘密缺陷清单
+    S->>DB: SELECT deck_injected_defects<br/>(这些绝不下发给前端)
+    DB-->>S: 返回真实缺陷 [{line, type, explanation}]
+
+    S->>S: judge_marks() 判定<br/>逐条比对：行号±1容差 + 类型匹配<br/>→ 命中 hits / 漏报 missed / 误报 false_alarms<br/>→ score = 命中数÷缺陷数×70 + 精确率×30
+
+    Note over S,DB: 每命中1处缺陷 → 给知识点写1条事件
+    loop 每个命中
+        S->>DB: 写 deck_mastery_events<br/>source=review_gym, correct=true<br/>知识点 = 这道题的 related_weakness
+    end
+
+    S->>DB: 加审阅轴经验 (+20×命中数)
+    S->>DB: 记录每日活动
+
+    alt 全部命中且无误报
+        S->>DB: +5 智核奖励
+    end
+
+    S->>DB: 评估徽章
+    S-->>U: 三色反馈(绿=命中/红=漏报/黄=误报) + 分数
+    </div>
+    <div class="notes">
+      <h3>代码审查室的数据流</h3>
+      <p class="ok">✅ 这是数据流最完整的模块。命中缺陷 → 写掌握度事件 → 加经验 → 记活动 → 评估徽章，全链路通畅。</p>
+      <p class="warn">⚠️ 问题1：每道题只有一个 related_weakness（硬编码）。REVIEW-0247 永远关联"边界条件处理"。一段快速排序代码里同时有边界错误和逻辑错误，但只有边界错误会影响知识点掌握度。</p>
+      <p class="warn">⚠️ 问题2：只有2道题。做完了就在两道之间循环。</p>
+      <p class="warn">⚠️ 问题3：重做时只按"新增命中"结算，防止刷经验。但如果第一次全中了，重做直接返回旧结果，不再结算。</p>
+    </div>
+  </div>
+
+  <!-- 调试竞技场 -->
+  <div id="arena" class="sub-panel">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant API as POST /api/arena/run
+    participant S as 后端逻辑
+    participant DB as 数据库
+
+    U->>API: 提交修复后的代码
+
+    API->>S: judge_arena_code()
+
+    Note over S: ⚠️ 判题方式：字符串匹配!<br/>把代码去掉所有空格后检查:<br/>1. 是否包含 "lo=mid-1" → 修了死循环<br/>2. 是否包含 "nums[lo]+nums[mid])" → 修了索引<br/><br/>用 statistics.median() 一行解决？→ 2/5 不通过<br/>重写整个函数？→ 2/5 不通过<br/>只有写出预设的精确token序列才全过
+
+    S->>S: 判定 solved / passed / total
+
+    S->>DB: 写 deck_arena_attempts<br/>(记录这次尝试)
+    S->>DB: 加调试轴经验(如果solved)
+    S->>DB: 记录每日活动
+
+    alt 攻克
+        S->>DB: rating += 23, win_streak++
+        Note over S: 三连胜时 +10 智核
+    else 未攻克
+        S->>DB: win_streak = 0
+    end
+
+    S->>DB: 评估徽章
+
+    Note over S,DB: ❌❌❌ 完全不写掌握度事件!<br/>调试轴的4个知识点(指针/栈/断点/日志)<br/>永远只有定级测试的那一条初始事件<br/>p_l 会随时间衰减但永远不会被更新<br/>→ 永远到不了"熟悉"以上
+
+    S-->>U: 显示测试通过情况
+    </div>
+    <div class="notes">
+      <h3>调试竞技场的数据流</h3>
+      <p class="danger">❌ 最大问题：不写掌握度事件。用户在竞技场练100次，知识点掌握度纹丝不动。</p>
+      <p class="danger">❌ 判题是字符串匹配：必须写出系统预设的精确代码token序列才算通过。换种正确写法也算错。</p>
+      <p class="warn">⚠️ 只有1个挑战（中位数统计），challenge_id 参数被完全忽略。</p>
+      <p class="warn">⚠️ score_delta=23 是硬编码的魔法数字。</p>
+    </div>
+  </div>
+
+  <!-- 费曼检验 -->
+  <div id="feynman" class="sub-panel">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant API as POST /api/tutor/feynman/check
+    participant S as 后端逻辑
+    participant DB as 数据库
+
+    U->>API: 提交自己的文字解释
+
+    API->>S: 查这个知识点的评分要点
+    S->>DB: SELECT key_points<br/>[{{keys:["空","空列表"], label:"空输入"}},<br/> {{keys:["越界","边界"], label:"循环边界"}}, ...]
+    DB-->>S: 返回评分要点
+
+    Note over S: ⚠️ 评分方式：关键词匹配!<br/><br/>遍历每个要点:<br/>  如果文本里包含任一预设同义词 → 标记"已覆盖"<br/>  否则 → 标记"缺失"<br/><br/>再检查结构:<br/>  有"因为/所以/否则/如果" → 有因果<br/>  有"比如/例如/假设/当" → 有举例<br/><br/>coverage≥80%且有结构 → 优秀<br/>coverage≥50%或有结构 → 良好<br/>否则 → 待加强
+
+    S->>S: feynman_grade() → 评级
+
+    Note over S,DB: 写掌握度事件
+    S->>DB: 写 deck_mastery_events<br/>source=feynman<br/>correct = (grade ≠ "待加强")<br/>grade = 评级
+
+    Note over S: 重算这个知识点的 p_l 和等级<br/>HLR模型重放全部历史事件
+
+    S->>DB: 扣2智核
+    S->>DB: 记录每日活动
+    S->>DB: 评估徽章
+
+    S-->>U: 显示评级 + 盲区提示 + 掌握度变化
+    </div>
+    <div class="notes">
+      <h3>费曼检验的数据流</h3>
+      <p class="ok">✅ 会写掌握度事件，数据流是通的。</p>
+      <p class="danger">❌ 但评分方式是纯关键词匹配，这就是你说的"鸡肋"：</p>
+      <p>• 用户写一段完全跑题的废话，只要碰巧包含"空列表""边界""因为""比如"这些词 → 可能拿"优秀"</p>
+      <p>• 用户用自己的话讲得完全正确，但没用预设同义词（比如用"空白"代替"空列表"）→ 会被判"待加强"</p>
+      <p>• 系统不会检测用户是否跑题——它只数关键词</p>
+      <p>• 没有追问机制——一次性提交、一次性评分、结束。真正的费曼教学法是互动的。</p>
+      <p class="warn">⚠️ 这意味着写入的 correct 标志可能不可信 → 污染了掌握度数据。</p>
+    </div>
+  </div>
+
+  <!-- 苏格拉底对话 -->
+  <div id="socratic" class="sub-panel">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant API as POST /api/tutor/message
+    participant S as 后端逻辑
+    participant DB as 数据库
+
+    U->>API: 发一条消息
+
+    API->>S: 检查智核余额
+    S->>DB: 查 user.cores
+
+    alt 余额不足
+        S-->>U: "智核余额不足..."
+    else 余额足够
+        Note over S: ⚠️ 回复方式：关键词路由!<br/><br/>检查用户消息里有没有预设关键词:<br/>  "指针/pointer/内存" → 返回固定话术A<br/>  "递归" → 返回固定话术B<br/>  "边界/空/0" → 返回固定话术C<br/>  "排序" → 返回固定话术D<br/>  "循环/死循环" → 返回固定话术E<br/>  都没匹配 → 按消息数量轮转5句通用话术<br/><br/>不是AI。没有上下文记忆。<br/>用户说任何包含"指针"的话都回同一句。
+
+        S->>S: socratic_reply() → 生成回复
+        S->>DB: 扣2智核
+        S->>DB: 记录每日活动
+        S->>DB: 存对话记录
+
+        S-->>U: 显示回复 + 新余额
+    end
+    </div>
+    <div class="notes">
+      <h3>苏格拉底对话的数据流</h3>
+      <p class="danger">❌ 这不是AI。是关键词路由 + 预设话术轮转。</p>
+      <p>• 用户说"我觉得指针很难" → 匹配到"指针" → 返回固定话术"你觉得p指向的内存被free之后..."</p>
+      <p>• 用户说"今天天气不错" → 没匹配到任何关键词 → 返回通用话术第N句</p>
+      <p>• 没有上下文记忆：上一轮说了什么完全不影响下一轮回复</p>
+      <p>• 不写掌握度事件：纯对话不产生任何掌握度数据</p>
+      <p class="warn">⚠️ 调研结论：Bastani et al. (PNAS 2025) 证明，无护栏的AI会损害学习（考试-17%），有护栏的AI导师能提升127%。但这里连AI都没有。</p>
+    </div>
+  </div>
+
+  <!-- 认证考试 -->
+  <div id="cert" class="sub-panel">
+    <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant API as POST /api/certification/submit
+    participant S as 后端逻辑
+    participant DB as 数据库
+
+    U->>API: 提交答案 (exam_id ≠ placement)
+
+    API->>S: 查试卷和题目
+    S->>DB: SELECT deck_cert_questions
+    DB-->>S: 返回题目 + 正确答案
+
+    Note over S: 逐题判分:<br/>选择题: 精确匹配答案字符串<br/>代码题: 去空格后检查是否包含预设片段<br/><br/>例如 swap 题:<br/>  只检查代码里有没有 "*a=*b" 和 "*b="<br/>  不检查 temp 变量、不检查整体逻辑<br/>  写 "return 42; //*a=*b *b=" 也能通过
+
+    S->>S: 计算总分
+
+    alt 分数 ≥ 及格线
+        S->>DB: 写 deck_certifications (凭证)
+        S->>DB: +20 智核
+        S->>DB: 加实现轴经验 +40
+        S->>DB: 写动态流 "通过认证"
+    else 不及格
+        Note over S: 什么都不写
+    end
+
+    S->>DB: 记录每日活动
+    S->>DB: 评估徽章
+
+    Note over S,DB: ❌ 不写掌握度事件!<br/>通过认证不影响任何知识点的 p_l<br/>只影响实现轴经验值和认证记录
+
+    S-->>U: 显示分数 + 凭证(如果通过)
+    </div>
+    <div class="notes">
+      <h3>认证考试的数据流</h3>
+      <p class="ok">✅ 定位正确：限时无AI环境是科学验证过的评估手段（Bastani PNAS 2025）。</p>
+      <p class="danger">❌ 代码题判分太松：只检查是否包含预设代码片段，不验证整体逻辑。</p>
+      <p class="danger">❌ 不写掌握度事件：通过认证不影响任何知识点的 p_l。</p>
+      <p class="warn">⚠️ 所有认证考试共享同一套题目（指针题），只是 topic 名字不同。考"递归"认证实际上考的还是指针。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ Tab 3: 掌握度引擎 ════════ -->
+<div id="mastery" class="panel">
+  <h2>掌握度引擎：HLR 记忆模型 + 四级状态机</h2>
+  <p class="section-desc">这是系统的核心算法。每个知识点的掌握度不是直接存的，而是由历史事件序列「重放」计算出来的。</p>
+
+  <div class="mermaid">
+graph TB
+    subgraph input [输入]
+        E1["事件1: 定级 correct=true<br/>第1天"]
+        E2["事件2: 审查 correct=true<br/>第3天"]
+        E3["事件3: 费曼 correct=false<br/>第5天"]
+        E4["事件4: 审查 correct=true<br/>第10天"]
+    end
+
+    subgraph hlr [HLR 半衰期回归模型]
+        H1["初始半衰期 = 1天"]
+        H2["事件1 答对 → ×1.8 = 1.8天"]
+        H3["事件2 答对 → ×1.8 = 3.24天"]
+        H4["事件3 答错 → ×0.5 = 1.62天"]
+        H5["事件4 答对 → ×1.8 = 2.92天"]
+    end
+
+    subgraph output [输出]
+        PL["回忆概率 p = 2^(-距上次答对天数 / 半衰期)<br/>例: 距上次答对2天, 半衰期2.92天<br/>p = 2^(-2/2.92) = 0.62"]
+        LEVEL["等级判定:<br/>p≥0.8 + 答对≥4次 + 间隔重复 + 实战 → 精通<br/>p≥0.6 + 答对≥3次 → 熟练<br/>p≥0.3 → 熟悉<br/>p<0.3 → 初识"]
+    end
+
+    E1 & E2 & E3 & E4 --> H1
+    H1 --> H2 --> H3 --> H4 --> H5
+    H5 --> PL
+    PL --> LEVEL
+
+    classDef inputNode fill:#1a1e2e,stroke:#60a5fa,color:#60a5fa
+    classDef hlrNode fill:#1a2e1a,stroke:#4ade80,color:#4ade80
+    classDef outNode fill:#2e2e1a,stroke:#fbbf24,color:#fbbf24
+
+    class E1,E2,E3,E4 inputNode
+    class H1,H2,H3,H4,H5 hlrNode
+    class PL,LEVEL outNode
+  </div>
+
+  <div class="notes">
+    <h3>HLR 模型怎么工作</h3>
+    <p><b>半衰期</b>：每次答对，半衰期 ×1.8（记忆更持久）；每次答错，半衰期 ×0.5（记忆更快消退）。半衰期上限180天，下限0.2天。</p>
+    <p><b>回忆概率 p</b>：当前时刻你还记得这个知识点的概率。p = 2^(-距上次答对天数 / 半衰期)。距离越远、半衰期越短，p 越低。</p>
+    <p><b>等级</b>：不只是看 p，还要看答对次数和来源。</p>
+    <p class="ok">✅ 设计亮点：精通级要求「至少一次实战来源答对」——纯费曼永远到不了精通。这防止用户只靠嘴说就到顶。</p>
+    <p class="ok">✅ 事件源架构：p_l 不是直接存的，而是由事件序列重放计算。换算法（比如升级到FSRS）不需要改数据结构。</p>
+  </div>
+
+  <h2>四级掌握状态机</h2>
+  <div class="mermaid">
+graph LR
+    L1["初识<br/>p &lt; 0.3<br/>刚接触或快忘了"]
+    L2["熟悉<br/>p ≥ 0.3<br/>有印象但不牢"]
+    L3["熟练<br/>p ≥ 0.6 + 答对≥3次<br/>基本掌握"]
+    L4["精通<br/>p ≥ 0.8 + 答对≥4次<br/>+ 间隔≥3天的两次答对<br/>+ 至少一次实战来源"]
+
+    L1 -->|"多答对几次"| L2
+    L2 -->|"持续答对"| L3
+    L3 -->|"间隔重复 + 实战验证"| L4
+    L4 -.->|"长时间不练 → p衰减"| L3
+    L3 -.->|"长时间不练"| L2
+
+    classDef l1 fill:#2e1a1a,stroke:#f87171,color:#f87171
+    classDef l2 fill:#2e2e1a,stroke:#fbbf24,color:#fbbf24
+    classDef l3 fill:#1a2e1a,stroke:#4ade80,color:#4ade80
+    classDef l4 fill:#1a1e2e,stroke:#60a5fa,color:#60a5fa
+    class L1 l1
+    class L2 l2
+    class L3 l3
+    class L4 l4
+  </div>
+
+  <div class="notes">
+    <h3>等级晋升条件</h3>
+    <p><b>初识 → 熟悉</b>：p ≥ 0.3（半衰期够长或刚答对过）</p>
+    <p><b>熟悉 → 熟练</b>：p ≥ 0.6 <b>且</b> 答对 ≥ 3次</p>
+    <p><b>熟练 → 精通</b>：p ≥ 0.8 <b>且</b> 答对 ≥ 4次 <b>且</b> 有两次间隔≥3天的答对 <b>且</b> 至少一次来自实战（审查/竞技场/认证）</p>
+    <p class="warn">⚠️ 精通要求"实战来源"，但竞技场不写掌握度事件。所以精通的实战来源只有代码审查和认证（认证还不写事件）。实际上只有代码审查算实战来源。</p>
+  </div>
+
+  <h2>掌握度数据被谁消费</h2>
+  <div class="mermaid">
+graph TB
+    CACHE["deck_user_mastery 缓存<br/>每个知识点的 p_l + level"]
+
+    CACHE -->|"p_l最低3个"| DASH["仪表盘 · 弱点列表<br/>显示用户最弱的3个知识点"]
+    CACHE -->|"最低轴的level"| TASK["仪表盘 · 主任务推荐<br/>实现轴<3级→推认证/导师<br/>否则→推最低轴的模块"]
+    CACHE -->|"全部知识点p_l+level+趋势"| ABIL["能力图谱页<br/>12个知识点掌握度网格"]
+    CACHE -->|"p_l < 0.6"| REV["复盘页 · 弱知识点<br/>推费曼检验补弱"]
+    CACHE -->|"每轴最弱知识点"| AXIS["能力图谱 · 每轴短板<br/>显示'你最弱的是X'"]
+
+    classDef cache fill:#1a2e1a,stroke:#4ade80,color:#4ade80
+    classDef consumer fill:#1a1e2e,stroke:#60a5fa,color:#60a5fa
+    class CACHE cache
+    class DASH,TASK,ABIL,REV,AXIS consumer
+  </div>
+  <div class="notes">
+    <h3>掌握度数据流向哪些页面</h3>
+    <p>缓存数据被5个地方消费：仪表盘弱点列表、主任务推荐、能力图谱、复盘页、每轴短板。</p>
+    <p class="warn">⚠️ 但如果掌握度数据本身不准（费曼评分不可信、竞技场不写事件），这些消费方拿到的就是错的——推荐的主任务可能不对，显示的弱点可能不是真弱点。</p>
+  </div>
+</div>
+
+<!-- ════════ Tab 4: 数据断裂点 ════════ -->
+<div id="gaps" class="panel">
+  <h2>数据断裂点：哪里出了问题</h2>
+  <p class="section-desc">红色 = 完全断裂 &nbsp; 黄色 = 有但质量差 &nbsp; 以下标注了所有已知问题及其影响。</p>
+
+  <div class="mermaid">
+graph TB
+    subgraph broken [完全断裂]
+        G1["🔴 竞技场不写掌握度事件<br/>调试轴4个知识点永远停滞<br/>用户练100次竞技场, 知识点p_l不变"]
+        G2["🔴 认证不写掌握度事件<br/>通过认证不影响知识点掌握度<br/>只影响实现轴经验值"]
+        G3["🔴 竞技场判题是字符串匹配<br/>正确但不同写法的代码判错<br/>challenge_id参数被忽略, 只有1个挑战"]
+        G4["🔴 所有认证考试共用同一套题<br/>考'递归'认证实际考的是指针<br/>cert-multi-topic徽章可轻易获得"]
+    end
+
+    subgraph weak [有但质量差]
+        G5["🟡 费曼评分是关键词匹配<br/>跑题的废话只要包含关键词就高分<br/>正确解释没用预设词就判不及格<br/>→ 写入的correct标志不可信"]
+        G6["🟡 苏格拉底导师不是AI<br/>关键词路由+预设话术轮转<br/>没有上下文记忆<br/>说任何包含'指针'的话都回同一句"]
+        G7["🟡 认证代码题判分太松<br/>只检查是否包含预设片段<br/>写 'return 42; //*a=*b' 也能通过"]
+        G8["🟡 定级测试无区分度<br/>12个知识点写同一条correct值<br/>总分≥60→全部true, 否则全部false"]
+        G9["🟡 审查关related_weakness是一对一硬编码<br/>一段代码同时有边界错误和逻辑错误<br/>但只有边界错误影响掌握度"]
+    end
+
+    subgraph insufficient [内容不足]
+        G10["🟡 只有2个审查关卡<br/>做完了在两个之间循环"]
+        G11["🟡 只有1个竞技场挑战<br/>challenge_id参数被完全忽略"]
+        G12["🟡 只有1套认证题目<br/>所有topic共用指针题"]
+        G13["🟡 费曼评分要点只有3个知识点有<br/>其余9个只能看结构分"]
+    end
+
+    classDef brokenNode fill:#2e1a1a,stroke:#f87171,color:#f87171
+    classDef weakNode fill:#2e2e1a,stroke:#fbbf24,color:#fbbf24
+    class G1,G2,G3,G4 brokenNode
+    class G5,G6,G7,G8,G9 weakNode
+    class G10,G11,G12,G13 weakNode
+  </div>
+
+  <div class="notes">
+    <h3>问题影响链</h3>
+    <p class="danger">🔴 最严重：竞技场不写掌握度事件 → 调试轴4个知识点永远停滞 → 能力图谱上调试轴永远显示弱点 → 但推荐的主任务可能一直推调试模块 → 用户做了但掌握度不变 → 死循环。</p>
+    <p class="warn">🟡 次严重：费曼评分不准 → 写入的correct标志不可信 → p_l计算基于错误数据 → 仪表盘弱点推荐、主任务推荐、能力图谱显示都受影响。</p>
+    <p class="warn">🟡 苏格拉底导师不是AI → 用户体验差 → 导师模块形同虚设 → 智核消耗没有获得价值。</p>
+    <p class="warn">🟡 内容不足 → 用户很快做完所有内容 → 没有理由回来 → 留存率低。</p>
+  </div>
+
+  <h2>理想 vs 现状对比</h2>
+  <div class="mermaid">
+graph TB
+    subgraph ideal [理想状态]
+        I1["✅ 审查室 → 写事件(每个缺陷独立打标签)"]
+        I2["✅ 竞技场 → 写事件(关联调试类知识点)"]
+        I3["✅ 费曼 → LLM语义评分(不是关键词匹配)"]
+        I4["✅ 导师 → 真AI(有上下文+护栏)"]
+        I5["✅ 认证 → Judge0真判题"]
+        I6["✅ 内容 → AI自适应生成"]
+    end
+
+    subgraph reality [现状]
+        R1["⚠️ 审查室 → 写事件(但只关联1个知识点)"]
+        R2["❌ 竞技场 → 不写事件"]
+        R3["❌ 费曼 → 关键词匹配"]
+        R4["❌ 导师 → 关键词路由"]
+        R5["❌ 认证 → 字符串包含检查"]
+        R6["❌ 内容 → 2审查+1竞技+1套认证题"]
+    end
+
+    I1 -.- R1
+    I2 -.- R2
+    I3 -.- R3
+    I4 -.- R4
+    I5 -.- R5
+    I6 -.- R6
+
+    classDef idealNode fill:#1a2e1a,stroke:#4ade80,color:#4ade80
+    classDef realityBad fill:#2e1a1a,stroke:#f87171,color:#f87171
+    classDef realityWeak fill:#2e2e1a,stroke:#fbbf24,color:#fbbf24
+    class I1,I2,I3,I4,I5,I6 idealNode
+    class R2,R3,R4,R5,R6 realityBad
+    class R1 realityWeak
+  </div>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    darkMode: true,
+    background: '#0d0d0f',
+    primaryColor: '#16161a',
+    primaryTextColor: '#d4d4d4',
+    primaryBorderColor: '#3a3a3e',
+    lineColor: '#5a5a5e',
+    secondaryColor: '#16161a',
+    tertiaryColor: '#111114',
+    fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
+    fontSize: '14px'
+  },
+  flowchart: { curve: 'basis', padding: 20 },
+  sequence: { actorMargin: 50, messageMargin: 35 }
+});
+
+function switchMain(id) {
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function switchSub(id) {
+  document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
+
+</body>
+</html>

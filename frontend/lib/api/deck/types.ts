@@ -8,6 +8,28 @@ export type ModuleKey = 'review-gym' | 'arena' | 'tutor' | 'certification'
 export type AxisKey = 'review' | 'debug' | 'implement'
 export type Difficulty = 1 | 2 | 3 | 4 | 5
 
+/* ── 徽章系统（四模块共享，定义见 docs/superpowers/specs/2026-07-27-badge-system-design.md §5）── */
+
+export type BadgeTier = 'bronze' | 'silver' | 'gold'
+
+export interface BadgeInfo {
+  id: string
+  tier: BadgeTier
+  title: string               // 隐藏未解锁时为 "???"
+  condition_desc: string      // 隐藏未解锁时为 "???"
+  hidden: boolean
+  unlocked: boolean
+  reward_cores: number
+  unlocked_at: string | null
+}
+
+export interface BadgeUnlock {
+  id: string                  // 提交响应里的新解锁项
+  tier: BadgeTier
+  title: string
+  reward_cores: number
+}
+
 /* ── 仪表盘聚合端点 GET /api/dashboard ── */
 
 export interface MainTask {
@@ -103,6 +125,7 @@ export interface ReviewVerdict {
   false_alarms: ReviewMark[]          // 误报
   score: number                       // 0-100
   accuracy: number                    // 0-1
+  new_badges: BadgeUnlock[]            // 本次提交新解锁的徽章（无则空数组）
 }
 
 /* ── 复盘 /api/review（错题复习：与导师对话是相互独立的功能）── */
@@ -142,6 +165,7 @@ export interface ArenaRunResult {
   output: string
   solved: boolean
   score_delta: number
+  new_badges: BadgeUnlock[]            // 本次提交新解锁的徽章（无则空数组）
 }
 
 export interface ArenaLeaderboardEntry {
@@ -193,6 +217,7 @@ export interface TutorReply {
   grade?: FeynmanGrade                  // 费曼检验评级
   feynman_session_id?: string           // 费曼会话 id（startFeynman 返回）
   mastery_update?: MasteryUpdate        // 费曼检验后掌握度变化
+  new_badges: BadgeUnlock[]              // 本次提交新解锁的徽章（无则空数组）
 }
 
 /* ── 基本功认证 /api/certification ── */
@@ -233,6 +258,7 @@ export interface CertResult {
   passed: boolean
   certificate: CertRecord | null
   per_question: Array<{ question_id: string; correct: boolean }>
+  new_badges: BadgeUnlock[]              // 本次提交新解锁的徽章（无则空数组）
 }
 
 export interface CertificationHome {
@@ -240,6 +266,7 @@ export interface CertificationHome {
   certified: CertRecord[]
   available_exams: CertExamInfo[]
   next_available_days: number | null
+  badges: BadgeInfo[]                   // 全量 17 枚徽章墙（hidden 未解锁已脱敏）
 }
 
 /* ── 能力图谱 /api/ability-map ── */

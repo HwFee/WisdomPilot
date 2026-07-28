@@ -5,16 +5,16 @@ import logging
 
 from fastapi import FastAPI
 
-from app import models as _register_auth_models  # noqa: F401 - 注册 User 进 Base.metadata
-from app.deck import models as _register_deck_models  # noqa: F401 - register deck models before init_db
+from app.auth import models as _register_auth_models  # noqa: F401 - register User into Base.metadata
+from app.training import models as _register_training_models  # noqa: F401 - register training models before init_db
 from app.config import Settings
 
-# 显式引用副作用 import：二者仅为在建表前把模型注册进 Base.metadata
-_MODELS_REGISTERED = (_register_auth_models, _register_deck_models)
+# Explicit side-effect imports: both exist solely to register models into Base.metadata before table creation.
+_MODELS_REGISTERED = (_register_auth_models, _register_training_models)
 from app.database import AsyncSessionLocal, init_db
-from app.deck.seed import seed_deck
-from app.schemas.ai import AIProviderConfig
-from app.services.ai import ai_service
+from app.training.seed import seed_deck
+from app.ai.config import AIProviderConfig
+from app.ai.service import ai_service
 
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 APP_SERVICES_LOGGER = "app.services"

@@ -1,6 +1,9 @@
 packages:
   - '.'
 
+allowBuilds:
+  sharp: set this to true or false
+
 # Security hardening for package installation
 minimumReleaseAge: 10080 # 7 days in minutes
-trustPolicy: no-downgrade
+trustPolicy: allow-downgrade

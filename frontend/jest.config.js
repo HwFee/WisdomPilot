@@ -11,9 +11,6 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   modulePathIgnorePatterns: ['<rootDir>/.next/'],
-  transformIgnorePatterns: [
-    '/node_modules/(?!(react-markdown|remark-gfm|unist-.*|mdast-.*|micromark.*)/)',
-  ],
 }
 
 module.exports = createJestConfig(customJestConfig)

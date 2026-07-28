@@ -14,12 +14,11 @@ const API_BASE_URL = normalizeApiBaseUrl(
   getApiBaseUrl(),
 );
 const REQUEST_TIMEOUT = 30000; // 30 seconds for regular requests
-const CODE_EXECUTION_TIMEOUT = 60000; // 60 seconds for code execution (Judge0 can be slow)
 
 /**
  * Fetch with authentication header and timeout
  */
-export async function fetchWithAuth(
+async function fetchWithAuth(
   url: string,
   token: string,
   options: RequestInit = {},
@@ -110,46 +109,6 @@ export async function post<T>(
 }
 
 /**
- * PUT request with auth
- */
-export async function put<T>(
-  endpoint: string,
-  token: string,
-  body?: unknown,
-): Promise<T> {
-  const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, token, {
-    method: "PUT",
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  return response.json();
-}
-
-/**
- * PATCH request with auth
- */
-export async function patch<T>(
-  endpoint: string,
-  token: string,
-  body?: unknown,
-): Promise<T> {
-  const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, token, {
-    method: "PATCH",
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  return response.json();
-}
-
-/**
- * DELETE request with auth
- */
-export async function del<T>(endpoint: string, token: string): Promise<T> {
-  const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, token, {
-    method: "DELETE",
-  });
-  return response.json();
-}
-
-/**
  * POST request without auth (for login/register)
  */
 export async function postPublic<T>(
@@ -200,28 +159,4 @@ export async function postPublic<T>(
   }
 }
 
-/**
- * POST request with keepalive=true — survives page navigation/unmount.
- * Use this for fire-and-forget cleanup requests (e.g. session end on unmount).
- * Does NOT use AbortController so it won't be cancelled by timeouts.
- */
-export function postKeepalive(
-  endpoint: string,
-  token: string,
-  body?: unknown,
-): void {
-  const url = `${API_BASE_URL}${endpoint}`;
-  const payload = body ? JSON.stringify(body) : undefined;
-
-  fetch(url, {
-    method: "POST",
-    keepalive: true,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: payload,
-  }).catch(() => {});
-}
-
-export { API_BASE_URL, normalizeApiBaseUrl };
+export { API_BASE_URL };

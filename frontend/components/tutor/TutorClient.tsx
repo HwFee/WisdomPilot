@@ -7,6 +7,7 @@ import { getTutorState, sendTutorMessage, startFeynman, submitFeynman } from '@/
 import type { MasteryUpdate, TutorMessage, TutorMode, TutorReply } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { PanelTag } from '../deck/kit'
+import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 
 const GRADE_STYLE: Record<string, string> = {
   优秀: 'text-signal',
@@ -80,6 +81,7 @@ export function TutorClient() {
   const [feynmanSessionId, setFeynmanSessionId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topicHandled = useRef(false)
+  const { celebrate, celebrationElement } = useBadgeCelebration()
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -133,6 +135,7 @@ export function TutorClient() {
         setMessages((prev) => [...prev, { ...r.message, grade: r.grade, mastery: r.mastery_update }])
         setBalance(r.cores_balance)
         setThinking(false)
+        celebrate(r.new_badges)
       })
     }, 900)
   }
@@ -149,6 +152,7 @@ export function TutorClient() {
 
   return (
     <DeckShell>
+      {celebrationElement}
       <div className="deck-boot deck-boot-1 flex flex-wrap items-center gap-4">
         <PanelTag label="AI TUTOR · 苏格拉底导师" variant="on" />
         {/* 模式切换 */}

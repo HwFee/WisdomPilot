@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { isAuthenticated } from '@/lib/api'
 import { getCertificationHome, getExam, submitExam } from '@/lib/api/deck/certification'
 import { placementLevels } from '@/lib/api/deck/mock/certification'
 import type {
+  BadgeInfo,
   CertAnswer,
   CertExam,
   CertResult,
@@ -13,6 +14,9 @@ import type {
 } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { CountUp, PanelTag, SectionHead } from '../deck/kit'
+import { BadgeIcon } from '../deck/BadgeIcon'
+import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
+import { TIER_COLOR, TIER_LABEL, TIER_ORDER, TIER_TEXT_CLASS } from '../deck/badge-meta'
 
 type Phase = 'loading' | 'home' | 'exam' | 'result'
 
@@ -22,11 +26,72 @@ function formatClock(sec: number): string {
 
 /* ── HOME：徽章墙 + 可考列表 ── */
 
+/** 徽章墙：按 tier 分组；未解锁 60% 透明 + 虚线边框；hidden 未解锁由数据脱敏为 ??? */
+function BadgeWall({
+  badges,
+  newBadgeIds,
+}: {
+  badges: BadgeInfo[]
+  /** 本次会话新解锁的徽章 id：首次进入视图边框 pulse 一次 */
+  newBadgeIds: string[]
+}) {
+  const unlockedCount = badges.filter((b) => b.unlocked).length
+  return (
+    <>
+      <div className="deck-boot deck-boot-3">
+        <SectionHead title="徽章墙 / Badges" note={`已解锁 ${unlockedCount} / ${badges.length}`} />
+      </div>
+      <div className="deck-boot deck-boot-3 space-y-4">
+        {TIER_ORDER.map((tier) => (
+          <div key={tier}>
+            <div className={`mb-2 font-mono text-[10px] tracking-[1.5px] ${TIER_TEXT_CLASS[tier]}`}>
+              {TIER_LABEL[tier]}
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {badges
+                .filter((b) => b.tier === tier)
+                .map((b) => {
+                  const isNew = newBadgeIds.includes(b.id)
+                  return (
+                    <div
+                      key={b.id}
+                      className={`flex items-center gap-3 rounded border p-3 ${
+                        b.unlocked ? 'border-line bg-panel' : 'border-dashed border-line opacity-60'
+                      } ${isNew ? 'badge-wall-new' : ''}`}
+                      style={
+                        isNew
+                          ? ({ '--badge-color': TIER_COLOR[b.tier] } as CSSProperties)
+                          : undefined
+                      }
+                    >
+                      <BadgeIcon id={b.id} tier={b.tier} size={36} locked={!b.unlocked} />
+                      <div className="min-w-0">
+                        <div className="truncate text-[13px] font-medium text-text">{b.title}</div>
+                        <div className="truncate font-mono text-[10px] text-faint">
+                          {b.condition_desc}
+                        </div>
+                        {b.unlocked && (
+                          <div className="font-mono text-[10px] text-signal">+{b.reward_cores}</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function HomeView({
   home,
+  newBadgeIds,
   onStart,
 }: {
   home: CertificationHome
+  newBadgeIds: string[]
   onStart: (examId: string) => void
 }) {
   return (
@@ -60,14 +125,17 @@ function HomeView({
         )}
       </div>
 
+      {/* 徽章墙 */}
+      <BadgeWall badges={home.badges} newBadgeIds={newBadgeIds} />
+
       {/* 可考列表 */}
-      <div className="deck-boot deck-boot-3">
+      <div className="deck-boot deck-boot-4">
         <SectionHead
           title="可参加认证 / Available"
           note={home.next_available_days ? `冷却期 ${home.next_available_days} 天` : undefined}
         />
       </div>
-      <div className="deck-boot deck-boot-3 space-y-3">
+      <div className="deck-boot deck-boot-4 space-y-3">
         {home.available_exams.map((e) => {
           const cooling = home.next_available_days !== null && home.next_available_days > 0
           return (
@@ -329,6 +397,8 @@ export function CertificationClient() {
   const [exam, setExam] = useState<CertExam | null>(null)
   const [result, setResult] = useState<CertResult | null>(null)
   const [isPlacement, setIsPlacement] = useState(false)
+  const [newBadgeIds, setNewBadgeIds] = useState<string[]>([])
+  const { celebrate, celebrationElement } = useBadgeCelebration()
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -362,11 +432,14 @@ export function CertificationClient() {
     submitExam(exam.info.id, answers).then((r) => {
       setResult(r)
       setPhase('result')
+      celebrate(r.new_badges)
+      setNewBadgeIds(r.new_badges.map((b) => b.id))
     })
   }
 
   return (
     <DeckShell>
+      {celebrationElement}
       <div className="deck-boot deck-boot-1">
         <PanelTag label="NO-AI ZONE · 基本功认证" variant="on" />
         <h1 className="mt-3 text-xl font-semibold">
@@ -381,7 +454,9 @@ export function CertificationClient() {
             载入中<span className="deck-cursor ml-2" />
           </div>
         )}
-        {phase === 'home' && home && <HomeView home={home} onStart={startExam} />}
+        {phase === 'home' && home && (
+          <HomeView home={home} newBadgeIds={newBadgeIds} onStart={startExam} />
+        )}
         {phase === 'exam' && exam && (
           <ExamView exam={exam} isPlacement={isPlacement} onSubmit={handleSubmit} />
         )}

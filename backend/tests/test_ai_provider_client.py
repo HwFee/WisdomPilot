@@ -4,9 +4,9 @@ import traceback
 import httpx
 import pytest
 
-from app.schemas.ai import AIProviderConfig
-from app.services.ai_provider.client import OpenAICompatibleClient
-from app.services.ai_provider.errors import (
+from app.ai.config import AIProviderConfig
+from app.ai.provider.client import OpenAICompatibleClient
+from app.ai.provider.errors import (
     AIProviderConfigurationError,
     AIProviderHTTPError,
     AIProviderNetworkError,

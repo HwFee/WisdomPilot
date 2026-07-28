@@ -1,4 +1,5 @@
 import { deckCall } from './client'
+import { awardMockBadges, isNightHour } from './mock/badges'
 import {
   TUTOR_STATE_MOCK,
   mockStartFeynman,
@@ -38,6 +39,7 @@ export function sendTutorMessage(
             text: '你的智核余额不足了。去基本功认证通过一场考试，或者明天再来——每日登录会补充 5 智核。',
           },
           cores_balance: balance,
+          new_badges: [],
         }
       }
       return {
@@ -48,6 +50,7 @@ export function sendTutorMessage(
           text: socraticReply(text, historyLen),
         },
         cores_balance: balance - costPerQuestion,
+        new_badges: [],
       }
     },
     { method: 'POST', body: JSON.stringify({ text, mode }) }
@@ -64,6 +67,7 @@ export function startFeynman(topic: string): Promise<TutorReply> {
         message: { id: nextId(), role: 'tutor' as const, mode: 'feynman' as const, text: opening },
         cores_balance: TUTOR_STATE_MOCK.cores_balance,
         feynman_session_id: sessionId,
+        new_badges: [],
       }
     },
     { method: 'POST', body: JSON.stringify({ topic }) }
@@ -81,11 +85,13 @@ export function submitFeynman(
     '/tutor/feynman/check',
     () => {
       const { verdict, grade, mastery } = mockSubmitFeynman(sessionId, text)
+      const new_badges = awardMockBadges({ feynmanGrade: grade, isNight: isNightHour() })
       return {
         message: { id: nextId(), role: 'tutor' as const, mode: 'feynman' as const, text: verdict },
         cores_balance: Math.max(0, balance - costPerQuestion),
         grade,
         mastery_update: mastery,
+        new_badges,
       }
     },
     { method: 'POST', body: JSON.stringify({ session_id: sessionId, text }) }

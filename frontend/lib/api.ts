@@ -5,15 +5,3 @@
 
 // Re-export everything from the modular API
 export * from './api/index'
-
-// Additional backward-compatible exports
-export interface ApiError {
-  detail: string
-}
-
-// Old interface aliases for backward compatibility
-export interface AuthResponse {
-  access_token: string
-  token_type: string
-  user: import('./api/index').User
-}
