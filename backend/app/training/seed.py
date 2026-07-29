@@ -1,19 +1,66 @@
+# ──────────────────────────────────────────────────────────────────
+# 训练舱种子数据模块（seed.py）
+# ──────────────────────────────────────────────────────────────────
+# 本文件负责在数据库首次初始化时灌入训练舱的种子数据（seed data）。
+#
+# 种子数据是"硬编码在代码中的基础内容"——不需要管理后台，直接由代码
+# 定义并导入数据库。适合场景：核心内容相对稳定、数量不多、与代码逻辑
+# 紧密耦合。
+#
+# 种子内容包括四个部分：
+#   1. 知识点（KNOWLEDGE_POINTS）       —— 13 个核心知识点 + 费曼评分要点
+#   2. 代码审查关卡（REVIEW_SESSIONS）  —— 2 个关卡 + 注入缺陷
+#   3. 调试竞技场挑战（ARENA_CHALLENGES）—— 1 个挑战
+#   4. 认证考试（CERT_EXAMS + CERT_QUESTIONS）—— 2 场考试 + 11 道题目
+#
+# 幂等性设计：
+#   seed_deck() 函数在执行前会检查知识点表是否已有数据——如果有则跳过。
+#   这意味着可以安全地重复调用（如多次启动服务），不会产生重复数据。
+#   添加新种子数据后，需要清空旧数据或手动 INSERT 才能生效。
+#
+# 注意事项：
+#   - SQLite 在每条语句执行时即时检查外键约束（不同于 MySQL 在事务提交
+#     时检查），所以父表必须先于子表插入，中途需要 await db.flush()。
+#   - 注入缺陷（DeckInjectedDefect）是"服务端秘密"——前端可以看到
+#     defect_count（告诉用户有 N 个 bug），但不会收到具体行号和解释。
+# ──────────────────────────────────────────────────────────────────
+
 """训练舱种子数据：知识点、审查关卡、竞技场挑战、认证考试。
 
 幂等：knowledge_points 非空则跳过（可重复执行）。
 """
 
+# func：SQL 聚合函数（如 count），用于幂等性检查
+# select：构建 SELECT 语句
 from sqlalchemy import func, select
+# AsyncSession：SQLAlchemy 的异步数据库会话，seed_deck 需要通过它操作数据库
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# 导入需要灌入数据的模型类
 from app.training.models import (
-    DeckArenaChallenge,
-    DeckCertExam,
-    DeckCertQuestion,
-    DeckInjectedDefect,
-    DeckKnowledgePoint,
-    DeckReviewSession,
+    DeckArenaChallenge,   # 调试竞技场挑战
+    DeckCertExam,         # 认证考试定义
+    DeckCertQuestion,     # 认证考试题目
+    DeckInjectedDefect,   # 注入缺陷（子表，依赖于 DeckReviewSession）
+    DeckKnowledgePoint,   # 知识点（首先检查幂等）
+    DeckReviewSession,    # 代码审查关卡（父表，DeckInjectedDefect 依赖它）
 )
+
+# ──────────────────────────────────────────────────────────────────
+# 知识点列表（13 个核心知识点）
+# ──────────────────────────────────────────────────────────────────
+# 数据结构：(name, category, axis, key_points)
+#   name:       知识点名称（全局唯一）
+#   category:   分类标签（如"数据结构 · 排序"），用于前端分组展示
+#   axis:       能力轴（review=代码审查 / debug=调试排错 / implement=编码实现）
+#   key_points: 费曼检验评分要点列表，每项为 {"keys": [同义词], "label": 要点名}
+#               用户讲述时命中任一同义词即算覆盖该要点
+#
+# 知识点覆盖三个轴的均衡分布：
+#   review 轴（4 个）：边界条件、并发审阅、坏味道识别、安全漏洞
+#   debug 轴（4 个）：指针内存、调用帧、断点策略、日志定位
+#   implement 轴（5 个）：递归出口、DP 状态设计、链表操作、排序实现、字符串处理
+# ──────────────────────────────────────────────────────────────────
 
 KNOWLEDGE_POINTS = [
     # (name, category, axis, key_points) —— key_points 是费曼检验评分要点：
@@ -111,6 +158,14 @@ KNOWLEDGE_POINTS = [
     ]),
 ]
 
+# ──────────────────────────────────────────────────────────────────
+# 代码审查室关卡（Review Gym Sessions）
+# ──────────────────────────────────────────────────────────────────
+# 每个关卡的 code 字段是 AI 生成的"看似正确但有 bug"的代码，
+# defects 列表是注入缺陷的详情（行号/类型/解释），为服务端秘密。
+# 前端只看到 defect_count（告知有几个 bug），看不到具体位置。
+# ──────────────────────────────────────────────────────────────────
+
 REVIEW_SESSIONS = [
     {
         "id": "REVIEW-0247",
@@ -176,6 +231,14 @@ void free_list(Node *head) {
     },
 ]
 
+# ──────────────────────────────────────────────────────────────────
+# 调试竞技场挑战（Arena Challenges）
+# ──────────────────────────────────────────────────────────────────
+# 每个挑战包含一段有 bug 的代码和它触发的测试失败输出。
+# 用户在限时内修复代码，通过全部测试即视为过关。
+# id 使用业务可读短 ID（非 UUID），如 DEBUG-0091。
+# ──────────────────────────────────────────────────────────────────
+
 ARENA_CHALLENGES = [
     {
         "id": "DEBUG-0091",
@@ -207,11 +270,44 @@ test_median.py::test_even_unsorted  TIMEOUT  [100%] 执行超过 5s（疑似死�
     },
 ]
 
+# ──────────────────────────────────────────────────────────────────
+# 认证考试定义 (CERT_EXAMS)
+# ──────────────────────────────────────────────────────────────────
+# 数据结构：(exam_id, topic, time_limit_min, pass_score)
+#   exam_id:       考试 ID（业务可读短 ID）
+#   topic:         考试主题
+#   time_limit_min: 时间限制（分钟）
+#   pass_score:    及格分数（placement 为 0 表示不定及格线）
+#
+# 两场考试：
+#   cert-pointer: 指针能力认证（15 分钟，80 分及格）
+#   placement:    定级测试（5 分钟，不设及格线，用于评估新用户水平）
+# ──────────────────────────────────────────────────────────────────
+
 # (exam_id, topic, time_limit_min, pass_score)
 CERT_EXAMS = [
     ("cert-pointer", "指针", 15, 80),
     ("placement", "定级测试", 5, 0),
 ]
+
+# ──────────────────────────────────────────────────────────────────
+# 认证考试题目 (CERT_QUESTIONS)
+# ──────────────────────────────────────────────────────────────────
+# 数据结构：(exam_id, qid, kind, prompt, options, starter_code,
+#            answer_correct, answer_includes, sort)
+#   exam_id:         所属考试 ID
+#   qid:            题目编号（q1/q2... 认证考试 / p1/p2... 定级测试）
+#   kind:           题型（mcq=选择题 / code=编程题）
+#   prompt:         题干文本
+#   options:        选择题选项列表（编程题为 None）
+#   starter_code:   编程题起始代码模板（选择题为 None）
+#   answer_correct: 选择题正确答案（服务端比对，绝不下发）
+#   answer_includes:编程题关键片段（用户代码含此即算正确）
+#   sort:           显示排序（最后一个字段，省略字段名）
+#
+# 答案安全策略：answer_correct 和 answer_includes 仅存在于服务端，
+# 前端 API 响应绝不包含这些字段，防止作弊。
+# ──────────────────────────────────────────────────────────────────
 
 # (exam_id, qid, kind, prompt, options, starter_code, answer_correct, answer_includes, sort)
 CERT_QUESTIONS = [
@@ -244,21 +340,46 @@ CERT_QUESTIONS = [
 
 
 async def seed_deck(db: AsyncSession) -> None:
-    """灌入种子数据（幂等）"""
+    """灌入种子数据（幂等）。
+
+    执行流程：
+    1. 幂等检查：如果知识点表已有数据 → 跳过所有插入（安全可重复执行）
+    2. 插入知识点（13 个）
+    3. 插入审查关卡（2 个），然后 await db.flush() 确保外键可用
+    4. 插入注入缺陷（子表，依赖审查关卡的外键）
+    5. 插入竞技场挑战（1 个）
+    6. 插入认证考试（2 个），然后 await db.flush() 确保外键可用
+    7. 插入认证题目（11 道，依赖考试的外键）
+    8. 提交事务（await db.commit()）
+
+    注意：funcalchemy 的 db.add() 只是将对象加入会话（staging），
+    实际 SQL 在 flush 或 commit 时才发送到数据库。由于 SQLite
+    在每条语句执行时即时检查外键约束，我们必须先 flush 父表再插入子表。
+
+    Args:
+        db: SQLAlchemy 异步数据库会话，由调用方（lifespan）传入。
+    """
+    # ── 步骤 1：幂等检查 ──
+    # 如果知识点表已有数据，说明种子已导入，直接返回
     count = await db.scalar(select(func.count()).select_from(DeckKnowledgePoint))
     if count and count > 0:
         return
 
+    # ── 步骤 2：插入知识点（父表，最先插入） ──
     for name, category, axis, key_points in KNOWLEDGE_POINTS:
         db.add(DeckKnowledgePoint(name=name, category=category, axis=axis,
                                   key_points=key_points))
 
+    # ── 步骤 3：插入审查关卡（父表） ──
+    # 先用字典推导排除 defects 字段（它是子表数据，不是 DeckReviewSession 的字段）
     # 先落父表再落子表：SQLite 按语句即时检查外键
     for s in REVIEW_SESSIONS:
         session_data = {k: v for k, v in s.items() if k != "defects"}
         db.add(DeckReviewSession(**session_data))
+    # flush 将审查关卡 INSERT 发送到数据库，确保外键对子表可用
     await db.flush()
 
+    # ── 步骤 4：插入注入缺陷（子表，依赖审查关卡外键） ──
     for s in REVIEW_SESSIONS:
         for line, dtype, explanation in s["defects"]:
             db.add(
@@ -267,16 +388,21 @@ async def seed_deck(db: AsyncSession) -> None:
                 )
             )
 
+    # ── 步骤 5：插入竞技场挑战（无子表，直接插入） ──
     for c in ARENA_CHALLENGES:
         db.add(DeckArenaChallenge(**c))
 
+    # ── 步骤 6：插入认证考试（父表） ──
     for exam_id, topic, limit_min, pass_score in CERT_EXAMS:
         db.add(
             DeckCertExam(id=exam_id, topic=topic, time_limit_min=limit_min, pass_score=pass_score)
         )
+    # flush 确保考试记录的 ID 对题目子表可用
     await db.flush()
 
+    # ── 步骤 7：插入认证题目（子表，依赖考试外键） ──
     for row in CERT_QUESTIONS:
+        # 解包元组：每个题目有 9 个字段
         (
             exam_id,
             qid,
@@ -302,4 +428,6 @@ async def seed_deck(db: AsyncSession) -> None:
             )
         )
 
+    # ── 步骤 8：提交事务 ──
+    # 所有数据一次性提交，保证原子性——要么全部成功，要么全部回滚
     await db.commit()
