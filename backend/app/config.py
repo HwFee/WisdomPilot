@@ -12,6 +12,7 @@
     - JWT 认证参数（密钥、算法、令牌过期时间）
     - AI 大模型配置（提供商、API Key、模型名称等）
     - 限流参数（认证接口每分钟请求上限）
+    - CORS 跨域来源（生产环境允许的前端域名）
 
 设计要点：
     - 使用 ``lru_cache`` 缓存 Settings 实例，确保全局只创建一次（单例模式）
@@ -60,8 +61,15 @@ class Settings(BaseSettings):
     AI_LOCAL_FIRST: bool = False                        # 是否优先使用本地模型
     AI_LOCAL_BASE_URL: str | None = None                # 本地模型的基础 URL
 
-    # 接口限流配置
-    AUTH_RATE_PER_MINUTE: int = 10  # 认证接口每分钟最大请求数（防止暴力破解）
+    # 接口限流配置（滑动窗口：窗口内最大请求数 + 窗口大小）
+    AUTH_RATE_WINDOW_MAX_REQUESTS: int = 10   # 认证接口在窗口内允许的最大请求数
+    AUTH_RATE_WINDOW_SECONDS: int = 60        # 限流窗口大小（秒）
+
+    # CORS 跨域配置
+    # 生产环境允许的前端来源（逗号分隔），如 "https://app.example.com,https://www.example.com"
+    # 本地开发地址（localhost / 127.0.0.1）由中间件内置正则放行，无需在此配置
+    CORS_ORIGINS: str = ""
+
 
     @field_validator("SECRET_KEY")
     @classmethod
