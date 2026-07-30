@@ -108,19 +108,19 @@ After completing every task, **you MUST perform the following maintenance action
   `/review`（复盘：错题/失败项聚合，与导师对话相互独立）+ `/abilities` `/profile`
   `/login` `/register` `/forgot-password`；`/` 重定向到 `/dashboard`。
 - 费曼检验并入苏格拉底导师（「考考我」模式），不设独立模块。
-- 后端已在 `backend/app/deck/` 落地，权威 schema 是 `frontend/lib/api/deck/types.ts`，
+- 后端已在 `backend/app/training/` 落地，权威 schema 是 `frontend/lib/api/deck/types.ts`，
   接口规格在 `docs/backend-api/01-target-design.md`。
-- 后端边界（2026-07-27 清理后）：只注册 auth + deck 两组路由，live 代码 = `app/deck/` +
+- 后端边界（2026-07-27 清理后）：只注册 auth + training 两组路由，live 代码 = `app/training/` +
   auth 链 + 基础设施（`services/ai.py`+`ai_provider/`、`services/judge0*`、限流 middleware、
   `core/`、`utils/`）。旧系统后端（课程/章节/练习/挑战/复习/统计/收藏/笔记/题解/旧演武场/
   旧经济/wrong_question/user_weak_point 等）已**物理删除**，对应数据表已 drop，
-  `app.models` 只剩 `User`。新增功能一律进 `app/deck/`，不要复活旧模块。
+  `app.models` 只剩 `User`。新增功能一律进 `app/training/`，不要复活旧模块。
 - 掌握度模型（2026-07-26 起）：事件源 HLR 记忆模型 + 四级状态机（初识/熟悉/熟练/精通），
-  纯函数在 `backend/app/deck/mastery.py`，事实源是 `deck_mastery_events` 事件表，
+  纯函数在 `backend/app/training/mastery.py`，事实源是 `deck_mastery_events` 事件表，
   `deck_user_mastery.p_l/level` 只是缓存读模型。**BKT 已弃用**，新增掌握度逻辑一律写事件 +
   重算，禁止固定 delta 直改 p_l。
 - 徽章系统（2026-07-27 起，spec：`docs/superpowers/specs/2026-07-27-badge-system-design.md`）：
-  定义+判定引擎在 `backend/app/deck/badges.py`（纯函数 `evaluate_and_award`，幂等），
+  定义+判定引擎在 `backend/app/training/badges.py`（纯函数 `evaluate_and_award`，幂等），
   事实表只有 `deck_user_badges`，徽章定义**在代码内不入库**；四个提交端点 commit 前统一评估，
   响应带 `new_badges`，认证页徽章墙走 `/certification/home` 的 `badges` 字段。契约全链路
   **snake_case**（deckCall 无 key 转换层），新增契约字段不要用 camelCase。
