@@ -31,7 +31,7 @@ CORE_ROUTERS = (
 )
 
 
-def include_routers(app: FastAPI, settings: Settings) -> None:
+def include_routers(app: FastAPI, _settings: Settings) -> None:
     """注册所有 API 路由器到 FastAPI 应用。
 
     遍历 ``CORE_ROUTERS`` 元组中的所有路由器，逐个注册到应用实例上。
@@ -39,7 +39,7 @@ def include_routers(app: FastAPI, settings: Settings) -> None:
 
     Args:
         app: FastAPI 应用实例
-        settings: 应用配置（当前未直接使用，但保留以备将来按配置动态注册路由）
+        _settings: 应用配置（当前未直接使用，但保留以备将来按配置动态注册路由）
     """
     """Register API routers."""
     for router in CORE_ROUTERS:
@@ -66,7 +66,7 @@ def register_health_routes(app: FastAPI) -> None:
 
         用于快速验证服务是否正常启动。返回中文字符串表明中文支持正常。
         """
-        return {"status": "ok", "message": "智码领航 API is running"}
+        return {"status": "ok", "message": "WisdomPilot API is running"}
 
     @app.get("/health")
     async def health():

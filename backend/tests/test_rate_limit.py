@@ -63,7 +63,7 @@ class TestAuthRateLimitIntegration:
 
     @pytest.mark.asyncio
     async def test_auth_rate_limit_blocks_after_threshold(self):
-        """Requests beyond AUTH_RATE_PER_MINUTE should return 429"""
+        """Requests beyond AUTH_RATE_WINDOW_MAX_REQUESTS should return 429"""
         import importlib
         from app.core import middleware as mw
         import app.main as main
@@ -77,7 +77,7 @@ class TestAuthRateLimitIntegration:
         transport = ASGITransport(app=main.app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             settings = get_settings()
-            limit = settings.AUTH_RATE_PER_MINUTE
+            limit = settings.AUTH_RATE_WINDOW_MAX_REQUESTS
             for i in range(limit):
                 response = await ac.post(
                     "/api/auth/login",
@@ -115,7 +115,7 @@ class TestAuthRateLimitIntegration:
         transport = ASGITransport(app=main.app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             settings = get_settings()
-            limit = settings.AUTH_RATE_PER_MINUTE
+            limit = settings.AUTH_RATE_WINDOW_MAX_REQUESTS
             for i in range(limit):
                 response = await ac.post(
                     "/api/auth/forgot-password",

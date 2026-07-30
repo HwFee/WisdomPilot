@@ -109,6 +109,49 @@ const PLACEMENT_EXAM: CertExam = {
   ],
 }
 
+/** 递归认证试题：6 题（4 MCQ + 2 code） */
+const RECURSION_EXAM: CertExam = {
+  info: { id: 'cert-recursion', topic: '递归', question_count: 6, time_limit_min: 15, pass_score: 80 },
+  questions: [
+    {
+      id: 'q1',
+      kind: 'mcq',
+      prompt: '递归函数缺少基例（终止条件）会导致什么？',
+      options: ['编译错误', '无限递归导致栈溢出', '返回 None', '语法错误'],
+    },
+    {
+      id: 'q2',
+      kind: 'mcq',
+      prompt: 'def f(n): if n <= 1: return 1  return n * f(n-1)  上述函数计算的是什么？',
+      options: ['斐波那契数', '阶乘', '幂运算', '排列数'],
+    },
+    {
+      id: 'q3',
+      kind: 'mcq',
+      prompt: '朴素递归实现斐波那契数列 fib(n) = fib(n-1) + fib(n-2) 的主要性能问题是什么？',
+      options: ['递归层数太深', '大量重复计算（同一 fib(k) 被多次调用）', '返回值溢出', '没有性能问题'],
+    },
+    {
+      id: 'q4',
+      kind: 'mcq',
+      prompt: '尾递归优化（tail call optimization）的好处是什么？',
+      options: ['减少代码行数', '复用栈帧，避免栈溢出', '提高数值精度', '自动并行执行'],
+    },
+    {
+      id: 'q5',
+      kind: 'code',
+      prompt: '手写：用递归实现字符串反转。例如 reverse_str("hello") 返回 "olleh"。',
+      starter_code: 'def reverse_str(s):\n    ',
+    },
+    {
+      id: 'q6',
+      kind: 'code',
+      prompt: '手写：用递归实现幂运算 power(base, exp)，返回 base 的 exp 次方。不使用 ** 运算符。',
+      starter_code: 'def power(base, exp):\n    ',
+    },
+  ],
+}
+
 /** 判分答案表：mcq 比对选项文本；code 检查规范化后包含关键片段 */
 const ANSWER_KEY: Record<string, { correct?: string; includes?: string[] }> = {
   q1: { correct: '10' },
@@ -122,6 +165,14 @@ const ANSWER_KEY: Record<string, { correct?: string; includes?: string[] }> = {
   p3: { correct: '与 pivot 相等的元素' },
   p4: { includes: ['return'] },
   p5: { includes: ['n>0'] },
+  // 递归认证（cert-recursion）-- qid 与指针认证相同（q1-q6），
+  // 用 exam_id 前缀区分避免冲突
+  'rec-q1': { correct: '无限递归导致栈溢出' },
+  'rec-q2': { correct: '阶乘' },
+  'rec-q3': { correct: '大量重复计算（同一 fib(k) 被多次调用）' },
+  'rec-q4': { correct: '复用栈帧，避免栈溢出' },
+  'rec-q5': { includes: ['return'] },
+  'rec-q6': { includes: ['return'] },
 }
 
 const CERT_BY_ID: Record<string, { topic: string; verify_prefix: string }> = {
@@ -132,8 +183,9 @@ const CERT_BY_ID: Record<string, { topic: string; verify_prefix: string }> = {
 
 export function getMockExam(id: string): CertExam {
   if (id === 'placement') return PLACEMENT_EXAM
+  if (id === 'cert-recursion') return RECURSION_EXAM
   const meta = CERT_BY_ID[id]
-  // mock 期间所有认证共用指针套题，仅替换主题名
+  // mock 期间非递归认证共用指针套题，仅替换主题名
   return {
     ...POINTER_EXAM,
     info: { ...POINTER_EXAM.info, id, topic: meta?.topic ?? '指针' },
@@ -143,9 +195,11 @@ export function getMockExam(id: string): CertExam {
 /** 本地判分：mcq 对答案表，code 检查关键片段（不含徽章判定，保持纯函数） */
 export function judgeExam(examId: string, answers: CertAnswer[]): Omit<CertResult, 'new_badges'> {
   const exam = getMockExam(examId)
+  // 递归认证的 qid 与指针认证相同（q1-q6），用前缀区分答案表
+  const keyPrefix = examId === 'cert-recursion' ? 'rec-' : ''
   const perQuestion = exam.questions.map((q) => {
     const answer = answers.find((a) => a.question_id === q.id)?.answer ?? ''
-    const key = ANSWER_KEY[q.id]
+    const key = ANSWER_KEY[`${keyPrefix}${q.id}`]
     let correct = false
     if (key?.correct) correct = answer === key.correct
     else if (key?.includes) {

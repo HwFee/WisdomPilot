@@ -9,7 +9,7 @@ export function getArenaHome(): Promise<ArenaHome> {
 
 /** POST /api/arena/run —— 提交代码判题 */
 export function runArenaCode(challengeId: string, code: string): Promise<ArenaRunResult> {
-  return deckCall('/arena/run', () => submitMockArena(code), {
+  return deckCall('/arena/run', () => submitMockArena(challengeId, code), {
     method: 'POST',
     body: JSON.stringify({ challenge_id: challengeId, code }),
   })

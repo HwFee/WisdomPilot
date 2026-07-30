@@ -66,7 +66,8 @@ backend/
 | `AI_API_KEY` | AI API 密钥 | — |
 | `AI_MODEL` | AI 模型名 | `deepseek-v4-flash` |
 | `AI_BASE_URL` | AI API 地址 | `https://api.deepseek.com` |
-| `AUTH_RATE_PER_MINUTE` | 认证接口限流（次/分钟） | `10` |
+| `AUTH_RATE_WINDOW_MAX_REQUESTS` | 认证接口窗口内最大请求数 | `10` |
+| `AUTH_RATE_WINDOW_SECONDS` | 限流窗口大小（秒） | `60` |
 
 `get_settings()` 用 `@lru_cache` 缓存，全局单例。包含两个 `field_validator`：`SECRET_KEY` 必须非空且 ≥32 字符，`DATABASE_URL` 必须非空。
 

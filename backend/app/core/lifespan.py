@@ -26,13 +26,11 @@ from fastapi import FastAPI
 # 这些 import 语句的唯一目的不是使用导入的内容，而是触发模型类的定义，
 # 让 SQLAlchemy 将它们注册到 Base.metadata 中。如果不导入，init_db() 的
 # create_all 就不知道要创建哪些表。
-# noqa: F401 告诉 linter："我知道这个导入没被直接使用，但它是必须的"
-from app.auth import models as _register_auth_models  # noqa: F401 - register User into Base.metadata
-from app.training import models as _register_training_models  # noqa: F401 - register training models before init_db
+from app.auth import models as _register_auth_models
+from app.training import models as _register_training_models
 from app.config import Settings
 
-# 显式标记副作用导入：两个模块都只为了让模型注册到 Base.metadata
-# Explicit side-effect imports: both exist solely to register models into Base.metadata before table creation.
+# 显式标记副作用导入：两个模块都只为了让模型注册到 Base.metadata 避免警告，假装使用
 _MODELS_REGISTERED = (_register_auth_models, _register_training_models)
 from app.database import AsyncSessionLocal, init_db
 from app.training.seed import seed_deck
@@ -98,7 +96,7 @@ def create_lifespan(settings: Settings):
     """
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def lifespan(_app: FastAPI):
         # ===== 启动阶段（yield 之前）=====
         # 1. 配置日志系统
         configure_logging()

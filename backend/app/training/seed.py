@@ -9,9 +9,9 @@
 #
 # 种子内容包括四个部分：
 #   1. 知识点（KNOWLEDGE_POINTS）       —— 13 个核心知识点 + 费曼评分要点
-#   2. 代码审查关卡（REVIEW_SESSIONS）  —— 2 个关卡 + 注入缺陷
-#   3. 调试竞技场挑战（ARENA_CHALLENGES）—— 1 个挑战
-#   4. 认证考试（CERT_EXAMS + CERT_QUESTIONS）—— 2 场考试 + 11 道题目
+#   2. 代码审查关卡（REVIEW_SESSIONS）  —— 8 个关卡 + 注入缺陷
+#   3. 调试竞技场挑战（ARENA_CHALLENGES）—— 5 个挑战
+#   4. 认证考试（CERT_EXAMS + CERT_QUESTIONS）—— 3 场考试 + 17 道题目
 #
 # 幂等性设计：
 #   seed_deck() 函数在执行前会检查知识点表是否已有数据——如果有则跳过。
@@ -229,6 +229,162 @@ void free_list(Node *head) {
             (22, "performance", "free_list 只移动指针从不 free(tmp)，每个节点都泄漏。"),
         ],
     },
+    {
+        "id": "REVIEW-0249",
+        "title": "二分查找",
+        "language": "python",
+        "code": '''def binary_search(arr, target):
+    """二分查找 -- AI 生成，待审查"""
+    left, right = 0, len(arr)
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid
+    return -1''',
+        "defect_count": 2,
+        "difficulty": 2,
+        "eta_minutes": 6,
+        "related_weakness": "边界条件处理",
+        "defects": [
+            (3, "boundary", "right = len(arr) 越界：当 target 大于所有元素时，mid 会等于 len(arr)，arr[mid] 抛 IndexError。应为 len(arr) - 1。"),
+            (11, "logic", "right = mid 会导致死循环：当 target < arr[mid] 时 right 不收缩到 mid-1，区间永远无法缩小到空。应为 right = mid - 1。"),
+        ],
+    },
+    {
+        "id": "REVIEW-0250",
+        "title": "用户注册函数",
+        "language": "python",
+        "code": '''def register(username, password, db):
+    """用户注册 -- AI 生成，待审查"""
+    if len(password) < 8:
+        return False
+    query = "INSERT INTO users (name, pwd) VALUES ('" + username + "', '" + password + "')"
+    db.execute(query)
+    if db.rowcount > 0:
+        return True
+    else:
+        return False''',
+        "defect_count": 2,
+        "difficulty": 3,
+        "eta_minutes": 10,
+        "related_weakness": "安全漏洞模式",
+        "defects": [
+            (5, "security", "字符串拼接 SQL 存在注入风险：用户名输入 ' OR 1=1 -- 即可绕过注册。应使用参数化查询 db.execute(\"INSERT ... VALUES (?, ?)\", username, password)。"),
+            (3, "style", "魔法数字 8 直接硬编码，含义不明。应定义为命名常量 MIN_PASSWORD_LENGTH = 8。"),
+        ],
+    },
+    {
+        "id": "REVIEW-0251",
+        "title": "日志分析器",
+        "language": "python",
+        "code": '''def analyze_logs(logs):
+    """日志分析器 -- AI 生成，待审查"""
+    errors = []
+    warnings = []
+    info = []
+    for line in logs:
+        if "ERROR" in line:
+            parts = line.split(" ")
+            timestamp = parts[0]
+            message = " ".join(parts[1:])
+            errors.append({"time": timestamp, "msg": message})
+        if "WARN" in line:
+            parts = line.split(" ")
+            timestamp = parts[0]
+            message = " ".join(parts[1:])
+            warnings.append({"time": timestamp, "msg": message})
+        if "INFO" in line:
+            parts = line.split(" ")
+            timestamp = parts[0]
+            message = " ".join(parts[1:])
+            info.append({"time": timestamp, "msg": message})
+    return errors, warnings, info''',
+        "defect_count": 3,
+        "difficulty": 3,
+        "eta_minutes": 10,
+        "related_weakness": "坏味道识别",
+        "defects": [
+            (7, "style", "三个 if 分支重复了完全相同的解析逻辑（split + join + append），应抽取为 _parse_line(line) 公共函数。"),
+            (12, "style", "三个独立 if 应改为 elif 链：已匹配 ERROR 的行无需再检查 WARN 和 INFO，当前每行都被检查三次。"),
+            (8, "performance", "line.split(\" \") 会分割整行产生多余字符串，应使用 line.split(\" \", 1) 只分割一次。"),
+        ],
+    },
+    {
+        "id": "REVIEW-0252",
+        "title": "字符串拷贝",
+        "language": "c",
+        "code": '''#include <string.h>
+
+char* copy_str(char *src, char *dst) {
+    /* 字符串拷贝 -- AI 生成，待审查 */
+    int i = 0;
+    while (src[i] != '\\0') {
+        dst[i] = src[i];
+        i++;
+    }
+    dst[i] = '\\0';
+    return dst;
+}''',
+        "defect_count": 2,
+        "difficulty": 4,
+        "eta_minutes": 12,
+        "related_weakness": "安全漏洞模式",
+        "defects": [
+            (6, "security", "循环没有检查 dst 缓冲区大小：当 src 比 dst 长时，dst[i] = src[i] 会越界写入，导致缓冲区溢出。应传入 dst 大小并做边界检查。"),
+            (3, "boundary", "没有检查 src 或 dst 是否为 NULL，传入空指针会直接段错误。应在函数入口加 if (src == NULL || dst == NULL) return NULL。"),
+        ],
+    },
+    {
+        "id": "REVIEW-0253",
+        "title": "缓存装饰器",
+        "language": "python",
+        "code": '''import time
+
+def memoize(func):
+    """缓存装饰器 -- AI 生成，待审查"""
+    cache = {}
+    def wrapper(*args, **kwargs):
+        key = str(args) + str(kwargs)
+        if key not in cache:
+            cache[key] = func(*args, **kwargs)
+        return cache[key]
+    return wrapper''',
+        "defect_count": 2,
+        "difficulty": 4,
+        "eta_minutes": 12,
+        "related_weakness": "并发代码审阅",
+        "defects": [
+            (8, "logic", "多线程下 check-then-set 存在竞态条件：两个线程同时通过 key not in cache 检查后都执行 func，缓存失效。应加 threading.Lock 保护。"),
+            (7, "performance", "str(args) + str(kwargs) 每次调用都做字符串拼接，对于高频调用的热路径函数开销显著。应使用 args + tuple(sorted(kwargs.items())) 作为 key。"),
+        ],
+    },
+    {
+        "id": "REVIEW-0254",
+        "title": "冒泡排序",
+        "language": "python",
+        "code": '''def b(a):
+    """冒泡排序 -- AI 生成，待审查"""
+    n = len(a)
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            if a[j] < a[j + 1]:
+                t = a[j]
+                a[j] = a[j + 1]
+                a[j + 1] = t
+    return a''',
+        "defect_count": 2,
+        "difficulty": 2,
+        "eta_minutes": 6,
+        "related_weakness": "坏味道识别",
+        "defects": [
+            (1, "style", "函数名 b 和参数名 a 完全无法自解释，应改为 bubble_sort(arr)。命名是文档的一部分。"),
+            (6, "logic", "比较方向错误：a[j] < a[j+1] 会把大元素冒泡到前面（降序），冒泡排序通常期望升序。应为 a[j] > a[j + 1]。"),
+        ],
+    },
 ]
 
 # ──────────────────────────────────────────────────────────────────
@@ -268,6 +424,109 @@ test_median.py::test_even_unsorted  TIMEOUT  [100%] 执行超过 5s（疑似死�
         "time_limit_sec": 600,
         "difficulty": 3,
     },
+    {
+        "id": "DEBUG-0092",
+        "title": "二分查找 · 越界",
+        "language": "python",
+        "code": '''def binary_search(arr, target):
+    """二分查找 -- AI 生成，测试全挂，待修复"""
+    left, right = 0, len(arr)
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1''',
+        "failing_output": """$ pytest test_bsearch.py -v
+test_bsearch.py::test_found         PASSED   [ 20%]
+test_bsearch.py::test_single        PASSED   [ 40%]
+test_bsearch.py::test_not_found     IndexError: list index out of range  [ 60%]
+test_bsearch.py::test_last_element  IndexError: list index out of range  [ 80%]
+test_bsearch.py::test_empty         PASSED   [100%]
+
+=================== 3 passed, 2 failed in 0.09s ===================
+right 初始化为 len(arr)，当 target 大于所有元素时 mid 越界。""",
+        "time_limit_sec": 600,
+        "difficulty": 2,
+    },
+    {
+        "id": "DEBUG-0093",
+        "title": "字符串反转 · 指针丢失",
+        "language": "c",
+        "code": '''#include <stdlib.h>
+#include <string.h>
+
+char* reverse_str(char *s) {
+    /* 字符串反转 -- AI 生成，测试全挂，待修复 */
+    int len = strlen(s);
+    char *result = malloc(len + 1);
+    char *dest = result;
+    char *src = s + len - 1;
+    while (src >= s) {
+        *dest++ = *src--;
+    }
+    *dest = '\\0';
+    return dest;
+}''',
+        "failing_output": """$ gcc -o test test.c && ./test
+test_str_reverse("hello")    -> "" (expected "olleh")    FAIL
+test_str_reverse("a")        -> "" (expected "a")        FAIL
+test_str_reverse("")         -> "" (expected "")          OK
+test_str_reverse("abcdef")   -> "" (expected "fedcba")   FAIL
+test_str_reverse("12345")    -> "" (expected "54321")    FAIL
+
+======================== 1/5 tests passed ========================
+返回的是 dest（已移到末尾），应返回 result（指向字符串开头）。""",
+        "time_limit_sec": 600,
+        "difficulty": 3,
+    },
+    {
+        "id": "DEBUG-0094",
+        "title": "去重计数 · 逻辑错误",
+        "language": "python",
+        "code": '''def count_unique(words):
+    """去重计数 -- AI 生成，测试全挂，待修复"""
+    seen = set()
+    count = 0
+    for w in words:
+        seen.add(w)
+        count += 1
+    return count''',
+        "failing_output": """$ pytest test_unique.py -v
+test_unique.py::test_empty          PASSED   [ 20%]
+test_unique.py::test_all_unique     PASSED   [ 40%]
+test_unique.py::test_all_same       FAILED   assert 3 == 1  [ 60%]
+test_unique.py::test_mixed          FAILED   assert 4 == 2  [ 80%]
+test_unique.py::test_with_numbers   FAILED   assert 3 == 2  [100%]
+
+=================== 2 passed, 3 failed in 0.05s ===================
+count 对每个 word 都 +1，没有跳过已见元素。需要加 if w not in seen 判断。""",
+        "time_limit_sec": 600,
+        "difficulty": 3,
+    },
+    {
+        "id": "DEBUG-0095",
+        "title": "阶乘 · 栈溢出",
+        "language": "python",
+        "code": '''def factorial(n):
+    """阶乘 -- AI 生成，测试全挂，待修复"""
+    return n * factorial(n - 1)''',
+        "failing_output": """$ pytest test_factorial.py -v
+test_factorial.py::test_zero     RecursionError  [ 20%]
+test_factorial.py::test_one      RecursionError  [ 40%]
+test_factorial.py::test_three    RecursionError  [ 60%]
+test_factorial.py::test_five     RecursionError  [ 80%]
+test_factorial.py::test_ten      RecursionError  [100%]
+
+=================== 0 passed, 5 failed in 0.12s ===================
+RecursionError: maximum recursion depth exceeded
+缺少递归出口（基例），需要加 if n <= 1: return 1。""",
+        "time_limit_sec": 600,
+        "difficulty": 2,
+    },
 ]
 
 # ──────────────────────────────────────────────────────────────────
@@ -279,14 +538,16 @@ test_median.py::test_even_unsorted  TIMEOUT  [100%] 执行超过 5s（疑似死�
 #   time_limit_min: 时间限制（分钟）
 #   pass_score:    及格分数（placement 为 0 表示不定及格线）
 #
-# 两场考试：
-#   cert-pointer: 指针能力认证（15 分钟，80 分及格）
-#   placement:    定级测试（5 分钟，不设及格线，用于评估新用户水平）
+# 三场考试：
+#   cert-pointer:   指针能力认证（15 分钟，80 分及格）
+#   cert-recursion: 递归能力认证（15 分钟，80 分及格）
+#   placement:      定级测试（5 分钟，不设及格线，用于评估新用户水平）
 # ──────────────────────────────────────────────────────────────────
 
 # (exam_id, topic, time_limit_min, pass_score)
 CERT_EXAMS = [
     ("cert-pointer", "指针", 15, 80),
+    ("cert-recursion", "递归", 15, 80),
     ("placement", "定级测试", 5, 0),
 ]
 
@@ -336,6 +597,22 @@ CERT_QUESTIONS = [
      None, "def first_unique(s):\n    ", None, ["return"], 4),
     ("placement", "p5", "code", "手写：判断一个整数是否为 2 的幂。",
      None, "def is_power_of_two(n):\n    ", None, ["n>0"], 5),
+    # ── 递归能力认证（cert-recursion）6 题：4 MCQ + 2 code ──
+    ("cert-recursion", "q1", "mcq", "递归函数缺少基例（终止条件）会导致什么？",
+     ["编译错误", "无限递归导致栈溢出", "返回 None", "语法错误"], None,
+     "无限递归导致栈溢出", None, 1),
+    ("cert-recursion", "q2", "mcq", "def f(n): if n <= 1: return 1  return n * f(n-1)  上述函数计算的是什么？",
+     ["斐波那契数", "阶乘", "幂运算", "排列数"], None, "阶乘", None, 2),
+    ("cert-recursion", "q3", "mcq", "朴素递归实现斐波那契数列 fib(n) = fib(n-1) + fib(n-2) 的主要性能问题是什么？",
+     ["递归层数太深", "大量重复计算（同一 fib(k) 被多次调用）", "返回值溢出", "没有性能问题"], None,
+     "大量重复计算（同一 fib(k) 被多次调用）", None, 3),
+    ("cert-recursion", "q4", "mcq", "尾递归优化（tail call optimization）的好处是什么？",
+     ["减少代码行数", "复用栈帧，避免栈溢出", "提高数值精度", "自动并行执行"], None,
+     "复用栈帧，避免栈溢出", None, 4),
+    ("cert-recursion", "q5", "code", "手写：用递归实现字符串反转。例如 reverse_str(\"hello\") 返回 \"olleh\"。",
+     None, "def reverse_str(s):\n    ", None, ["return"], 5),
+    ("cert-recursion", "q6", "code", "手写：用递归实现幂运算 power(base, exp)，返回 base 的 exp 次方。不使用 ** 运算符。",
+     None, "def power(base, exp):\n    ", None, ["return"], 6),
 ]
 
 
@@ -345,11 +622,11 @@ async def seed_deck(db: AsyncSession) -> None:
     执行流程：
     1. 幂等检查：如果知识点表已有数据 → 跳过所有插入（安全可重复执行）
     2. 插入知识点（13 个）
-    3. 插入审查关卡（2 个），然后 await db.flush() 确保外键可用
+    3. 插入审查关卡（8 个），然后 await db.flush() 确保外键可用
     4. 插入注入缺陷（子表，依赖审查关卡的外键）
-    5. 插入竞技场挑战（1 个）
-    6. 插入认证考试（2 个），然后 await db.flush() 确保外键可用
-    7. 插入认证题目（11 道，依赖考试的外键）
+    5. 插入竞技场挑战（5 个）
+    6. 插入认证考试（3 个），然后 await db.flush() 确保外键可用
+    7. 插入认证题目（17 道，依赖考试的外键）
     8. 提交事务（await db.commit()）
 
     注意：funcalchemy 的 db.add() 只是将对象加入会话（staging），

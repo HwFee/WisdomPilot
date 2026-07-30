@@ -1138,7 +1138,7 @@ async def run_arena(
         raise HTTPException(status_code=404, detail="挑战不存在")
 
     # 判定用户代码
-    result = service.judge_arena_code(body.code, challenge.failing_output)
+    result = service.judge_arena_code(body.code, challenge.id, challenge.failing_output)
     # 记录本次尝试（无论成败）
     db.add(
         DeckArenaAttempt(

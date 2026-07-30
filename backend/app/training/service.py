@@ -598,38 +598,108 @@ def judge_marks(defects: list[dict], marks: list[dict]) -> dict:
 
 # ── 竞技场判定（对齐 mock judgeArenaCode；后续换 Judge0）──
 # 竞技场代码判定：目前用规则匹配（字符串检测），后续应替换为 Judge0 真实判分。
+# 每个挑战有独立的判定函数，通过 ARENA_JUDGES 字典按 challenge_id 分发。
 # 规则与前端 mock 完全一致，保证开发阶段前后端体验统一。
 
-
-# 全部通过的模拟测试输出（5/5 passed）
-ARENA_SOLVED_OUTPUT = """$ pytest test_median.py -v
-test_median.py::test_odd            PASSED   [ 20%]
-test_median.py::test_single         PASSED   [ 40%]
-test_median.py::test_even           PASSED   [ 60%]
-test_median.py::test_even_negative  PASSED   [ 80%]
-test_median.py::test_even_unsorted  PASSED   [100%]
-
-======================== 5 passed in 0.08s ========================"""
-
-# 部分通过的模拟测试输出（3/5 passed，偶数中位数索引有问题）
-ARENA_PARTIAL_OUTPUT = """$ pytest test_median.py -v
-test_median.py::test_even           FAILED   assert 5.0 == 4.5
-test_median.py::test_even_negative  FAILED   assert -4.0 == -4.5
-
-=================== 3 passed, 2 failed in 0.11s ===================
-右中位索引还有问题：偶数个时中间两个是 nums[mid-1] 和 nums[mid]。"""
+# 每个判定函数签名：(code, failing_output) -> dict
+# 返回 dict 包含: passed / total / output / solved / score_delta
 
 
-def judge_arena_code(code: str, failing_output: str) -> dict:
+def _judge_debug_0091(code: str, failing_output: str) -> dict:
+    """DEBUG-0091 中位数统计：死循环 + 右中位索引错。
+
+    两个修复点：
+    1. ``lo = mid - 1``（删掉死循环，直接取左中位）
+    2. ``nums[lo] + nums[mid])``（右中位是 nums[mid] 不是 nums[mid+1]）
+    """
+    normalized = re.sub(r"\s+", "", code)
+    rule_loop = "lo=mid-1" in normalized
+    rule_index = "nums[lo]+nums[mid])" in normalized
+    if rule_loop and rule_index:
+        return {"passed": 5, "total": 5, "output": _ARENA_0091_SOLVED,
+                "solved": True, "score_delta": 23}
+    if rule_loop:
+        return {"passed": 3, "total": 5, "output": _ARENA_0091_PARTIAL,
+                "solved": False, "score_delta": 0}
+    return {"passed": 2, "total": 5, "output": failing_output,
+            "solved": False, "score_delta": 0}
+
+
+def _judge_debug_0092(code: str, failing_output: str) -> dict:
+    """DEBUG-0092 二分查找越界：right = len(arr) 应为 len(arr) - 1。
+
+    修复点：``len(arr) - 1`` 出现在代码中（right 初始化修正）。
+    """
+    normalized = re.sub(r"\s+", "", code)
+    fixed = "len(arr)-1" in normalized
+    if fixed:
+        return {"passed": 5, "total": 5, "output": _ARENA_0092_SOLVED,
+                "solved": True, "score_delta": 23}
+    return {"passed": 2, "total": 5, "output": failing_output,
+            "solved": False, "score_delta": 0}
+
+
+def _judge_debug_0093(code: str, failing_output: str) -> dict:
+    """DEBUG-0093 字符串反转指针丢失：return dest 应为 return result。
+
+    修复点：``return result`` 替代 ``return dest``。
+    """
+    normalized = re.sub(r"\s+", "", code)
+    fixed = "returnresult" in normalized
+    if fixed:
+        return {"passed": 5, "total": 5, "output": _ARENA_0093_SOLVED,
+                "solved": True, "score_delta": 23}
+    return {"passed": 2, "total": 5, "output": failing_output,
+            "solved": False, "score_delta": 0}
+
+
+def _judge_debug_0094(code: str, failing_output: str) -> dict:
+    """DEBUG-0094 去重计数逻辑错误：缺少 if w not in seen 判断。
+
+    修复点：代码中出现 ``not in seen``（添加去重判断）。
+    """
+    normalized = re.sub(r"\s+", "", code)
+    fixed = "notinseen" in normalized
+    if fixed:
+        return {"passed": 5, "total": 5, "output": _ARENA_0094_SOLVED,
+                "solved": True, "score_delta": 23}
+    return {"passed": 2, "total": 5, "output": failing_output,
+            "solved": False, "score_delta": 0}
+
+
+def _judge_debug_0095(code: str, failing_output: str) -> dict:
+    """DEBUG-0095 阶乘栈溢出：缺少递归出口。
+
+    修复点：代码中出现 ``return1``（添加基例返回）。
+    """
+    normalized = re.sub(r"\s+", "", code)
+    fixed = "return1" in normalized
+    if fixed:
+        return {"passed": 5, "total": 5, "output": _ARENA_0095_SOLVED,
+                "solved": True, "score_delta": 23}
+    return {"passed": 0, "total": 5, "output": failing_output,
+            "solved": False, "score_delta": 0}
+
+
+# 挑战 ID -> 判定函数的分发表
+ARENA_JUDGES: dict[str, callable] = {
+    "DEBUG-0091": _judge_debug_0091,
+    "DEBUG-0092": _judge_debug_0092,
+    "DEBUG-0093": _judge_debug_0093,
+    "DEBUG-0094": _judge_debug_0094,
+    "DEBUG-0095": _judge_debug_0095,
+}
+
+
+def judge_arena_code(code: str, challenge_id: str, failing_output: str) -> dict:
     """竞技场代码判定（规则匹配版，后续换 Judge0）。
 
-    当前实现用字符串匹配检测用户代码是否修正了关键错误：
-    1. 检测是否包含 ``lo=mid-1``（正确的循环边界修正）
-    2. 检测是否包含 ``nums[lo]+nums[mid])``（正确的中位数计算）
-    两个规则都满足 = 全通过；只满足循环 = 部分通过；都不满足 = 失败。
+    根据 challenge_id 分发到对应的判定函数，每个函数检查该题特定的修复模式。
+    未知挑战 ID 返回全失败。
 
     Args:
         code: 用户提交的代码
+        challenge_id: 挑战 ID（如 DEBUG-0091）
         failing_output: 原始失败输出（全失败时返回给用户）
 
     Returns:
@@ -640,23 +710,71 @@ def judge_arena_code(code: str, failing_output: str) -> dict:
         - solved: 是否全部通过
         - score_delta: 积分变动（全通过 +23，否则 0）
     """
-    # 去除所有空白字符，使规则匹配不受格式影响
-    normalized = re.sub(r"\s+", "", code)
-    # 规则1：循环边界修正（lo = mid - 1 而非 lo = mid）
-    rule_loop = "lo=mid-1" in normalized
-    # 规则2：中位数计算修正（偶数个时取中间两个的平均值）
-    rule_index = "nums[lo]+nums[mid])" in normalized
-    if rule_loop and rule_index:
-        # 两条规则都满足：全部通过
-        return {"passed": 5, "total": 5, "output": ARENA_SOLVED_OUTPUT,
-                "solved": True, "score_delta": 23}
-    if rule_loop:
-        # 只修正了循环边界：部分通过（3/5）
-        return {"passed": 3, "total": 5, "output": ARENA_PARTIAL_OUTPUT,
+    judge_fn = ARENA_JUDGES.get(challenge_id)
+    if judge_fn is None:
+        return {"passed": 0, "total": 0, "output": failing_output,
                 "solved": False, "score_delta": 0}
-    # 都没修正：返回原始失败输出
-    return {"passed": 2, "total": 5, "output": failing_output,
-            "solved": False, "score_delta": 0}
+    return judge_fn(code, failing_output)
+
+
+# ── 各挑战的模拟测试输出 ──
+
+# DEBUG-0091
+_ARENA_0091_SOLVED = """$ pytest test_median.py -v
+test_median.py::test_odd            PASSED   [ 20%]
+test_median.py::test_single         PASSED   [ 40%]
+test_median.py::test_even           PASSED   [ 60%]
+test_median.py::test_even_negative  PASSED   [ 80%]
+test_median.py::test_even_unsorted  PASSED   [100%]
+
+======================== 5 passed in 0.08s ========================"""
+
+_ARENA_0091_PARTIAL = """$ pytest test_median.py -v
+test_median.py::test_even           FAILED   assert 5.0 == 4.5
+test_median.py::test_even_negative  FAILED   assert -4.0 == -4.5
+
+=================== 3 passed, 2 failed in 0.11s ===================
+右中位索引还有问题：偶数个时中间两个是 nums[mid-1] 和 nums[mid]。"""
+
+# DEBUG-0092
+_ARENA_0092_SOLVED = """$ pytest test_bsearch.py -v
+test_bsearch.py::test_found         PASSED   [ 20%]
+test_bsearch.py::test_not_found     PASSED   [ 40%]
+test_bsearch.py::test_last_element  PASSED   [ 60%]
+test_bsearch.py::test_single        PASSED   [ 80%]
+test_bsearch.py::test_empty         PASSED   [100%]
+
+======================== 5 passed in 0.06s ========================"""
+
+# DEBUG-0093
+_ARENA_0093_SOLVED = """$ gcc -o test test.c && ./test
+test_str_reverse("hello")    -> "olleh"   OK
+test_str_reverse("a")        -> "a"       OK
+test_str_reverse("")         -> ""        OK
+test_str_reverse("abcdef")   -> "fedcba"  OK
+test_str_reverse("12345")    -> "54321"   OK
+
+======================== 5/5 tests passed ========================"""
+
+# DEBUG-0094
+_ARENA_0094_SOLVED = """$ pytest test_unique.py -v
+test_unique.py::test_empty          PASSED   [ 20%]
+test_unique.py::test_all_unique     PASSED   [ 40%]
+test_unique.py::test_all_same       PASSED   [ 60%]
+test_unique.py::test_mixed          PASSED   [ 80%]
+test_unique.py::test_with_numbers   PASSED   [100%]
+
+======================== 5 passed in 0.04s ========================"""
+
+# DEBUG-0095
+_ARENA_0095_SOLVED = """$ pytest test_factorial.py -v
+test_factorial.py::test_zero     PASSED   [ 20%]
+test_factorial.py::test_one      PASSED   [ 40%]
+test_factorial.py::test_five     PASSED   [ 60%]
+test_factorial.py::test_three    PASSED   [ 80%]
+test_factorial.py::test_ten      PASSED   [100%]
+
+======================== 5 passed in 0.03s ========================"""
 
 
 # ── 导师脚本（后续换 LLM 追问）───────────────────────────

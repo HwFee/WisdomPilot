@@ -63,8 +63,9 @@ describe('getMockSession', () => {
     expect('injected' in s).toBe(false)
   })
 
-  it('NEXT_SESSION 两关互指', () => {
+  it('NEXT_SESSION 8 关形成环', () => {
     expect(NEXT_SESSION['REVIEW-0247']).toBe('REVIEW-0248')
-    expect(NEXT_SESSION['REVIEW-0248']).toBe('REVIEW-0247')
+    expect(NEXT_SESSION['REVIEW-0248']).toBe('REVIEW-0249')
+    expect(NEXT_SESSION['REVIEW-0254']).toBe('REVIEW-0247')
   })
 })
