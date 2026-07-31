@@ -49,4 +49,14 @@ describe('placementLevels', () => {
     expect(placementLevels(100).implement).toBe(5)
     expect(placementLevels(40).debug).toBeLessThan(placementLevels(80).debug)
   })
+
+  it('debug 恒低一档（后端 §8 权威规则），最低 LV.1', () => {
+    // 满分 100：base=5，debug 仍低一档（修复前 score≥50 时 debug 不再低档，与后端漂移）
+    expect(placementLevels(100)).toEqual({ review: 5, debug: 4, implement: 5 })
+    expect(placementLevels(80)).toEqual({ review: 4, debug: 3, implement: 4 })
+    expect(placementLevels(50)).toEqual({ review: 3, debug: 2, implement: 3 })
+    // 低分兜底：debug 最低 LV.1
+    expect(placementLevels(24)).toEqual({ review: 1, debug: 1, implement: 1 })
+    expect(placementLevels(40)).toEqual({ review: 2, debug: 1, implement: 2 })
+  })
 })

@@ -7,6 +7,7 @@ import { getDeckDashboard } from '@/lib/api/deck/dashboard'
 import type { DeckDashboard } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { PanelTag, StatusBar } from '../deck/kit'
+import { FirstRunGuide } from '../deck/FirstRunGuide'
 import { AbilityProfile } from './AbilityProfile'
 import { IntelPanels } from './IntelPanels'
 import { MissionHero, PlacementHero } from './MissionHero'
@@ -81,6 +82,7 @@ export function DashboardClient() {
 
   return (
     <DeckShell>
+      <FirstRunGuide />
       {error ? (
         <DashboardError onRetry={() => { setError(false); setData(null); setRetryFlag((f) => f + 1) }} />
       ) : !data ? (
@@ -88,7 +90,10 @@ export function DashboardClient() {
       ) : (
         <>
           {data.main_task ? <MissionHero task={data.main_task} /> : <PlacementHero />}
-          <AbilityProfile axes={data.ability_map.axes} />
+          <AbilityProfile
+            axes={data.ability_map.axes}
+            hasPlacement={data.ability_map.has_placement}
+          />
           <ModuleGrid stats={data.modules} />
           <IntelPanels
             weakPoints={data.weak_points}

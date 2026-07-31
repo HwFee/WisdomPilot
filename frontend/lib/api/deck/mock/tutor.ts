@@ -57,10 +57,6 @@ export function socraticReply(text: string, historyLen: number): string {
   return GENERIC_PROBES[historyLen % GENERIC_PROBES.length]
 }
 
-export function feynmanOpening(topic: string): string {
-  return `好，「${topic}」。用你自己的话讲给我听——假装你在教一个完全不懂编程的人。不许用术语搪塞，讲到他能复述为止。`
-}
-
 export interface FeynmanVerdict {
   verdict: string
   grade: FeynmanGrade
@@ -179,11 +175,11 @@ export function mockMasteryUpdate(
 const feynmanSessions = new Map<string, string>()
 let feynmanSeq = 0
 
-export function mockStartFeynman(topic: string): { sessionId: string; opening: string } {
+export function mockStartFeynman(topic: string): { sessionId: string } {
   feynmanSeq += 1
   const sessionId = `feynman-${Date.now()}-${feynmanSeq}`
   feynmanSessions.set(sessionId, topic)
-  return { sessionId, opening: feynmanOpening(topic) }
+  return { sessionId }
 }
 
 export interface MockFeynmanCheck {

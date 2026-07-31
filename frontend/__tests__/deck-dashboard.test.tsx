@@ -46,11 +46,20 @@ describe('训练舱首页', () => {
     await waitFor(() => expect(screen.getByText(/这段快速排序里有/)).toBeInTheDocument())
     expect(screen.getByText('TODAY\'S MISSION · 今日主任务')).toBeInTheDocument()
 
-    // 三轴
-    expect(screen.getByText('审阅')).toBeInTheDocument()
-    expect(screen.getByText('调试')).toBeInTheDocument()
-    expect(screen.getByText('实现')).toBeInTheDocument()
-    expect(screen.getByText('LV.4')).toBeInTheDocument()
+    // P-01 推荐理由
+    expect(screen.getByText('WHY THIS · 推荐理由')).toBeInTheDocument()
+    expect(screen.getByText(/这一关专攻「边界条件处理」/)).toBeInTheDocument()
+
+    // P-02 能力指纹已并入能力图谱：指纹码在图谱标题行
+    expect(screen.queryByText('ABILITY FINGERPRINT · 能力指纹')).not.toBeInTheDocument()
+    expect(screen.getByText('R4-D3-I5')).toBeInTheDocument()
+    expect(screen.getAllByText(/至 LV\./).length).toBeGreaterThan(0)
+
+    // 三轴能力图谱
+    expect(screen.getAllByText('审阅').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('调试').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('实现').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('LV.4').length).toBeGreaterThan(0)
 
     // 四模块（导航里也有同名链接，断言至少各出现一次）
     expect(screen.getAllByText('代码审查室').length).toBeGreaterThan(0)
@@ -61,6 +70,8 @@ describe('训练舱首页', () => {
     // 情报区
     expect(screen.getByText('WEAK POINTS · 待攻克弱点')).toBeInTheDocument()
     expect(screen.getAllByText('边界条件处理').length).toBeGreaterThan(0)
+    // P-04 弱点来源标注
+    expect(screen.getByText('2天前 · 审查漏报')).toBeInTheDocument()
     expect(screen.getByText('FEED · 最近动态')).toBeInTheDocument()
   })
 })

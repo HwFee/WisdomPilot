@@ -27,8 +27,6 @@
 #     - deck_arena_challenges   竞技场挑战（种子内容）
 #     - deck_arena_attempts     用户挑战提交记录
 #     - deck_arena_ratings      用户 ELO 评分
-#   苏格拉底导师（Tutor）：
-#     - deck_tutor_messages     导师对话消息
 #   智核经济：
 #     - deck_core_transactions  智核流水账（唯一变动途径）
 #   认证（Certification）：
@@ -241,6 +239,9 @@ class DeckArenaChallenge(Base):
     code: Mapped[str] = mapped_column(Text, nullable=False)
     # 失败输出：测试运行的真实输出，展示给用户作为调试线索
     failing_output: Mapped[str] = mapped_column(Text, nullable=False)
+    # 测试用例列表（Judge0 判题用）：[{"input": str, "expected_output": str}, ...]
+    # 服务端秘密，绝不下发前端；为空时判题降级为关键字匹配
+    test_cases: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # 时间限制（秒）：竞技场限时挑战，超时判定失败
     time_limit_sec: Mapped[int] = mapped_column(Integer, nullable=False)
     # 难度等级：1~5，影响 ELO 评分变化幅度和智核奖励
@@ -281,27 +282,6 @@ class DeckArenaRating(Base):
     win_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     # 最后更新时间
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
-
-
-class DeckTutorMessage(Base):
-    """苏格拉底导师对话消息"""
-
-    __tablename__ = "deck_tutor_messages"
-
-    # 消息 ID：UUID 主键
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    # 用户 ID：外键关联 users 表，建索引
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True)
-    # 消息角色：user=用户发言 / tutor=导师回复
-    role: Mapped[str] = mapped_column(String(10), nullable=False)  # user/tutor
-    # 对话模式：socratic=苏格拉底问答 / feynman=费曼检验（考考我）
-    mode: Mapped[str] = mapped_column(String(10), nullable=False)  # socratic/feynman
-    # 消息文本内容
-    text: Mapped[str] = mapped_column(Text, nullable=False)
-    # 费曼评级：仅在 mode=feynman 且 role=tutor 时有值（优秀/良好/待加强）
-    grade: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    # 消息创建时间
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
 class DeckCoreTransaction(Base):
@@ -364,6 +344,9 @@ class DeckCertQuestion(Base):
     answer_correct: Mapped[str | None] = mapped_column(String(500), nullable=True)  # mcq 答案
     # 编程题关键片段：仅 code 题型有值，用户提交代码包含这些片段即算正确
     answer_includes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # code 关键片段
+    # 编程题测试用例列表（Judge0 判题用）：[{"input": str, "expected_output": str}, ...]
+    # 服务端秘密，绝不下发前端；为空时 code 题判分降级为关键片段匹配
+    test_cases: Mapped[list | None] = mapped_column(JSON, nullable=True)  # code 测试用例
     # 排序序号：控制题目在前端的显示顺序
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 

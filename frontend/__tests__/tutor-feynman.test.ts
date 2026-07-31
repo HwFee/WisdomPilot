@@ -88,10 +88,9 @@ describe('mockMasteryUpdate 掌握度更新', () => {
 })
 
 describe('费曼会话绑定', () => {
-  it('start 返回会话 id 与开场追问', () => {
-    const { sessionId, opening } = mockStartFeynman('递归出口设计')
+  it('start 返回会话 id（开场白由前端主题卡呈现，不再返回 opening）', () => {
+    const { sessionId } = mockStartFeynman('递归出口设计')
     expect(sessionId).toMatch(/^feynman-/)
-    expect(opening).toContain('递归出口设计')
   })
 
   it('start → submit 解析出该主题的量规与掌握度', () => {

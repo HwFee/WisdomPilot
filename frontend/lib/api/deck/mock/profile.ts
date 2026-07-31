@@ -1,9 +1,33 @@
-/* 档案 mock：身份 + 智核流水 + 竞技场 + 认证 + 排行榜（数值与 dashboard/arena mock 一致） */
+/* 档案 mock：身份 + 智核流水 + 竞技场 + 认证 + 排行榜 + 训练轨迹时间线 */
 
-import type { ProfileData } from '../types'
+import type { ProfileData, TimelineEntry } from '../types'
 import { ARENA_HOME_MOCK } from './arena'
 import { CERT_HOME_MOCK } from './certification'
 import { dashboardMock } from './dashboard'
+
+/* P-09 时间线 mock：四类条目按时间升序，覆盖 定级 → 轴升级 → 里程碑 → 认证 */
+/* 定级条目与后端 §8 同源：score 60 → base=3，debug 恒低一档 → {3,2,3} → R3-D2-I3 */
+const TIMELINE_MOCK: TimelineEntry[] = [
+  {
+    type: 'placement',
+    date: '2026-03-14',
+    score: 60,
+    levels: { review: 3, debug: 2, implement: 3 },
+    fingerprint: 'R3-D2-I3',
+  },
+  { type: 'axis_upgrade', date: '2026-03-20', axis: 'review', label: '审阅', from_level: 3, to_level: 4 },
+  { type: 'mastery', date: '2026-04-02', kp_name: '边界条件处理', level: '熟练' },
+  { type: 'axis_upgrade', date: '2026-04-11', axis: 'implement', label: '实现', from_level: 3, to_level: 4 },
+  { type: 'cert', date: '2026-04-22', topic: '链表', level: '熟练', score: 92 },
+  { type: 'mastery', date: '2026-05-30', kp_name: '链表操作', level: '精通' },
+  { type: 'cert', date: '2026-06-18', topic: '排序', level: '熟练', score: 88 },
+  { type: 'axis_upgrade', date: '2026-07-02', axis: 'implement', label: '实现', from_level: 4, to_level: 5 },
+]
+
+/** 时间线 mock 生成（纯函数）：返回一份新数组，避免外部误改共享常量 */
+export function buildTimelineMock(): TimelineEntry[] {
+  return [...TIMELINE_MOCK]
+}
 
 export const PROFILE_MOCK: ProfileData = {
   user: { name: '清源', joined_days: 128 },
@@ -24,4 +48,5 @@ export const PROFILE_MOCK: ProfileData = {
   certifications: CERT_HOME_MOCK.certified,
   leaderboard: ARENA_HOME_MOCK.leaderboard,
   recent: dashboardMock.feed,
+  timeline: buildTimelineMock(),
 }

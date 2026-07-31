@@ -55,6 +55,12 @@ export function MissionHero({ task }: { task: MainTask }) {
             </span>
           )}
         </div>
+        {current.reason && (
+          <div className="mt-4 max-w-[520px] rounded-r-[3px] border-l-2 border-amber bg-panel-raised py-2 pl-3.5 pr-3">
+            <div className="font-mono text-[10px] tracking-[1.5px] text-amber">WHY THIS · 推荐理由</div>
+            <p className="mt-1 text-[13px] leading-relaxed text-text">{current.reason}</p>
+          </div>
+        )}
       </div>
       <div className="flex flex-col items-start gap-3 lg:items-end">
         <button className="deck-btn-primary" onClick={() => push(current.target_url)}>

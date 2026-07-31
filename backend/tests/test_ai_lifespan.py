@@ -45,3 +45,24 @@ async def test_lifespan_closes_ai_service_when_application_body_fails() -> None:
                             raise RuntimeError("application failed")
 
     close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_lifespan_configures_and_closes_judge0_service() -> None:
+    """Judge0 与 lifespan 联动：启动配置（base_url 为空则不启用）、关闭释放连接。"""
+    with patch("app.core.lifespan.init_db", new=AsyncMock()):
+        with patch("app.core.lifespan.seed_deck", new=AsyncMock()):
+            with patch("app.core.lifespan.configure_ai_service", new=Mock()):
+                with patch("app.core.lifespan.ai_service.aclose", new=AsyncMock()):
+                    with patch(
+                        "app.core.lifespan.training_service.configure_judge0", new=Mock()
+                    ) as configure_judge0:
+                        with patch(
+                            "app.core.lifespan.training_service.aclose_judge0", new=AsyncMock()
+                        ) as close_judge0:
+                            async with create_lifespan(lifespan_settings())(Mock()):
+                                pass
+
+    # 默认 JUDGE0_BASE_URL 为空 → 启动时以空串配置（判题走降级），关闭时释放
+    configure_judge0.assert_called_once_with("")
+    close_judge0.assert_awaited_once()

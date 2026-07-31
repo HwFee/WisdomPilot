@@ -900,6 +900,33 @@ class AIService:
         else:
             return await provider.generate_explanation(prompt)
 
+    async def generate_messages(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: Optional[str] = None,
+    ) -> str:
+        """多轮对话生成：直接发送完整 messages 列表，可选前置 system 消息。
+
+        与 ``generate()`` 的区别：调用方可以自由构造多轮对话（user/assistant
+        交替、system 角色设定），适合苏格拉底导师等需要把最近对话历史传给
+        LLM 的场景。未配置时返回兜底提示文本（与 ``generate()`` 行为一致）。
+
+        Args:
+            messages: 对话消息列表，格式 ``[{"role": "user", "content": "..."}]``。
+            system_prompt: 可选的系统提示词，会作为第一条 system 消息插入。
+
+        Returns:
+            AI 生成的完整文本。若未配置则返回兜底提示。
+        """
+        if not self.is_configured():
+            return "AI 服务未配置，请联系管理员。"
+
+        provider = self._require_provider()
+
+        if system_prompt:
+            messages = [{"role": "system", "content": system_prompt}, *messages]
+        return await provider.complete_messages(messages)
+
     async def generate_question_analysis(
         self,
         question_text: str,

@@ -50,6 +50,7 @@
     "title": "这段快速排序里有 2 处缺陷……", "highlight": "2 处缺陷",
     "desc": "……", "difficulty": 3, "eta_minutes": 8,
     "related_weakness": "边界条件处理",
+    "reason": "你的「审阅」轴是三轴最低（LV.2），这一关专攻「边界条件处理」。",
     "target_url": "/review-gym?session=REVIEW-0247",
     "cta_label": "开始审查 →",
     "alternates": [ { "...": "结构同主任务（alternates 为空数组）" } ]
@@ -63,7 +64,7 @@
   "modules": [
     { "key": "review-gym", "stats": [ { "label": "今日完成", "value": "3" }, { "label": "连续 5 天", "trend": "up" } ] }
   ],
-  "weak_points": [ { "name": "边界条件处理", "category": "数据结构 · 排序", "p_l": 0.42 } ],
+  "weak_points": [ { "name": "边界条件处理", "category": "数据结构 · 排序", "p_l": 0.42, "source": "3天前 · 审查漏报" } ],
   "rhythm": { "streak_days": 7, "days": [ { "label": "一", "minutes": 25, "is_today": false } ] },
   "review_due": { "total": 5, "due_today": 2 },
   "feed": [ { "time": "09:41", "segments": [ { "t": "审查 ", "tone": "plain" }, { "t": "REVIEW-0246", "tone": "strong" } ] } ]
@@ -73,6 +74,9 @@
 - `main_task` 为 `null` 表示用户未定级，前端显示定级引导。
 - `axes` 固定三根、固定顺序 review → debug → implement。
 - `feed[].segments[].tone` ∈ `plain | strong | ok | bad`。
+- 个性化字段（§3.5 P-01/P-04）：`main_task.reason` 说明「为什么推荐这个给你」（引用
+  能力轴等级 + 弱点知识点，仅主任务与备用任务卡片带）；`weak_points[].source` 标注
+  弱点来源（取 `deck_mastery_events` 最近一条事件，如「3天前 · 审查漏报」）。
 
 ### 主任务分发规则（service 层实现）
 
@@ -94,7 +98,8 @@
   "difficulty": 3, "eta_minutes": 8, "related_weakness": "边界条件处理" }
 ```
 
-`id` 省略时返回该用户进度上下一关。
+`id` 省略时返回该用户进度上下一关：优先选 `related_weakness` 匹配用户 p_l 最低
+知识点的未完成关卡（§3.5 P-05），无匹配时回退顺序取第一个未完成关卡。
 
 ### POST /api/review-gym/submit
 
@@ -195,13 +200,26 @@
 
 ### GET /api/ability-map
 
-`AbilityMapDetail`：`{ axes, has_placement, knowledge_points }`。
+`AbilityMapDetail`：`{ axes, has_placement, placement, knowledge_points }`。
 `knowledge_points[]`：`{ name, category, axis, p_l, level, trend }`，`level` ∈ `初识 | 熟悉 | 熟练 | 精通`（判定规则见 §8 掌握度模型）；`trend` 由事件流分别重算 7 天前与当前的 `p_l`，差值 ±0.02 以内为 flat（此前为硬编码 "flat"，现为真实计算）。
+
+`placement`（§3.5 P-10 能力演化对比的「定级时」基线，未定级为 `null`）：
+`{ score, date, levels: { review, debug, implement }, fingerprint }`。
+数据源为定级 feed 事件（新格式 `payload.placement.score` 结构化字段，旧格式从
+segments 文案解析分数），初始三轴等级按 §8 规则复算（review/implement = `1+min(4,score//25)`，
+debug 恒低一档最低 LV.1）。
 
 ### GET /api/profile
 
-`ProfileData`：`{ user: { name, joined_days }, cores: { balance, transactions }, arena, certifications, leaderboard, recent }`。
+`ProfileData`：`{ user: { name, joined_days }, cores: { balance, transactions }, arena, certifications, leaderboard, recent, timeline }`。
 `transactions` 按时间倒序取最近 50 条。
+
+`timeline`（§3.5 P-09 训练档案路径时间线，按时间升序）：
+由既有事实表重放构建（不新增表）——定级 feed 事件（`placement`：`{ score, date, levels, fingerprint }`）、
+模块事实表经验增量重放（`axis_upgrade`：`{ axis, label, from_level, to_level }`，review=20×命中、
+debug=23/攻克、implement=40/认证通过，跨 400 边界即升级）、掌握度事件流重放
+（`mastery`：`{ kp_name, level }`，首次达到熟练/精通）、认证记录（`cert`：`{ topic, level, score }`）。
+未定级用户为 `[]`。
 
 ## 8. 数据模型（全新表）
 

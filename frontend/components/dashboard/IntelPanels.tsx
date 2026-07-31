@@ -20,6 +20,9 @@ function WeakPointsPanel({ points }: { points: WeakPoint[] }) {
             <span className="text-[13px] text-text">
               {p.name}
               <small className="block text-[11px] text-faint">{p.category}</small>
+              {p.source && (
+                <small className="mt-0.5 block font-mono text-[10px] text-dim">{p.source}</small>
+              )}
             </span>
             <span className="ml-auto font-mono text-xs text-amber">
               掌握 {Math.round(p.p_l * 100)}%

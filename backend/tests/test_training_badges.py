@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app.training import badges
 from app.training.badges import BADGE_BY_ID, BADGES, BadgeFacts
 from app.training.models import (
+    DeckAbilityAxis,
     DeckCoreTransaction,
     DeckFeedEvent,
     DeckMasteryEvent,
@@ -354,6 +355,37 @@ class TestCertificationEndpoints:
         wall = home.json()["badges"]
         first_cert = [b for b in wall if b["id"] == "first-cert"]
         assert len(first_cert) == 1 and first_cert[0]["unlocked"] is True
+
+    async def test_placement_after_formal_cert_overwrites_axes_not_500(
+        self, client, db_session, auth_user, auth_headers
+    ):
+        """先考正式认证（add_axis_xp 建轴行）再考 placement：不撞 UNIQUE，三轴 xp 被定级规则覆盖。
+
+        回归缺陷：placement 分支对已有 deck_ability_axes 行的用户盲插，
+        撞复合主键 (user_id, axis) 的 UNIQUE 约束 → 500。
+        """
+        await seed_deck(db_session)
+        # 先考正式认证：通过后 add_axis_xp 建 implement 轴行（40 xp）
+        resp = await client.post(
+            "/api/certification/submit",
+            json={"exam_id": "cert-pointer", "answers": POINTER_ANSWERS},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        # 再考 placement（满分）：修复前此处盲插 DeckAbilityAxis → 500
+        resp = await client.post(
+            "/api/certification/submit",
+            json={"exam_id": "placement", "answers": PLACEMENT_ANSWERS},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        # 三轴 xp 被定级规则覆盖（§8：xp=(level-1)×400+200，满分 debug 恒低一档）
+        rows = (
+            await db_session.execute(select(DeckAbilityAxis))
+        ).scalars().all()
+        assert {r.axis: r.xp for r in rows} == {
+            "review": 1800, "debug": 1400, "implement": 1800,
+        }
 
     async def test_home_badges_shape_and_hidden_masking(
         self, client, db_session, auth_user, auth_headers

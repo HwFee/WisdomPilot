@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { isAuthenticated } from '@/lib/api'
 import { getAbilityMap } from '@/lib/api/deck/abilities'
+import { computeShapeDeltas } from '@/lib/api/deck/mock/abilities'
+import { trainingFingerprint } from '@/lib/api/deck/mock/certification'
 import type { AbilityMapDetail, AxisKey, KnowledgePoint } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { CountUp, PanelTag, SectionHead, Segments } from '../deck/kit'
@@ -70,11 +73,29 @@ export function AbilitiesClient() {
     getAbilityMap().then(setData)
   }, [push])
 
+  /* P-10 能力演化：定级时 vs 现在的三轴等级差（未定级为 undefined） */
+  const shapeDeltas = data?.placement
+    ? computeShapeDeltas(data.placement, data.axes)
+    : undefined
+
   return (
     <DeckShell>
       <div className="deck-boot deck-boot-1">
         <PanelTag label="ABILITY MAP · 能力图谱" variant="on" />
-        <h1 className="mt-3 text-xl font-semibold">三根能力轴，一张全景图</h1>
+        <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="text-xl font-semibold">三根能力轴，一张全景图</h1>
+          {/* P-10 能力演化：定级指纹 → 当前指纹（未定级不显示） */}
+          {data?.placement && (
+            <span
+              className="flex items-center gap-1.5 font-mono text-[11px] tracking-[1px]"
+              title={`${data.placement.date} 定级 · ${data.placement.score} 分 —— 从那时到现在的三轴形状变化`}
+            >
+              <span className="text-faint">{data.placement.fingerprint}</span>
+              <ArrowRight className="size-3.5 text-faint" strokeWidth={1.5} aria-hidden="true" />
+              <span className="text-signal">{trainingFingerprint(data.axes)}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {!data ? (
@@ -93,33 +114,52 @@ export function AbilitiesClient() {
             </div>
           )}
 
-          {/* 三轴大卡 */}
+          {/* 三轴大卡（定级后附等级演化 delta） */}
           <section className="deck-boot deck-boot-2 mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {data.axes.map((axis) => (
-              <div key={axis.key} className="deck-panel deck-panel-hoverable p-[20px_22px]">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[15px] font-semibold">
-                    {axis.label}
-                    <span className="ml-2 font-mono text-[10px] uppercase tracking-[1.5px] text-faint">
-                      {AXIS_META[axis.key].en}
+            {data.axes.map((axis) => {
+              const delta = shapeDeltas?.find((d) => d.axis === axis.key)
+              return (
+                <div key={axis.key} className="deck-panel deck-panel-hoverable p-[20px_22px]">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[15px] font-semibold">
+                      {axis.label}
+                      <span className="ml-2 font-mono text-[10px] uppercase tracking-[1.5px] text-faint">
+                        {AXIS_META[axis.key].en}
+                      </span>
                     </span>
-                  </span>
-                  <span className="font-mono text-xs text-signal">LV.{axis.level}</span>
-                </div>
-                <div className="mt-3.5">
-                  <Segments filled={Math.round((axis.xp_current / axis.xp_next) * 10)} />
-                </div>
-                <div className="mt-2.5 font-mono text-[11px] text-dim">
-                  <CountUp value={axis.xp_current} /> / {axis.xp_next.toLocaleString('en-US')} 至 LV.
-                  {axis.level + 1}
-                </div>
-                {axis.weakest_focus && (
-                  <div className="mt-1 text-xs text-dim">
-                    短板：<b className="font-medium text-amber">{axis.weakest_focus}</b>
+                    <span className="font-mono text-xs text-signal">LV.{axis.level}</span>
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="mt-3.5">
+                    <Segments filled={Math.round((axis.xp_current / axis.xp_next) * 10)} />
+                  </div>
+                  <div className="mt-2.5 font-mono text-[11px] text-dim">
+                    <CountUp value={axis.xp_current} /> / {axis.xp_next.toLocaleString('en-US')} 至 LV.
+                    {axis.level + 1}
+                  </div>
+                  {delta && (
+                    <div className="mt-1 font-mono text-[11px] text-faint">
+                      定级 LV.{delta.from_level} ·{' '}
+                      <span
+                        className={
+                          delta.delta > 0
+                            ? 'text-signal'
+                            : delta.delta < 0
+                              ? 'text-deck-red'
+                              : 'text-faint'
+                        }
+                      >
+                        {delta.delta > 0 ? `+${delta.delta}` : delta.delta < 0 ? delta.delta : '持平'}
+                      </span>
+                    </div>
+                  )}
+                  {axis.weakest_focus && (
+                    <div className="mt-1 text-xs text-dim">
+                      短板：<b className="font-medium text-amber">{axis.weakest_focus}</b>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </section>
 
           {/* 知识点网格：按轴分组 */}

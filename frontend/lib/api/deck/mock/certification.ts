@@ -1,6 +1,8 @@
 /* 基本功认证 mock：徽章墙 + 考试 + 本地判分（真实后端就位后由服务端判分） */
 
 import type {
+  AbilityAxis,
+  AxisKey,
   CertAnswer,
   CertExam,
   CertRecord,
@@ -9,9 +11,34 @@ import type {
 } from '../types'
 import { awardMockBadges, getMockBadgeWall, isNightHour } from './badges'
 
+/** 训练指纹轴代码（§3.5 P-11）：审阅→R / 调试→D / 实现→I */
+const FINGERPRINT_AXIS_CODES: Record<AxisKey, string> = {
+  review: 'R',
+  debug: 'D',
+  implement: 'I',
+}
+
+/** 三轴顺序固定（review → debug → implement），与后端 AXES 一致 */
+const FINGERPRINT_AXES: AxisKey[] = ['review', 'debug', 'implement']
+
+/**
+ * 根据三轴等级生成训练指纹短码（如 R3-D1-I4）。
+ *
+ * 只暴露三轴等级的粗粒度信息（隐私约束 4），不含任何具体弱点知识点。
+ * 缺失的轴按 LV.1（未定级默认）计，与后端 service.training_fingerprint 一致。
+ */
+export function trainingFingerprint(axes: AbilityAxis[]): string {
+  const levelByAxis = new Map(axes.map((a) => [a.key, a.level]))
+  return FINGERPRINT_AXES.map(
+    (axis) => `${FINGERPRINT_AXIS_CODES[axis]}${levelByAxis.get(axis) ?? 1}`,
+  ).join('-')
+}
+
 /** home 静态部分；badges 字段由 getMockCertHome 按当前解锁状态实时拼装 */
 export const CERT_HOME_MOCK: Omit<CertificationHome, 'badges'> = {
   has_placement: true,
+  // 设计稿示例指纹：审阅 LV.3 / 调试 LV.1 / 实现 LV.4
+  fingerprint: 'R3-D1-I4',
   certified: [
     { topic: '链表', level: '熟练', date: '2026-07-12', score: 92, verify_code: 'WP-LIST-7F3A' },
     { topic: '排序', level: '熟练', date: '2026-07-19', score: 88, verify_code: 'WP-SORT-2E9C' },
@@ -245,8 +272,24 @@ export function submitMockExam(examId: string, answers: CertAnswer[]): CertResul
   return { ...result, new_badges }
 }
 
-/** 定级结果 → 三轴初始等级（1-5） */
+/**
+ * 定级结果 → 三轴初始等级（1-5）。
+ *
+ * 规则与后端 service.placement_levels_from_score（§8）一致：
+ * base = 1 + min(4, floor(score / 25))；debug 恒低一档（最低 LV.1），
+ * review/implement 取 base。mock 与后端共用同一规则，防止定级仪式页
+ * 与 P-10 画像的等级与真实后端漂移。
+ */
 export function placementLevels(score: number): { review: number; debug: number; implement: number } {
   const base = 1 + Math.min(4, Math.floor(score / 25))
-  return { review: base, debug: Math.max(1, base - (score < 50 ? 1 : 0)), implement: base }
+  return { review: base, debug: Math.max(1, base - 1), implement: base }
+}
+
+/** 定级三轴等级 → 训练指纹短码（P-11 同源：复用轴代码表与固定顺序，R-D-I） */
+export function fingerprintFromPlacement(levels: {
+  review: number
+  debug: number
+  implement: number
+}): string {
+  return FINGERPRINT_AXES.map((axis) => `${FINGERPRINT_AXIS_CODES[axis]}${levels[axis]}`).join('-')
 }

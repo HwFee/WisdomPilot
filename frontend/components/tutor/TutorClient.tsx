@@ -66,19 +66,100 @@ function MessageBubble({ msg }: { msg: DisplayMessage }) {
   )
 }
 
+/**
+ * 按当前模式过滤消息流：苏格拉底与费曼各自看到各自的对话，
+ * 切换 tab 即切换上下文（同屏会话内切回仍在）。
+ */
+export function filterMessagesByMode(
+  messages: DisplayMessage[],
+  mode: TutorMode
+): DisplayMessage[] {
+  return messages.filter((m) => m.mode === mode)
+}
+
+/** 各模式的自我介绍（模式 tab 行下方展示） */
+export const MODE_INTRO: Record<TutorMode, string> = {
+  socratic: '你提问，它不直接给答案——用一连串追问引导你自己想到答案。适合卡住的时候。',
+  feynman: '换你当老师讲给它听——用自己的话解释一个知识点，它按理解度打分。讲明白才算真懂。',
+}
+
+/** 费曼讲解要求文案（主题卡展示，与后端原开场白语义一致） */
+export const FEYNMAN_REQUIREMENT =
+  '用你自己的话讲给我听——假装你在教一个完全不懂编程的人。不许用术语搪塞，讲到他能复述为止。'
+
+/** 活跃费曼主题：存在时提交走 feynman/check，点评后清除 */
+export interface ActiveTopic {
+  topic: string
+  sessionId: string
+}
+
+/** 对话区顶部卡片状态：费曼主题卡 + 苏格拉底当前问题卡（按模式各自管理） */
+export interface TutorCards {
+  activeTopic: ActiveTopic | null
+  polishedQuestion: string | null
+}
+
+/**
+ * 提交完成后更新卡片状态（纯函数）：
+ * - 费曼主题卡固定：不随提交/点评清除，只由用户主动「取消主题」或选新主题改变
+ * - 苏格拉底模式：仅当尚无问题卡且响应携带润色问题时，固定为「当前问题」卡
+ */
+export function cardsAfterSubmit(
+  cards: TutorCards,
+  mode: TutorMode,
+  polishedQuestion: string | undefined
+): TutorCards {
+  const next: TutorCards = { ...cards }
+  if (mode === 'socratic' && next.polishedQuestion === null && polishedQuestion) {
+    next.polishedQuestion = polishedQuestion
+  }
+  return next
+}
+
+/** 费曼主题卡：固定在对话区顶部，UI 元素而非聊天消息 */
+function TopicCard({ topic, onCancel }: { topic: string; onCancel: () => void }) {
+  return (
+    <div className="deck-panel mx-auto max-w-[560px] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <PanelTag label="FEYNMAN · 费曼检验" variant="on" />
+        <button onClick={onCancel} className="deck-btn-ghost !px-2.5 !py-1 text-[11px]">
+          取消主题
+        </button>
+      </div>
+      <p className="mt-2 text-base font-semibold text-text">{topic}</p>
+      <p className="mt-1 text-[13px] leading-relaxed text-dim">{FEYNMAN_REQUIREMENT}</p>
+    </div>
+  )
+}
+
+/** 苏格拉底当前问题卡：固定在对话区顶部，本屏首次提问后生成 */
+function QuestionCard({ question, onReset }: { question: string; onReset: () => void }) {
+  return (
+    <div className="deck-panel mx-auto max-w-[560px] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <PanelTag label="SOCRATES · 当前问题" variant="on" />
+        <button onClick={onReset} className="deck-btn-ghost !px-2.5 !py-1 text-[11px]">
+          换个问题
+        </button>
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-text">{question}</p>
+    </div>
+  )
+}
+
 /** 苏格拉底导师：追问模式 + 费曼「考考我」模式 */
 export function TutorClient() {
   const { push } = useRouter()
   const searchParams = useSearchParams()
   const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [mode, setMode] = useState<TutorMode>('socratic')
+  const [cards, setCards] = useState<TutorCards>({ activeTopic: null, polishedQuestion: null })
   const [balance, setBalance] = useState<number | null>(null)
   const [cost, setCost] = useState(2)
   const [topics, setTopics] = useState<string[]>([])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [feynmanSessionId, setFeynmanSessionId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topicHandled = useRef(false)
   const { celebrate, celebrationElement } = useBadgeCelebration()
@@ -94,14 +175,13 @@ export function TutorClient() {
       setCost(s.cost_per_question)
       setTopics(s.suggested_topics)
       setLoaded(true)
-      // 从仪表盘「针对训练」跳入：直接进入费曼模式
+      // 从仪表盘「针对训练」跳入：静默创建费曼会话，出主题卡（不产生开场白消息）
       const topic = searchParams.get('topic')
       if (topic && !topicHandled.current) {
         topicHandled.current = true
         setMode('feynman')
         startFeynman(topic).then((r) => {
-          setFeynmanSessionId(r.feynman_session_id ?? null)
-          setMessages((prev) => [...prev, r.message])
+          setCards((prev) => ({ ...prev, activeTopic: { topic, sessionId: r.feynman_session_id } }))
         })
       }
     })
@@ -110,6 +190,9 @@ export function TutorClient() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, thinking])
+
+  // 按当前模式过滤：苏格拉底/费曼各自独立的对话流（渲染与 LLM 历史上下文共用）
+  const currentModeMessages = filterMessagesByMode(messages, mode)
 
   const handleSend = () => {
     const text = input.trim()
@@ -126,8 +209,14 @@ export function TutorClient() {
 
     const call: Promise<TutorReply> =
       mode === 'feynman'
-        ? submitFeynman(feynmanSessionId ?? '', text, balance, cost)
-        : sendTutorMessage(text, mode, messages.length, balance, cost)
+        ? submitFeynman(cards.activeTopic?.sessionId ?? '', text, balance, cost)
+        : sendTutorMessage(
+            text,
+            mode,
+            currentModeMessages.slice(-10).map((m) => ({ role: m.role, text: m.text })),
+            balance,
+            cost
+          )
 
     // 模拟导师思考延迟
     setTimeout(() => {
@@ -136,6 +225,8 @@ export function TutorClient() {
         setBalance(r.cores_balance)
         setThinking(false)
         celebrate(r.new_badges)
+        // 卡片状态：费曼点评后清主题卡；苏格拉底首次提问固定「当前问题」卡
+        setCards((prev) => cardsAfterSubmit(prev, mode, r.polished_question))
       })
     }, 900)
   }
@@ -143,8 +234,7 @@ export function TutorClient() {
   const handleTopic = (topic: string) => {
     if (thinking) return
     startFeynman(topic).then((r) => {
-      setFeynmanSessionId(r.feynman_session_id ?? null)
-      setMessages((prev) => [...prev, r.message])
+      setCards((prev) => ({ ...prev, activeTopic: { topic, sessionId: r.feynman_session_id } }))
     })
   }
 
@@ -154,32 +244,57 @@ export function TutorClient() {
     <DeckShell>
       {celebrationElement}
       <div className="deck-boot deck-boot-1 flex flex-wrap items-center gap-4">
-        <PanelTag label="AI TUTOR · 苏格拉底导师" variant="on" />
-        {/* 模式切换 */}
-        <div className="flex rounded border border-line font-mono text-[11px]">
-          {(
-            [
-              { key: 'socratic', label: '追问模式' },
-              { key: 'feynman', label: '考考我' },
-            ] as const
-          ).map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setMode(m.key)}
-              className={`px-3.5 py-1.5 transition-colors ${
-                mode === m.key ? 'bg-signal/10 text-signal' : 'text-dim hover:text-text'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
+        <PanelTag label="AI TUTOR" variant="on" />
+        {/* 模式切换：在剩余空间内水平居中 */}
+        <div className="flex flex-1 justify-center">
+          <div className="flex rounded border border-line font-mono text-[11px]">
+            {(
+              [
+                { key: 'socratic', label: '苏格拉底' },
+                { key: 'feynman', label: '费曼' },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setMode(m.key)}
+                className={`px-3.5 py-1.5 transition-colors ${
+                  mode === m.key ? 'bg-signal/10 text-signal' : 'text-dim hover:text-text'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
         </div>
         {balance !== null && (
-          <span className="ml-auto rounded border border-line px-2.5 py-1 font-mono text-xs text-dim">
+          <span className="rounded border border-line px-2.5 py-1 font-mono text-xs text-dim">
             ◈ {balance} · 每次提问 -{cost}
           </span>
         )}
       </div>
+
+      {/* 当前模式介绍（tab 行下方） */}
+      <p className="mt-2.5 text-center font-mono text-[11px] leading-relaxed text-faint">
+        {MODE_INTRO[mode]}
+      </p>
+
+      {/* 卡片区：苏格拉底问题卡 / 费曼主题卡（按模式各自显示，消息流上方） */}
+      {mode === 'socratic' && cards.polishedQuestion && (
+        <div className="mt-2.5">
+          <QuestionCard
+            question={cards.polishedQuestion}
+            onReset={() => setCards((prev) => ({ ...prev, polishedQuestion: null }))}
+          />
+        </div>
+      )}
+      {mode === 'feynman' && cards.activeTopic && (
+        <div className="mt-2.5">
+          <TopicCard
+            topic={cards.activeTopic.topic}
+            onCancel={() => setCards((prev) => ({ ...prev, activeTopic: null }))}
+          />
+        </div>
+      )}
 
       {/* 消息流 */}
       <div className="deck-boot deck-boot-2 mt-4 space-y-3">
@@ -189,7 +304,7 @@ export function TutorClient() {
           </div>
         ) : (
           <>
-            {messages.map((m) => (
+            {currentModeMessages.map((m) => (
               <MessageBubble key={m.id} msg={m} />
             ))}
             {thinking && (
@@ -199,8 +314,8 @@ export function TutorClient() {
                 </div>
               </div>
             )}
-            {/* 费曼模式主题 chips */}
-            {mode === 'feynman' && topics.length > 0 && (
+            {/* 费曼模式主题 chips：主题卡激活期间隐藏（取消/点评后再出现） */}
+            {mode === 'feynman' && topics.length > 0 && !cards.activeTopic && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <span className="font-mono text-[11px] text-faint">挑一个主题开讲：</span>
                 {topics.map((t) => (

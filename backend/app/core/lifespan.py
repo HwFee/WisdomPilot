@@ -10,9 +10,11 @@
     2. 初始化数据库（建表 + 版本标记）
     3. 执行种子数据填充（确保系统有默认训练舱数据）
     4. 配置 AI 服务（初始化大模型提供商连接）
+    5. 配置 Judge0 判题服务（未配置 base_url 则不启用，判题走关键字降级）
 
 关闭时执行的操作：
     1. 关闭 AI 服务连接（释放 HTTP 客户端等资源）
+    2. 关闭 Judge0 服务连接（释放 HTTP 客户端等资源）
 """
 
 from contextlib import asynccontextmanager
@@ -34,6 +36,7 @@ from app.config import Settings
 _MODELS_REGISTERED = (_register_auth_models, _register_training_models)
 from app.database import AsyncSessionLocal, init_db
 from app.training.seed import seed_deck
+from app.training import service as training_service
 from app.ai.config import AIProviderConfig
 from app.ai.service import ai_service
 
@@ -71,8 +74,6 @@ def configure_ai_service(settings: Settings) -> None:
         model=settings.AI_MODEL,                  # 模型名称
         temperature=settings.AI_TEMPERATURE,      # 生成温度
         base_url=settings.AI_BASE_URL,            # 远程 API 基础 URL
-        local_base_url=settings.AI_LOCAL_BASE_URL,  # 本地模型基础 URL
-        is_local_first=settings.AI_LOCAL_FIRST,   # 是否优先使用本地模型
     )
     ai_service.configure(ai_config)
 
@@ -107,6 +108,8 @@ def create_lifespan(settings: Settings):
             await seed_deck(db)
         # 4. 初始化 AI 服务（配置大模型提供商连接）
         configure_ai_service(settings)
+        # 5. 配置 Judge0 判题服务（base_url 为空则不启用，判题走关键字降级）
+        training_service.configure_judge0(settings.JUDGE0_BASE_URL)
         try:
             # ===== 运行阶段 =====
             # yield 把控制权交给 FastAPI，应用开始接收请求
@@ -116,5 +119,7 @@ def create_lifespan(settings: Settings):
             # ===== 关闭阶段 =====
             # 关闭 AI 服务的 HTTP 客户端等资源，防止资源泄露
             await ai_service.aclose()
+            # 关闭 Judge0 服务的 HTTP 客户端等资源，防止资源泄露
+            await training_service.aclose_judge0()
 
     return lifespan

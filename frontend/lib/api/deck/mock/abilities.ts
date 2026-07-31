@@ -1,9 +1,59 @@
-/* 能力图谱 mock：三轴 + 知识点掌握度（与仪表盘 mock 数值一致） */
+/* 能力图谱 mock：三轴 + 知识点掌握度 + 定级画像快照（与仪表盘 mock 数值一致） */
 
-import type { AbilityMapDetail } from '../types'
+import type { AbilityAxis, AbilityMapDetail, AxisKey, PlacementSnapshot } from '../types'
+import { fingerprintFromPlacement, placementLevels } from './certification'
+
+/* P-10 能力演化对比：三轴展示顺序与中文标签（与后端 AXES 固定顺序一致） */
+const AXIS_ORDER: AxisKey[] = ['review', 'debug', 'implement']
+const AXIS_LABELS: Record<AxisKey, string> = {
+  review: '审阅',
+  debug: '调试',
+  implement: '实现',
+}
+
+/* 定级画像快照：分数与等级复用 placementLevels（定级结果视图同源），
+   保证「定级时」与用户看到的定级结果一致 */
+const PLACEMENT_SCORE = 60
+const PLACEMENT_LEVELS = placementLevels(PLACEMENT_SCORE)
+
+/**
+ * P-10 能力演化对比：定级时 vs 现在的三轴等级差（纯函数，可测）。
+ *
+ * 按固定顺序 review → debug → implement 输出每轴对比；
+ * 当前轴缺失（未训练）时回退到定级等级（delta=0）。
+ */
+export function computeShapeDeltas(
+  placement: PlacementSnapshot,
+  axes: AbilityAxis[],
+): Array<{
+  axis: AxisKey
+  label: string
+  from_level: number
+  to_level: number
+  delta: number
+}> {
+  return AXIS_ORDER.map((axis) => {
+    const now = axes.find((a) => a.key === axis)
+    const from = placement.levels[axis]
+    const to = now?.level ?? from
+    return {
+      axis,
+      label: now?.label ?? AXIS_LABELS[axis],
+      from_level: from,
+      to_level: to,
+      delta: to - from,
+    }
+  })
+}
 
 export const ABILITY_MAP_MOCK: AbilityMapDetail = {
   has_placement: true,
+  placement: {
+    score: PLACEMENT_SCORE,
+    date: '2026-03-14',
+    levels: PLACEMENT_LEVELS,
+    fingerprint: fingerprintFromPlacement(PLACEMENT_LEVELS),
+  },
   axes: [
     { key: 'review', label: '审阅', level: 4, xp_current: 1240, xp_next: 1600, weakest_focus: '并发代码审阅' },
     { key: 'debug', label: '调试', level: 3, xp_current: 860, xp_next: 1200, weakest_focus: '指针与内存错误定位' },

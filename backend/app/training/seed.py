@@ -421,6 +421,15 @@ test_median.py::test_even_negative  TIMEOUT  [ 80%] 执行超过 5s（疑似死�
 test_median.py::test_even_unsorted  TIMEOUT  [100%] 执行超过 5s（疑似死循环）
 
 =================== 2 passed, 3 timeout in 15.42s ===================""",
+        # Judge0 判题测试用例：输入为 JSON 数组（stdin），期望为中位数输出
+        "test_cases": [
+            {"input": "[1]", "expected_output": "1"},
+            {"input": "[3, 1, 2]", "expected_output": "2"},
+            {"input": "[4, 1, 2, 5]", "expected_output": "3.0"},
+            # 排序后 [-5, -4, -3, -1]，中位数 (-4 + -3) / 2 = -3.5
+            {"input": "[-1, -4, -3, -5]", "expected_output": "-3.5"},
+            {"input": "[9, 5, 2, 7, 8, 1]", "expected_output": "6.0"},
+        ],
         "time_limit_sec": 600,
         "difficulty": 3,
     },
@@ -449,6 +458,14 @@ test_bsearch.py::test_empty         PASSED   [100%]
 
 =================== 3 passed, 2 failed in 0.09s ===================
 right 初始化为 len(arr)，当 target 大于所有元素时 mid 越界。""",
+        # Judge0 判题测试用例：输入第一行 JSON 数组、第二行目标值，期望为下标或 -1
+        "test_cases": [
+            {"input": "[1, 2, 3, 4, 5]\n3", "expected_output": "2"},
+            {"input": "[1, 2, 3, 4, 5]\n6", "expected_output": "-1"},
+            {"input": "[1, 2, 3, 4, 5]\n5", "expected_output": "4"},
+            {"input": "[7]\n7", "expected_output": "0"},
+            {"input": "[]\n1", "expected_output": "-1"},
+        ],
         "time_limit_sec": 600,
         "difficulty": 2,
     },
@@ -480,6 +497,14 @@ test_str_reverse("12345")    -> "" (expected "54321")    FAIL
 
 ======================== 1/5 tests passed ========================
 返回的是 dest（已移到末尾），应返回 result（指向字符串开头）。""",
+        # Judge0 判题测试用例：输入为单行字符串（stdin），期望为反转结果
+        "test_cases": [
+            {"input": "hello", "expected_output": "olleh"},
+            {"input": "a", "expected_output": "a"},
+            {"input": "", "expected_output": ""},
+            {"input": "abcdef", "expected_output": "fedcba"},
+            {"input": "12345", "expected_output": "54321"},
+        ],
         "time_limit_sec": 600,
         "difficulty": 3,
     },
@@ -504,6 +529,14 @@ test_unique.py::test_with_numbers   FAILED   assert 3 == 2  [100%]
 
 =================== 2 passed, 3 failed in 0.05s ===================
 count 对每个 word 都 +1，没有跳过已见元素。需要加 if w not in seen 判断。""",
+        # Judge0 判题测试用例：输入为 JSON 单词数组（stdin），期望为去重计数
+        "test_cases": [
+            {"input": "[]", "expected_output": "0"},
+            {"input": '["a", "b", "c"]', "expected_output": "3"},
+            {"input": '["a", "a", "a"]', "expected_output": "1"},
+            {"input": '["a", "b", "a", "c", "b"]', "expected_output": "3"},
+            {"input": '["1", "1", "2"]', "expected_output": "2"},
+        ],
         "time_limit_sec": 600,
         "difficulty": 3,
     },
@@ -524,6 +557,14 @@ test_factorial.py::test_ten      RecursionError  [100%]
 =================== 0 passed, 5 failed in 0.12s ===================
 RecursionError: maximum recursion depth exceeded
 缺少递归出口（基例），需要加 if n <= 1: return 1。""",
+        # Judge0 判题测试用例：输入为整数（stdin），期望为阶乘结果
+        "test_cases": [
+            {"input": "0", "expected_output": "1"},
+            {"input": "1", "expected_output": "1"},
+            {"input": "5", "expected_output": "120"},
+            {"input": "3", "expected_output": "6"},
+            {"input": "10", "expected_output": "3628800"},
+        ],
         "time_limit_sec": 600,
         "difficulty": 2,
     },
@@ -555,7 +596,7 @@ CERT_EXAMS = [
 # 认证考试题目 (CERT_QUESTIONS)
 # ──────────────────────────────────────────────────────────────────
 # 数据结构：(exam_id, qid, kind, prompt, options, starter_code,
-#            answer_correct, answer_includes, sort)
+#            answer_correct, answer_includes, test_cases, sort)
 #   exam_id:         所属考试 ID
 #   qid:            题目编号（q1/q2... 认证考试 / p1/p2... 定级测试）
 #   kind:           题型（mcq=选择题 / code=编程题）
@@ -563,56 +604,86 @@ CERT_EXAMS = [
 #   options:        选择题选项列表（编程题为 None）
 #   starter_code:   编程题起始代码模板（选择题为 None）
 #   answer_correct: 选择题正确答案（服务端比对，绝不下发）
-#   answer_includes:编程题关键片段（用户代码含此即算正确）
+#   answer_includes:编程题关键片段（用户代码含此即算正确；Judge0 不可用时降级用）
+#   test_cases:     编程题测试用例（Judge0 判题用，每项 {"input", "expected_output"}；
+#                   选择题为 None；服务端秘密，绝不下发）
 #   sort:           显示排序（最后一个字段，省略字段名）
 #
-# 答案安全策略：answer_correct 和 answer_includes 仅存在于服务端，
+# 答案安全策略：answer_correct / answer_includes / test_cases 仅存在于服务端，
 # 前端 API 响应绝不包含这些字段，防止作弊。
 # ──────────────────────────────────────────────────────────────────
 
-# (exam_id, qid, kind, prompt, options, starter_code, answer_correct, answer_includes, sort)
+# (exam_id, qid, kind, prompt, options, starter_code, answer_correct, answer_includes, test_cases, sort)
 CERT_QUESTIONS = [
     ("cert-pointer", "q1", "mcq", "int a = 5; int *p = &a; *p = 10; 之后 a 的值是？",
-     ["5", "10", "未定义", "编译错误"], None, "10", None, 1),
+     ["5", "10", "未定义", "编译错误"], None, "10", None, None, 1),
     ("cert-pointer", "q2", "mcq", "free(p) 之后，指针 p 本身变成什么？",
      ["NULL", "悬空指针（值不变但目标已释放）", "自动销毁", "指向堆顶"], None,
-     "悬空指针（值不变但目标已释放）", None, 2),
+     "悬空指针（值不变但目标已释放）", None, None, 2),
     ("cert-pointer", "q3", "mcq", "对 int arr[10]，arr 与 &arr[0] 的关系是？",
-     ["值相等", "类型完全相同", "arr 多一级间接", "毫无关系"], None, "值相等", None, 3),
+     ["值相等", "类型完全相同", "arr 多一级间接", "毫无关系"], None, "值相等", None, None, 3),
     ("cert-pointer", "q4", "mcq", "32 位系统下 int *p; p++ 让 p 前进多少字节？",
-     ["1", "2", "4", "8"], None, "4", None, 4),
+     ["1", "2", "4", "8"], None, "4", None, None, 4),
     ("cert-pointer", "q5", "code", "手写 swap：通过指针交换两个 int 的值。",
-     None, "void swap(int *a, int *b) {\n    \n}", None, ["*a=*b", "*b="], 5),
+     None, "void swap(int *a, int *b) {\n    \n}", None, ["*a=*b", "*b="],
+     [{"input": "3 5", "expected_output": "5 3"},
+      {"input": "-1 7", "expected_output": "7 -1"},
+      {"input": "0 0", "expected_output": "0 0"},
+      {"input": "100 -100", "expected_output": "-100 100"}], 5),
     ("cert-pointer", "q6", "code", "写一个函数 find，接收 int* 数组首地址和长度，返回最大值所在位置的指针；空数组返回 NULL。",
-     None, "int* find(int *arr, int n) {\n    \n}", None, ["NULL"], 6),
+     None, "int* find(int *arr, int n) {\n    \n}", None, ["NULL"],
+     [{"input": "0", "expected_output": "NULL"},
+      {"input": "1\n42", "expected_output": "42 0"},
+      {"input": "3\n10 5 20", "expected_output": "20 2"},
+      {"input": "4\n-1 -5 -2 -9", "expected_output": "-1 0"}], 6),
     ("placement", "p1", "mcq", "读代码找 bug：for (i = 0; i <= n; i++) sum += arr[i]; 问题在哪？",
-     ["越界访问 arr[n]", "sum 类型不对", "循环方向错了", "没有 bug"], None, "越界访问 arr[n]", None, 1),
+     ["越界访问 arr[n]", "sum 类型不对", "循环方向错了", "没有 bug"], None, "越界访问 arr[n]", None, None, 1),
     ("placement", "p2", "mcq", "下面哪段代码会死循环？",
      ["while (x > 0) { x -= 2; }（x 为奇数正数）", "for (i = 0; i < 10; i++)",
       "while (x != 0) { x = x / 2; }", "do { x--; } while (x > 0);"], None,
-     "while (x > 0) { x -= 2; }（x 为奇数正数）", None, 2),
+     "while (x > 0) { x -= 2; }（x 为奇数正数）", None, None, 2),
     ("placement", "p3", "mcq", "测试发现 quicksort([2,2,1]) 返回 [1,2]，最可能丢了什么？",
-     ["与 pivot 相等的元素", "最小值", "第一个元素", "什么都不缺"], None, "与 pivot 相等的元素", None, 3),
+     ["与 pivot 相等的元素", "最小值", "第一个元素", "什么都不缺"], None, "与 pivot 相等的元素", None, None, 3),
     ("placement", "p4", "code", "手写：返回字符串中第一个不重复的字符下标，没有则返回 -1。",
-     None, "def first_unique(s):\n    ", None, ["return"], 4),
+     None, "def first_unique(s):\n    ", None, ["return"],
+     [{"input": "leetcode", "expected_output": "0"},
+      {"input": "loveleetcode", "expected_output": "2"},
+      {"input": "aabb", "expected_output": "-1"},
+      {"input": "a", "expected_output": "0"},
+      {"input": "abab", "expected_output": "-1"}], 4),
     ("placement", "p5", "code", "手写：判断一个整数是否为 2 的幂。",
-     None, "def is_power_of_two(n):\n    ", None, ["n>0"], 5),
+     None, "def is_power_of_two(n):\n    ", None, ["n>0"],
+     [{"input": "1", "expected_output": "True"},
+      {"input": "16", "expected_output": "True"},
+      {"input": "3", "expected_output": "False"},
+      {"input": "0", "expected_output": "False"},
+      {"input": "1024", "expected_output": "True"}], 5),
     # ── 递归能力认证（cert-recursion）6 题：4 MCQ + 2 code ──
     ("cert-recursion", "q1", "mcq", "递归函数缺少基例（终止条件）会导致什么？",
      ["编译错误", "无限递归导致栈溢出", "返回 None", "语法错误"], None,
-     "无限递归导致栈溢出", None, 1),
+     "无限递归导致栈溢出", None, None, 1),
     ("cert-recursion", "q2", "mcq", "def f(n): if n <= 1: return 1  return n * f(n-1)  上述函数计算的是什么？",
-     ["斐波那契数", "阶乘", "幂运算", "排列数"], None, "阶乘", None, 2),
+     ["斐波那契数", "阶乘", "幂运算", "排列数"], None, "阶乘", None, None, 2),
     ("cert-recursion", "q3", "mcq", "朴素递归实现斐波那契数列 fib(n) = fib(n-1) + fib(n-2) 的主要性能问题是什么？",
      ["递归层数太深", "大量重复计算（同一 fib(k) 被多次调用）", "返回值溢出", "没有性能问题"], None,
-     "大量重复计算（同一 fib(k) 被多次调用）", None, 3),
+     "大量重复计算（同一 fib(k) 被多次调用）", None, None, 3),
     ("cert-recursion", "q4", "mcq", "尾递归优化（tail call optimization）的好处是什么？",
      ["减少代码行数", "复用栈帧，避免栈溢出", "提高数值精度", "自动并行执行"], None,
-     "复用栈帧，避免栈溢出", None, 4),
+     "复用栈帧，避免栈溢出", None, None, 4),
     ("cert-recursion", "q5", "code", "手写：用递归实现字符串反转。例如 reverse_str(\"hello\") 返回 \"olleh\"。",
-     None, "def reverse_str(s):\n    ", None, ["return"], 5),
+     None, "def reverse_str(s):\n    ", None, ["return"],
+     [{"input": "hello", "expected_output": "olleh"},
+      {"input": "a", "expected_output": "a"},
+      {"input": "", "expected_output": ""},
+      {"input": "abcdef", "expected_output": "fedcba"},
+      {"input": "12345", "expected_output": "54321"}], 5),
     ("cert-recursion", "q6", "code", "手写：用递归实现幂运算 power(base, exp)，返回 base 的 exp 次方。不使用 ** 运算符。",
-     None, "def power(base, exp):\n    ", None, ["return"], 6),
+     None, "def power(base, exp):\n    ", None, ["return"],
+     [{"input": "2 3", "expected_output": "8"},
+      {"input": "5 0", "expected_output": "1"},
+      {"input": "3 4", "expected_output": "81"},
+      {"input": "-2 3", "expected_output": "-8"},
+      {"input": "2 10", "expected_output": "1024"}], 6),
 ]
 
 
@@ -679,7 +750,7 @@ async def seed_deck(db: AsyncSession) -> None:
 
     # ── 步骤 7：插入认证题目（子表，依赖考试外键） ──
     for row in CERT_QUESTIONS:
-        # 解包元组：每个题目有 9 个字段
+        # 解包元组：每个题目有 10 个字段
         (
             exam_id,
             qid,
@@ -689,6 +760,7 @@ async def seed_deck(db: AsyncSession) -> None:
             starter_code,
             answer_correct,
             answer_includes,
+            test_cases,
             sort_order,
         ) = row
         db.add(
@@ -701,6 +773,7 @@ async def seed_deck(db: AsyncSession) -> None:
                 starter_code=starter_code,
                 answer_correct=answer_correct,
                 answer_includes=answer_includes,
+                test_cases=test_cases,
                 sort_order=sort_order,
             )
         )

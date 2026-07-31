@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { X } from 'lucide-react'
 import { isAuthenticated } from '@/lib/api'
 import { getReviewSession, submitReview } from '@/lib/api/deck/review-gym'
 import { NEXT_SESSION } from '@/lib/api/deck/mock/review-gym'
@@ -10,6 +11,7 @@ import { DeckShell } from '../deck/DeckShell'
 import { CountUp, PanelTag } from '../deck/kit'
 import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 import { CodeViewer, DefectExplanations } from './CodeViewer'
+import { DefectLegend } from './DefectLegend'
 import { defectMeta } from './defect-meta'
 
 type Phase = 'loading' | 'reviewing' | 'revealed'
@@ -71,10 +73,10 @@ function ReviewPanel({
               </span>
               <button
                 onClick={() => onRemove(m.line)}
-                className="ml-auto text-faint transition-colors hover:text-deck-red"
+                className="ml-auto flex size-6 items-center justify-center rounded-[3px] border border-line text-dim transition-colors hover:border-deck-red hover:text-deck-red"
                 aria-label={`删除第 ${m.line} 行标注`}
               >
-                ✕
+                <X className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -242,13 +244,17 @@ export function ReviewGymClient() {
               )}
             </div>
             {phase === 'reviewing' ? (
-              <ReviewPanel
-                session={session}
-                marks={marks}
-                submitting={submitting}
-                onRemove={(line) => setMarks((prev) => prev.filter((m) => m.line !== line))}
-                onSubmit={handleSubmit}
-              />
+              <div className="flex flex-col gap-4">
+                <ReviewPanel
+                  session={session}
+                  marks={marks}
+                  submitting={submitting}
+                  onRemove={(line) => setMarks((prev) => prev.filter((m) => m.line !== line))}
+                  onSubmit={handleSubmit}
+                />
+                {/* 图例：右侧独立列，代码再长也不受挤压 */}
+                <DefectLegend />
+              </div>
             ) : (
               verdict && (
                 <VerdictPanel

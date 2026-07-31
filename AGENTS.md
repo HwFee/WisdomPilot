@@ -3,23 +3,15 @@
 > AI agents participating in coding, review, planning, or maintenance for this project must follow these rules in addition to global agent instructions.
 > Priority: explicit user instructions > this file > global AGENTS.md > platform default prompts.
 
-This project is primarily maintained through Codex and CodeGraph. Do not assume tool-specific local configuration from other agents is available.
+This project is maintained through AI coding agents (Kimi Code / Codex and subagents). Do not assume tool-specific local configuration from other agents is available.
 
 ---
 
 ## I. Workflow And Tooling
 
-### Rule 1: Prefer CodeGraph For Code Understanding (when available)
+### Rule 1: Code Exploration
 
-If `.codegraph/` exists at the repository root **and** the `codegraph` executable is available in the current environment, prefer it over grep/find/manual file reading for code exploration, symbol lookup, call-chain analysis, or impact checks. If the executable is not available (e.g. `npx codegraph` cannot run), fall back to Grep/Glob/Read directly — do not block on it.
-
-- Start-of-task check: run `npx codegraph init` only if the repository is not already initialized.
-- Exploration examples:
-  - `npx codegraph explore "<task or flow>"`
-  - `npx codegraph impact <symbol>`
-  - `npx codegraph query <symbol>`
-- After code movement or module extraction, run `npx codegraph sync` or `npx codegraph index`.
-- Grep/search is allowed as a supplement for exact text, comments, generated files, or cases CodeGraph cannot answer.
+Use Grep/Glob/Read directly for code exploration, symbol lookup, and impact checks. CodeGraph (`.codegraph/`) is **not available** in the current environment (`npx codegraph` has no executable) — do not attempt to run it, and do not block on it. If it ever becomes available again, prefer it for call-chain/impact analysis.
 
 ### Rule 2: Worktree Safety
 
@@ -38,9 +30,8 @@ This project may contain active git worktrees under local tool directories. Trea
 After completing every task, **you MUST perform the following maintenance actions**:
 
 1. **Maintain AGENTS.md only when needed**: if the task produced durable project behavior rules, update this file; if it produced cross-project behavior rules, ask before changing global `~/.Codex/AGENTS.md`.
-2. **Maintain CodeGraph** (when the executable is available): after code movement or meaningful source changes, run `npx codegraph sync` or `npx codegraph index`; skip silently if not installed.
-3. **Maintain the database**: if the task involves database schema changes or data migration, ensure migration scripts have been executed, rollback scripts are prepared, and the database state matches the code.
-4. **Code quality gate check** (see Rule 10): before committing, complete self-checks for DRY, naming, modularity, magic numbers, etc.
+2. **Maintain the database**: if the task involves database schema changes or data migration, ensure migration scripts have been executed, rollback scripts are prepared, and the database state matches the code.
+3. **Code quality gate check** (see Rule 10): before committing, complete self-checks for DRY, naming, modularity, magic numbers, etc.
 
 ---
 
@@ -65,12 +56,12 @@ After completing every task, **you MUST perform the following maintenance action
 
 | Check Item | Method | Pass Criteria |
 |------------|--------|---------------|
-| **DRY** | Visual inspection + CodeGraph search for similar patterns | No 2+ duplicated logics; similar logic extracted into shared modules |
+| **DRY** | Visual inspection + grep for similar patterns | No 2+ duplicated logics; similar logic extracted into shared modules |
 | **Modularity / Low Coupling** | Check inter-function dependencies | No circular dependencies; unidirectional call chains; state separated from UI; one module change does not cascade to unrelated modules |
 | **Naming Quality** | Line-by-line variable/function name review | No single-letter names (except loop-local vars); no mental-mapping abbreviations (`usr`, `cnt`, `tmp`); naming is documentation |
 | **Magic Numbers/Strings** | Search for hardcoded literals | All business-meaning hardcoded values replaced with named constants or enums; only retained when absolutely self-evident (e.g., `i = 0`) |
 | **Function Length** | Count effective code lines per function | Not exceeding ~40 lines; longer functions must have clear internal sub-functions or section comments |
-| **Dead Code** | CodeGraph `impact` + `query` checks | No unused imports/variables/functions; no unreachable branches |
+| **Dead Code** | Grep call sites + import 检查 | No unused imports/variables/functions; no unreachable branches |
 | **Type Safety** | `npx tsc --noEmit` (frontend) / start service (backend) | Zero type errors; zero startup errors |
 
 原则：重复 3 次的相似逻辑抽成共享函数；渲染期不稳定的值（如每次 render 都变的 search param）用 `useRef` 在挂载时读一次，不要直接塞进 `useCallback` 依赖。
@@ -111,8 +102,8 @@ After completing every task, **you MUST perform the following maintenance action
 - 后端已在 `backend/app/training/` 落地，权威 schema 是 `frontend/lib/api/deck/types.ts`，
   接口规格在 `docs/backend-api/01-target-design.md`。
 - 后端边界（2026-07-27 清理后）：只注册 auth + training 两组路由，live 代码 = `app/training/` +
-  auth 链 + 基础设施（`services/ai.py`+`ai_provider/`、`services/judge0*`、限流 middleware、
-  `core/`、`utils/`）。旧系统后端（课程/章节/练习/挑战/复习/统计/收藏/笔记/题解/旧演武场/
+  auth 链 + 基础设施（`app/ai/`（AIService + provider 抽象）、`app/services/judge0.py` +
+  `judge0_client.py`、限流 middleware、`core/`、`utils/`）。旧系统后端（课程/章节/练习/挑战/复习/统计/收藏/笔记/题解/旧演武场/
   旧经济/wrong_question/user_weak_point 等）已**物理删除**，对应数据表已 drop，
   `app.models` 只剩 `User`。新增功能一律进 `app/training/`，不要复活旧模块。
 - 掌握度模型（2026-07-26 起）：事件源 HLR 记忆模型 + 四级状态机（初识/熟悉/熟练/精通），
@@ -124,6 +115,33 @@ After completing every task, **you MUST perform the following maintenance action
   事实表只有 `deck_user_badges`，徽章定义**在代码内不入库**；四个提交端点 commit 前统一评估，
   响应带 `new_badges`，认证页徽章墙走 `/certification/home` 的 `badges` 字段。契约全链路
   **snake_case**（deckCall 无 key 转换层），新增契约字段不要用 camelCase。
+- 代码判题（2026-07-31 起）：竞技场 `POST /api/arena/run` 与认证 code 题判分走 Judge0 真判题，
+  判题驱动 + 语言映射在 `backend/app/training/service.py`（`ARENA_DRIVERS`/`CERT_CODE_DRIVERS`），
+  测试用例存 `deck_arena_challenges.test_cases` / `deck_cert_questions.test_cases`（JSON，服务端秘密，
+  不下发前端）；统一入口 `judge_arena_code_submit` / `judge_cert_code_answer`——Judge0 未配置
+  （`JUDGE0_BASE_URL` 为空，默认禁用）、连接失败或异常时自动降级回关键字匹配（原 includes 分支保留）。
+  全局单例由 lifespan 启动配置/关闭释放；新增测试用例改 seed.py 后须跑
+  `python -m scripts.migrate_add_test_cases` 同步 data.db。
+- LLM 导师（2026-07-31 起）：苏格拉底追问与费曼评分已接真实 LLM（`app/ai/service.py` 的
+  `generate_messages`，配置项 `AI_PROVIDER/AI_API_KEY/AI_MODEL` 走 backend/.env）。统一入口
+  `service.py` 的 `tutor_llm_reply` / `feynman_evaluate`——AI 未配置、调用异常、JSON 解析失败时
+  自动降级回脚本实现（`socratic_reply` / `feynman_grade`+`feynman_feedback`），降级判断集中在
+  入口内、调用方零感知。导师 system prompt 注入用户能力上下文（P-07）：三轴等级 + p_l 低于
+  `DUE_MASTERY_THRESHOLD` 的薄弱知识点 + 近期失败；未定级用户不注入。LLM 评分与关键词降级
+  共用同一量规 `mastery.feynman_grade_from_coverage`，改评级规则只改这一处。
+  导师会话不持久化：`deck_tutor_messages` 表已物理删除
+  （migration: `scripts/migrate_drop_tutor_messages.py`），对话历史由前端随请求携带
+  （`TutorMessageIn.history`，最多 10 条）注入 LLM 上下文，刷新页面即空白；
+  `get_tutor_state` 只返回余额/费用/建议话题。费曼事实（合格次数/最高评级）改由
+  `deck_mastery_events`（source=feynman）提供。
+  费曼无开场白消息（`start_feynman` 只返回 session_id，主题以前端卡片呈现）；
+  苏格拉底首问经 `question_polish` LLM 润色固定为「当前问题」卡（未配置/异常降级回原文）。
+- 个性化（2026-07-31 起，spec：`docs/2026-07-26-产品评估与重塑方案.md` §3.5「一生一策」）：
+  P-01~P-11 已全部落地。主任务带 `reason`、弱点带 `source`、审查关卡弱点匹配（`_next_review_session`）
+  + 难度自适应（`difficulty_delta`，近 3 次 ≥0.9 升档 / ≤0.4 降档）、间隔重复调度
+  （`due_for_review`，p_l<0.6 进主任务分发）、导师上下文注入、训练指纹（`training_fingerprint`，
+  格式 `R3-D1-I4` 只含三轴等级）、`/profile` 时间线（`build_timeline`）、能力图谱定级 vs 现在对比
+  （`placement_snapshot`）。约束：不新增表、文案不过度承诺（说"基于你的能力数据"，不说"AI 生成"）。
 
 ### 前端硬规则
 
@@ -134,6 +152,16 @@ After completing every task, **you MUST perform the following maintenance action
 - **页面薄、组件厚**：`app/*/page.tsx` 只做 metadata + Suspense + 渲染 Client 组件。
 - 每个 deck 域 API 的 mock 判定/生成逻辑要导出**纯函数**并配 Jest 测试（参照
   `__tests__/review-gym-verdict.test.ts`、`__tests__/tutor-feynman.test.ts` 等）。
+- **mock 规则与后端同源**：mock 里的判定/推导纯函数（如 `placementLevels`、`trainingFingerprint`）
+  必须与后端 `service.py`/`mastery.py` 的权威规则逐字对齐——后端是权威，改后端规则时同步改
+  mock 与其 Jest 测试，防止 mock 模式与真后端模式行为分叉。
+
+### 验证命令速查
+
+- 后端：`cd backend && .venv/Scripts/python -m pytest tests/ -q`；导入冒烟
+  `.venv/Scripts/python -c "from app.main import app"`。
+- 前端：`cd frontend && npx jest` + `npx tsc --noEmit` + `pnpm build`；
+  真实后端联调用显式 `NEXT_PUBLIC_DECK_MOCK=0 npx next dev`（注意 frontend/.env.local 可能已设值）。
 
 ### Deck 设计系统（视觉基准 `docs/design-preview/dashboard-v2.html`）
 

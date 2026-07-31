@@ -7,9 +7,12 @@ import { getProfile } from '@/lib/api/deck/profile'
 import type { ProfileData } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { PanelTag } from '../deck/kit'
+import { GUIDE_STORAGE_KEY } from '../deck/FirstRunGuide'
+import { TimelineTab } from './TimelineTab'
 
 const TABS = [
   { key: 'overview', label: '概览' },
+  { key: 'timeline', label: '时间线' },
   { key: 'cores', label: '智核流水' },
   { key: 'arena', label: '竞技场' },
   { key: 'certs', label: '认证' },
@@ -201,6 +204,16 @@ export function ProfileClient() {
             <span className="font-mono text-[11px] text-dim">
               ◈ 智核 <b className="font-medium text-text">{data.cores.balance}</b>
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                window.localStorage.removeItem(GUIDE_STORAGE_KEY)
+                push('/dashboard')
+              }}
+              className="deck-btn-ghost !px-3 !py-1 text-[11px]"
+            >
+              重看新手指引
+            </button>
           </div>
 
           {/* tab 栏 */}
@@ -222,6 +235,7 @@ export function ProfileClient() {
 
           <div className="deck-boot deck-boot-2 mt-5">
             {tab === 'overview' && <OverviewTab data={data} />}
+            {tab === 'timeline' && <TimelineTab entries={data.timeline} />}
             {tab === 'cores' && <CoresTab data={data} />}
             {tab === 'arena' && <ArenaTab data={data} />}
             {tab === 'certs' && <CertsTab data={data} />}

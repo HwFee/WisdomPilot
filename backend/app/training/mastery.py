@@ -333,8 +333,41 @@ def compute_trend(events: list[MasteryEvent], now: datetime) -> str:
     return "flat"
 
 
+def feynman_grade_from_coverage(
+    coverage: float, structure: bool, has_points: bool
+) -> str:
+    """费曼评级量规：按要点覆盖率 + 结构分定级（LLM 评分与关键词评分共用）。
+
+    规则（与 docs/backend-api/01 §5 对齐）：
+    - 未配置要点（has_points=False）：只看结构分 → 有结构"良好"，否则"待加强"
+    - 覆盖 ≥80% 且有结构 → "优秀"
+    - 覆盖 ≥50%，或 ≥1/3 且有结构 → "良好"
+    - 其余 → "待加强"
+
+    抽成独立纯函数是为了让 LLM 评分路径与关键词评分路径使用同一套
+    量规，避免两处规则漂移。
+
+    Args:
+        coverage: 已覆盖要点数 / 总要点数（0~1 之间的浮点数）。
+        structure: 是否同时具备因果推理词与举例说明词。
+        has_points: 是否配置了评分要点（False 表示该知识点无要点配置）。
+
+    Returns:
+        评级字符串：优秀 / 良好 / 待加强。
+    """
+    if not has_points:
+        return "良好" if structure else "待加强"
+    if coverage >= COVERAGE_EXCELLENT and structure:
+        return "优秀"
+    if coverage >= COVERAGE_GOOD or (
+        coverage >= COVERAGE_GOOD_WITH_STRUCTURE and structure
+    ):
+        return "良好"
+    return "待加强"
+
+
 def feynman_grade(text: str, key_points: list[dict] | None) -> dict:
-    """费曼检验评分：要点覆盖率 + 结构分（因果词 + 举例词）。
+    """费曼检验评分：要点覆盖率 + 结构分（同义词关键词匹配）。
 
     费曼技巧的本质：如果你无法用简单的语言向别人解释清楚一个概念，
     说明你还没有真正掌握它。本函数量化了这一检验过程。
@@ -346,12 +379,7 @@ def feynman_grade(text: str, key_points: list[dict] | None) -> dict:
        - 必须同时包含因果推理词（"因为""所以"等）和举例说明词（"比如""例如"等）
        - 结构分的设计依据：费曼本人强调的"用自己的话"需要包含推理和例证
 
-    评级规则：
-    - 无配置要点的知识点：只看结构分 → "良好" 或 "待加强"
-    - 覆盖率 ≥ 80% 且有结构分 → "优秀"
-    - 覆盖率 ≥ 50% → "良好"
-    - 覆盖率 ≥ 34% 且有结构分 → "良好"（有逻辑时放宽覆盖率要求）
-    - 其余 → "待加强"
+    评级规则见 ``feynman_grade_from_coverage``（关键词匹配与 LLM 评分共用）。
 
     Args:
         text: 用户讲述的文本内容。
@@ -376,20 +404,9 @@ def feynman_grade(text: str, key_points: list[dict] | None) -> dict:
         else:
             missed.append(point["label"])
 
-    if not key_points:
-        # 未配置要点的知识点：只根据结构分评级
-        grade = "良好" if structure else "待加强"
-    else:
-        # 计算要点覆盖率 = 已覆盖数 / 总要点数
-        coverage = len(covered) / len(key_points)
-        if coverage >= COVERAGE_EXCELLENT and structure:
-            grade = "优秀"
-        elif coverage >= COVERAGE_GOOD or (
-            coverage >= COVERAGE_GOOD_WITH_STRUCTURE and structure
-        ):
-            grade = "良好"
-        else:
-            grade = "待加强"
+    # 计算要点覆盖率并套用量规定级（无要点时走纯结构分）
+    coverage = len(covered) / len(key_points) if key_points else 0.0
+    grade = feynman_grade_from_coverage(coverage, structure, bool(key_points))
 
     # 返回完整评分结果，供前端展示点评文案
     return {"grade": grade, "covered": covered, "missed": missed, "structure": structure}

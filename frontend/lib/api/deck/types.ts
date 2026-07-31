@@ -43,6 +43,7 @@ export interface MainTask {
   difficulty: Difficulty
   eta_minutes: number
   related_weakness: string | null
+  reason: string                      // 推荐理由：为什么推荐这个任务给你（P-01）
   target_url: string
   cta_label: string                   // 开始审查 →
   alternates: MainTask[]              // 「换一个任务」轮换的完整备选任务
@@ -61,6 +62,7 @@ export interface WeakPoint {
   name: string
   category: string                    // 数据结构 · 排序
   p_l: number                         // 0-1 掌握度
+  source: string                      // 弱点来源标注：如「3天前 · 审查漏报」（P-04）
 }
 
 export interface RhythmDay {
@@ -217,6 +219,7 @@ export interface TutorReply {
   grade?: FeynmanGrade                  // 费曼检验评级
   feynman_session_id?: string           // 费曼会话 id（startFeynman 返回）
   mastery_update?: MasteryUpdate        // 费曼检验后掌握度变化
+  polished_question?: string            // 苏格拉底：AI 润色后的用户问题（降级时回原文）
   new_badges: BadgeUnlock[]              // 本次提交新解锁的徽章（无则空数组）
 }
 
@@ -267,6 +270,7 @@ export interface CertificationHome {
   available_exams: CertExamInfo[]
   next_available_days: number | null
   badges: BadgeInfo[]                   // 全量 17 枚徽章墙（hidden 未解锁已脱敏）
+  fingerprint: string                   // 训练指纹短码（R3-D1-I4，仅暴露三轴等级，P-11）
 }
 
 /* ── 能力图谱 /api/ability-map ── */
@@ -280,11 +284,62 @@ export interface KnowledgePoint {
   level: MasteryLevel
 }
 
+/** 定级画像快照（P-10 能力演化对比的「定级时」基线） */
+export interface PlacementSnapshot {
+  score: number                    // 定级测试分数（0-100）
+  date: string                     // 定级完成日期（YYYY-MM-DD）
+  levels: Record<AxisKey, number>  // 定级时三轴初始等级
+  fingerprint: string              // 定级时训练指纹短码（R-D-I）
+}
+
 export interface AbilityMapDetail {
   axes: AbilityAxis[]
   has_placement: boolean
+  placement: PlacementSnapshot | null   // 未定级为 null
   knowledge_points: KnowledgePoint[]
 }
+
+/* ── 训练轨迹时间线（P-09）── */
+
+export type TimelineKind = 'placement' | 'axis_upgrade' | 'mastery' | 'cert'
+
+export interface PlacementTimelineEntry {
+  type: 'placement'                // 定级画像
+  date: string
+  score: number
+  levels: Record<AxisKey, number>
+  fingerprint: string
+}
+
+export interface AxisUpgradeTimelineEntry {
+  type: 'axis_upgrade'             // 能力轴升级
+  date: string
+  axis: AxisKey
+  label: string                    // 审阅 / 调试 / 实现
+  from_level: number
+  to_level: number
+}
+
+export interface MasteryTimelineEntry {
+  type: 'mastery'                  // 知识点达到熟练/精通
+  date: string
+  kp_name: string
+  level: string                    // 熟练 / 精通
+}
+
+export interface CertTimelineEntry {
+  type: 'cert'                     // 认证通过
+  date: string
+  topic: string
+  level: string
+  score: number
+}
+
+export type TimelineEntry =
+  | PlacementTimelineEntry
+  | AxisUpgradeTimelineEntry
+  | MasteryTimelineEntry
+  | CertTimelineEntry
 
 /* ── 档案 /api/profile ── */
 
@@ -301,4 +356,5 @@ export interface ProfileData {
   certifications: CertRecord[]
   leaderboard: ArenaLeaderboardEntry[]
   recent: FeedItem[]
+  timeline: TimelineEntry[]        // P-09 训练轨迹（定级 → 轴升级 → 里程碑 → 认证）
 }

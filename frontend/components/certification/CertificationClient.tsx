@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { isAuthenticated } from '@/lib/api'
 import { getCertificationHome, getExam, submitExam } from '@/lib/api/deck/certification'
-import { placementLevels } from '@/lib/api/deck/mock/certification'
 import type {
   BadgeInfo,
   CertAnswer,
@@ -17,6 +16,8 @@ import { CountUp, PanelTag, SectionHead } from '../deck/kit'
 import { BadgeIcon } from '../deck/BadgeIcon'
 import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 import { TIER_COLOR, TIER_LABEL, TIER_ORDER, TIER_TEXT_CLASS } from '../deck/badge-meta'
+import { FingerprintChip } from './FingerprintChip'
+import { PlacementResultView } from './PlacementResultView'
 
 type Phase = 'loading' | 'home' | 'exam' | 'result'
 
@@ -282,20 +283,16 @@ function ExamView({
   )
 }
 
-/* ── RESULT：成绩 + 凭证 ── */
+/* ── RESULT：普通认证成绩 + 凭证 ── */
 
 function ResultView({
   result,
-  isPlacement,
   onBack,
 }: {
   result: CertResult
-  isPlacement: boolean
   onBack: () => void
 }) {
-  const { push } = useRouter()
   const [copied, setCopied] = useState(false)
-  const levels = isPlacement ? placementLevels(result.score) : null
 
   const copyCode = (code: string) => {
     navigator.clipboard?.writeText(code).then(() => {
@@ -308,36 +305,18 @@ function ResultView({
     <div className="space-y-4">
       <div className="deck-panel p-[26px_28px] text-center">
         <PanelTag
-          label={isPlacement ? 'PLACEMENT RESULT · 定级完成' : result.passed ? 'PASSED · 认证通过' : 'FAILED · 未通过'}
-          variant={isPlacement || result.passed ? 'on' : 'warn'}
+          label={result.passed ? 'PASSED · 认证通过' : 'FAILED · 未通过'}
+          variant={result.passed ? 'on' : 'warn'}
         />
         <div
           className={`mt-4 font-mono text-[52px] font-medium leading-none ${
-            isPlacement || result.passed ? 'text-signal' : 'text-deck-red'
+            result.passed ? 'text-signal' : 'text-deck-red'
           }`}
         >
           <CountUp value={result.score} delay={200} />
         </div>
         <div className="mt-1 font-mono text-[11px] text-faint">SCORE / 100</div>
       </div>
-
-      {/* 定级：三轴初始等级 */}
-      {levels && (
-        <div className="grid grid-cols-3 gap-4">
-          {(
-            [
-              { label: '审阅', lv: levels.review },
-              { label: '调试', lv: levels.debug },
-              { label: '实现', lv: levels.implement },
-            ] as const
-          ).map((a) => (
-            <div key={a.label} className="deck-panel p-4 text-center">
-              <div className="text-[13px] text-dim">{a.label}</div>
-              <div className="mt-1 font-mono text-lg text-signal">LV.{a.lv}</div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* 凭证卡 */}
       {result.certificate && (
@@ -379,8 +358,8 @@ function ResultView({
       </div>
 
       <div className="flex gap-3">
-        <button className="deck-btn-primary" onClick={() => (isPlacement ? push('/dashboard') : onBack())}>
-          {isPlacement ? '进入训练舱 →' : '返回认证中心'}
+        <button className="deck-btn-primary" onClick={onBack}>
+          返回认证中心
         </button>
       </div>
     </div>
@@ -440,13 +419,17 @@ export function CertificationClient() {
   return (
     <DeckShell>
       {celebrationElement}
-      <div className="deck-boot deck-boot-1">
-        <PanelTag label="NO-AI ZONE · 基本功认证" variant="on" />
-        <h1 className="mt-3 text-xl font-semibold">
-          {phase === 'exam' && isPlacement
-            ? '5 分钟定级测试 —— 确定你的三轴初始等级'
-            : '证明你不靠 AI 也会'}
-        </h1>
+      <div className="deck-boot deck-boot-1 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div>
+          <PanelTag label="NO-AI ZONE · 基本功认证" variant="on" />
+          <h1 className="mt-3 text-xl font-semibold">
+            {phase === 'exam' && isPlacement
+              ? '5 分钟定级测试 —— 确定你的三轴初始等级'
+              : '证明你不靠 AI 也会'}
+          </h1>
+        </div>
+        {/* P-11 训练指纹：仅 home 阶段展示（数据来自 getCertificationHome().fingerprint） */}
+        {phase === 'home' && home?.fingerprint ? <FingerprintChip code={home.fingerprint} /> : null}
       </div>
       <div className="mt-6">
         {phase === 'loading' && (
@@ -460,20 +443,23 @@ export function CertificationClient() {
         {phase === 'exam' && exam && (
           <ExamView exam={exam} isPlacement={isPlacement} onSubmit={handleSubmit} />
         )}
-        {phase === 'result' && result && exam && (
-          <ResultView
-            result={result}
-            isPlacement={isPlacement}
-            onBack={() => {
-              setPhase('loading')
-              getCertificationHome().then((h) => {
-                setHome(h)
-                setResult(null)
-                setPhase('home')
-              })
-            }}
-          />
-        )}
+        {phase === 'result' && result && exam &&
+          (isPlacement ? (
+            /* P-03 定级仪式页：placement 永不返回 passed=true，走专属入舱画像 */
+            <PlacementResultView result={result} />
+          ) : (
+            <ResultView
+              result={result}
+              onBack={() => {
+                setPhase('loading')
+                getCertificationHome().then((h) => {
+                  setHome(h)
+                  setResult(null)
+                  setPhase('home')
+                })
+              }}
+            />
+          ))}
       </div>
     </DeckShell>
   )

@@ -40,7 +40,6 @@ from app.training.models import (
     DeckKnowledgePoint,
     DeckMasteryEvent,
     DeckReviewAttempt,
-    DeckTutorMessage,
     DeckUserBadge,
     DeckUserMastery,
 )
@@ -303,17 +302,18 @@ async def _arena_facts(db: AsyncSession, user_id: str) -> tuple[int, int]:
 async def _feynman_facts(db: AsyncSession, user_id: str) -> tuple[int, str | None]:
     """查询费曼检验（Feynman）相关事实。
 
-    从导师消息表中筛选 mode="feynman" 且有 grade 的记录。
+    从掌握度事件表筛选 source="feynman" 且有 grade 的记录
+    （导师会话不持久化，费曼记录以事件表为唯一事实源）。
 
     Returns:
         元组 (合格次数, 最高评级)
     """
     grades = (
         await db.execute(
-            select(DeckTutorMessage.grade).where(
-                DeckTutorMessage.user_id == user_id,
-                DeckTutorMessage.mode == "feynman",
-                DeckTutorMessage.grade.is_not(None),  # 排除无评级的记录（如开场白）
+            select(DeckMasteryEvent.grade).where(
+                DeckMasteryEvent.user_id == user_id,
+                DeckMasteryEvent.source == "feynman",
+                DeckMasteryEvent.grade.is_not(None),
             )
         )
     ).scalars().all()

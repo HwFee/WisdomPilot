@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     AUTH_RATE_WINDOW_MAX_REQUESTS: int = 10   # 认证接口在窗口内允许的最大请求数
     AUTH_RATE_WINDOW_SECONDS: int = 60        # 限流窗口大小（秒）
 
+    # Judge0 代码判题引擎配置
+    # base_url 留空表示未接入 Judge0：竞技场 / 认证 code 题的判题自动降级为
+    # 关键字匹配（本地开发默认行为，功能完全可用）；配置后走真实在线判题。
+    JUDGE0_BASE_URL: str = ""
+
     # CORS 跨域配置
     # 生产环境允许的前端来源（逗号分隔），如 "https://app.example.com,https://www.example.com"
     # 本地开发地址（localhost / 127.0.0.1）由中间件内置正则放行，无需在此配置

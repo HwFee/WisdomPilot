@@ -104,6 +104,21 @@ class OpenAICompatibleProvider(AIProvider):
             ),
         ])
 
+    async def complete_messages(self, messages: list[AIMessage]) -> str:
+        """按完整 messages 列表非流式生成文本（不自动加 system 消息）。
+
+        与 ``generate_explanation`` 的区别：调用方自行构造全部消息
+        （system / user / assistant 多轮历史），原样委托给底层客户端执行。
+        用于苏格拉底导师等需要把多轮对话历史传给 LLM 的场景。
+
+        Args:
+            messages: 完整的对话消息列表。
+
+        Returns:
+            AI 生成的完整文本。
+        """
+        return await self._client.complete(messages)
+
     async def stream_generate(
         self, messages: list[AIMessage]
     ) -> AsyncGenerator[str, None]:
