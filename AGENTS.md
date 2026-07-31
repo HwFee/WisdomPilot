@@ -33,6 +33,15 @@ After completing every task, **you MUST perform the following maintenance action
 2. **Maintain the database**: if the task involves database schema changes or data migration, ensure migration scripts have been executed, rollback scripts are prepared, and the database state matches the code.
 3. **Code quality gate check** (see Rule 10): before committing, complete self-checks for DRY, naming, modularity, magic numbers, etc.
 
+### Rule 6: Commit After Every Task
+
+每次 Agent（含子 Agent）完成任务并通过验证后，**必须 git commit**。
+
+- **提交范围**：只提交工程代码与工程文档（`backend/`、`frontend/`、`scripts/`、`AGENTS.md`、`docs/` 下的技术文档）。
+- **论文相关材料一律不入库**：根目录 `*.doc` / `*.docx`、开题报告与论文草稿（`docs/*开题报告*`、`docs/*论文*`）、`docs/papers/`。
+- **临时产物不入库**：`tmp_*`、`generated-images/` 等中间文件，任务结束即删除，不提交。
+- 提交前验证必须全绿（后端 `pytest`、前端 `jest` + `tsc --noEmit`）；commit message 遵循仓库现有中文 conventional 风格（`feat:` / `fix:` / `refactor:` / `docs:`）。
+
 ---
 
 ## III. Project Validation and Quality Gates
