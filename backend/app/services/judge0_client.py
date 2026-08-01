@@ -61,6 +61,13 @@ class Judge0Client:
     """
 
     def __init__(self, base_url: str, client: httpx.AsyncClient | None = None) -> None:
+        """初始化 Judge0 客户端。
+
+        Args:
+            base_url: Judge0 API 的基地址（如 "https://ce.judge0.com"）
+            client: 可选的 httpx.AsyncClient 实例。传入时由外部管理其生命周期，
+                    本实例不会在 close() 时关闭它；不传则由本实例自行创建并负责关闭。
+        """
         # 去除尾部斜杠，避免拼接 URL 时出现双斜杠（如 "https://x.com//submissions"）
         self._base_url = base_url.rstrip("/")
         self._client = client
@@ -207,6 +214,7 @@ class Judge0Client:
             # 用 token 查询提交状态
             response = await client.get(
                 f"{self._base_url}/submissions/{token}",
+                # base64_encoded=true：让 Judge0 以 Base64 编码返回输出字段（客户端统一解码）
                 params={"base64_encoded": "true"},
             )
             response.raise_for_status()

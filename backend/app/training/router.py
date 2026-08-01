@@ -187,6 +187,9 @@ def _arena_task(challenge: DeckArenaChallenge) -> dict:
 
     Args:
         challenge: 今日竞技场挑战记录
+
+    Returns:
+        主任务 card 的 dict 结构（字段布局同 _review_task）
     """
     return {
         "id": challenge.id,
@@ -210,6 +213,9 @@ def _tutor_task(topic: str) -> dict:
 
     Args:
         topic: 推荐讲解的知识点名称
+
+    Returns:
+        主任务 card 的 dict 结构（id 以 TUTOR- 为前缀，避免与模块 ID 冲突）
     """
     return {
         "id": f"TUTOR-{topic}",
@@ -229,7 +235,11 @@ def _tutor_task(topic: str) -> dict:
 
 
 def _cert_task() -> dict:
-    """构建基本功认证主任务卡片。"""
+    """构建基本功认证主任务卡片。
+
+    Returns:
+        主任务 card 的 dict 结构（id 固定为 CERT-TODAY，便于排除重复推荐）
+    """
     return {
         "id": "CERT-TODAY",
         "module": "certification",
@@ -421,6 +431,7 @@ def _task_reason(
     Returns:
         人类可读的推荐理由文案
     """
+    # next 安全：module 必在 TASK_AXIS_KEYS 中，且 service.get_axes 保证三轴齐全
     axis = next(a for a in axes if a["key"] == TASK_AXIS_KEYS[module])
     label, level = axis["label"], axis["level"]
     if weakness:
@@ -467,10 +478,12 @@ async def build_main_task(db: AsyncSession, user: User, axes: list[dict]) -> dic
 
     # 取最弱点知识点（用于导师推荐话题）
     weakest_names = await _weakest_kp_names(db, user.id, 1)
+    # 兜底话题：无任何掌握度记录时用种子知识点名（与 _weakest_kp_names 的兜底口径一致）
     weakest = weakest_names[0] if weakest_names else "递归出口设计"
     implement = next(a for a in axes if a["key"] == "implement")
     session = await _next_review_session(db, user.id)
     challenge = await _today_challenge(db, user.id)
+    # 认证冷却：距下次可考天数（None=从未考过，可立即考）
     cooldown = await service.next_cert_available_days(db, user.id)
 
     # 构建候选池：当前可用的模块任务
@@ -858,6 +871,7 @@ async def get_profile(
         }
         for i, (r, name) in enumerate(top_rows)
     ]
+    # 自己不在前 10 时，在榜单末尾追加自己的一行（保持与 _build_leaderboard 同规则）
     if not any(e["is_self"] for e in leaderboard):
         leaderboard.append(
             {
@@ -877,6 +891,7 @@ async def get_profile(
         )
     ).scalars().all()
 
+    # 注册天数：+1 含注册当天；max(1, ...) 防止同日注册/时区差算出 0 或负数
     joined_days = max(1, (datetime.now() - user.created_at.replace(tzinfo=None)).days + 1)
     return {
         "user": {"name": user.username, "joined_days": joined_days},
@@ -1077,6 +1092,9 @@ async def get_review_session(
 
     Args:
         id: 会话 ID（可选查询参数）
+
+    Returns:
+        审查会话数据（不含注入缺陷位置，见 _session_out）
     """
     if id:
         session = await db.get(DeckReviewSession, id)
@@ -1316,6 +1334,15 @@ async def get_review_queue(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_active_user),
 ) -> dict:
+    """复盘队列：错题/失败项聚合（三种来源见 _build_review_queue）。
+
+    Dashboard 的「复盘待清」区块与 /api/review 页面共用同一队列：
+    审查漏报/误报、竞技场未攻克挑战、弱知识点（费曼检验入口）。
+
+    Returns:
+        items: 队列条目列表
+        total: 条目总数
+    """
     items = await _build_review_queue(db, user)
     return {"items": items, "total": len(items)}
 

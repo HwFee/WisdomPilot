@@ -164,6 +164,15 @@ KNOWLEDGE_POINTS = [
 # 每个关卡的 code 字段是 AI 生成的"看似正确但有 bug"的代码，
 # defects 列表是注入缺陷的详情（行号/类型/解释），为服务端秘密。
 # 前端只看到 defect_count（告知有几个 bug），看不到具体位置。
+#
+# 字段说明：
+#   defect_count:     注入缺陷数量（前端据此提示"有 N 个 bug"，不泄露细节）
+#   difficulty:       难度等级（1-5，供难度自适应与个性化推荐使用）
+#   eta_minutes:      预计完成时间（分钟）
+#   related_weakness: 关联的薄弱知识点（名称与 KNOWLEDGE_POINTS 一一对应）
+#   defects:          注入缺陷详情列表，每项为 (行号, 缺陷类型, 解释) 三元组；
+#                     类型取值 boundary=边界 / logic=逻辑 / security=安全 /
+#                     style=风格 / performance=性能；整个列表为服务端秘密
 # ──────────────────────────────────────────────────────────────────
 
 REVIEW_SESSIONS = [
@@ -393,6 +402,13 @@ def memoize(func):
 # 每个挑战包含一段有 bug 的代码和它触发的测试失败输出。
 # 用户在限时内修复代码，通过全部测试即视为过关。
 # id 使用业务可读短 ID（非 UUID），如 DEBUG-0091。
+#
+# 字段说明：
+#   code:           待修复代码（用户限时内修复并通过全部测试即过关）
+#   failing_output: 修复前触发的失败输出（"报错现场"线索）
+#   test_cases:     Judge0 判题测试用例列表（服务端秘密，不下发前端）
+#   time_limit_sec: 判题超时上限（秒），600 = 10 分钟，超时判 Timeout
+#   difficulty:     难度等级（1-5）
 # ──────────────────────────────────────────────────────────────────
 
 ARENA_CHALLENGES = [
@@ -615,6 +631,7 @@ CERT_EXAMS = [
 
 # (exam_id, qid, kind, prompt, options, starter_code, answer_correct, answer_includes, test_cases, sort)
 CERT_QUESTIONS = [
+    # ── 指针能力认证（cert-pointer）6 题：4 MCQ + 2 code ──
     ("cert-pointer", "q1", "mcq", "int a = 5; int *p = &a; *p = 10; 之后 a 的值是？",
      ["5", "10", "未定义", "编译错误"], None, "10", None, None, 1),
     ("cert-pointer", "q2", "mcq", "free(p) 之后，指针 p 本身变成什么？",
@@ -636,6 +653,7 @@ CERT_QUESTIONS = [
       {"input": "1\n42", "expected_output": "42 0"},
       {"input": "3\n10 5 20", "expected_output": "20 2"},
       {"input": "4\n-1 -5 -2 -9", "expected_output": "-1 0"}], 6),
+    # ── 定级测试（placement）5 题：3 MCQ + 2 code ──
     ("placement", "p1", "mcq", "读代码找 bug：for (i = 0; i <= n; i++) sum += arr[i]; 问题在哪？",
      ["越界访问 arr[n]", "sum 类型不对", "循环方向错了", "没有 bug"], None, "越界访问 arr[n]", None, None, 1),
     ("placement", "p2", "mcq", "下面哪段代码会死循环？",
@@ -710,6 +728,8 @@ async def seed_deck(db: AsyncSession) -> None:
     # ── 步骤 1：幂等检查 ──
     # 如果知识点表已有数据，说明种子已导入，直接返回
     count = await db.scalar(select(func.count()).select_from(DeckKnowledgePoint))
+    # scalar 在无记录时可能返回 None（func.count 亦可能为 0），
+    # `count and count > 0` 用一次判断同时兜住 None 与 0 两种"空表"情况
     if count and count > 0:
         return
 

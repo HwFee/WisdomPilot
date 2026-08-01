@@ -12,8 +12,8 @@ Judge0 是一个开源的在线代码评测系统，支持 60+ 种编程语言�
     （HTTP 请求、轮询、Base64 编解码）解耦，便于测试和维护。
 
 在项目中的角色：
-    训练舱（deck）模块中的「演武场」功能调用本服务来执行用户提交的代码，
-    并根据执行结果判定是否通过测试用例。
+    训练舱（deck）模块中的「竞技场（Arena）」与「认证（certification）code 题」
+    调用本服务来执行用户提交的代码，并根据执行结果判定是否通过测试用例。
 """
 
 import httpx
@@ -148,7 +148,7 @@ class Judge0Service:
         """
         批量执行代码：用同一份代码运行多个测试用例。
 
-        这是演武场（Arena）功能的核心方法。用户的代码会针对所有测试用例
+        这是竞技场（Arena）功能的核心方法。用户的代码会针对所有测试用例
         分别运行，然后逐个判定通过/失败，最终汇总为整体结果。
 
         Args:
@@ -398,7 +398,7 @@ class Judge0Service:
             - 12 (Internal Error)：Judge0 系统错误
             - 13 (Format Error)：执行格式错误
         """
-        status_id = result.get("status_id", 13)
+        status_id = result.get("status_id", 13)  # 默认 13：状态码缺失时按「执行格式错误」兜底处理
         eng_status, formatted_status = self.parse_status(status_id)
 
         # 提取并标准化各字段
@@ -421,22 +421,29 @@ class Judge0Service:
             # Accepted：不需要额外消息
             message = None
         elif status_id == 4:
+            # 运行成功但输出与预期不符，直接点明答案错误
             message = "答案错误"
         elif status_id == 5:
             compile_output = result.get("compile_output")
+            # 附上编译器输出摘要，帮助用户定位语法/类型错误
             message = "编译错误: " + compile_output if compile_output else "编译错误"
         elif status_id == 8:
+            # TLE 的最常见诱因是死循环，给出可操作提示比原始状态码更易理解
             message = "运行超时，您的程序可能在无限循环"
         elif status_id == 9:
+            # MLE：提示用户优化算法空间复杂度
             message = "内存超限，请优化算法"
         elif status_id in (6, 7, 10, 11):
             stderr = result.get("stderr")
+            # 运行时错误种类较多，附上 stderr 让用户看到具体异常信息
             message = "运行时错误: " + stderr if stderr else "运行时错误"
         elif status_id == 12:
+            # Judge0 服务端内部故障，与用户代码无关，提示重试即可
             message = "Judge0 系统错误"
         elif status_id == 13:
             message = "执行格式错误"
         else:
+            # 兜底分支：未知状态码也给出可读消息，避免前端拿到空提示
             message = f"未知错误 (status_id={status_id})"
 
         formatted_result["message"] = message

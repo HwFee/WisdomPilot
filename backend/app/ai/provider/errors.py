@@ -20,15 +20,15 @@
 
 
 class AIProviderError(Exception):
-    """Base class for expected AI provider failures.
+    """所有预期内 AI 提供商异常的基类。
 
-    所有 AI 提供商异常的基类。上层代码可捕获此异常来统一处理所有 AI 相关错误，
+    上层代码可捕获此异常来统一处理所有 AI 相关错误，
     无需逐一列举子类。
     """
 
 
 class AIProviderConfigurationError(AIProviderError):
-    """AI provider configuration is absent or unsupported.
+    """AI 提供商配置缺失或不支持。
 
     配置异常 -- 当 ``AIService`` 尚未调用 ``configure()`` 就被使用，
     或传入了不支持的 provider 名称时抛出。

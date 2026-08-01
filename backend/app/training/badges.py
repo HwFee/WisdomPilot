@@ -25,14 +25,20 @@ commit 前调用，已解锁的跳过（deck_user_badges 复合唯一约束兜�
    解锁后才显示真名和条件。这是一种「惊喜」设计。
 """
 
+# dataclass：BadgeFacts / BadgeDef 纯数据容器定义
 from dataclasses import dataclass
+# datetime / timezone：事件时间处理（UTC → 北京时间转换、时间比较）
 from datetime import datetime, timezone
+# Callable：BadgeDef.check 判定函数的类型标注
 from typing import Callable
 
+# select：构造查询语句；AsyncSession：异步数据库会话
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# service：复用服务层能力（定级判定 / 连续天数 / 智核记账 / 动态 Feed）
 from app.training import service
+# models：徽章评估涉及的全部领域模型（认证/复习/竞技场/费曼事件/掌握度）
 from app.training.models import (
     DeckArenaAttempt,
     DeckArenaRating,
@@ -43,30 +49,31 @@ from app.training.models import (
     DeckUserBadge,
     DeckUserMastery,
 )
+# User：发放智核奖励时需要用户对象（balance 字段记账）
 from app.auth.models import User
 
 # ── 奖励常量（分级轻奖励，全部解锁共 165 智核）─────────────
 # 三级徽章的 tier 标识和对应的智核奖励额
-TIER_BRONZE = "bronze"
-TIER_SILVER = "silver"
-TIER_GOLD = "gold"
+TIER_BRONZE = "bronze"      # 铜级标识
+TIER_SILVER = "silver"      # 银级标识
+TIER_GOLD = "gold"          # 金级标识
 
-BRONZE_REWARD = 5
-SILVER_REWARD = 10
-GOLD_REWARD = 20
+BRONZE_REWARD = 5           # 铜级徽章奖励智核数
+SILVER_REWARD = 10          # 银级徽章奖励智核数
+GOLD_REWARD = 20            # 金级徽章奖励智核数
 
 # ── 判定阈值：徽章 check 函数使用的业务常量 ──
 NIGHT_OWL_END_HOUR = 5          # 夜猫子：北京时间 00:00–05:00（不含 5 点）
 PERFECT_ACCURACY = 1.0          # 复习舱单次判定全命中（accuracy = 1.0）
 PERFECT_SCORE = 100             # 认证满分
 ARENA_STREAK_TARGET = 3         # 竞技场三连胜
-STREAK_3_DAYS = 3
-STREAK_7_DAYS = 7
+STREAK_3_DAYS = 3           # 三日不断：连续学习 3 天
+STREAK_7_DAYS = 7           # 七日之约：连续学习 7 天
 MULTI_TOPIC_TARGET = 2          # 博览：认证覆盖主题数
-FEYNMAN_TOP_GRADE = "优秀"
+FEYNMAN_TOP_GRADE = "优秀"      # 讲明白了：费曼检验最高评级
 FEYNMAN_PASS_GRADES = frozenset({"良好", "优秀"})  # 费曼检验「合格」的两档评级
-CERT_LEVEL_ADEPT = "熟练"
-CERT_LEVEL_MASTER = "精通"
+CERT_LEVEL_ADEPT = "熟练"       # 游刃有余：首个「熟练」级认证
+CERT_LEVEL_MASTER = "精通"      # 登峰造极：首个「精通」级认证
 
 HIDDEN_PLACEHOLDER = "???"      # 隐藏徽章未解锁时的脱敏文案
 
@@ -248,6 +255,10 @@ BADGE_BY_ID: dict[str, BadgeDef] = {b.id: b for b in BADGES}
 async def _cert_facts(db: AsyncSession, user_id: str) -> tuple[int, frozenset, int, int]:
     """查询认证（Certification）相关事实。
 
+    Args:
+        db: 异步数据库会话
+        user_id: 用户 ID
+
     Returns:
         元组 (认证次数, 已获等级集合, 覆盖主题数, 历史最高分)
     """
@@ -268,6 +279,10 @@ async def _cert_facts(db: AsyncSession, user_id: str) -> tuple[int, frozenset, i
 async def _review_facts(db: AsyncSession, user_id: str) -> tuple[int, bool]:
     """查询审查室（Review Gym）相关事实。
 
+    Args:
+        db: 异步数据库会话
+        user_id: 用户 ID
+
     Returns:
         元组 (审查提交总次数, 是否曾有全命中)
     """
@@ -284,6 +299,10 @@ async def _review_facts(db: AsyncSession, user_id: str) -> tuple[int, bool]:
 async def _arena_facts(db: AsyncSession, user_id: str) -> tuple[int, int]:
     """查询竞技场（Arena）相关事实。
 
+    Args:
+        db: 异步数据库会话
+        user_id: 用户 ID
+
     Returns:
         元组 (攻克总次数, 当前连胜数)
     """
@@ -294,6 +313,7 @@ async def _arena_facts(db: AsyncSession, user_id: str) -> tuple[int, int]:
     ).scalars().all()
     # 连胜数从 DeckArenaRating 读取（落库的当前值）
     rating = await db.get(DeckArenaRating, user_id)
+    # 无 rating 记录（从未参与竞技场）时连胜按 0 计
     win_streak = rating.win_streak if rating else 0
     # 统计 solved=1（成功攻克）的次数
     return sum(1 for s in attempts if s), win_streak
@@ -304,6 +324,10 @@ async def _feynman_facts(db: AsyncSession, user_id: str) -> tuple[int, str | Non
 
     从掌握度事件表筛选 source="feynman" 且有 grade 的记录
     （导师会话不持久化，费曼记录以事件表为唯一事实源）。
+
+    Args:
+        db: 异步数据库会话
+        user_id: 用户 ID
 
     Returns:
         元组 (合格次数, 最高评级)
@@ -355,6 +379,8 @@ def _scan_events(events: list[DeckMasteryEvent]) -> tuple[int, bool]:
         elif e.source == "review_gym" and e.kp_id in wrong_seen:
             # review_gym 中答对 + 之前曾答错 = comeback
             has_comeback = True
+            # 不能提前 break：comeback 一旦达成即锁定为 True，
+            # 但循环仍需继续扫描以统计夜间事件数（night_count）
     return night_count, has_comeback
 
 

@@ -272,7 +272,7 @@ async def _mastery_events_of(
         await db.execute(
             select(DeckMasteryEvent)
             .where(DeckMasteryEvent.user_id == user_id, DeckMasteryEvent.kp_id == kp_id)
-            .order_by(DeckMasteryEvent.created_at)
+            .order_by(DeckMasteryEvent.created_at)  # 按时间升序：HLR 重放对事件顺序敏感
         )
     ).scalars().all()
     return [
@@ -1048,6 +1048,7 @@ async def week_rank(db: AsyncSession, rating: int) -> int:
     Returns:
         排名（≥1 的整数，1 表示第一名）
     """
+    # 排名口径：积分高于自己的人数 + 1（自己占一位）
     # 统计积分高于当前用户的人数
     higher = await db.scalar(
         select(func.count()).select_from(DeckArenaRating).where(DeckArenaRating.rating > rating)
@@ -1198,6 +1199,8 @@ def judge_marks(defects: list[dict], marks: list[dict]) -> dict:
 
 # 每个判定函数签名：(code, failing_output) -> dict
 # 返回 dict 包含: passed / total / output / solved / score_delta
+# 判定手法统一为「先去除代码中所有空白，再做子串匹配」：用户写法可能带空格/换行
+# （如 "lo = mid - 1" vs "lo=mid-1"），归一化后保证修复模式可被命中（与前端 mock 一致）。
 
 
 def _judge_debug_0091(code: str, failing_output: str) -> dict:
@@ -1206,6 +1209,14 @@ def _judge_debug_0091(code: str, failing_output: str) -> dict:
     两个修复点：
     1. ``lo = mid - 1``（删掉死循环，直接取左中位）
     2. ``nums[lo] + nums[mid])``（右中位是 nums[mid] 不是 nums[mid+1]）
+
+    Args:
+        code: 用户提交的修正代码（判定前去除所有空白）
+        failing_output: 未完全修复时回退展示的原始失败输出
+
+    Returns:
+        与 judge_arena_code 相同契约的判定结果 dict：
+        passed / total / output / solved / score_delta
     """
     normalized = re.sub(r"\s+", "", code)
     rule_loop = "lo=mid-1" in normalized
@@ -1224,6 +1235,14 @@ def _judge_debug_0092(code: str, failing_output: str) -> dict:
     """DEBUG-0092 二分查找越界：right = len(arr) 应为 len(arr) - 1。
 
     修复点：``len(arr) - 1`` 出现在代码中（right 初始化修正）。
+
+    Args:
+        code: 用户提交的修正代码（判定前去除所有空白）
+        failing_output: 未完全修复时回退展示的原始失败输出
+
+    Returns:
+        与 judge_arena_code 相同契约的判定结果 dict：
+        passed / total / output / solved / score_delta
     """
     normalized = re.sub(r"\s+", "", code)
     fixed = "len(arr)-1" in normalized
@@ -1238,6 +1257,14 @@ def _judge_debug_0093(code: str, failing_output: str) -> dict:
     """DEBUG-0093 字符串反转指针丢失：return dest 应为 return result。
 
     修复点：``return result`` 替代 ``return dest``。
+
+    Args:
+        code: 用户提交的修正代码（判定前去除所有空白）
+        failing_output: 未完全修复时回退展示的原始失败输出
+
+    Returns:
+        与 judge_arena_code 相同契约的判定结果 dict：
+        passed / total / output / solved / score_delta
     """
     normalized = re.sub(r"\s+", "", code)
     fixed = "returnresult" in normalized
@@ -1252,6 +1279,14 @@ def _judge_debug_0094(code: str, failing_output: str) -> dict:
     """DEBUG-0094 去重计数逻辑错误：缺少 if w not in seen 判断。
 
     修复点：代码中出现 ``not in seen``（添加去重判断）。
+
+    Args:
+        code: 用户提交的修正代码（判定前去除所有空白）
+        failing_output: 未完全修复时回退展示的原始失败输出
+
+    Returns:
+        与 judge_arena_code 相同契约的判定结果 dict：
+        passed / total / output / solved / score_delta
     """
     normalized = re.sub(r"\s+", "", code)
     fixed = "notinseen" in normalized
@@ -1266,6 +1301,14 @@ def _judge_debug_0095(code: str, failing_output: str) -> dict:
     """DEBUG-0095 阶乘栈溢出：缺少递归出口。
 
     修复点：代码中出现 ``return1``（添加基例返回）。
+
+    Args:
+        code: 用户提交的修正代码（判定前去除所有空白）
+        failing_output: 未完全修复时回退展示的原始失败输出
+
+    Returns:
+        与 judge_arena_code 相同契约的判定结果 dict：
+        passed / total / output / solved / score_delta
     """
     normalized = re.sub(r"\s+", "", code)
     fixed = "return1" in normalized
@@ -1447,16 +1490,19 @@ def _format_arena_output(batch: dict) -> str:
     Returns:
         多行文本：每个用例的通过/失败 + 输入/期望/实际输出或错误消息。
     """
+    # 首行汇总：共运行 N 个用例、通过 M 个，作为测试输出框的标题行
     lines = [f"$ 运行 {batch['total_count']} 个测试用例，通过 {batch['passed_count']} 个"]
     for r in batch["results"]:
         if r["passed"]:
             lines.append(f"用例: PASSED   输入 {r['input']!r} → 输出 {r['actual']!r}")
         elif r["actual"]:
+            # 有实际输出但未通过：展示 输入/期望/实际 三方对比，便于用户定位差异
             lines.append(
                 f"用例: FAILED   输入 {r['input']!r} → 期望 {r['expected']!r}，"
                 f"实际 {r['actual']!r}"
             )
         else:
+            # 无实际输出（编译错误/运行崩溃/超时）：Judge0 返回错误消息，直接展示
             lines.append(f"用例: FAILED   {r['message']}")
     return "\n".join(lines)
 
@@ -1496,6 +1542,7 @@ async def judge_arena_code_submit(
             batch = await judge.execute_batch(code + driver, lang_id, test_cases)
             total = batch["total_count"]
             passed = batch["passed_count"]
+            # 全部用例通过才算攻克；total > 0 防止空用例题被误判为攻克（与 cert 判分口径一致）
             solved = total > 0 and passed == total
             return {
                 "passed": passed,
@@ -1793,6 +1840,7 @@ def _socratic_messages(
         单条 user 消息的消息列表，供 generate_messages 发送。
     """
     if history:
+        # 给历史消息标注发言角色（学生/导师），便于 LLM 理解对话语境
         lines = "\n".join(
             f"学生：{m}" if role == "user" else f"导师：{m}" for role, m in history
         )
@@ -1960,6 +2008,7 @@ def _extract_first_json_object(response: str) -> dict:
     Raises:
         json.JSONDecodeError: 响应中不存在可解析的 JSON 对象。
     """
+    # 取最外层 JSON 片段：第一个 { 到最后一个 }（容忍前后说明文字与 ```json 代码块包裹）
     start = response.find("{")
     end = response.rfind("}")
     if start < 0 or end <= start:
@@ -2064,6 +2113,7 @@ async def feynman_llm_evaluate(
         parsed = parse_feynman_llm_result(response, text, labels)
         if parsed is None:
             return None
+        # 与关键词评分共用同一量规，保证 LLM / 脚本两条评分路径的评级口径一致
         grade = mastery.feynman_grade_from_coverage(
             len(parsed["covered"]) / len(labels) if labels else 0.0,
             parsed["structure"],

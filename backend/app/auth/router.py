@@ -45,7 +45,7 @@ async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db),
 ) -> Token:
-    """Register a new user
+    """注册新用户（POST /api/auth/register）。
 
     注册新用户。
 
@@ -78,7 +78,7 @@ async def login(
     login_data: UserLogin,
     db: AsyncSession = Depends(get_db),
 ) -> Token:
-    """Login with email and password
+    """用户登录（POST /api/auth/login）。
 
     用户登录。
 
@@ -92,8 +92,10 @@ async def login(
     Returns:
         Token 对象，包含 access_token 和 user 信息。
     """
+    # 每次请求创建新的 AuthService 实例，注入当前请求的数据库会话
     service = AuthService(db)
     try:
+        # service.login 返回 (User, Token) 元组，路由只需 Token
         _, token = await service.login(login_data)
         return token
     except (InvalidCredentialsError, InactiveAccountError) as error:
@@ -109,10 +111,9 @@ async def forgot_password(
     request: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    """Send password reset email.
+    """发送密码重置邮件。
 
-    Always returns 200 regardless of whether the email exists,
-    to prevent user enumeration attacks (C6).
+    无论邮箱是否存在都返回 200，防止用户枚举攻击（C6）。
 
     忘记密码端点。
 
@@ -126,6 +127,7 @@ async def forgot_password(
     Returns:
         包含统一提示消息的字典。
     """
+    # 每次请求创建新的 AuthService 实例，注入当前请求的数据库会话
     service = AuthService(db)
     await service.forgot_password(request.email)
     # 始终返回相同的消息，不暴露邮箱是否存在
@@ -136,7 +138,7 @@ async def forgot_password(
 async def get_current_user_info(
     current_user: User = Depends(get_current_active_user),
 ) -> UserResponse:
-    """Get current authenticated user info
+    """获取当前登录用户信息（GET /api/auth/me）。
 
     获取当前登录用户信息。
 

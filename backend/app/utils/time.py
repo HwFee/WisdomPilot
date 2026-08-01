@@ -10,6 +10,7 @@
 本模块提供标准化的 UTC 时间获取方法，确保全项目时间基准统一。
 """
 
+# 导入 datetime 与 timezone：datetime 表示时间点，timezone.utc 用于生成带时区的 UTC 时间
 from datetime import datetime, timezone
 
 

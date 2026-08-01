@@ -19,8 +19,11 @@
     - 使用 ``field_validator`` 对关键配置做启动时校验（如 SECRET_KEY 不能为空）
 """
 
+# 导入 Pydantic 字段校验器：对关键配置项做启动时校验（如 SECRET_KEY 非空且长度 ≥32）
 from pydantic import field_validator
+# 导入 Pydantic Settings 基类与配置选项：自动从环境变量 / .env 文件加载配置
 from pydantic_settings import BaseSettings, SettingsConfigDict
+# 导入 lru_cache 装饰器：缓存 Settings 实例，保证全局单例（环境变量只读取一次）
 from functools import lru_cache
 
 

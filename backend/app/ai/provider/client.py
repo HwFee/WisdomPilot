@@ -23,8 +23,10 @@ import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable
 import json
 
+# 第三方异步 HTTP 客户端：承载本模块全部网络通信（httpx.AsyncClient）
 import httpx
 
+# 内部模块：AI 提供商配置（config）、对话消息类型（base）、语义化异常（errors）
 from app.ai.config import AIProviderConfig
 from app.ai.provider.base import AIMessage
 from app.ai.provider.errors import (
@@ -51,6 +53,11 @@ MAX_CONNECTIONS = 10  # 连接池最大连接数
 
 # Sleep 函数类型别名，用于依赖注入（测试时可替换为 mock）
 Sleep = Callable[[float], Awaitable[None]]
+
+
+# ---------------------------------------------------------------------------
+# OpenAICompatibleClient - OpenAI 兼容 AI HTTP 客户端
+# ---------------------------------------------------------------------------
 
 
 class OpenAICompatibleClient:
@@ -103,6 +110,7 @@ class OpenAICompatibleClient:
         Args:
             config: 新的 AI 提供商配置。
         """
+        # 仅替换配置引用：API Key/模型/温度热切换时无需重建 HTTP 客户端，连接池继续复用
         self._config = config
 
     def _get_http_client(self) -> httpx.AsyncClient:
@@ -125,10 +133,10 @@ class OpenAICompatibleClient:
                 )
             # 创建新的 HTTP 客户端，配置超时和连接池参数
             self._http_client = httpx.AsyncClient(
-                timeout=httpx.Timeout(DEFAULT_TIMEOUT_SECONDS),
+                timeout=httpx.Timeout(DEFAULT_TIMEOUT_SECONDS),  # 连接/读/写统一 60s 超时
                 limits=httpx.Limits(
-                    max_keepalive_connections=MAX_KEEPALIVE_CONNECTIONS,
-                    max_connections=MAX_CONNECTIONS,
+                    max_keepalive_connections=MAX_KEEPALIVE_CONNECTIONS,  # 空闲保活连接数（复用可减少 TCP 握手开销）
+                    max_connections=MAX_CONNECTIONS,                      # 连接池总连接数上限
                 ),
             )
         return self._http_client
@@ -144,6 +152,7 @@ class OpenAICompatibleClient:
             完整 URL，如 ``"https://api.deepseek.com/chat/completions"``。
         """
         base_url = config.base_url or DEFAULT_AI_BASE_URL  # 回退到默认地址
+        # rstrip('/') 去掉末尾斜杠：防止 base_url 以 / 结尾时拼出 //chat/completions 双斜杠
         return f"{base_url.rstrip('/')}{CHAT_COMPLETIONS_PATH}"
 
     @staticmethod
@@ -264,6 +273,7 @@ class OpenAICompatibleClient:
             # 按 OpenAI 格式逐层提取：choices[0].message.content
             content = payload["choices"][0]["message"]["content"]
         except (ValueError, KeyError, IndexError, TypeError) as error:
+            # ValueError=JSON 解析失败；KeyError/IndexError=嵌套字段缺失；TypeError=字段类型不符
             # 响应 JSON 格式不符合 OpenAI 规范
             raise AIProviderProtocolError(
                 "AI provider returned an invalid completion payload"
@@ -300,16 +310,17 @@ class OpenAICompatibleClient:
         """
         response: httpx.Response | None = None
         try:
+            # stream=True 时响应体不预读：SSE 需要边接收边解析，发送本身不抛错
             response = await client.send(request, stream=stream)
         except (httpx.ConnectError, httpx.TimeoutException):
             # 连接错误或超时 -- 这类错误重试有可能成功
             if response is not None:
-                await response.aclose()
+                await response.aclose()  # 异常发生在响应创建之后，需关闭以释放连接
             return None, True  # 可重试
         except httpx.RequestError:
             # 其他请求错误（如 DNS 解析失败）-- 重试也不太可能成功
             if response is not None:
-                await response.aclose()
+                await response.aclose()  # 同上：清理半成品响应，防止连接泄漏
             return None, False  # 不可重试
         if stream and self._is_http_error(response):
             # 流式请求返回了错误状态码，需要先读取响应体才能释放连接
@@ -353,6 +364,7 @@ class OpenAICompatibleClient:
 
         # 重试循环：最多尝试 MAX_PROVIDER_ATTEMPTS 次
         for attempt in range(MAX_PROVIDER_ATTEMPTS):
+            # 每轮都重新构建请求对象：httpx.Request 发送后不可复用，不能跨重试共享
             request = client.build_request("POST", url, headers=headers, json=payload)
             response, retryable_failure = await self._send_request(
                 client, request, stream=stream
@@ -399,8 +411,11 @@ class OpenAICompatibleClient:
             AI 生成的完整文本内容。
         """
         response = await self._request_with_retries(messages, stream=False)
-        return self._extract_content(response)
+        return self._extract_content(response)  # 非流式：等待完整响应后一次性提取文本
 
+    # ---------------------------------------------------------------------------
+    # 流式响应处理：SSE 帧解析 + 逐块输出
+    # ---------------------------------------------------------------------------
     @staticmethod
     def _parse_stream_content(data: str, *, content_started: bool) -> str:
         """解析单个 SSE 数据帧中的文本内容。
@@ -422,6 +437,7 @@ class OpenAICompatibleClient:
             payload = json.loads(data)
             # OpenAI 流式格式：choices[0].delta.content
             delta = payload["choices"][0]["delta"]
+            # 某些帧（如首帧）只带 role 字段没有 content，用 get 兜底视为空片段
             content = delta.get("content", "")
         except (ValueError, KeyError, IndexError, TypeError) as error:
             raise AIProviderProtocolError(
@@ -495,6 +511,9 @@ class OpenAICompatibleClient:
             # 无论成功还是异常，都要释放 HTTP 连接
             await response.aclose()
 
+    # ---------------------------------------------------------------------------
+    # 连接管理：关闭 HTTP 客户端，释放连接池
+    # ---------------------------------------------------------------------------
     async def close(self) -> None:
         """关闭底层 HTTP 客户端。
 

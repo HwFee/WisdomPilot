@@ -19,7 +19,7 @@ INACTIVE_ACCOUNT_MESSAGE = "Account is inactive"
 
 
 class AuthError(Exception):
-    """Base class for expected authentication use-case failures.
+    """认证域预期业务失败的基类。
 
     认证域所有预期异常的基类。
 

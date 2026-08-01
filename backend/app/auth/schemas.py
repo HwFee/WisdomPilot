@@ -25,7 +25,7 @@ import re
 
 
 class UserBase(BaseModel):
-    """Base user schema with common fields
+    """带公共字段的用户基础 Schema。
 
     用户基础 Schema，定义 email 和 username 两个公共字段及验证规则。
     被 UserCreate 和 UserResponse 继承，避免重复定义。
@@ -61,22 +61,23 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    """Schema for user registration
+    """用户注册请求 Schema。
 
     用户注册请求 Schema，继承 UserBase 的 email/username，额外增加 password 字段。
     """
+    # 明文密码：仅用于注册时校验强度并哈希存储，数据库中永不保存明文
     password: str
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
         """
-        Validate password strength.
+        验证密码强度。
 
-        Requirements:
-        - At least 8 characters
-        - At least one letter (a-z or A-Z)
-        - At least one digit (0-9)
+        要求：
+        - 至少 8 个字符
+        - 至少包含一个字母（a-z 或 A-Z）
+        - 至少包含一个数字（0-9）
 
         验证密码强度，收集所有不满足的条件后一次性报错（而非遇到第一个就返回），
         让用户能看到全部问题，减少来回尝试。
@@ -108,7 +109,7 @@ class UserCreate(UserBase):
 
 
 class UserLogin(BaseModel):
-    """Schema for user login
+    """用户登录请求 Schema。
 
     用户登录请求 Schema，支持用户名或邮箱登录。
 
@@ -150,7 +151,7 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(UserBase):
-    """Schema for user response (public info)
+    """用户信息响应 Schema（公开信息）。
 
     用户信息响应 Schema，用于 API 返回用户公开信息。
     继承 UserBase 的 email/username，额外增加只读字段。
@@ -167,7 +168,7 @@ class UserResponse(UserBase):
 
 
 class Token(BaseModel):
-    """Schema for JWT token response
+    """JWT 令牌响应 Schema。
 
     JWT 令牌响应 Schema，登录/注册成功后返回。
     包含访问令牌字符串和用户信息，前端保存 token 用于后续请求的 Authorization 头。
@@ -180,7 +181,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    """Schema for decoded token data
+    """JWT 解码后的数据 Schema。
 
     JWT 解码后的数据 Schema，用于在依赖注入中提取用户标识。
     """
@@ -189,7 +190,7 @@ class TokenData(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    """Schema for forgot password request
+    """忘记密码请求 Schema。
 
     忘记密码请求 Schema，只需提供邮箱地址。
     """

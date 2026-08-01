@@ -36,7 +36,7 @@ settings = get_settings()
 
 
 class AuthService:
-    """Authentication service handling user registration and login
+    """认证服务类：处理用户注册与登录。
 
     认证服务类，封装注册、登录等业务逻辑。
 
@@ -58,7 +58,7 @@ class AuthService:
         self.db = db
 
     async def register(self, user_data: UserCreate) -> tuple[User, Token]:
-        """Register a new user and return user + token
+        """注册新用户，返回用户对象和 JWT 令牌。
 
         注册新用户并返回用户对象和 JWT 令牌。
 
@@ -122,7 +122,7 @@ class AuthService:
         return new_user, token
 
     async def login(self, login_data: UserLogin) -> tuple[User, Token]:
-        """Authenticate user and return user + token
+        """验证用户身份，返回用户对象和 JWT 令牌。
 
         用户登录，验证凭据后返回 JWT 令牌。
 
@@ -165,18 +165,20 @@ class AuthService:
         else:
             expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
+        # 生成 JWT 令牌，载荷中包含用户 ID（sub）和邮箱（email）
         access_token = create_access_token(
             data={"sub": user.id, "email": user.email},
             expires_delta=expires_delta,
         )
 
+        # 将 ORM 对象转换为响应 Schema（model_validate 利用 from_attributes 配置）
         user_response = UserResponse.model_validate(user)
         token = Token(access_token=access_token, user=user_response)
 
         return user, token
 
     async def get_user_by_id(self, user_id: str) -> User | None:
-        """Get user by ID
+        """按用户 ID 查询用户。
 
         按用户 ID 查询用户。
 
@@ -190,7 +192,7 @@ class AuthService:
         return result.scalar_one_or_none()
 
     async def forgot_password(self, email: str) -> None:
-        """Look up a reset recipient without revealing whether it exists.
+        """查询重置收件人，但不暴露其是否存在。
 
         忘记密码处理：查询邮箱是否存在但不暴露查询结果。
 

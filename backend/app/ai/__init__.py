@@ -13,8 +13,11 @@
 模块级单例 ``ai_service`` 在应用启动时由 ``lifespan`` 注入配置，全局共享。
 """
 
+# 配置模型：集中描述连接 LLM 所需的全部参数（provider / api_key / model 等）
 from app.ai.config import AIProviderConfig
+# 服务入口：面向业务的高层封装 AIService 及其全局单例 ai_service
 from app.ai.service import ai_service, AIService
+# provider 子包：抽象接口、异常体系与 OpenAI 兼容实现
 from app.ai.provider import (
     AICompletionClient,
     AIMessage,
@@ -30,6 +33,7 @@ from app.ai.provider import (
     OpenAIProvider,
 )
 
+# 公开 API 清单：声明本包的对外导出符号，便于 from app.ai import * 与 IDE 补全
 __all__ = [
     "AIService",
     "ai_service",

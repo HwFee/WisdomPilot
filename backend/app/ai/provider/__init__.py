@@ -13,12 +13,15 @@
 外部导入时统一从此 ``__init__`` 导出，避免直接引用内部模块路径。
 """
 
+# 抽象接口：AIProvider（业务语义）与 AICompletionClient（文本补全协议）
 from app.ai.provider.base import (
     AICompletionClient,
     AIMessage,
     AIProvider,
 )
+# 底层 HTTP 客户端：负责实际请求、重试与流式 SSE 解析
 from app.ai.provider.client import OpenAICompatibleClient
+# 统一异常体系：AIProviderError 基类及五类子异常
 from app.ai.provider.errors import (
     AIProviderConfigurationError,
     AIProviderError,
@@ -27,12 +30,14 @@ from app.ai.provider.errors import (
     AIProviderProtocolError,
     AIProviderStreamError,
 )
+# OpenAI 兼容实现：把业务语义翻译为 messages 并委托给 client
 from app.ai.provider.openai import OpenAICompatibleProvider
 
 # OpenAIProvider 是 OpenAICompatibleProvider 的别名，
 # 方便外部代码用更简洁的名字引用（两者实现完全一致）。
 OpenAIProvider = OpenAICompatibleProvider
 
+# 公开 API 清单：外部统一从此导入，避免直接引用内部模块路径
 __all__ = [
     "AICompletionClient",
     "AIMessage",

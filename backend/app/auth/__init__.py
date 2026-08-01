@@ -1,7 +1,7 @@
-"""Auth domain — user model, schemas, service, router, and security.
+"""认证域包：用户模型、Schema、服务层、路由与安全工具。
 
-All auth-related code lives here. Import from this package or directly from
-submodules as needed.
+所有认证相关代码都集中在本包中。可按需从本包导入，
+也可以直接从各子模块导入。
 """
 
 # =====================================================================

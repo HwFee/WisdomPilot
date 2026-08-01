@@ -23,10 +23,14 @@ import json
 import logging
 from typing import Any, AsyncGenerator, Optional
 
+# httpx：异步 HTTP 客户端，此处仅用于类型标注（支持外部注入共享连接池）
 import httpx
 
+# 读取全局配置（AI_PROVIDER / AI_MODEL 等），供状态查询等方法回退使用
 from app.config import get_settings
+# AIProviderConfig：AI 配置数据类（configure() 的入参）
 from app.ai.config import AIProviderConfig
+# provider 模块：AIProvider 抽象接口 + OpenAI 兼容实现 + 配置异常类型
 from app.ai.provider import (
     AIProvider,
     AIProviderConfigurationError,
@@ -34,6 +38,7 @@ from app.ai.provider import (
     OpenAICompatibleProvider,
 )
 
+# 模块级日志器：以模块全名命名，便于按包名过滤日志级别
 logger = logging.getLogger(__name__)
 
 # OpenAIProvider 是 OpenAICompatibleProvider 的别名，
@@ -41,6 +46,9 @@ logger = logging.getLogger(__name__)
 OpenAIProvider = OpenAICompatibleProvider
 
 
+# ---------------------------------------------------------------------------
+# 模块级纯函数：构造编程题提示 prompt（与 AIService 实例无关，可单独测试）
+# ---------------------------------------------------------------------------
 def _build_exercise_hint_prompt(
     exercise_title: str,
     exercise_description: str,
@@ -77,6 +85,7 @@ def _build_exercise_hint_prompt(
     """
     # 难度数字到中文标签的映射
     difficulty_labels = {1: "入门", 2: "基础", 3: "中等", 4: "较难", 5: "困难"}
+    # 难度越界（<1 或 >5）时回退到"中等"，保证 prompt 始终有难度标签
     diff_label = difficulty_labels.get(difficulty, "中等")
 
     # 拼接知识点上下文（若有）
@@ -103,6 +112,7 @@ def _build_exercise_hint_prompt(
 {code_template}
 ```"""
 
+    # 按提示级别分支构造不同深度的 prompt（light 最简，deep 最详细）
     if hint_level == "light":
         prompt = f"""你是一位耐心的编程老师。学生正在做一道编程题，需要思路引导（不要直接给出答案）。
 
@@ -144,9 +154,13 @@ def _build_exercise_hint_prompt(
 
 注意：代码框架要有详细注释，但不要直接给出完整可运行的答案！"""
 
+    # 返回构造好的 prompt 字符串，作为 user 消息交给 provider
     return prompt
 
 
+# ---------------------------------------------------------------------------
+# AIService 类：AI 服务统一入口（业务层的 AI 能力聚合器）
+# ---------------------------------------------------------------------------
 class AIService:
     """AI 服务统一入口 -- 面向业务层的 AI 能力聚合器。
 
@@ -202,6 +216,8 @@ class AIService:
         Raises:
             AIProviderConfigurationError: 传入了不支持的 provider 名称。
         """
+        # 白名单校验：只放行 OpenAI 兼容的服务商（内部 prompt 与响应解析均
+        # 基于 Chat Completions 格式，其他厂商格式不兼容）
         if config.provider not in {"openai", "siliconflow", "deepseek"}:
             raise AIProviderConfigurationError(
                 f"Unsupported AI provider: {config.provider}"
@@ -216,6 +232,7 @@ class AIService:
             # 重新配置：复用已有客户端实例，只更新配置参数（运行时热切换）
             self._protocol_client.configure(config)
         self._provider = OpenAICompatibleProvider(self._protocol_client)
+        # 保存配置快照，供 is_configured() / get_provider_status() 判断与回退
         self._config = config
 
     def _require_provider(self) -> AIProvider:
@@ -273,11 +290,13 @@ class AIService:
             和 ``providers`` 的状态字典。
         """
         settings = get_settings()
+        # 未配置时回退到环境变量中的默认值，保证状态接口始终可读
         current_type = self._config.provider if self._config else settings.AI_PROVIDER
 
         return {
             "current_provider": current_type,
             "current_model": self._config.model if self._config else settings.AI_MODEL,
+            # 以下两个字段为兼容旧接口保留（当前仅走云端 OpenAI 兼容通道）
             "is_local_first": False,
             "providers": [],
         }
@@ -307,9 +326,11 @@ class AIService:
             return "AI 服务未配置，请联系管理员。"
 
         provider = self._require_provider()
+        # 取出学生所选与正确选项的文本，供 prompt 展示
         user_option = options[user_selected_index]
         correct_option = options[correct_index]
 
+        # chr(10)=换行、chr(65)='A'：将选项列表格式化为 "A. xxx\nB. yyy" 题面
         prompt = f"""学生做错了以下选择题，请分析错误原因并给出解释：
 
 题目：{question}
@@ -414,10 +435,12 @@ class AIService:
             # 将选项列表格式化为 "A. xxx\nB. yyy" 的形式
             opts_str = ""
             if q_opts:
+                # chr(65)='A'：选项索引转字母标签
                 opts_str = "\n".join(
                     [f"{chr(65 + i)}. {opt}" for i, opt in enumerate(q_opts)]
                 )
 
+            # 无选项时不输出"选项："行，避免 prompt 中出现空块
             opts_line = f"选项：\n{opts_str}" if opts_str else ""
 
             # 拼接上下文信息
@@ -440,6 +463,7 @@ class AIService:
             # 无上下文时，用简单的编程老师角色 prompt
             prompt = f"你是一位耐心的编程老师。学生的问题是：\n\n{message}\n\n请给出简洁、有帮助的回答。"
 
+        # 单条 user 消息即可：多轮历史由调用方拼进 context/prompt 文本
         messages = [
             {"role": "user", "content": prompt},
         ]
@@ -479,6 +503,7 @@ class AIService:
         # 判断答案是否正确
         is_correct = user_selected == correct_answer
         # 将数字索引转换为字母标签（0→A, 1→B, ...）
+        # 0→A、1→B：字母标签更适合出现在面向学生的 prompt 里
         selected_label = chr(65 + user_selected)
         correct_label = chr(65 + correct_answer)
         selected_text = options[user_selected]
@@ -510,6 +535,7 @@ class AIService:
 3. 指出学习这个概念时常见的陷阱和记忆技巧"""
 
         analysis = await provider.generate_explanation(prompt)
+        # 返回结构化结果：前端据此区分渲染"答对/答错"两种 UI
         return {"analysis": analysis, "is_correct": is_correct}
 
     async def generate_exercises(
@@ -550,6 +576,7 @@ class AIService:
 
         provider = self._require_provider()
 
+        # 难度数字→中文标签映射（1-5 级，与 _build_exercise_hint_prompt 保持一致）
         difficulty_labels = {
             1: "入门",
             2: "基础",
@@ -559,6 +586,7 @@ class AIService:
         }
         difficulty_label = difficulty_labels.get(difficulty, "基础")
 
+        # 题型白名单：AI 仅按此返回 choice / fill_blank 两种结构
         type_mapping = {
             "choice": "选择题",
             "fill_blank": "填空题",
@@ -571,6 +599,7 @@ class AIService:
             )
             return []
 
+        # 可选主题：追加到 prompt 中聚焦出题范围
         topic_context = f"\n重点关注主题：{topic}" if topic else ""
 
         prompt = f"""你是一位专业的编程练习题出题老师。请为以下章节生成 {count} 道{difficulty_label}难度的{type_mapping[exercise_type]}。
@@ -656,6 +685,7 @@ class AIService:
 
         provider = self._require_provider()
 
+        # 已有知识点线索：作为提示注入，让 AI 在其基础上扩展讲解
         kp_context = ""
         if knowledge_points:
             kp_context = f"\n已有知识点提示：{', '.join(knowledge_points)}"
@@ -750,6 +780,7 @@ class AIService:
 
         provider = self._require_provider()
 
+        # 调用方未指定题型时默认只出选择题（与 generate_exercises 默认行为一致）
         if question_types is None:
             question_types = ["choice"]
 
@@ -774,6 +805,7 @@ class AIService:
 
         # 难度数字到中文标签的映射
         difficulty_labels = {1: "入门", 2: "基础", 3: "中等", 4: "较难", 5: "困难"}
+        # 难度范围取首尾两个标签，prompt 中呈现为"入门 到 困难"
         min_diff = difficulty_labels.get(difficulty_range[0], "入门")
         max_diff = difficulty_labels.get(difficulty_range[1], "困难")
 
@@ -783,6 +815,7 @@ class AIService:
             "programming": "编程题",
             "fill_blank": "填空题",
         }
+        # 未映射到的题型原样保留（如自定义类型），避免 prompt 丢失信息
         type_str = "、".join([type_names.get(t, t) for t in question_types])
 
         # 知识点上下文
@@ -924,6 +957,7 @@ class AIService:
         provider = self._require_provider()
 
         if system_prompt:
+            # 将 system 提示前置为第一条消息（Chat Completions 要求 system 消息在最前）
             messages = [{"role": "system", "content": system_prompt}, *messages]
         return await provider.complete_messages(messages)
 
@@ -992,6 +1026,7 @@ class AIService:
 3. 给出学习建议"""
 
         analysis = await provider.generate_explanation(prompt)
+        # 返回结构化结果：前端据此区分渲染"答对/答错"两种 UI
         return {"analysis": analysis, "is_correct": is_correct}
 
     async def stream_exercise_hint(
@@ -1043,6 +1078,7 @@ class AIService:
 
         difficulty_labels = {1: "入门", 2: "基础", 3: "中等", 4: "较难", 5: "困难"}
         diff_label = difficulty_labels.get(difficulty, "中等")
+        # 起始日志：标题截断到 30 字符，避免超长标题刷屏（[PERF-AI] 前缀便于 grep）
         logger.info(
             f"[PERF-AI] stream_exercise_hint starting: level={hint_level}, difficulty={diff_label}, title={exercise_title[:30]}..."
         )
@@ -1058,6 +1094,7 @@ class AIService:
             sample_input=sample_input,
             sample_output=sample_output,
         )
+        # 构造单条 user 消息，交给 provider 流式生成
         messages = [{"role": "user", "content": prompt}]
         t_prompt_done = time.time()
         logger.info(

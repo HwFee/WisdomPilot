@@ -25,12 +25,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against a hash
+    """验证明文密码是否与哈希匹配。
 
     验证明文密码是否与哈希值匹配。
 
-    Note: bcrypt has a 72-byte limit on password length.
-    We truncate to 72 bytes to match the hashing behavior.
+    注意：bcrypt 对密码长度有 72 字节限制，超长部分会被截断。
+    这里主动截断到 72 字节，保证哈希与验证行为一致。
 
     Args:
         plain_password: 用户输入的明文密码。
@@ -47,12 +47,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password
+    """对明文密码进行哈希。
 
     将明文密码哈希为 bcrypt 密文，用于存储到数据库。
 
-    Note: bcrypt has a 72-byte limit on password length.
-    We truncate to 72 bytes to avoid errors with long passwords.
+    注意：bcrypt 对密码长度有 72 字节限制，超长部分会被截断。
+    这里截断到 72 字节，避免超长密码导致报错。
 
     Args:
         password: 用户输入的明文密码。
@@ -67,7 +67,7 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
-    """Create a JWT access token
+    """创建 JWT（JSON Web Token）访问令牌。
 
     创建 JWT 访问令牌。
 
@@ -98,7 +98,7 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
 
 
 def decode_token(token: str) -> dict[str, Any] | None:
-    """Decode and validate a JWT token
+    """解码并验证 JWT（JSON Web Token）令牌。
 
     解码并验证 JWT 令牌。
 

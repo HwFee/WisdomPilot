@@ -37,10 +37,10 @@ class AIProviderConfig(BaseModel):
         is_local_first: 是否优先使用本地模型（预留字段，当前未启用）。
     """
 
-    provider: str = "deepseek"
-    api_key: str = ""
-    model: str = "deepseek-v4-flash"
-    temperature: float = 0.7
-    base_url: Optional[str] = None
+    provider: str = "deepseek"            # 默认提供商：deepseek / openai / siliconflow（均兼容 OpenAI Chat Completions API）
+    api_key: str = ""                     # 鉴权密钥，启动时由 lifespan 从环境变量读取并注入
+    model: str = "deepseek-v4-flash"      # 默认模型名，不同提供商可用的模型列表不同
+    temperature: float = 0.7              # 采样温度：值越低输出越确定，教育场景取 0.7 平衡稳定与多样性
+    base_url: Optional[str] = None        # API 根地址，为 None 时回退到提供商默认地址
     local_base_url: Optional[str] = None  # 本地服务地址（自动检测）
     is_local_first: bool = False  # 本地优先模式
