@@ -58,8 +58,14 @@ def get_field_name(error: dict[str, Any]) -> str:
 
 
 def format_value_error(field_name: str, message: str, context: dict[str, Any]) -> str:
-    """格式化 Pydantic 值错误（value_error）为友好的中文消息。
-
+    """格式化 Pydantic 值错误（value_error）为友好的中文消息
+    处理链路：
+    你 raise ValueError("用户名至少需要2个字符")
+        ↓ Pydantic 捕获，转成错误字典
+     {'type': 'value_error', 'loc': ('body', 'username'), 'msg': 'Value error, 用户名至少需要2个字符', 'input': 'x', 'ctx': {'error': ValueError('
+   用户名至少需要2个字符')}}
+        ↓ FastAPI 收集所有错误 → RequestValidationError → 序列化成 HTTP 响应体
+     {"detail": "用户名: 用户名至少需要2个字符"}
     处理自定义的密码校验规则等产生的 value_error，将英文消息转为中文。
 
     Args:
@@ -93,8 +99,8 @@ def format_validation_error(error: dict[str, Any]) -> str:
 
     根据错误类型（``error_type``）分别处理：
         - ``string_too_short``: 字符串太短，提示最小长度要求
+        - ``value_error`` + 消息含 "valid email address": 邮箱格式错误（Pydantic v2 的 EmailStr）
         - ``value_error``: 自定义值错误（如密码复杂度校验）
-        - ``value_error.email``: 邮箱格式错误
         - 含 ``missing``: 必填字段缺失
         - 其他: 直接拼接字段名和原始消息
 
@@ -115,13 +121,18 @@ def format_validation_error(error: dict[str, Any]) -> str:
         min_length = context.get("min_length", DEFAULT_MIN_LENGTH)
         return f"{field_name}长度至少需要{min_length}个字符"
 
+    # 邮箱格式错误（Pydantic v2 无专属 type：EmailStr 抛 value_error，消息模板固定为
+    # "value is not a valid email address: {reason}"，用消息内容识别而非 ctx 键名，
+    # 避免其它 value_error 也带 reason 键时被误判；v1 的 value_error.email 分支已失效，
+    # 2026-08-01 删除）
+    #message:value is not a valid email address  这个字段是Pydantic v2 validate_email 通用的返回message
+    #error_type 为value_error
+    if error_type == "value_error" and "valid email address" in message:
+        return "请输入有效的邮箱地址"
+
     # 自定义值错误（如密码复杂度校验）
     if error_type == "value_error":
         return format_value_error(field_name, message, context)
-
-    # 邮箱格式错误
-    if error_type == "value_error.email":
-        return "请输入有效的邮箱地址"
 
     # 必填字段缺失
     if "missing" in error_type:
@@ -132,7 +143,7 @@ def format_validation_error(error: dict[str, Any]) -> str:
 
 
 async def validation_exception_handler(
-    request: Request,
+    _request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
     """请求参数校验失败异常处理器。
@@ -145,7 +156,7 @@ async def validation_exception_handler(
         ``{"detail": "密码长度至少需要8个字符; 邮箱: 请输入有效的邮箱地址"}``
 
     Args:
-        request: 触发异常的请求对象
+        _request: 触发异常的请求对象
         exc: Pydantic 校验异常，包含所有校验错误的详细信息
 
     Returns:
@@ -157,7 +168,7 @@ async def validation_exception_handler(
     return JSONResponse(status_code=422, content={"detail": "; ".join(messages)})
 
 
-async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def global_exception_handler(request: Request, _exc: Exception) -> JSONResponse:
     """全局兜底异常处理器。
 
     捕获所有未被特定处理器处理的异常，记录完整堆栈日志，
@@ -169,7 +180,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
     Args:
         request: 触发异常的请求对象
-        exc: 未被捕获的异常对象
+        _exc: 未被捕获的异常对象
 
     Returns:
         JSONResponse: 500 状态码的 JSON 响应，``detail`` 为通用错误消息
