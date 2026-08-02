@@ -40,9 +40,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         True 表示密码匹配，False 表示不匹配。
     """
     # bcrypt 算法对输入有 72 字节限制，超长部分会被截断。
-    # 这里主动截断到 72 字节，确保哈希和验证行为一致。
+    # 这里主动截断到 72 字节，确保哈希和验证行为一致。 按照UTF-8编码转成字节
     password_bytes = plain_password.encode('utf-8')[:72]
-    # passlib 的 verify() 内部会从 hashed_password 中提取 salt 并重新哈希比对
+    # passlib 的 verify() 内部会从 hashed_password 中提取 salt 并重新哈希比对 errors=ignore，就是忽略了那些不完整的切片
     return pwd_context.verify(password_bytes.decode('utf-8', errors='ignore'), hashed_password)
 
 
@@ -92,7 +92,7 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
         expire = utc_now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     # 将过期时间戳 "exp" 写入载荷，jose 库在解码时会自动校验是否过期
     to_encode.update({"exp": expire})
-    # 使用密钥和指定算法（如 HS256）对载荷签名，生成最终 JWT 字符串
+    # 使用密钥和指定算法（如 HS256）对载荷签名，生成最终 JWT 字符串 algorithm:JWT签名算法
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 

@@ -1,6 +1,6 @@
 from datetime import timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select
 from app.auth.models import User
 from app.auth.schemas import UserCreate, UserLogin, Token, UserResponse
 from app.auth.security import (
@@ -13,7 +13,6 @@ from app.auth.errors import (
     EmailAlreadyRegisteredError,
     InactiveAccountError,
     InvalidCredentialsError,
-    UsernameAlreadyRegisteredError,
 )
 
 # =====================================================================
@@ -77,21 +76,15 @@ class AuthService:
 
         Raises:
             EmailAlreadyRegisteredError: 邮箱已存在。
-            UsernameAlreadyRegisteredError: 用户名已存在。
         """
-        # 检查邮箱或用户名是否已存在（一条查询同时检查两个字段，避免两次数据库往返）
+        # 检查邮箱是否已存在（邮箱是唯一登录标识，用户名可重复）
         result = await self.db.execute(
-            select(User).where(
-                or_(User.email == user_data.email, User.username == user_data.username)
-            )
+            select(User).where(User.email == user_data.email)
         )
-        existing_user = result.scalars().first()
+        existing_user = result.scalar_one_or_none()
 
         if existing_user:
-            # 根据冲突的字段抛出不同的异常，让用户知道具体是哪个重复了
-            if existing_user.email == user_data.email:
-                raise EmailAlreadyRegisteredError
-            raise UsernameAlreadyRegisteredError
+            raise EmailAlreadyRegisteredError
 
         # 对明文密码进行 bcrypt 哈希，永不存储明文
         hashed_password = get_password_hash(user_data.password)
@@ -106,7 +99,7 @@ class AuthService:
         # flush 与 commit 的区别：flush 发送 SQL 但不结束事务，commit 才真正持久化
         self.db.add(new_user)
         await self.db.flush()
-        # refresh 从数据库重新加载对象，获取默认值生成的字段（如 id, created_at）
+        # refresh 从数据库重新加载对象，获取默认值生成的字段（如 id, created_at） 这里实测即使不刷新也没事，这只是一个防御性编程，防止有别的地方改写同一行
         await self.db.refresh(new_user)
 
         # 生成 JWT 令牌，载荷中包含用户 ID（sub）和邮箱（email）
@@ -127,13 +120,13 @@ class AuthService:
         用户登录，验证凭据后返回 JWT 令牌。
 
         业务流程：
-            1. 按用户名或邮箱查询用户
+            1. 按邮箱查询用户
             2. 验证密码哈希是否匹配
             3. 检查账户是否激活
             4. 根据 remember_me 选择过期时间，生成 JWT 令牌
 
         Args:
-            login_data: 登录请求数据（username/email, password, remember_me）。
+            login_data: 登录请求数据（email, password, remember_me）。
 
         Returns:
             元组 (User, Token)：User 是 ORM 对象，Token 包含 JWT 字符串和用户信息。
@@ -142,14 +135,12 @@ class AuthService:
             InvalidCredentialsError: 用户不存在或密码错误（不区分两者，防枚举攻击）。
             InactiveAccountError: 账户已被停用。
         """
-        # 同时按邮箱和用户名查询，因为 login_data.username 可能是其中任一个
+        # 邮箱是唯一登录标识，直接按 email 查询
         result = await self.db.execute(
-            select(User).where(
-                or_(User.email == login_data.username, User.username == login_data.username)
-            )
+            select(User).where(User.email == login_data.email)
         )
         # scalar_one_or_none()：期望返回 0 或 1 条记录，多于 1 条会抛异常（数据完整性保护）
-        user = result.scalar_one_or_none()
+        user: User | None = result.scalar_one_or_none()
 
         # 安全要点：用户不存在和密码错误返回相同异常，防止攻击者通过响应差异枚举有效用户名
         if not user or not verify_password(login_data.password, user.hashed_password):

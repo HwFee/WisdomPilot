@@ -32,7 +32,6 @@ from app.auth.errors import (
     EmailAlreadyRegisteredError,
     InactiveAccountError,
     InvalidCredentialsError,
-    UsernameAlreadyRegisteredError,
 )
 from app.auth.security import (
     create_access_token,
@@ -58,7 +57,6 @@ __all__ = [
     "UserCreate",
     "UserLogin",
     "UserResponse",
-    "UsernameAlreadyRegisteredError",
     "auth_router",
     "create_access_token",
     "decode_token",

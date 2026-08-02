@@ -26,7 +26,6 @@ from app.auth.errors import (
     EmailAlreadyRegisteredError,
     InactiveAccountError,
     InvalidCredentialsError,
-    UsernameAlreadyRegisteredError,
 )
 from app.auth.dependencies import get_current_active_user
 
@@ -65,7 +64,7 @@ async def register(
         # service.register 返回 (User, Token) 元组，路由只需 Token
         _, token = await service.register(user_data)
         return token
-    except (EmailAlreadyRegisteredError, UsernameAlreadyRegisteredError) as error:
+    except EmailAlreadyRegisteredError as error:
         # 邮箱/用户名重复 → 400 Bad Request
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

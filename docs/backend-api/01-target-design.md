@@ -18,7 +18,7 @@
 | 方法 | 路径 | 说明 | 鉴权 |
 |---|---|---|---|
 | POST | /api/auth/register | 注册（email + password + username） | 公开 |
-| POST | /api/auth/login | 登录，返回 JWT | 公开 |
+| POST | /api/auth/login | 登录（email + password），返回 JWT | 公开 |
 | GET | /api/dashboard | 训练舱首页聚合 | ✓ |
 | GET | /api/review-gym/session | 取一关审查会话（不含注入缺陷答案） | ✓ |
 | POST | /api/review-gym/submit | 提交标注，返回判定（未全中可复盘重做，见 §3） | ✓ |

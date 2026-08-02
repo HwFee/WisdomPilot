@@ -52,8 +52,8 @@ class User(Base):
         String(255), unique=True, index=True, nullable=False
     )
     username: Mapped[str] = mapped_column(
-        # 用户名字段：同样唯一 + 索引（支持用户名登录）
-        String(100), unique=True, index=True, nullable=False
+        # 用户名字段：可重复（2026-08 起登录统一走邮箱，用户名仅作展示昵称）
+        String(100), index=True, nullable=False
     )
     hashed_password: Mapped[str] = mapped_column(
         # 密码密文：只存哈希值，不存明文。bcrypt 输出固定 60 字符，255 足够

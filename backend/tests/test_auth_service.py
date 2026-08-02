@@ -8,7 +8,6 @@ from app.auth.errors import (
     EmailAlreadyRegisteredError,
     InactiveAccountError,
     InvalidCredentialsError,
-    UsernameAlreadyRegisteredError,
 )
 
 
@@ -28,9 +27,10 @@ async def test_register_duplicate_email_raises_typed_error(
 
 
 @pytest.mark.asyncio
-async def test_register_duplicate_username_raises_typed_error(
+async def test_register_duplicate_username_succeeds(
     db_session: AsyncSession, auth_user: User
 ) -> None:
+    """用户名可重复：不同邮箱可使用同一用户名注册。"""
     service = AuthService(db_session)
     request = UserCreate(
         email="different@example.com",
@@ -38,8 +38,9 @@ async def test_register_duplicate_username_raises_typed_error(
         password="Password123",
     )
 
-    with pytest.raises(UsernameAlreadyRegisteredError, match="该用户名已被使用"):
-        await service.register(request)
+    new_user, _ = await service.register(request)
+    assert new_user.username == auth_user.username
+    assert new_user.email == "different@example.com"
 
 
 @pytest.mark.asyncio
@@ -56,7 +57,7 @@ async def test_login_rejects_unknown_user_and_wrong_password_identically(
     service = AuthService(db_session)
 
     with pytest.raises(InvalidCredentialsError, match="用户名或密码错误"):
-        await service.login(UserLogin(username=identifier, password=password))
+        await service.login(UserLogin(email=identifier, password=password))
 
 
 @pytest.mark.asyncio
@@ -69,7 +70,7 @@ async def test_login_inactive_account_raises_typed_error(
 
     with pytest.raises(InactiveAccountError, match="Account is inactive"):
         await service.login(
-            UserLogin(username=auth_user.email, password="Password123")
+            UserLogin(email=auth_user.email, password="Password123")
         )
 
 

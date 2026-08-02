@@ -12,7 +12,6 @@
 
 # 以下常量定义各异常对应的用户可见错误消息（中文），集中管理便于国际化维护。
 EMAIL_ALREADY_REGISTERED_MESSAGE = "该邮箱已被注册"
-USERNAME_ALREADY_REGISTERED_MESSAGE = "该用户名已被使用"
 INVALID_CREDENTIALS_MESSAGE = "用户名或密码错误"
 # 账户停用提示（当前保留英文，因前端可能依赖该字符串做匹配）
 INACTIVE_ACCOUNT_MESSAGE = "Account is inactive"
@@ -33,13 +32,6 @@ class EmailAlreadyRegisteredError(AuthError):
 
     def __init__(self) -> None:
         super().__init__(EMAIL_ALREADY_REGISTERED_MESSAGE)
-
-
-class UsernameAlreadyRegisteredError(AuthError):
-    """注册时用户名已存在异常。"""
-
-    def __init__(self) -> None:
-        super().__init__(USERNAME_ALREADY_REGISTERED_MESSAGE)
 
 
 class InvalidCredentialsError(AuthError):

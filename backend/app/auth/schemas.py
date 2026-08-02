@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, field_validator
 import re
 
 
@@ -111,43 +111,16 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     """用户登录请求 Schema。
 
-    用户登录请求 Schema，支持用户名或邮箱登录。
+    用户登录请求 Schema，邮箱是唯一登录标识。
 
     设计说明：
-        username 字段同时接受用户名和邮箱，通过 model_validator 自动将邮箱
-        填入 username，使 service 层只需查询一个字段。
+        用户名可重复（不参与登录），登录统一以 email 为凭据，
+        因此 schema 只接收 email + password，无需 username。
     """
-    username: str
-    # email 为可选字段，前端可只传 email 不传 username
-    email: EmailStr | None = None
+    email: EmailStr
     password: str
     # remember_me=True 时使用更长的令牌过期时间
     remember_me: bool = False
-
-    @model_validator(mode="before")
-    @classmethod
-    def set_login_identifier(cls, values):
-        """模型级前置验证器：如果只传了 email 没传 username，自动将 email 赋给 username。
-
-        mode="before" 表示在字段类型验证之前执行，处理的是原始输入字典。
-        这样 service 层只需按 username 查询，无需同时处理 email 和 username 两个字段。
-
-        Args:
-            values: 原始输入数据（通常是 dict）。
-
-        Returns:
-            处理后的输入数据（确保 username 字段有值）。
-        """
-        if not isinstance(values, dict):
-            # 非 dict 输入（如已实例化的对象）直接返回，交给后续验证
-            return values
-        # 如果已有 username 或没有 email，无需处理
-        if values.get("username") or not values.get("email"):
-            return values
-        # 将 email 复制到 username 字段，统一登录标识符
-        normalized_values = values.copy()
-        normalized_values["username"] = normalized_values["email"]
-        return normalized_values
 
 
 class UserResponse(UserBase):

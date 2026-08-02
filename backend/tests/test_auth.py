@@ -54,28 +54,28 @@ class TestAuthRegister:
         assert "该邮箱已被注册" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_register_duplicate_username(self, client: AsyncClient):
-        """Test registration with duplicate username fails"""
+    async def test_register_duplicate_username_succeeds(self, client: AsyncClient):
+        """用户名可重复：同一用户名注册第二个账号（不同邮箱）应成功"""
         # First registration
         await client.post(
             "/api/auth/register",
             json={
                 "email": "user1@example.com",
-                "username": "duplicateuser",
+                "username": "shareduser",
                 "password": "password123",
             },
         )
-        # Second registration with same username
+        # Second registration with same username, different email
         response = await client.post(
             "/api/auth/register",
             json={
                 "email": "user2@example.com",
-                "username": "duplicateuser",
+                "username": "shareduser",
                 "password": "password123",
             },
         )
-        assert response.status_code == 400
-        assert "该用户名已被使用" in response.json()["detail"]
+        assert response.status_code == 201
+        assert response.json()["user"]["email"] == "user2@example.com"
 
     @pytest.mark.asyncio
     async def test_register_invalid_email(self, client: AsyncClient):
@@ -173,7 +173,7 @@ class TestAuthLogin:
         response = await client.post(
             "/api/auth/login",
             json={
-                "username": "login@example.com",
+                "email": "login@example.com",
                 "password": "password123",
             },
         )
@@ -182,31 +182,6 @@ class TestAuthLogin:
         assert "access_token" in data
         assert data["token_type"] == "bearer"
         assert data["user"]["email"] == "login@example.com"
-
-    @pytest.mark.asyncio
-    async def test_login_success_with_email_field(self, client: AsyncClient):
-        """Test successful login when client sends email instead of username."""
-        await client.post(
-            "/api/auth/register",
-            json={
-                "email": "login-email-field@example.com",
-                "username": "loginemailfield",
-                "password": "password123",
-            },
-        )
-
-        response = await client.post(
-            "/api/auth/login",
-            json={
-                "email": "login-email-field@example.com",
-                "password": "password123",
-            },
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert "access_token" in data
-        assert data["user"]["email"] == "login-email-field@example.com"
 
     @pytest.mark.asyncio
     async def test_login_wrong_password(self, client: AsyncClient):
@@ -224,7 +199,7 @@ class TestAuthLogin:
         response = await client.post(
             "/api/auth/login",
             json={
-                "username": "wrong@example.com",
+                "email": "wrong@example.com",
                 "password": "wrongpassword",
             },
         )
@@ -237,7 +212,7 @@ class TestAuthLogin:
         response = await client.post(
             "/api/auth/login",
             json={
-                "username": "nonexistent@example.com",
+                "email": "nonexistent@example.com",
                 "password": "password123",
             },
         )
@@ -259,7 +234,7 @@ class TestAuthLogin:
 
         response = await client.post(
             "/api/auth/login",
-            json={"username": user.email, "password": "Password123"},
+            json={"email": user.email, "password": "Password123"},
         )
 
         assert response.status_code == 401
