@@ -12,6 +12,7 @@
 
 from datetime import timedelta
 from typing import Any
+from uuid import uuid4
 from jose import jwt, JWTError  # python-jose：JWT 编解码库
 from passlib.context import CryptContext  # passlib：密码哈希统一接口
 from app.config import get_settings  # 全局配置（密钥、算法、过期时间等）
@@ -22,6 +23,12 @@ from app.utils.time import utc_now  # 统一 UTC 时间
 # - deprecated="auto"：旧算法哈希自动标记为已弃用，验证时提示升级
 # - bcrypt__rounds=12：哈希迭代轮数，数值越大越安全但越慢；12 是当前推荐值
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+
+# 安全审计修复（登录时序侧信道）：用户不存在时仍执行一次同成本的 bcrypt 验证，
+# 使"邮箱已注册"与"邮箱未注册"两条路径耗时一致，防止通过响应时间枚举注册邮箱。
+# 该哈希在模块加载时用随机密码生成一次，与真实用户哈希成本完全相同。
+_DUMMY_PASSWORD = uuid4().hex
+DUMMY_PASSWORD_HASH = pwd_context.hash(_DUMMY_PASSWORD)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -44,6 +51,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     password_bytes = plain_password.encode('utf-8')[:72]
     # passlib 的 verify() 内部会从 hashed_password 中提取 salt 并重新哈希比对 errors=ignore，就是忽略了那些不完整的切片
     return pwd_context.verify(password_bytes.decode('utf-8', errors='ignore'), hashed_password)
+
+
+def verify_password_dummy(plain_password: str) -> None:
+    """执行一次与真实验证同成本的 bcrypt 验证（结果丢弃），用于抹平登录时序差异。"""
+    verify_password(plain_password, DUMMY_PASSWORD_HASH)
 
 
 def get_password_hash(password: str) -> str:

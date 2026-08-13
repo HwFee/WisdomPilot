@@ -1412,6 +1412,21 @@ async def run_arena(
     if challenge is None:
         raise HTTPException(status_code=404, detail="挑战不存在")
 
+    # 安全审计修复：此前同一挑战可无限重放，每次 solved 都加积分/经验/连胜，
+    # 三连胜奖励也随之反复触发，可脚本化刷爆排行榜与智核。这里检查该挑战
+    # 是否已被本用户攻克过：已攻克则只记录尝试事实，不再发放任何奖励。
+    already_solved = (
+        await db.execute(
+            select(DeckArenaAttempt.id)
+            .where(
+                DeckArenaAttempt.user_id == user.id,
+                DeckArenaAttempt.challenge_id == challenge.id,
+                DeckArenaAttempt.solved == 1,
+            )
+            .limit(1)
+        )
+    ).first() is not None
+
     # 判定用户代码（Judge0 优先，未配置/异常时自动降级为关键字匹配）
     result = await service.judge_arena_code_submit(
         body.code,
@@ -1432,7 +1447,7 @@ async def run_arena(
     )
 
     rating = await service.get_or_create_rating(db, user.id)
-    if result["solved"]:
+    if result["solved"] and not already_solved:
         # 攻克成功：加积分、连胜 +1、加 debug 轴经验
         rating.rating += result["score_delta"]
         rating.win_streak += 1
@@ -1447,10 +1462,12 @@ async def run_arena(
                 {"t": f"，积分 +{result['score_delta']}", "tone": "ok"},
             ],
         )
-        if rating.win_streak >= 3:
+        # 安全审计修复：连胜奖励只在恰好达到 3 的倍数时发放一次
+        # （原 >= 3 导致 3 连胜后每次获胜都触发 +10 智核）
+        if rating.win_streak >= 3 and rating.win_streak % 3 == 0:
             # 三连胜额外奖励
             await service.change_cores(db, user, 10, "竞技场三连胜奖励")
-    else:
+    elif not result["solved"]:
         # 未攻克：连胜归零
         rating.win_streak = 0
     # 记录今日活动
@@ -1612,6 +1629,12 @@ async def check_feynman(
     kp = await db.get(DeckKnowledgePoint, session["kp_id"])
     if kp is None:
         raise HTTPException(status_code=404, detail="知识点不存在")
+
+    # 安全审计修复：此前余额不足时仍会触发 LLM 评分调用（AI 费用白嫖）
+    # 且仍写掌握度事件。这里与 send_tutor_message 对齐：余额不足直接拒绝，
+    # 不调用 LLM、不写事件。
+    if user.cores < service.TUTOR_COST:
+        raise HTTPException(status_code=402, detail="智核余额不足，无法进行费曼检验")
 
     # 统一入口评分：LLM 优先（含 covered/missed 与点评），异常/脏 JSON 回退脚本
     grade, verdict = await service.feynman_evaluate(body.text, kp.name, kp.key_points)
@@ -1819,6 +1842,22 @@ async def submit_certification(
     exam = await db.get(DeckCertExam, body.exam_id)
     if exam is None:
         raise HTTPException(status_code=404, detail="试卷不存在")
+
+    # 安全审计修复：此前冷却期只在响应中展示、提交端点不校验，
+    # 同一场考试可无限重考刷智核/经验/证书。这里在提交前强制检查：
+    # - 定级测试：每用户仅一次（重复提交会覆盖定级事件与轴经验）
+    # - 普通试卷：距上次认证不足 3 天（CERT_COOLDOWN_DAYS）时拒绝提交
+    if exam.id == "placement":
+        if await service.has_placement(db, user.id):
+            raise HTTPException(status_code=400, detail="定级测试只能进行一次")
+    else:
+        cooldown = await service.next_cert_available_days(db, user.id)
+        if cooldown:
+            raise HTTPException(
+                status_code=429,
+                detail=f"认证考试冷却中，还需等待 {cooldown} 天",
+            )
+
     questions = (
         await db.execute(
             select(DeckCertQuestion).where(DeckCertQuestion.exam_id == exam.id)

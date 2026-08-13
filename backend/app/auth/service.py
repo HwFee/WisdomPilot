@@ -6,6 +6,7 @@ from app.auth.schemas import UserCreate, UserLogin, Token, UserResponse
 from app.auth.security import (
     get_password_hash,
     verify_password,
+    verify_password_dummy,
     create_access_token,
 )
 from app.config import get_settings
@@ -143,7 +144,12 @@ class AuthService:
         user: User | None = result.scalar_one_or_none()
 
         # 安全要点：用户不存在和密码错误返回相同异常，防止攻击者通过响应差异枚举有效用户名
-        if not user or not verify_password(login_data.password, user.hashed_password):
+        if not user:
+            # 安全审计修复：用户不存在时也执行一次同成本的 bcrypt 验证（结果丢弃），
+            # 抹平与"用户存在但密码错误"路径的耗时差异，防止时序侧信道枚举注册邮箱。
+            verify_password_dummy(login_data.password)
+            raise InvalidCredentialsError
+        if not verify_password(login_data.password, user.hashed_password):
             raise InvalidCredentialsError
 
         # 密码正确但账户停用，返回不同的异常（403 而非 401）

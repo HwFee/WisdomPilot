@@ -162,7 +162,15 @@ export function TutorClient() {
   const [loaded, setLoaded] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topicHandled = useRef(false)
+  const thinkingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { celebrate, celebrationElement } = useBadgeCelebration()
+
+  // 卸载时清理未完成的思考计时器（性能审计修复：避免卸载后 setState）
+  useEffect(() => {
+    return () => {
+      if (thinkingTimerRef.current) clearTimeout(thinkingTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -218,16 +226,23 @@ export function TutorClient() {
             cost
           )
 
-    // 模拟导师思考延迟
-    setTimeout(() => {
-      call.then((r) => {
-        setMessages((prev) => [...prev, { ...r.message, grade: r.grade, mastery: r.mastery_update }])
-        setBalance(r.cores_balance)
-        setThinking(false)
-        celebrate(r.new_badges)
-        // 卡片状态：费曼点评后清主题卡；苏格拉底首次提问固定「当前问题」卡
-        setCards((prev) => cardsAfterSubmit(prev, mode, r.polished_question))
-      })
+    // 模拟导师思考延迟（timer 存 ref，卸载时统一清理，避免卸载后 setState）
+    thinkingTimerRef.current = setTimeout(() => {
+      call
+        .then((r) => {
+          setMessages((prev) => [...prev, { ...r.message, grade: r.grade, mastery: r.mastery_update }])
+          setBalance(r.cores_balance)
+          setThinking(false)
+          celebrate(r.new_badges)
+          // 卡片状态：费曼点评后清主题卡；苏格拉底首次提问固定「当前问题」卡
+          setCards((prev) => cardsAfterSubmit(prev, mode, r.polished_question))
+        })
+        .catch(() => {
+          // 安全审计修复：请求失败（如后端余额不足 402 / 网络错误）时恢复输入
+          setThinking(false)
+          setInput(text)
+          setMessages((prev) => [...prev, { id: `err-${Date.now()}`, role: 'tutor', mode, text: '请求失败，请稍后重试。' }])
+        })
     }, 900)
   }
 

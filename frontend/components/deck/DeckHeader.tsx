@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { LogOut } from 'lucide-react'
-import { getStoredUser, logout } from '@/lib/api'
-import { getDeckDashboard } from '@/lib/api/deck/dashboard'
+import { getCurrentUser, getStoredToken, getStoredUser, logout } from '@/lib/api'
 import { ThemeToggle } from './ThemeToggle'
 
 const NAV_ITEMS = [
@@ -27,11 +26,16 @@ export function DeckHeader() {
 
   useEffect(() => {
     let alive = true
-    getDeckDashboard()
-      .then((d) => {
+    const token = getStoredToken()
+    if (!token) return
+    // 性能审计修复：改用轻量 /api/auth/me 刷新昵称与智核，
+    // 避免在非 dashboard 页额外拉取重量级 /api/dashboard 聚合
+    // （原本仅为了头部 2 个字段却触发整个聚合查询）。
+    getCurrentUser(token)
+      .then((u) => {
         if (!alive) return
-        setName(d.user.name)
-        setCores(d.user.cores)
+        setName(u.username)
+        setCores(u.cores ?? null)
       })
       .catch(() => {
         const stored = getStoredUser()
