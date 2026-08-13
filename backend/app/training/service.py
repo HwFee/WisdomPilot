@@ -31,8 +31,9 @@ import random
 import re
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.ai.service import AIService, ai_service
 # Judge0 判题基础设施：业务服务层 + HTTP 客户端 + 语言 ID 常量
@@ -462,6 +463,12 @@ async def recent_arena_win_rate(db: AsyncSession, user_id: str) -> float | None:
     P-08 竞技场难度自适应数据源：deck_arena_attempts.solved。
     不足窗口时按已有记录求均值；完全无记录时返回 None。
 
+    安全审计修复（重放语义）：已攻克挑战的重放以 solved=0 落记录
+    （保留分析数据且不违反 partial unique index），但它不是真实失败——
+    练习型用户反复打磨旧挑战不应拉低攻克率。这里排除"该行之前该挑战
+    已有 solved=1 记录"的重放行；首次攻克前的真实失败行与攻克行本身
+    照常计入。
+
     Args:
         db: 异步数据库会话
         user_id: 用户 ID
@@ -469,10 +476,19 @@ async def recent_arena_win_rate(db: AsyncSession, user_id: str) -> float | None:
     Returns:
         攻克率（0~1）；无任何提交记录时返回 None。
     """
+    earlier = aliased(DeckArenaAttempt)
     rows = (
         await db.execute(
             select(DeckArenaAttempt.solved)
-            .where(DeckArenaAttempt.user_id == user_id)
+            .where(
+                DeckArenaAttempt.user_id == user_id,
+                ~exists().where(
+                    earlier.user_id == DeckArenaAttempt.user_id,
+                    earlier.challenge_id == DeckArenaAttempt.challenge_id,
+                    earlier.solved == 1,
+                    earlier.created_at < DeckArenaAttempt.created_at,
+                ),
+            )
             .order_by(DeckArenaAttempt.created_at.desc())
             .limit(ARENA_ADAPT_WINDOW)
         )

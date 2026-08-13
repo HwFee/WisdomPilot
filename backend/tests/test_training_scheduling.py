@@ -206,7 +206,7 @@ class TestRecentPerformanceQueries:
         assert await service.recent_review_accuracy(db_session, auth_user.id) == 0.8
 
     async def test_arena_win_rate_values(self, db_session, auth_user):
-        """竞技场攻克率：无记录 None；3 连过 1.0；3 连败 0.0。"""
+        """竞技场攻克率：无记录 None；3 连过 1.0；3 连败 0.0；已攻克挑战的重放失败不计入。"""
         await seed_deck(db_session)
         assert await service.recent_arena_win_rate(db_session, auth_user.id) is None
         # 安全审计修复后的 partial unique index 要求每 (用户, 挑战) 至多一条 solved=1，
@@ -216,11 +216,32 @@ class TestRecentPerformanceQueries:
         await db_session.commit()
         assert await service.recent_arena_win_rate(db_session, auth_user.id) == 1.0
 
-        # 换新会话再测 3 连败（fixture 每测试独立建库）
-        db_session.add_all(_arena_attempt(auth_user.id, 0) for _ in range(3))
+        # 换新会话再测 3 连败：用 3 个未攻克过的合成挑战（fixture 每测试独立建库）
+        for i in range(3):
+            cid = f"LOSE-{i:03d}"
+            db_session.add(
+                DeckArenaChallenge(
+                    id=cid, title="t", language="python", code="c",
+                    failing_output="f", time_limit_sec=600, difficulty=1,
+                )
+            )
+            await db_session.flush()
+            db_session.add(_arena_attempt(auth_user.id, 0, challenge_id=cid))
         await db_session.commit()
-        # 新插入 3 条覆盖窗口 → 攻克率 0.0
+        # 新插入 3 条真实失败覆盖窗口 → 攻克率 0.0
         assert await service.recent_arena_win_rate(db_session, auth_user.id) == 0.0
+
+    async def test_arena_win_rate_excludes_replay_failures(self, db_session, auth_user):
+        """已攻克挑战的重放（solved=0）不计入攻克率：练习不拉低难度推荐。"""
+        await seed_deck(db_session)
+        db_session.add(_arena_attempt(auth_user.id, 1, challenge_id="DEBUG-0091"))
+        await db_session.commit()
+        assert await service.recent_arena_win_rate(db_session, auth_user.id) == 1.0
+        # 对已攻克的 DEBUG-0091 重放 3 次（记为 solved=0）
+        db_session.add_all(_arena_attempt(auth_user.id, 0, challenge_id="DEBUG-0091") for _ in range(3))
+        await db_session.commit()
+        # 重放失败被排除，攻克率保持 1.0
+        assert await service.recent_arena_win_rate(db_session, auth_user.id) == 1.0
 
 
 # ── P-08 审查室难度自适应（P-05 弱点匹配 + P-08 选难度）──

@@ -152,7 +152,7 @@
 
 | 检查 | 命令 | 结果 |
 |------|------|------|
-| 后端测试 | `cd backend && .venv/Scripts/python -m pytest tests/ -q` | **287 passed** |
+| 后端测试 | `cd backend && .venv/Scripts/python -m pytest tests/ -q` | **288 passed** |
 | 前端类型 | `cd frontend && npx tsc --noEmit` | **0 errors** |
 | 前端构建 | `cd frontend && pnpm build` | **成功**（First Load JS 102 kB 共享） |
 | 前端测试 | `cd frontend && npx jest` | **138 passed / 19 suites**（jest.config 强制 NODE_ENV=test 后） |
@@ -161,3 +161,4 @@
 | 启动冒烟 | uvicorn :8000 + next dev :3000 | `/health` 200、`/login` 200 |
 | 安全修复冒烟 | 真实 HTTP 请求 | 邮箱大小写规范化生效；认证重考 429；竞技场重放 rating 只加一次（profile=1223）；费曼余额不足 402；不存在邮箱登录 371ms ≈ 存在邮箱 350ms（时序抹平） |
 | 并发竞态冒烟 | 双请求 asyncio.gather | 竞技场并发重放 delta=0（partial unique index 兜底）；认证并发重放双双 429；余额不变 |
+| 重放语义冒烟 | 真实 HTTP + 单测 | 重放以 solved=0 落记录且 score_delta=0；recent_arena_win_rate 排除重放行（练习不拉低难度推荐），新增单测覆盖 |
