@@ -1436,17 +1436,24 @@ async def run_arena(
         challenge.test_cases,
         challenge.language,
     )
-    # 记录本次尝试（无论成败）
+    if result["solved"] and already_solved:
+        # 已攻克挑战的重放：判定照常返回，但不发任何奖励。
+        # score_delta 归零让前端结果条显示「+0 分」而非误导性的 +23。
+        result["score_delta"] = 0
+    # 记录本次尝试。已攻克挑战的重放以 solved=0 落尝试记录：
+    # - 保留重放分析数据（次数/时间）且不违反 partial unique index
+    # - rank_delta 等重放只统计 solved=1，不受影响
+    # - 奖励仍由 already_solved 分支拦截，绝不重复发放
     db.add(
         DeckArenaAttempt(
             user_id=user.id,
             challenge_id=challenge.id,
-            solved=1 if result["solved"] else 0,
+            solved=1 if result["solved"] and not already_solved else 0,
             passed=result["passed"],
             total=result["total"],
         )
     )
-    if result["solved"]:
+    if result["solved"] and not already_solved:
         # 安全审计修复（TOCTOU 兜底）：先 flush 尝试记录。并发双击时两个请求
         # 都通过上面的 already_solved 检查，但第二个 INSERT 撞 partial unique
         # index（user_id+challenge_id WHERE solved=1）抛 IntegrityError，

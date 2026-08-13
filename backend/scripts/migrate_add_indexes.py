@@ -30,26 +30,28 @@ from pathlib import Path
 
 from app.config import get_settings
 
-# 待建索引：(表名, 索引名, 列定义 SQL, 可选 WHERE 子句)
+# 待建索引：(表名, 索引名, 列定义 SQL, 可选 WHERE 子句, 是否 UNIQUE)
 # 安全审计修复：uq_deck_arena_attempts_solved_once 为 partial unique index
 # （WHERE solved=1），数据库层保证同一 (用户, 挑战) 至多一条已攻克记录，
-# 兜底并发双击 TOCTOU 竞态。
+# 兜底并发双击 TOCTOU 竞态。其余为普通性能索引——必须保持非 UNIQUE，
+# 否则 (user_id, created_at) 等列组合会拒绝同一时间戳的多条事件
+# （Windows 时钟粒度 ~15.6ms，定级测试循环写 13 条事件极易撞同值）。
 INDEXES = [
     ("deck_mastery_events", "ix_deck_mastery_events_user_kp_created",
-     "(user_id, kp_id, created_at)", None),
+     "(user_id, kp_id, created_at)", None, False),
     ("deck_mastery_events", "ix_deck_mastery_events_user_created",
-     "(user_id, created_at)", None),
+     "(user_id, created_at)", None, False),
     ("deck_review_attempts", "ix_deck_review_attempts_user_created",
-     "(user_id, created_at)", None),
+     "(user_id, created_at)", None, False),
     ("deck_arena_attempts", "ix_deck_arena_attempts_user_created",
-     "(user_id, created_at)", None),
+     "(user_id, created_at)", None, False),
     ("deck_core_transactions", "ix_deck_core_transactions_user_created",
-     "(user_id, created_at)", None),
+     "(user_id, created_at)", None, False),
     ("deck_feed_events", "ix_deck_feed_events_user_created",
-     "(user_id, created_at)", None),
-    ("deck_arena_ratings", "ix_deck_arena_ratings_rating", "(rating)", None),
+     "(user_id, created_at)", None, False),
+    ("deck_arena_ratings", "ix_deck_arena_ratings_rating", "(rating)", None, False),
     ("deck_arena_attempts", "uq_deck_arena_attempts_solved_once",
-     "(user_id, challenge_id)", "solved = 1"),
+     "(user_id, challenge_id)", "solved = 1", True),
 ]
 
 
@@ -76,7 +78,7 @@ async def migrate_add_indexes() -> None:
     try:
         cursor = conn.cursor()
         created = 0
-        for table, index_name, columns, where in INDEXES:
+        for table, index_name, columns, where, unique in INDEXES:
             # 检查表与索引是否存在（幂等）
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
             if cursor.fetchone() is None:
@@ -85,7 +87,8 @@ async def migrate_add_indexes() -> None:
             cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name=?", (index_name,))
             if cursor.fetchone() is not None:
                 continue
-            sql = f"CREATE UNIQUE INDEX {index_name} ON {table} {columns}"
+            keyword = "CREATE UNIQUE INDEX" if unique else "CREATE INDEX"
+            sql = f"{keyword} {index_name} ON {table} {columns}"
             if where:
                 sql += f" WHERE {where}"
             cursor.execute(sql)

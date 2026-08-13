@@ -340,16 +340,28 @@ class TestRankDelta7d:
     rank_delta = 7 天前排名 − 当前排名（正数 = 上升）。
     """
 
-    # partial unique index 下同一用户同挑战仅一条 solved=1，用种子挑战 ID 轮换
-    _SEED_CHALLENGE_IDS = ["DEBUG-0091", "DEBUG-0092", "DEBUG-0093", "DEBUG-0094", "DEBUG-0095"]
+    # partial unique index 下同一用户同挑战仅一条 solved=1。
+    # 用类级计数器生成无限不重复的合成挑战 ID（并建对应挑战行），
+    # 避免种子 5 个 ID 轮换在用例扩展后撞约束。
     _attempt_seq = 0
 
     @classmethod
     def _next_challenge_id(cls) -> str:
-        """partial unique index 下同挑战仅一条 solved=1，为多条攻克记录轮换挑战 ID。"""
-        cid = cls._SEED_CHALLENGE_IDS[cls._attempt_seq % len(cls._SEED_CHALLENGE_IDS)]
+        """生成新的合成挑战 ID（并保证其在 deck_arena_challenges 中有对应行）。"""
         cls._attempt_seq += 1
-        return cid
+        return f"RANK-TEST-{cls._attempt_seq:04d}"
+
+    @classmethod
+    async def _add_challenge(cls, db, challenge_id: str) -> str:
+        """创建合成挑战行（partial unique index 下每条 solved=1 需要不同挑战），返回挑战 ID。"""
+        db.add(
+            DeckArenaChallenge(
+                id=challenge_id, title="t", language="python", code="c",
+                failing_output="f", time_limit_sec=600, difficulty=1,
+            )
+        )
+        await db.flush()
+        return challenge_id
 
     async def _add_opponent(
         self, db, uid: str, rating: int, old_solves: int, recent_solves: int
@@ -363,25 +375,28 @@ class TestRankDelta7d:
         )
         db.add(DeckArenaRating(user_id=uid, rating=rating, win_streak=0))
         for _ in range(old_solves):
+            cid = await self._add_challenge(db, self._next_challenge_id())
             db.add(
                 DeckArenaAttempt(
-                    user_id=uid, challenge_id=self._next_challenge_id(), solved=1, passed=5, total=5,
+                    user_id=uid, challenge_id=cid, solved=1, passed=5, total=5,
                     created_at=datetime.now(timezone.utc) - timedelta(days=10),
                 )
             )
         for _ in range(recent_solves):
+            cid = await self._add_challenge(db, self._next_challenge_id())
             db.add(
                 DeckArenaAttempt(
-                    user_id=uid, challenge_id=self._next_challenge_id(), solved=1, passed=5, total=5,
+                    user_id=uid, challenge_id=cid, solved=1, passed=5, total=5,
                     created_at=datetime.now(timezone.utc),
                 )
             )
         await db.commit()
 
     async def _add_own_attempt(self, db, user_id: str, solved: bool, days_ago: int) -> None:
+        cid = await self._add_challenge(db, self._next_challenge_id())
         db.add(
             DeckArenaAttempt(
-                user_id=user_id, challenge_id=self._next_challenge_id(),
+                user_id=user_id, challenge_id=cid,
                 solved=1 if solved else 0, passed=5 if solved else 0, total=5,
                 created_at=datetime.now(timezone.utc) - timedelta(days=days_ago),
             )
