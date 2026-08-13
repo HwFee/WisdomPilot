@@ -64,6 +64,8 @@ from sqlalchemy import (
 )
 # SQLAlchemy 2.0 的类型安全映射工具
 from sqlalchemy.orm import Mapped, mapped_column
+# text 用于 partial unique index 的 WHERE 子句（SQLite 支持部分索引）
+from sqlalchemy import text
 
 # Base 是所有 ORM 模型的声明基类，定义在 app/database.py
 from app.database import Base
@@ -281,7 +283,20 @@ class DeckArenaAttempt(Base):
 
     # 性能审计修复：连胜/周榜/回顾查询按 user_id + created_at 过滤排序，
     # 复合索引避免全表扫描；同时支撑已攻克挑战的幂等检查。
-    __table_args__ = (Index("ix_deck_arena_attempts_user_created", "user_id", "created_at"),)
+    # 安全审计修复（TOCTOU 兜底）：partial unique index 保证同一 (用户, 挑战)
+    # 至多存在一条 solved=1 记录。并发双击同时通过"是否已攻克"的 SELECT 检查时，
+    # 第二个 INSERT 撞唯一约束抛 IntegrityError，由端点捕获后按已攻克处理，
+    # 从数据库层杜绝重复发奖。
+    __table_args__ = (
+        Index("ix_deck_arena_attempts_user_created", "user_id", "created_at"),
+        Index(
+            "uq_deck_arena_attempts_solved_once",
+            "user_id",
+            "challenge_id",
+            unique=True,
+            sqlite_where=text("solved = 1"),
+        ),
+    )
 
 
 class DeckArenaRating(Base):

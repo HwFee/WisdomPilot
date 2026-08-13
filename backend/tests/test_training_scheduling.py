@@ -76,9 +76,9 @@ def _review_attempt(user_id: str, session_id: str, accuracy: float) -> DeckRevie
     )
 
 
-def _arena_attempt(user_id: str, solved: int) -> DeckArenaAttempt:
+def _arena_attempt(user_id: str, solved: int, challenge_id: str = "DEBUG-0091") -> DeckArenaAttempt:
     return DeckArenaAttempt(
-        user_id=user_id, challenge_id="DEBUG-0091", solved=solved, passed=5 if solved else 0, total=5
+        user_id=user_id, challenge_id=challenge_id, solved=solved, passed=5 if solved else 0, total=5
     )
 
 
@@ -209,8 +209,10 @@ class TestRecentPerformanceQueries:
         """竞技场攻克率：无记录 None；3 连过 1.0；3 连败 0.0。"""
         await seed_deck(db_session)
         assert await service.recent_arena_win_rate(db_session, auth_user.id) is None
-        for _ in range(3):
-            db_session.add(_arena_attempt(auth_user.id, 1))
+        # 安全审计修复后的 partial unique index 要求每 (用户, 挑战) 至多一条 solved=1，
+        # 连胜用不同挑战 ID 构造
+        for i in range(3):
+            db_session.add(_arena_attempt(auth_user.id, 1, challenge_id=f"DEBUG-009{i + 1}"))
         await db_session.commit()
         assert await service.recent_arena_win_rate(db_session, auth_user.id) == 1.0
 
@@ -282,8 +284,8 @@ class TestArenaTodayChallenge:
     async def test_winning_streak_shifts_up(self, db_session, auth_user):
         """近 3 次全攻克 → 升档：今日挑战难度 ≥ 基准挑战难度。"""
         await seed_deck(db_session)
-        for _ in range(3):
-            db_session.add(_arena_attempt(auth_user.id, 1))
+        for i in range(3):
+            db_session.add(_arena_attempt(auth_user.id, 1, challenge_id=f"DEBUG-009{i + 1}"))
         await db_session.commit()
         base = await _all_challenges(db_session)
         base_ch = base[service.today_bjt().toordinal() % len(base)]
@@ -338,6 +340,17 @@ class TestRankDelta7d:
     rank_delta = 7 天前排名 − 当前排名（正数 = 上升）。
     """
 
+    # partial unique index 下同一用户同挑战仅一条 solved=1，用种子挑战 ID 轮换
+    _SEED_CHALLENGE_IDS = ["DEBUG-0091", "DEBUG-0092", "DEBUG-0093", "DEBUG-0094", "DEBUG-0095"]
+    _attempt_seq = 0
+
+    @classmethod
+    def _next_challenge_id(cls) -> str:
+        """partial unique index 下同挑战仅一条 solved=1，为多条攻克记录轮换挑战 ID。"""
+        cid = cls._SEED_CHALLENGE_IDS[cls._attempt_seq % len(cls._SEED_CHALLENGE_IDS)]
+        cls._attempt_seq += 1
+        return cid
+
     async def _add_opponent(
         self, db, uid: str, rating: int, old_solves: int, recent_solves: int
     ) -> None:
@@ -352,14 +365,14 @@ class TestRankDelta7d:
         for _ in range(old_solves):
             db.add(
                 DeckArenaAttempt(
-                    user_id=uid, challenge_id="DEBUG-0091", solved=1, passed=5, total=5,
+                    user_id=uid, challenge_id=self._next_challenge_id(), solved=1, passed=5, total=5,
                     created_at=datetime.now(timezone.utc) - timedelta(days=10),
                 )
             )
         for _ in range(recent_solves):
             db.add(
                 DeckArenaAttempt(
-                    user_id=uid, challenge_id="DEBUG-0091", solved=1, passed=5, total=5,
+                    user_id=uid, challenge_id=self._next_challenge_id(), solved=1, passed=5, total=5,
                     created_at=datetime.now(timezone.utc),
                 )
             )
@@ -368,7 +381,7 @@ class TestRankDelta7d:
     async def _add_own_attempt(self, db, user_id: str, solved: bool, days_ago: int) -> None:
         db.add(
             DeckArenaAttempt(
-                user_id=user_id, challenge_id="DEBUG-0091",
+                user_id=user_id, challenge_id=self._next_challenge_id(),
                 solved=1 if solved else 0, passed=5 if solved else 0, total=5,
                 created_at=datetime.now(timezone.utc) - timedelta(days=days_ago),
             )

@@ -30,21 +30,26 @@ from pathlib import Path
 
 from app.config import get_settings
 
-# 待建索引：(表名, 索引名, 列定义 SQL)
+# 待建索引：(表名, 索引名, 列定义 SQL, 可选 WHERE 子句)
+# 安全审计修复：uq_deck_arena_attempts_solved_once 为 partial unique index
+# （WHERE solved=1），数据库层保证同一 (用户, 挑战) 至多一条已攻克记录，
+# 兜底并发双击 TOCTOU 竞态。
 INDEXES = [
     ("deck_mastery_events", "ix_deck_mastery_events_user_kp_created",
-     "(user_id, kp_id, created_at)"),
+     "(user_id, kp_id, created_at)", None),
     ("deck_mastery_events", "ix_deck_mastery_events_user_created",
-     "(user_id, created_at)"),
+     "(user_id, created_at)", None),
     ("deck_review_attempts", "ix_deck_review_attempts_user_created",
-     "(user_id, created_at)"),
+     "(user_id, created_at)", None),
     ("deck_arena_attempts", "ix_deck_arena_attempts_user_created",
-     "(user_id, created_at)"),
+     "(user_id, created_at)", None),
     ("deck_core_transactions", "ix_deck_core_transactions_user_created",
-     "(user_id, created_at)"),
+     "(user_id, created_at)", None),
     ("deck_feed_events", "ix_deck_feed_events_user_created",
-     "(user_id, created_at)"),
-    ("deck_arena_ratings", "ix_deck_arena_ratings_rating", "(rating)"),
+     "(user_id, created_at)", None),
+    ("deck_arena_ratings", "ix_deck_arena_ratings_rating", "(rating)", None),
+    ("deck_arena_attempts", "uq_deck_arena_attempts_solved_once",
+     "(user_id, challenge_id)", "solved = 1"),
 ]
 
 
@@ -71,7 +76,7 @@ async def migrate_add_indexes() -> None:
     try:
         cursor = conn.cursor()
         created = 0
-        for table, index_name, columns in INDEXES:
+        for table, index_name, columns, where in INDEXES:
             # 检查表与索引是否存在（幂等）
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
             if cursor.fetchone() is None:
@@ -80,7 +85,10 @@ async def migrate_add_indexes() -> None:
             cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name=?", (index_name,))
             if cursor.fetchone() is not None:
                 continue
-            cursor.execute(f"CREATE INDEX {index_name} ON {table} {columns}")
+            sql = f"CREATE UNIQUE INDEX {index_name} ON {table} {columns}"
+            if where:
+                sql += f" WHERE {where}"
+            cursor.execute(sql)
             created += 1
             print(f"[migrate] {table}.{index_name}: created")
         conn.commit()

@@ -16,23 +16,25 @@
 | # | 严重度 | 类别 | 问题 | 修复 |
 |---|--------|------|------|------|
 | S1 | **CRITICAL** | 认证 | 弱 `SECRET_KEY`（`a1b2c3...` 可猜测模式）→ 攻击者可伪造任意用户 JWT | 已轮换为随机密钥；`config.py` 启动校验拒绝已知弱密钥；`start_services.py` 自动检测并轮换弱密钥 |
-| S2 | **HIGH** | 业务逻辑 | 认证考试可无限重考刷智核/经验/证书（冷却期仅展示不校验） | `submit_certification` 强制 3 天冷却（429）+ 定级测试每用户仅一次 |
-| S3 | **HIGH** | 业务逻辑 | 竞技场同一挑战可无限重放刷积分/经验；三连胜奖励 `>= 3` 导致每胜触发 | 已攻克挑战不重复发奖；连胜奖励改为 3 的倍数时发放一次 |
+| S3 | **HIGH** | 业务逻辑 | 竞技场同一挑战可无限重放刷积分/经验；三连胜奖励 `>= 3` 导致每胜触发 | 已攻克不重复发奖；连胜奖励改为 3 的倍数时发放一次；partial unique index（user_id+challenge_id WHERE solved=1）数据库层兜底并发 TOCTOU |
+| S2 | **HIGH** | 业务逻辑 | 认证考试可无限重考刷智核/经验/证书（冷却期仅展示不校验） | `submit_certification` 强制 3 天冷却（429）+ 定级测试每用户仅一次 + 判分后二次复检收窄并发窗口 |
 | S4 | **MEDIUM** | 经济/资源 | `/api/tutor/feynman/check` 无余额校验 → 0 余额仍触发 LLM 调用并写掌握度事件 | 余额不足直接 402，不调 LLM、不写事件 |
 | S5 | **MEDIUM** | 认证 | 登录时序侧信道：邮箱不存在时跳过 bcrypt（~390ms vs 几 ms）→ 可枚举注册邮箱 | 用户不存在时执行 dummy bcrypt 验证抹平时序 |
 | S6 | **MEDIUM** | 认证 | 邮箱本地部分大小写敏感 → 可注册 `Boss@x.com` 与 `boss@x.com` 双账户造成身份混淆 | 注册/登录统一本地部分小写规范化 |
 | S7 | **LOW** | 认证 | bcrypt 72 字节静默截断（多字节字符被切断、长密码虚假安全感） | 注册时拒绝超 72 字节密码 |
 | P1 | **HIGH** | 性能 | `DeckHeader` 在每个页面拉取重量级 `/api/dashboard` 聚合（仅用 2 个字段）；dashboard 页重复请求 | 头部改走轻量 `/api/auth/me`（响应新增 `cores` 字段） |
-| P2 | **HIGH** | 性能 | deck API 客户端无超时、无 in-flight 去重 | `apiFetch` 增加 30s 超时 + 同 URL 去重；mock 延迟仅 dev 模式 |
+| P2 | **HIGH** | 性能 | deck API 客户端无超时、无 in-flight 去重；POST 去重键不含 body 有张冠李戴风险 | `apiFetch` 增加超时（默认 30s，导师 LLM 端点 300s）+ 仅 GET 去重；mock 延迟仅 dev 模式 |
 | P3 | **CRITICAL** | 性能 | 高频查询缺复合索引 → 事件表随数据增长全表扫描+临时排序 | 7 个复合索引（mastery/attempts/transactions/feed/rating），`migrate_add_indexes.py` 已应用 |
 | P4 | **MEDIUM** | 性能 | TutorClient `setTimeout` 无清理 + 请求失败无 catch → 卸载后 setState、失败卡死 | timer 存 ref 卸载清理；失败恢复输入并提示 |
 
 ### 已知残留风险（未修复，记录在案）
 
+- **认证冷却存在毫秒级 TOCTOU 残留**：判分后发奖前已二次复检，但两检查之间仍有毫秒级窗口（无可用唯一约束兜底——DeckCertification 允许同主题重复认证）。彻底堵死需引入认证尝试表，见后续建议。竞技场侧已用 partial unique index 从数据库层根治。
 - **JWT 存 localStorage**（无 httpOnly Cookie）：任何 XSS 可窃取令牌。审计未发现可利用 XSS（全部 UGC 走 React 文本节点），属防御纵深缺口。
 - **限流仅覆盖 `/api/auth/*`**：训练端点无速率限制，内存限流器单实例有效。
 - **费曼会话内存存储**：进程内字典，无 TTL，多 worker 部署失效（代码注释已声明生产应换 Redis）。
 - **Judge0 禁用时的关键字匹配判题可被构造答案绕过**：属降级模式的设计权衡（Judge0 未配置时无真实执行），接入 Judge0 后自然消除。
+- **历史数据迁移注意**：邮箱规范化（S6）生效前注册的混合大小写邮箱账户将无法登录（登录查库用小写值）。本项目尚未上线、无真实用户，可接受；若曾上线需在迁移时先统一存量邮箱小写。
 
 ---
 
@@ -158,3 +160,4 @@
 | 密钥轮换 | `ensure_backend_env` | SECRET_KEY 已替换为随机值 |
 | 启动冒烟 | uvicorn :8000 + next dev :3000 | `/health` 200、`/login` 200 |
 | 安全修复冒烟 | 真实 HTTP 请求 | 邮箱大小写规范化生效；认证重考 429；竞技场重放 rating 只加一次（profile=1223）；费曼余额不足 402；不存在邮箱登录 371ms ≈ 存在邮箱 350ms（时序抹平） |
+| 并发竞态冒烟 | 双请求 asyncio.gather | 竞技场并发重放 delta=0（partial unique index 兜底）；认证并发重放双双 429；余额不变 |

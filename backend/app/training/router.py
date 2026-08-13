@@ -31,6 +31,7 @@ from uuid import uuid4  # 生成唯一 ID（费曼检验会话）
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -1445,6 +1446,18 @@ async def run_arena(
             total=result["total"],
         )
     )
+    if result["solved"]:
+        # 安全审计修复（TOCTOU 兜底）：先 flush 尝试记录。并发双击时两个请求
+        # 都通过上面的 already_solved 检查，但第二个 INSERT 撞 partial unique
+        # index（user_id+challenge_id WHERE solved=1）抛 IntegrityError，
+        # 由数据库层保证同一挑战至多发一次奖，而非依赖先查后写。
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            result["score_delta"] = 0
+            result["new_badges"] = []
+            return result
 
     rating = await service.get_or_create_rating(db, user.id)
     if result["solved"] and not already_solved:
@@ -1884,6 +1897,22 @@ async def submit_certification(
     # 计算总分（百分比，四舍五入）
     total = len(questions) or 1
     score = round(sum(1 for p in per_question if p["correct"]) / total * 100)
+
+    # 安全审计修复（TOCTOU 收窄）：判分期间（Judge0 为网络调用，秒级）并发请求
+    # 可同时通过上面的冷却/定级检查。这里在发奖前二次复检，把并发窗口缩小到
+    # 毫秒级。竞技场侧有 partial unique index 兜底；认证侧无可用唯一约束
+    # （DeckCertification 允许同一主题重复认证，仅频率受限），彻底堵死需引入
+    # 尝试表，见审计报告后续建议。
+    if exam.id == "placement":
+        if await service.has_placement(db, user.id):
+            raise HTTPException(status_code=400, detail="定级测试只能进行一次")
+    else:
+        cooldown = await service.next_cert_available_days(db, user.id)
+        if cooldown:
+            raise HTTPException(
+                status_code=429,
+                detail=f"认证考试冷却中，还需等待 {cooldown} 天",
+            )
 
     certificate = None
     if exam.id == "placement":
