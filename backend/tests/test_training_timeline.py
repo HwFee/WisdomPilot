@@ -26,13 +26,14 @@ from app.training.models import (
 from app.training.seed import seed_deck
 from app.utils.time import utc_now
 
-# placement 5 题全对答案（与 seed.py 一致，score=100）
+# placement 5 题全对答案（与 seed.py 一致，score=100；code 题需命中强化后的 answer_includes）
 PLACEMENT_ANSWERS = [
     {"question_id": "p1", "answer": "越界访问 arr[n]"},
-    {"question_id": "p2", "answer": "while (x > 0) { x -= 2; }（x 为奇数正数）"},
+    {"question_id": "p2", "answer": "while (x != 0) { x = x - 2; }（x 为奇数正数）"},
     {"question_id": "p3", "answer": "与 pivot 相等的元素"},
-    {"question_id": "p4", "answer": "def f(s):\n    return -1"},
-    {"question_id": "p5", "answer": "def f(n):\n    return n>0 and True"},
+    {"question_id": "p4", "answer": "def first_unique(s):\n    for i, ch in enumerate(s):\n"
+     "        if s.count(ch) == 1:\n            return i\n    return -1"},
+    {"question_id": "p5", "answer": "def is_power_of_two(n):\n    return n > 0 and (n & (n - 1)) == 0"},
 ]
 
 

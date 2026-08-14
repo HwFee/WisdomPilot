@@ -3,10 +3,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { isAuthenticated } from '@/lib/api'
-import { getTutorState, sendTutorMessage, startFeynman, submitFeynman } from '@/lib/api/deck/tutor'
-import type { MasteryUpdate, TutorMessage, TutorMode, TutorReply } from '@/lib/api/deck/types'
+import {
+  getTutorState,
+  sendTutorMessage,
+  startFeynman,
+  submitFeynman,
+  takeTutorQuestionContext,
+} from '@/lib/api/deck/tutor'
+import type {
+  MasteryUpdate,
+  TutorMessage,
+  TutorMode,
+  TutorQuestionContext,
+  TutorReply,
+} from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { PanelTag } from '../deck/kit'
+import { ErrorPanel } from '../deck/ErrorPanel'
 import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 
 const GRADE_STYLE: Record<string, string> = {
@@ -147,6 +160,30 @@ function QuestionCard({ question, onReset }: { question: string; onReset: () => 
   )
 }
 
+/** 题目上下文卡：从题目页「问导师」跳入时固定展示，导师围绕该题追问 */
+function QuestionContextCard({
+  ctx,
+  onDismiss,
+}: {
+  ctx: TutorQuestionContext
+  onDismiss: () => void
+}) {
+  return (
+    <div className="deck-panel mx-auto max-w-[560px] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <PanelTag label="SOCRATES · 正在讨论的题" variant="on" />
+        <button onClick={onDismiss} className="deck-btn-ghost !px-2.5 !py-1 text-[11px]">
+          结束讨论
+        </button>
+      </div>
+      <p className="mt-2 text-sm font-semibold text-text">{ctx.title}</p>
+      <pre className="mt-1.5 max-h-32 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-dim">
+        {ctx.content}
+      </pre>
+    </div>
+  )
+}
+
 /** 苏格拉底导师：追问模式 + 费曼「考考我」模式 */
 export function TutorClient() {
   const { push } = useRouter()
@@ -154,12 +191,14 @@ export function TutorClient() {
   const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [mode, setMode] = useState<TutorMode>('socratic')
   const [cards, setCards] = useState<TutorCards>({ activeTopic: null, polishedQuestion: null })
+  const [questionCtx, setQuestionCtx] = useState<TutorQuestionContext | null>(null)
   const [balance, setBalance] = useState<number | null>(null)
   const [cost, setCost] = useState(2)
   const [topics, setTopics] = useState<string[]>([])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const topicHandled = useRef(false)
   const thinkingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -177,22 +216,36 @@ export function TutorClient() {
       push('/login')
       return
     }
-    getTutorState().then((s) => {
-      setMessages(s.messages)
-      setBalance(s.cores_balance)
-      setCost(s.cost_per_question)
-      setTopics(s.suggested_topics)
-      setLoaded(true)
-      // 从仪表盘「针对训练」跳入：静默创建费曼会话，出主题卡（不产生开场白消息）
-      const topic = searchParams.get('topic')
-      if (topic && !topicHandled.current) {
-        topicHandled.current = true
-        setMode('feynman')
-        startFeynman(topic).then((r) => {
-          setCards((prev) => ({ ...prev, activeTopic: { topic, sessionId: r.feynman_session_id } }))
-        })
-      }
-    })
+    getTutorState()
+      .then((s) => {
+        setMessages(s.messages)
+        setBalance(s.cores_balance)
+        setCost(s.cost_per_question)
+        setTopics(s.suggested_topics)
+        setLoaded(true)
+        // 题目页「问导师」跳入：取出一次性题目上下文，固定为讨论卡
+        setQuestionCtx(takeTutorQuestionContext())
+        // 从仪表盘「针对训练」跳入：静默创建费曼会话，出主题卡（不产生开场白消息）
+        const topic = searchParams.get('topic')
+        if (topic && !topicHandled.current) {
+          topicHandled.current = true
+          setMode('feynman')
+          startFeynman(topic)
+            .then((r) => {
+              setCards((prev) => ({
+                ...prev,
+                activeTopic: { topic, sessionId: r.feynman_session_id },
+              }))
+            })
+            .catch((e: Error) => {
+              setError(e.message || '费曼会话创建失败')
+            })
+        }
+      })
+      .catch((e: Error) => {
+        setError(e.message || '导师状态加载失败')
+        setLoaded(true) // 从 loading 退出，交给错误面板渲染
+      })
   }, [push, searchParams])
 
   useEffect(() => {
@@ -223,7 +276,8 @@ export function TutorClient() {
             mode,
             currentModeMessages.slice(-10).map((m) => ({ role: m.role, text: m.text })),
             balance,
-            cost
+            cost,
+            questionCtx
           )
 
     // 模拟导师思考延迟（timer 存 ref，卸载时统一清理，避免卸载后 setState）
@@ -248,9 +302,13 @@ export function TutorClient() {
 
   const handleTopic = (topic: string) => {
     if (thinking) return
-    startFeynman(topic).then((r) => {
-      setCards((prev) => ({ ...prev, activeTopic: { topic, sessionId: r.feynman_session_id } }))
-    })
+    startFeynman(topic)
+      .then((r) => {
+        setCards((prev) => ({ ...prev, activeTopic: { topic, sessionId: r.feynman_session_id } }))
+      })
+      .catch((e: Error) => {
+        setError(e.message || '费曼会话创建失败')
+      })
   }
 
   const insufficient = balance !== null && balance < cost
@@ -293,7 +351,12 @@ export function TutorClient() {
         {MODE_INTRO[mode]}
       </p>
 
-      {/* 卡片区：苏格拉底问题卡 / 费曼主题卡（按模式各自显示，消息流上方） */}
+      {/* 卡片区：苏格拉底问题卡 / 题目上下文卡 / 费曼主题卡（按模式各自显示，消息流上方） */}
+      {mode === 'socratic' && questionCtx && (
+        <div className="mt-2.5">
+          <QuestionContextCard ctx={questionCtx} onDismiss={() => setQuestionCtx(null)} />
+        </div>
+      )}
       {mode === 'socratic' && cards.polishedQuestion && (
         <div className="mt-2.5">
           <QuestionCard
@@ -319,6 +382,7 @@ export function TutorClient() {
           </div>
         ) : (
           <>
+            {error && <ErrorPanel message={error} onRetry={() => setError(null)} />}
             {currentModeMessages.map((m) => (
               <MessageBubble key={m.id} msg={m} />
             ))}

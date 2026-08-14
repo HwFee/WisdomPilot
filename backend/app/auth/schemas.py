@@ -200,3 +200,29 @@ class ForgotPasswordRequest(BaseModel):
     忘记密码请求 Schema，只需提供邮箱地址。
     """
     email: EmailStr
+
+
+class ChangePasswordIn(BaseModel):
+    """修改密码请求 Schema。
+
+    验旧密码后重哈希，并吊销该用户所有旧 token（token_version +1）。
+    """
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        """新密码强度要求与注册一致。"""
+        errors = []
+        if len(v) < 8:
+            errors.append("密码长度至少需要8个字符")
+        if len(v.encode("utf-8")) > 72:
+            errors.append("密码过长（最多 72 字节，中文约 24 字）")
+        if not re.search(r"[A-Za-z]", v):
+            errors.append("密码需要包含至少一个字母")
+        if not re.search(r"\d", v):
+            errors.append("密码需要包含至少一个数字")
+        if errors:
+            raise ValueError("; ".join(errors))
+        return v

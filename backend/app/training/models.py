@@ -103,7 +103,9 @@ class DeckKnowledgePoint(Base):
 
 class DeckUserMastery(Base):
     """用户知识点掌握度缓存。p_l=HLR 回忆概率、level=掌握等级，事件表才是事实源。
-    存在任意行即视为已定级（has_placement）"""
+
+    注意：本表有行不代表「已定级」——审查/竞技场/认证提交也会建行。
+    定级判定走 service.has_placement（查 source="placement" 的掌握度事件）。"""
 
     __tablename__ = "deck_user_mastery"
 
@@ -259,6 +261,8 @@ class DeckArenaChallenge(Base):
     time_limit_sec: Mapped[int] = mapped_column(Integer, nullable=False)
     # 难度等级：1~5，影响 ELO 评分变化幅度和智核奖励
     difficulty: Mapped[int] = mapped_column(Integer, nullable=False)
+    # 关联弱点知识点名称：攻克/失败时对该知识点记掌握度事件，参与个性化推荐
+    related_weakness: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
 class DeckArenaAttempt(Base):

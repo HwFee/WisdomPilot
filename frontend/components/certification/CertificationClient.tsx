@@ -13,6 +13,7 @@ import type {
 } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { CountUp, PanelTag, SectionHead } from '../deck/kit'
+import { ErrorPanel } from '../deck/ErrorPanel'
 import { BadgeIcon } from '../deck/BadgeIcon'
 import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 import { TIER_COLOR, TIER_LABEL, TIER_ORDER, TIER_TEXT_CLASS } from '../deck/badge-meta'
@@ -377,7 +378,34 @@ export function CertificationClient() {
   const [result, setResult] = useState<CertResult | null>(null)
   const [isPlacement, setIsPlacement] = useState(false)
   const [newBadgeIds, setNewBadgeIds] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
   const { celebrate, celebrationElement } = useBadgeCelebration()
+
+  const loadHome = useCallback(() => {
+    setPhase('loading')
+    setError(null)
+    getCertificationHome()
+      .then((h) => {
+        setHome(h)
+        setPhase('home')
+      })
+      .catch((e: Error) => {
+        setError(e.message || '认证首页加载失败')
+        setPhase('home') // 从 loading 退出，交给错误面板渲染
+      })
+  }, [])
+
+  const loadExam = useCallback((examId: string) => {
+    setError(null)
+    getExam(examId)
+      .then((e) => {
+        setExam(e)
+        setPhase('exam')
+      })
+      .catch((e: Error) => {
+        setError(e.message || '试卷加载失败')
+      })
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -386,34 +414,30 @@ export function CertificationClient() {
     }
     if (searchParams.get('placement') === '1') {
       setIsPlacement(true)
-      getExam('placement').then((e) => {
-        setExam(e)
-        setPhase('exam')
-      })
+      loadExam('placement')
       return
     }
-    getCertificationHome().then((h) => {
-      setHome(h)
-      setPhase('home')
-    })
-  }, [push, searchParams])
+    loadHome()
+  }, [push, searchParams, loadExam, loadHome])
 
   const startExam = (examId: string) => {
     setIsPlacement(false)
-    getExam(examId).then((e) => {
-      setExam(e)
-      setPhase('exam')
-    })
+    loadExam(examId)
   }
 
   const handleSubmit = (answers: CertAnswer[]) => {
     if (!exam) return
-    submitExam(exam.info.id, answers).then((r) => {
-      setResult(r)
-      setPhase('result')
-      celebrate(r.new_badges)
-      setNewBadgeIds(r.new_badges.map((b) => b.id))
-    })
+    setError(null)
+    submitExam(exam.info.id, answers)
+      .then((r) => {
+        setResult(r)
+        setPhase('result')
+        celebrate(r.new_badges)
+        setNewBadgeIds(r.new_badges.map((b) => b.id))
+      })
+      .catch((e: Error) => {
+        setError(e.message || '提交失败，请重试')
+      })
   }
 
   return (
@@ -432,7 +456,13 @@ export function CertificationClient() {
         {phase === 'home' && home?.fingerprint ? <FingerprintChip code={home.fingerprint} /> : null}
       </div>
       <div className="mt-6">
-        {phase === 'loading' && (
+        {error && (
+          <ErrorPanel
+            message={error}
+            onRetry={() => (phase === 'exam' && exam ? loadExam(exam.info.id) : loadHome())}
+          />
+        )}
+        {phase === 'loading' && !error && (
           <div className="deck-panel p-8 font-mono text-sm text-dim">
             载入中<span className="deck-cursor ml-2" />
           </div>

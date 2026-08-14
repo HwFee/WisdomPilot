@@ -159,6 +159,7 @@ export interface ArenaChallenge {
   failing_output: string
   time_limit_sec: number
   difficulty: Difficulty
+  related_weakness: string | null     // 关联薄弱知识点（KNOWLEDGE_POINTS 名称）
 }
 
 export interface ArenaRunResult {
@@ -221,6 +222,14 @@ export interface TutorReply {
   mastery_update?: MasteryUpdate        // 费曼检验后掌握度变化
   polished_question?: string            // 苏格拉底：AI 润色后的用户问题（降级时回原文）
   new_badges: BadgeUnlock[]              // 本次提交新解锁的徽章（无则空数组）
+}
+
+/** 学生正在询问的题目上下文（随 sendTutorMessage 携带，注入导师 prompt）。
+ *  内容须为学生自己可见的题面/代码（服务端秘密字段不下发、也不应放入）。 */
+export interface TutorQuestionContext {
+  source: string    // 题目来源：arena / review_gym / certification / placement
+  title: string     // 题目标题
+  content: string   // 题面/代码
 }
 
 /* ── 基本功认证 /api/certification ── */

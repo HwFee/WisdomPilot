@@ -297,13 +297,14 @@ def _cert_answers(questions: list[tuple[str, str]]) -> list[dict]:
     return [{"question_id": qid, "answer": answer} for qid, answer in questions]
 
 
-# placement 5 题全对答案（与 seed.py 一致）
+# placement 5 题全对答案（与 seed.py 一致；code 题需命中强化后的 answer_includes）
 PLACEMENT_ANSWERS = _cert_answers([
     ("p1", "越界访问 arr[n]"),
-    ("p2", "while (x > 0) { x -= 2; }（x 为奇数正数）"),
+    ("p2", "while (x != 0) { x = x - 2; }（x 为奇数正数）"),
     ("p3", "与 pivot 相等的元素"),
-    ("p4", "def f(s):\n    return -1"),
-    ("p5", "def f(n):\n    return n>0 and True"),
+    ("p4", "def first_unique(s):\n    for i, ch in enumerate(s):\n"
+           "        if s.count(ch) == 1:\n            return i\n    return -1"),
+    ("p5", "def is_power_of_two(n):\n    return n > 0 and (n & (n - 1)) == 0"),
 ])
 
 # cert-pointer 6 题全对答案（与 seed.py 一致）
@@ -313,7 +314,11 @@ POINTER_ANSWERS = _cert_answers([
     ("q3", "值相等"),
     ("q4", "4"),
     ("q5", "void swap(int *a, int *b) { int t=*a; *a=*b; *b=t; }"),
-    ("q6", "int* find(int *arr, int n) { if (!n) return NULL; return arr; }"),
+    ("q6", "int* find(int *arr, int n) {\n"
+           "    if (n <= 0) return NULL;\n"
+           "    int *best = arr;\n"
+           "    for (int i = 1; i < n; i++) if (arr[i] > *best) best = &arr[i];\n"
+           "    return best;\n}"),
 ])
 
 

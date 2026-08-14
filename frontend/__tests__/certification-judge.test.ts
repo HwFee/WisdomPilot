@@ -9,7 +9,13 @@ const ALL_RIGHT = [
   { question_id: 'q3', answer: '值相等' },
   { question_id: 'q4', answer: '4' },
   { question_id: 'q5', answer: 'int t = *a; *a = *b; *b = t;' },
-  { question_id: 'q6', answer: 'if (n == 0) return NULL;' },
+  // q6 需命中强化后的 includes（NULL + 数组取值），与后端 seed.py 一致
+  {
+    question_id: 'q6',
+    answer:
+      'if (n <= 0) return NULL;\nint *best = arr;\n' +
+      'for (int i = 1; i < n; i++) if (arr[i] > *best) best = &arr[i];\nreturn best;',
+  },
 ]
 
 describe('judgeExam', () => {

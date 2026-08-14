@@ -30,10 +30,26 @@ export function getStoredToken(): string | null {
   return localStorage.getItem('token:v1')
 }
 
-export function logout(): void {
+export async function logout(): Promise<void> {
   if (typeof window === 'undefined') return
-  localStorage.removeItem('token:v1')
-  localStorage.removeItem('user:v1')
+  // 尽力通知服务端吊销 token（失败忽略：本地清除仍保证客户端登出）
+  const token = localStorage.getItem('token:v1')
+  try {
+    if (token) {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+    }
+  } catch {
+    // 网络失败时仅本地登出，不影响用户退出体验
+  } finally {
+    localStorage.removeItem('token:v1')
+    localStorage.removeItem('user:v1')
+  }
 }
 
 export function isAuthenticated(): boolean {

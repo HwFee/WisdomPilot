@@ -29,7 +29,7 @@ const IN_FLIGHT = new Map<string, Promise<unknown>>()
 const DEFAULT_TIMEOUT_MS = 30_000
 const LLM_TIMEOUT_MS = 300_000
 
-/** 真实后端请求封装：带 token、超时、GET in-flight 去重，非 2xx 抛 DeckApiError（401 由页面守卫处理） */
+/** 真实后端请求封装：带 token、超时、GET in-flight 去重，非 2xx 抛 DeckApiError（401 清登录态并跳转登录页） */
 export async function apiFetch<T>(path: string, init?: RequestInit, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
   const method = init?.method ?? 'GET'
   const key = `${method} ${path}`
@@ -52,6 +52,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit, timeoutMs = 
         },
       })
       if (!res.ok) {
+        // 401：token 过期/失效，清除登录状态并跳转（对齐 lib/api/client.ts 的行为）
+        if (res.status === 401) {
+          localStorage.removeItem('token:v1')
+          localStorage.removeItem('user:v1')
+          window.location.href = '/login'
+          throw new DeckApiError('登录已过期，请重新登录', res.status)
+        }
         throw new DeckApiError(`请求失败：${path}（${res.status}）`, res.status)
       }
       return (await res.json()) as T

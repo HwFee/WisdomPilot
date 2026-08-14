@@ -24,18 +24,19 @@
 - 返回结构中的 field 名保持 snake_case（Pydantic BaseModel 不做 camelCase 转换）
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import quote  # URL 编码，用于生成带中文参数的 target_url
 from uuid import uuid4  # 生成唯一 ID（费曼检验会话）
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.training import badges, service
+from app.training.seed import CERT_EXAM_KNOWLEDGE_POINT
 from app.training.models import (
     DeckAbilityAxis,
     DeckArenaAttempt,
@@ -118,31 +119,45 @@ class ArenaRunIn(BaseModel):
 class TutorHistoryItem(BaseModel):
     """导师对话历史项：前端随请求携带（会话不持久化，历史由前端维护）"""
     role: str  # user/tutor
-    text: str  # 消息文本
+    text: str = Field(max_length=4000)  # 消息文本（限制长度，防止放大上游 token 成本）
+
+
+class TutorQuestionContext(BaseModel):
+    """导师对话：学生正在询问的题目上下文（前端从题目页携带）。
+
+    内容本是学生自己可见的题面/代码（服务端秘密字段不下发），仅作 prompt
+    上下文注入；限制长度防止放大上游 token 成本。
+    """
+    source: str = Field(max_length=20)    # 题目来源：arena / review_gym / certification / placement
+    title: str = Field(default="", max_length=200)    # 题目标题
+    content: str = Field(default="", max_length=4000)  # 题面/代码
 
 
 class TutorMessageIn(BaseModel):
     """导师对话：发送消息请求体"""
-    text: str           # 用户消息文本
+    text: str = Field(max_length=4000)  # 用户消息文本（限制长度，防止放大上游 token 成本）
     mode: str = "socratic"  # 对话模式：socratic（苏格拉底追问）或 feynman（费曼检验）
-    history: list[TutorHistoryItem] = []  # 最近对话历史（服务端防御：只留 user/tutor，最多取最后 TUTOR_HISTORY_LIMIT 条）
+    history: list[TutorHistoryItem] = Field(
+        default_factory=list, max_length=10
+    )  # 最近对话历史（服务端防御：只留 user/tutor，最多取最后 TUTOR_HISTORY_LIMIT 条）
+    question_context: TutorQuestionContext | None = None  # 可选：学生正在询问的题目
 
 
 class FeynmanStartIn(BaseModel):
     """费曼检验：开始请求体"""
-    topic: str  # 要讲解的知识点名称
+    topic: str = Field(max_length=200)  # 要讲解的知识点名称
 
 
 class FeynmanCheckIn(BaseModel):
     """费曼检验：提交讲解请求体"""
-    session_id: str  # 费曼会话 ID（由 start_feynman 返回）
-    text: str        # 用户的讲解文本
+    session_id: str = Field(max_length=64)  # 费曼会话 ID（由 start_feynman 返回）
+    text: str = Field(max_length=8000)  # 用户的讲解文本（可稍长，仍设上限防滥用）
 
 
 class CertAnswerIn(BaseModel):
     """认证考试：单题答案请求体"""
-    question_id: str  # 题目 ID
-    answer: str       # 用户答案
+    question_id: str = Field(max_length=64)  # 题目 ID
+    answer: str = Field(max_length=20000)  # 用户答案（编程题代码可较长）
 
 
 class CertSubmitIn(BaseModel):
@@ -709,7 +724,6 @@ async def get_dashboard(
     ).scalars().all()
     # day -> minutes 的映射，用于填充 7 天柱状图
     minutes_map = {r.day: r.minutes for r in activity_rows}
-    from datetime import timedelta
 
     days = []
     # 从 6 天前到今天，共 7 天
@@ -954,13 +968,16 @@ async def _solved_today_map(db: AsyncSession, user_ids: list[str]) -> dict[str, 
     """
     if not user_ids:
         return {}
+    # 时区修复：created_at 为 naive UTC，按今日 BJT 折算的 UTC 区间筛选
+    day_start_utc, day_end_utc = service.today_bjt_utc_bounds()
     rows = (
         await db.execute(
             select(DeckArenaAttempt.user_id, func.count())
             .where(
                 DeckArenaAttempt.user_id.in_(user_ids),
                 DeckArenaAttempt.solved == 1,  # 只统计攻克成功的
-                func.date(DeckArenaAttempt.created_at) == service.today_bjt().isoformat(),
+                DeckArenaAttempt.created_at >= day_start_utc,
+                DeckArenaAttempt.created_at < day_end_utc,
             )
             .group_by(DeckArenaAttempt.user_id)
         )
@@ -1050,6 +1067,31 @@ def _session_out(s: DeckReviewSession) -> dict:
     }
 
 
+async def _record_kp_mastery(
+    db: AsyncSession, user_id: str, weakness_name: str | None, source: str, correct: bool
+) -> None:
+    """按知识点名称记一条掌握度事件（名称为空或知识点不存在时静默跳过）。
+
+    Args:
+        db: 异步数据库会话
+        user_id: 用户 ID
+        weakness_name: 关联知识点名称（与 KNOWLEDGE_POINTS 一一对应，可能为 None）
+        source: 事件来源（review_gym / arena / certification / placement / feynman）
+        correct: 答对为 True，答错为 False
+    """
+    if not weakness_name:
+        return
+    # 按名称查找对应的知识点
+    kp = (
+        await db.execute(
+            select(DeckKnowledgePoint).where(DeckKnowledgePoint.name == weakness_name)
+        )
+    ).scalar_one_or_none()
+    if kp is None:
+        return
+    await service.record_mastery_event(db, user_id, kp.id, source, correct)
+
+
 async def _record_review_mastery(
     db: AsyncSession, user_id: str, weakness_name: str | None, gained: int
 ) -> None:
@@ -1065,19 +1107,9 @@ async def _record_review_mastery(
         weakness_name: 关联弱点知识点名称（可能为 None）
         gained: 本次新增命中数
     """
-    if not weakness_name or not gained:
-        return
-    # 按名称查找对应的知识点
-    kp = (
-        await db.execute(
-            select(DeckKnowledgePoint).where(DeckKnowledgePoint.name == weakness_name)
-        )
-    ).scalar_one_or_none()
-    if kp is None:
-        return
     # 每条新增命中记一条掌握度事件
     for _ in range(gained):
-        await service.record_mastery_event(db, user_id, kp.id, "review_gym", True)
+        await _record_kp_mastery(db, user_id, weakness_name, "review_gym", True)
 
 
 @router.get("/review-gym/session")
@@ -1387,6 +1419,7 @@ async def get_arena_home(
             "failing_output": challenge.failing_output,  # 测试失败的输出
             "time_limit_sec": challenge.time_limit_sec,
             "difficulty": challenge.difficulty,
+            "related_weakness": challenge.related_weakness,
         },
         "leaderboard": await _build_leaderboard(db, user, rating, rank),
     }
@@ -1465,6 +1498,13 @@ async def run_arena(
             result["score_delta"] = 0
             result["new_badges"] = []
             return result
+
+    # 掌握度结算：首次攻克记答对事件、未攻克记答错事件，让竞技场挑战
+    # 参与「薄弱点推荐 / 个性化」。已攻克挑战的重放（solved=0 落库）不再记事件。
+    if not already_solved:
+        await _record_kp_mastery(
+            db, user.id, challenge.related_weakness, "arena", bool(result["solved"])
+        )
 
     rating = await service.get_or_create_rating(db, user.id)
     if result["solved"] and not already_solved:
@@ -1556,7 +1596,15 @@ async def send_tutor_message(
         polished = body.text  # 余额不足不润色，回原文
     else:
         # 统一入口：LLM 追问优先，未配置/异常时内部回退脚本式回复
-        text = await service.tutor_llm_reply(db, user.id, body.text, history)
+        text = await service.tutor_llm_reply(
+            db,
+            user.id,
+            body.text,
+            history,
+            question_context=(
+                body.question_context.model_dump() if body.question_context else None
+            ),
+        )
         # AI 润色问题（未配置/异常回原文，供前端固定「当前问题」卡片）
         polished = await service.question_polish(body.text)
         await service.change_cores(db, user, -service.TUTOR_COST, "苏格拉底导师 · 追问")
@@ -1579,10 +1627,23 @@ async def send_tutor_message(
 # ── 费曼检验会话 ─────────────────────────────────────
 # 费曼检验的会话存储在内存中（FEYNMAN_SESSIONS 字典），
 # 这是因为开发阶段不需要跨进程/跨重启持久化。
-# 生产环境应换为 Redis 或其他共享存储。
+# 已知限制：多 worker / 多进程部署下会话不共享，生产环境应换 Redis 等共享存储。
 
 # 费曼会话（内存态，dev 后端够用）：session_id → {user_id, kp_id, created_at}
 FEYNMAN_SESSIONS: dict[str, dict] = {}
+# 费曼会话 TTL：创建超过 30 分钟视为过期（防内存只增不删）
+FEYNMAN_SESSION_TTL = timedelta(minutes=30)
+
+
+def _prune_feynman_sessions() -> None:
+    """清理过期的费曼内存会话，防止字典只增不删（内存泄漏）。
+
+    在 start_feynman（写入前）与 check_feynman（读取前）调用。
+    """
+    cutoff = datetime.now() - FEYNMAN_SESSION_TTL
+    expired = [sid for sid, s in FEYNMAN_SESSIONS.items() if s["created_at"] < cutoff]
+    for sid in expired:
+        del FEYNMAN_SESSIONS[sid]
 
 
 @router.post("/tutor/feynman")
@@ -1840,6 +1901,32 @@ def _cert_level(score: int) -> str:
     return "合格"
 
 
+# 校验码冲突重试上限：8 位无歧义字符空间巨大，冲突概率极低，5 次足够
+_VERIFY_CODE_MAX_TRIES = 5
+
+
+async def _unique_verify_code(db: AsyncSession) -> str:
+    """生成一个数据库中尚不存在的证书校验码。
+
+    verify_code 列有 UNIQUE 约束，直接依赖随机生成可能撞库抛 IntegrityError。
+    这里生成后先查重，冲突则重试，仍冲突抛 500（概率上不可能，防御性兜底）。
+
+    Args:
+        db: 异步数据库会话
+
+    Returns:
+        唯一的校验码字符串
+    """
+    for _ in range(_VERIFY_CODE_MAX_TRIES):
+        code = service.new_verify_code("WP-PTR")
+        exists_row = await db.scalar(
+            select(DeckCertification.id).where(DeckCertification.verify_code == code)
+        )
+        if exists_row is None:
+            return code
+    raise HTTPException(status_code=500, detail="校验码生成失败，请重试")
+
+
 @router.post("/certification/submit")
 async def submit_certification(
     body: CertSubmitIn,
@@ -1886,13 +1973,18 @@ async def submit_certification(
     # 构建 qid -> 题目 的快速查找映射
     q_map = {q.qid: q for q in questions}
 
+    # 防刷分：同一题只取首次提交；试卷外的 question_id 直接丢弃。
+    # 否则把同一道已知答对的题重复提交 N 次，分子可超过分母，score 轻松越过 pass_score。
+    deduped_answers: dict[str, CertAnswerIn] = {}
+    for answer in body.answers:
+        if answer.question_id in q_map and answer.question_id not in deduped_answers:
+            deduped_answers[answer.question_id] = answer
+
     # 逐题判分
     per_question = []
-    for answer in body.answers:
-        q = q_map.get(answer.question_id)
-        if q is None:
-            correct = False
-        elif q.kind == "mcq":
+    for answer in deduped_answers.values():
+        q = q_map[answer.question_id]
+        if q.kind == "mcq":
             # 选择题：服务端答案表精确比对（不依赖 Judge0）
             correct = service.judge_cert_answer("mcq", answer.answer, q.answer_correct, None)
         else:
@@ -1904,6 +1996,13 @@ async def submit_certification(
     # 计算总分（百分比，四舍五入）
     total = len(questions) or 1
     score = round(sum(1 for p in per_question if p["correct"]) / total * 100)
+
+    # 掌握度结算：正式考试（非定级）按逐题对错对该考试关联知识点记事件，
+    # 让认证结果参与「薄弱点推荐 / 个性化」。定级测试在下方分支统一写全知识点。
+    exam_kp = CERT_EXAM_KNOWLEDGE_POINT.get(exam.id)
+    if exam_kp:
+        for p in per_question:
+            await _record_kp_mastery(db, user.id, exam_kp, "certification", p["correct"])
 
     # 安全审计修复（TOCTOU 收窄）：判分期间（Judge0 为网络调用，秒级）并发请求
     # 可同时通过上面的冷却/定级检查。这里在发奖前二次复检，把并发窗口缩小到
@@ -1972,7 +2071,7 @@ async def submit_certification(
                 topic=exam.topic,
                 level=_cert_level(score),
                 score=score,
-                verify_code=service.new_verify_code("WP-PTR"),  # 生成防伪校验码
+                verify_code=await _unique_verify_code(db),  # 生成防伪校验码（冲突重试）
             )
             db.add(record)
             await db.flush()  # 让 created_at 等默认值生效后再读

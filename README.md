@@ -63,6 +63,19 @@ cd zhima-linghang-demo
 
 需要修改 AI 配置时，编辑 `backend/.env` 文件（填入 `AI_API_KEY`、`AI_PROVIDER`、`AI_MODEL`、`AI_BASE_URL` 等）。
 
+### 已有数据库升级
+
+`seed_deck` 幂等（知识点表非空即跳过），**已有数据库升级代码后不会自动获得新增/修订的
+种子内容**（新审查关卡、新竞技场挑战、认证题修订）。拉取更新后请执行一次：
+
+```bash
+cd backend && python -m scripts.migrate_missing_columns && python -m scripts.migrate_backfill_deck_content
+```
+
+（`migrate_missing_columns` 由 `start.ps1`/`start_services.py` 启动时自动执行；
+`migrate_backfill_deck_content` 为 upsert 语义、幂等可重复。后端启动时若检测到内容
+不完整会在日志打印同样提示。）
+
 前端默认连 `http://localhost:8000`；如需自定义，建 `frontend/.env.local` 并写：
 
 ```

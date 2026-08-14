@@ -20,8 +20,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.auth.models import User
-from app.auth.schemas import UserCreate, UserLogin, Token, UserResponse, ForgotPasswordRequest
+from app.auth.schemas import (
+    UserCreate,
+    UserLogin,
+    Token,
+    UserResponse,
+    ForgotPasswordRequest,
+    ChangePasswordIn,
+)
 from app.auth.service import AuthService
+from app.auth.security import get_password_hash, verify_password
 from app.auth.errors import (
     EmailAlreadyRegisteredError,
     InactiveAccountError,
@@ -152,3 +160,51 @@ async def get_current_user_info(
     """
     # 将 ORM 对象转换为响应 Schema
     return UserResponse.model_validate(current_user)
+
+
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """注销当前用户（POST /api/auth/logout）。
+
+    将 token_version +1：该用户此前签发的所有 JWT 立即失效
+    （dependencies 校验 token 载荷的 ver 与数据库不一致时拒绝）。
+
+    Args:
+        current_user: 当前登录用户。
+        db: 异步数据库会话。
+
+    Returns:
+        确认消息。
+    """
+    current_user.token_version += 1
+    await db.commit()
+    return {"message": "Logged out"}
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    body: ChangePasswordIn,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """修改密码（POST /api/auth/change-password）。
+
+    验证旧密码 → 重哈希新密码 → token_version +1 吊销所有旧 token。
+
+    Args:
+        body: 旧密码 + 新密码。
+        current_user: 当前登录用户。
+        db: 异步数据库会话。
+
+    Returns:
+        确认消息。
+    """
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="当前密码不正确")
+    current_user.hashed_password = get_password_hash(body.new_password)
+    current_user.token_version += 1
+    await db.commit()
+    return {"message": "Password changed"}

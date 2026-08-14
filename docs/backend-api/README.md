@@ -25,6 +25,16 @@ types.ts，前端把 `NEXT_PUBLIC_DECK_MOCK` 置 `0` 即可无缝切换。
 装配：`app/core/routes.py` 只注册 auth + deck 路由（旧 router 文件保留但不再挂载）；
 `app/core/lifespan.py` 在 `init_db()` 后执行 `seed_deck()`。
 
+> **已有数据库升级注意**：`seed_deck` 幂等（知识点表非空即跳过），已有库不会自动获得
+> 新增/修订的种子内容（新关卡、新挑战、题目修订）。升级代码后请执行：
+>
+> ```bash
+> cd backend && python -m scripts.migrate_missing_columns        # 补缺失列（start_services 已自动跑）
+> cd backend && python -m scripts.migrate_backfill_deck_content  # 同步内容（upsert，幂等）
+> ```
+>
+> 启动时 lifespan 会检测内容表行数是否落后于 seed 并打印上述提示（WARNING 日志）。
+
 当前判定为**关键字/答案表规则**（与前端 mock 逐字对齐）；竞技场 Judge0 真判题与
 导师 LLM 追问是已标注的后续替换点（见 service.py 注释）。
 

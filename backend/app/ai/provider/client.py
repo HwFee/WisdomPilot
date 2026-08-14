@@ -178,6 +178,7 @@ class OpenAICompatibleClient:
         messages: list[AIMessage],
         *,
         stream: bool = False,
+        tools: list[dict] | None = None,
     ) -> dict:
         """构造 OpenAI Chat Completions 请求体。
 
@@ -185,6 +186,8 @@ class OpenAICompatibleClient:
             config: AI 提供商配置（模型名、温度）。
             messages: 对话消息列表。
             stream: 是否启用流式输出。
+            tools: 可选的工具（function calling）声明列表，符合 OpenAI
+                ``tools`` 字段格式；为 None 时不携带该字段。
 
         Returns:
             符合 OpenAI API 格式的请求体字典。
@@ -196,6 +199,8 @@ class OpenAICompatibleClient:
         }
         if stream:
             payload["stream"] = True  # 启用流式响应（SSE）
+        if tools:
+            payload["tools"] = tools  # 工具声明：模型可返回 tool_calls 请求调用
         return payload
 
     @staticmethod
@@ -335,6 +340,7 @@ class OpenAICompatibleClient:
         messages: list[AIMessage],
         *,
         stream: bool,
+        tools: list[dict] | None = None,
     ) -> httpx.Response:
         """带重试机制的 HTTP 请求发送。
 
@@ -347,6 +353,7 @@ class OpenAICompatibleClient:
         Args:
             messages: 对话消息列表。
             stream: 是否为流式请求。
+            tools: 可选的工具声明列表（function calling），透传进请求体。
 
         Returns:
             成功的 httpx 响应对象。
@@ -360,7 +367,7 @@ class OpenAICompatibleClient:
         client = self._get_http_client()
         url = self._url(config)
         headers = self._headers(config)
-        payload = self._payload(config, messages, stream=stream)
+        payload = self._payload(config, messages, stream=stream, tools=tools)
 
         # 重试循环：最多尝试 MAX_PROVIDER_ATTEMPTS 次
         for attempt in range(MAX_PROVIDER_ATTEMPTS):
@@ -412,6 +419,62 @@ class OpenAICompatibleClient:
         """
         response = await self._request_with_retries(messages, stream=False)
         return self._extract_content(response)  # 非流式：等待完整响应后一次性提取文本
+
+    @staticmethod
+    def _extract_message(response: httpx.Response) -> dict:
+        """从非流式响应中提取完整的 message 对象（含工具调用）。
+
+        与 ``_extract_content`` 的区别：本方法返回整个 message 字典，
+        保留 ``tool_calls`` 字段——function calling 场景下 content 可能
+        为 None，真正的意图在 tool_calls 里。
+
+        Args:
+            response: httpx 响应对象。
+
+        Returns:
+            ``choices[0].message`` 原始字典（含 content / tool_calls 等字段）。
+
+        Raises:
+            AIProviderProtocolError: 响应格式不符合预期。
+        """
+        try:
+            payload = response.json()
+            message = payload["choices"][0]["message"]
+        except (ValueError, KeyError, IndexError, TypeError) as error:
+            raise AIProviderProtocolError(
+                "AI provider returned an invalid completion payload"
+            ) from error
+        if not isinstance(message, dict):
+            raise AIProviderProtocolError(
+                "AI provider completion message must be an object"
+            )
+        return message
+
+    async def complete_with_tools(
+        self, messages: list[AIMessage], tools: list[dict]
+    ) -> dict:
+        """带工具声明的非流式补全（function calling）。
+
+        发送 messages + tools，返回规范化的 ``{"content": str, "tool_calls": list}``：
+        - 模型选择直接回答：content 为文本，tool_calls 为空列表。
+        - 模型请求调用工具：tool_calls 为 OpenAI 格式的调用列表
+          （每项含 id / function.name / function.arguments），content 可能为空串。
+
+        Args:
+            messages: 对话消息列表。
+            tools: 工具声明列表（OpenAI ``tools`` 字段格式）。
+
+        Returns:
+            ``{"content": str, "tool_calls": list[dict]}``。
+        """
+        response = await self._request_with_retries(messages, stream=False, tools=tools)
+        message = self._extract_message(response)
+        content = message.get("content")
+        tool_calls = message.get("tool_calls")
+        return {
+            "content": content if isinstance(content, str) else "",
+            "tool_calls": tool_calls if isinstance(tool_calls, list) else [],
+        }
 
     # ---------------------------------------------------------------------------
     # 流式响应处理：SSE 帧解析 + 逐块输出

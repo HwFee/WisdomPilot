@@ -119,6 +119,24 @@ class OpenAICompatibleProvider(AIProvider):
         """
         return await self._client.complete(messages)
 
+    async def complete_messages_with_tools(
+        self, messages: list[AIMessage], tools: list[dict]
+    ) -> dict:
+        """带工具声明的非流式补全（function calling），不自动加 system 消息。
+
+        与 ``complete_messages`` 的区别：请求携带 ``tools`` 声明，模型可返回
+        ``tool_calls`` 请求调用工具；调用方负责执行工具并把结果以 tool 角色
+        消息追加回对话（工具循环由业务层驱动，本方法只跑单轮）。
+
+        Args:
+            messages: 完整的对话消息列表。
+            tools: 工具声明列表（OpenAI ``tools`` 字段格式）。
+
+        Returns:
+            ``{"content": str, "tool_calls": list[dict]}``。
+        """
+        return await self._client.complete_with_tools(messages, tools)
+
     async def stream_generate(
         self, messages: list[AIMessage]
     ) -> AsyncGenerator[str, None]:

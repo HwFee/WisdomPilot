@@ -162,11 +162,14 @@
 
 ### POST /api/tutor/message
 
-请求：`{ "text": "...", "mode": "socratic" }`。
+请求：`{ "text": "...", "mode": "socratic", "history": [...], "question_context": { "source", "title", "content" }? }`。
 响应 `TutorReply`：`{ message: { id, role, text, mode }, cores_balance }`。
 
 - **追问式系统提示词**：禁止直接给答案/写代码，只能提问引导。每次调用扣 `cost_per_question`（默认 2）智核；**余额不足返回 200 + 提示消息**（`TutorReply` 结构，不扣费——前端契约要求响应恒为 `TutorReply`，见 README 全局约定的例外条款）。
-- 对话持久化到 `tutor_messages`，`GET /api/tutor/state` 的 `messages` 返回最近会话。
+- **会话不持久化**：对话历史由前端随请求携带（`history`，最多 10 条）注入 LLM 上下文，消息不落库；`GET /api/tutor/state` 的 `messages` 恒为空数组。
+- **能力上下文注入（P-07）**：system prompt 追加该学生的三轴等级、`p_l < 0.6` 的薄弱知识点（最多 3 个）与近期答错记录；未定级用户不注入。
+- **题目上下文（可选）**：`question_context` 为学生正在询问的题目（前端从竞技场/审查营「问导师」入口携带，内容是学生可见的题面/代码），注入 system prompt 让导师围绕该题追问。`source` ∈ `arena | review_gym | certification | placement`。
+- **能力档案工具（function calling）**：AI 通道支持 tools 时暴露 `get_student_ability`（无参数，服务端注入 user_id 只查本人），模型可按需查询全量能力档案（三轴等级 + 全部知识点掌握度 + 近期答错）；工具循环上限 3 轮，超限后强制纯文本收口。AI 未配置/异常时整体降级为脚本式追问。
 
 ### POST /api/tutor/feynman 与 /api/tutor/feynman/check
 
@@ -240,8 +243,7 @@ debug=23/攻克、implement=40/认证通过，跨 400 边界即升级）、掌�
 | deck_arena_challenges | id, title, language, code, failing_output, time_limit_sec, difficulty | 种子内容（每日轮换） |
 | deck_arena_attempts | id, user_id, challenge_id, solved, passed, total, created_at | 判题记录（实现偏差：不存代码原文） |
 | deck_arena_ratings | user_id, rating, win_streak, updated_at | 段位由 rating 推导 |
-| deck_tutor_messages | id, user_id, role, mode, text, grade, created_at | 导师对话 |
-| deck_core_transactions | id, user_id, delta, reason, balance_after, created_at | 智核一本账 |
+| deck_core_transactions | user_id, delta, reason, balance_after, created_at | 智核一本账 |
 | deck_cert_exams / deck_cert_questions | exam: id, topic, pass_score, time_limit_min；question 含答案（不下发） | 种子内容 |
 | deck_certifications | id, user_id, topic, level, score, verify_code(unique), created_at | 能力凭证 |
 | deck_daily_activity | user_id, day, minutes, exercises, correct | 节奏柱图与今日统计 |

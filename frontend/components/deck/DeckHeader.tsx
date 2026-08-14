@@ -47,8 +47,8 @@ export function DeckHeader() {
   }, [])
 
   const handleLogout = () => {
-    logout()
-    push('/login')
+    // logout 现为异步：先通知服务端吊销 token（尽力），再本地清除并跳转
+    logout().finally(() => push('/login'))
   }
 
   return (

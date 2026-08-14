@@ -6,7 +6,38 @@ import {
   mockSubmitFeynman,
   socraticReply,
 } from './mock/tutor'
-import type { TutorMode, TutorReply, TutorState } from './types'
+import type { TutorMode, TutorQuestionContext, TutorReply, TutorState } from './types'
+
+/** 题目上下文一次性交接键：题目页写入、导师页读取并清除 */
+const QUESTION_CONTEXT_KEY = 'deck:tutor_question_context'
+
+/** 题目页「问导师」入口：把题目上下文写入 sessionStorage，随后跳转到导师页 */
+export function askTutorAboutQuestion(ctx: TutorQuestionContext): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(QUESTION_CONTEXT_KEY, JSON.stringify(ctx))
+  }
+}
+
+/** 导师页挂载时读取并清除题目上下文（一次性消费，避免陈旧上下文残留到后续会话） */
+export function takeTutorQuestionContext(): TutorQuestionContext | null {
+  if (typeof window === 'undefined') return null
+  const raw = sessionStorage.getItem(QUESTION_CONTEXT_KEY)
+  if (!raw) return null
+  sessionStorage.removeItem(QUESTION_CONTEXT_KEY)
+  try {
+    const parsed = JSON.parse(raw) as Partial<TutorQuestionContext>
+    if (
+      typeof parsed.source !== 'string' ||
+      typeof parsed.title !== 'string' ||
+      typeof parsed.content !== 'string'
+    ) {
+      return null
+    }
+    return { source: parsed.source, title: parsed.title, content: parsed.content }
+  } catch {
+    return null
+  }
+}
 
 let seq = 0
 function nextId(): string {
@@ -26,6 +57,7 @@ export interface TutorHistoryItem {
 }
 
 /** POST /api/tutor/message —— 发送消息，返回导师追问。余额不足时不扣费并提示。
+ *  questionContext：学生正在询问的题目（来自题目页「问导师」入口），随请求携带注入导师 prompt。
  *  安全审计修复：后端 tutor 端点串行两次 LLM 调用（各 3 重试 × 60s+退避），
  *  最坏 ~366s。用 300s 超时，避免前端提前 abort 后后端仍在烧 LLM 费用。 */
 export function sendTutorMessage(
@@ -33,7 +65,8 @@ export function sendTutorMessage(
   mode: TutorMode,
   history: TutorHistoryItem[],
   balance: number,
-  costPerQuestion: number
+  costPerQuestion: number,
+  questionContext?: TutorQuestionContext | null
 ): Promise<TutorReply> {
   return deckCall(
     '/tutor/message',
@@ -57,7 +90,10 @@ export function sendTutorMessage(
           id: nextId(),
           role: 'tutor' as const,
           mode,
-          text: socraticReply(text, history.length),
+          // mock 演示题目上下文效果：带上题目标题前缀（真后端由 LLM 围绕题目追问）
+          text: questionContext
+            ? `就着《${questionContext.title}》——${socraticReply(text, history.length)}`
+            : socraticReply(text, history.length),
         },
         cores_balance: balance - costPerQuestion,
         // mock 直接回原文（真后端会走 LLM 润色，未配置/异常同样降级回原文）
@@ -65,7 +101,15 @@ export function sendTutorMessage(
         new_badges: [],
       }
     },
-    { method: 'POST', body: JSON.stringify({ text, mode, history }) },
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        text,
+        mode,
+        history,
+        question_context: questionContext ?? undefined,
+      }),
+    },
     LLM_TIMEOUT_MS
   )
 }

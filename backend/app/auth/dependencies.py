@@ -30,9 +30,10 @@ INACTIVE_ACCOUNT_DETAIL = "User account is inactive"
 
 # HTTPBearer 是 FastAPI 内置的安全依赖：
 # - 自动从请求头 Authorization: Bearer <token> 中提取 token
-# - 如果请求未携带 token，自动返回 403（可配置为 401）
+# - auto_error=False：请求未携带 token 时不自动抛 403，
+#   由 get_current_user 统一返回 401（缺 token 与 token 无效语义一致）
 # - 返回 HTTPAuthorizationCredentials 对象，.credentials 属性即 token 字符串
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 async def _find_user_from_credentials(
@@ -69,7 +70,15 @@ async def _find_user_from_credentials(
 
     # 按 user_id 查询数据库
     result = await db.execute(select(User).where(User.id == user_id))# 这个result不能直接用 它里面包含有地址 还有数据的元组
-    return result.scalar_one_or_none()# 这里返回的是一个Python对象 User 就是拆包后的结果
+    user = result.scalar_one_or_none()# 这里返回的是一个Python对象 User 就是拆包后的结果
+    if user is None:
+        return None
+
+    # JWT 吊销检查：token 载荷中的 ver 必须与数据库当前 token_version 一致。
+    # logout / 改密码时 token_version +1，旧 token 在此立即失效。
+    if payload.get("ver") != user.token_version:
+        return None
+    return user
 
 
 def _invalid_credentials_exception() -> HTTPException:
@@ -88,7 +97,7 @@ def _invalid_credentials_exception() -> HTTPException:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """FastAPI 依赖：解析当前认证用户（不检查激活状态）。
@@ -105,9 +114,9 @@ async def get_current_user(
         当前认证的 User 对象（可能 is_active=False）。
 
     Raises:
-        HTTPException(401): token 无效或用户不存在。
+        HTTPException(401): 缺 token、token 无效或用户不存在。
     """
-    # 从凭据中查找用户（解码 JWT + 查询数据库）
+    # 从凭据中查找用户（解码 JWT + 查询数据库 + 吊销版本校验）
     user = await _find_user_from_credentials(credentials, db)
     if user is None:
         # token 无效或用户不存在，返回 401

@@ -189,7 +189,7 @@ async def test_user(db_session) -> User:
 @pytest_asyncio.fixture
 async def auth_headers(auth_user):
     """Get auth headers for the user."""
-    token = create_access_token({"sub": auth_user.id})
+    token = create_access_token({"sub": auth_user.id, "ver": auth_user.token_version})
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -213,20 +213,20 @@ async def admin_user(db_session) -> User:
 @pytest_asyncio.fixture
 async def admin_auth_headers(admin_user):
     """Get auth headers for the admin user."""
-    token = create_access_token({"sub": admin_user.id})
+    token = create_access_token({"sub": admin_user.id, "ver": admin_user.token_version})
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest_asyncio.fixture
 async def test_user_token(test_user) -> str:
     """Get JWT token for test user."""
-    return create_access_token({"sub": test_user.id})
+    return create_access_token({"sub": test_user.id, "ver": test_user.token_version})
 
 
 @pytest_asyncio.fixture
 async def admin_token(admin_user) -> str:
     """Get JWT token for admin user."""
-    return create_access_token({"sub": admin_user.id})
+    return create_access_token({"sub": admin_user.id, "ver": admin_user.token_version})
 
 
 @pytest.fixture(autouse=True)

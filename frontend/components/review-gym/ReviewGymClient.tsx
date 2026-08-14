@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { X } from 'lucide-react'
 import { isAuthenticated } from '@/lib/api'
 import { getReviewSession, submitReview } from '@/lib/api/deck/review-gym'
-import { NEXT_SESSION } from '@/lib/api/deck/mock/review-gym'
+import { askTutorAboutQuestion } from '@/lib/api/deck/tutor'
 import type { DefectType, ReviewMark, ReviewSession, ReviewVerdict } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { CountUp, PanelTag } from '../deck/kit'
+import { ErrorPanel } from '../deck/ErrorPanel'
 import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 import { CodeViewer, DefectExplanations } from './CodeViewer'
 import { DefectLegend } from './DefectLegend'
@@ -137,7 +138,21 @@ function VerdictPanel({
       </div>
       <div className="mt-5 flex flex-col gap-2">
         <button className="deck-btn-primary w-full" onClick={onNext}>
-          下一关 · {NEXT_SESSION[session.id]} →
+          下一关 →
+        </button>
+        {/* 问导师：携带本关代码上下文跳转导师页（代码是学生可见内容） */}
+        <button
+          className="deck-btn-ghost w-full"
+          onClick={() => {
+            askTutorAboutQuestion({
+              source: 'review_gym',
+              title: session.title,
+              content: session.code,
+            })
+            push('/tutor')
+          }}
+        >
+          问导师
         </button>
         <button className="deck-btn-ghost w-full" onClick={() => push('/dashboard')}>
           返回训练舱
@@ -157,6 +172,7 @@ export function ReviewGymClient() {
   const [activeLine, setActiveLine] = useState<number | null>(null)
   const [verdict, setVerdict] = useState<ReviewVerdict | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { celebrate, celebrationElement } = useBadgeCelebration()
 
   const loadSession = useCallback((id?: string) => {
@@ -164,10 +180,16 @@ export function ReviewGymClient() {
     setMarks([])
     setVerdict(null)
     setActiveLine(null)
-    getReviewSession(id).then((s) => {
-      setSession(s)
-      setPhase('reviewing')
-    })
+    setError(null)
+    getReviewSession(id)
+      .then((s) => {
+        setSession(s)
+        setPhase('reviewing')
+      })
+      .catch((e: Error) => {
+        setError(e.message || '关卡载入失败')
+        setPhase('reviewing') // 从 loading 退出，交给错误面板渲染
+      })
   }, [])
 
   useEffect(() => {
@@ -196,12 +218,20 @@ export function ReviewGymClient() {
   const handleSubmit = () => {
     if (!session) return
     setSubmitting(true)
-    submitReview(session.id, marks).then((v) => {
-      setVerdict(v)
-      setSubmitting(false)
-      setPhase('revealed')
-      celebrate(v.new_badges)
-    })
+    setError(null)
+    submitReview(session.id, marks)
+      .then((v) => {
+        setVerdict(v)
+        setPhase('revealed')
+        celebrate(v.new_badges)
+      })
+      .catch((e: Error) => {
+        // 修复：请求失败必须复位 submitting，否则按钮永久禁用
+        setError(e.message || '提交失败，请重试')
+      })
+      .finally(() => {
+        setSubmitting(false)
+      })
   }
 
   return (
@@ -220,7 +250,9 @@ export function ReviewGymClient() {
       </div>
 
       <div className="deck-boot deck-boot-2 mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
-        {phase === 'loading' || !session ? (
+        {error && !session ? (
+          <ErrorPanel message={error} onRetry={() => loadSession(searchParams.get('session') ?? undefined)} />
+        ) : phase === 'loading' || !session ? (
           <div className="deck-panel p-8 font-mono text-sm text-dim">
             正在载入代码<span className="deck-cursor ml-2" />
           </div>
@@ -252,6 +284,7 @@ export function ReviewGymClient() {
                   onRemove={(line) => setMarks((prev) => prev.filter((m) => m.line !== line))}
                   onSubmit={handleSubmit}
                 />
+                {error && <ErrorPanel message={error} onRetry={() => loadSession(session.id)} />}
                 {/* 图例：右侧独立列，代码再长也不受挤压 */}
                 <DefectLegend />
               </div>
@@ -260,7 +293,7 @@ export function ReviewGymClient() {
                 <VerdictPanel
                   session={session}
                   verdict={verdict}
-                  onNext={() => loadSession(NEXT_SESSION[session.id])}
+                  onNext={() => loadSession(undefined)}
                 />
               )
             )}

@@ -28,6 +28,7 @@ from app.config import get_settings
 # noqa: F401,F403 - 通配导入确保所有模型类被加载，从而注册到 Base.metadata
 # 只有注册到 metadata 的表才会参与迁移检查
 from app.auth.models import *  # noqa: F401,F403 - register all models with Base
+from app.training.models import *  # noqa: F401,F403 - register training models
 from app.database import Base
 
 

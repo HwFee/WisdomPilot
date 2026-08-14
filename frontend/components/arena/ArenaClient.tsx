@@ -5,9 +5,11 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { isAuthenticated } from '@/lib/api'
 import { getArenaHome, runArenaCode } from '@/lib/api/deck/arena'
+import { askTutorAboutQuestion } from '@/lib/api/deck/tutor'
 import type { ArenaHome, ArenaRunResult } from '@/lib/api/deck/types'
 import { DeckShell } from '../deck/DeckShell'
 import { PanelTag } from '../deck/kit'
+import { ErrorPanel } from '../deck/ErrorPanel'
 import { useBadgeCelebration } from '../deck/BadgeUnlockCelebration'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
@@ -82,6 +84,7 @@ export function ArenaClient() {
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [result, setResult] = useState<ArenaRunResult | null>(null)
   const [running, setRunning] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const submittedRef = useRef(false)
   const { celebrate, celebrationElement } = useBadgeCelebration()
 
@@ -90,11 +93,15 @@ export function ArenaClient() {
       push('/login')
       return
     }
-    getArenaHome().then((h) => {
-      setHome(h)
-      setCode(h.challenge.code)
-      setSecondsLeft(h.challenge.time_limit_sec)
-    })
+    getArenaHome()
+      .then((h) => {
+        setHome(h)
+        setCode(h.challenge.code)
+        setSecondsLeft(h.challenge.time_limit_sec)
+      })
+      .catch((e: Error) => {
+        setError(e.message || '竞技场加载失败')
+      })
   }, [push])
 
   const submit = useCallback(
@@ -102,11 +109,20 @@ export function ArenaClient() {
       if (!home || submittedRef.current) return
       submittedRef.current = true
       setRunning(true)
-      runArenaCode(home.challenge.id, currentCode).then((r) => {
-        setResult(r)
-        setRunning(false)
-        celebrate(r.new_badges)
-      })
+      setError(null)
+      runArenaCode(home.challenge.id, currentCode)
+        .then((r) => {
+          setResult(r)
+          celebrate(r.new_badges)
+        })
+        .catch((e: Error) => {
+          // 修复：失败必须复位 submittedRef/running，否则按钮永久卡「判题中」
+          submittedRef.current = false
+          setError(e.message || '判题失败，请重试')
+        })
+        .finally(() => {
+          setRunning(false)
+        })
     },
     [home, celebrate]
   )
@@ -133,7 +149,9 @@ export function ArenaClient() {
   return (
     <DeckShell>
       {celebrationElement}
-      {!home ? (
+      {error && !home ? (
+        <ErrorPanel message={error} onRetry={() => window.location.reload()} />
+      ) : !home ? (
         <div className="deck-panel p-8 font-mono text-sm text-dim">
           正在接入竞技场<span className="deck-cursor ml-2" />
         </div>
@@ -195,6 +213,9 @@ export function ArenaClient() {
                 />
               </div>
 
+              {/* 提交/判题错误 */}
+              {error && home && <ErrorPanel message={error} />}
+
               {/* 结果条 */}
               {result && (
                 <div
@@ -212,7 +233,21 @@ export function ArenaClient() {
                   {result.solved && (
                     <span className="font-mono text-sm text-signal">+{result.score_delta} 分</span>
                   )}
-                  <button className="deck-btn-ghost ml-auto" onClick={resetRound}>
+                  {/* 问导师：携带本题上下文跳转导师页（题面代码是学生可见内容） */}
+                  <button
+                    className="deck-btn-ghost ml-auto"
+                    onClick={() => {
+                      askTutorAboutQuestion({
+                        source: 'arena',
+                        title: home.challenge.title,
+                        content: home.challenge.code,
+                      })
+                      push('/tutor')
+                    }}
+                  >
+                    问导师
+                  </button>
+                  <button className="deck-btn-ghost" onClick={resetRound}>
                     {result.solved ? '下一场' : '再来一次'}
                   </button>
                 </div>

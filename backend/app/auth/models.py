@@ -76,6 +76,15 @@ class User(Base):
         nullable=False,
         comment="Core (智核) balance - platform currency; ledger in DeckCoreTransaction",
     )
+    token_version: Mapped[int] = mapped_column(
+        # JWT 吊销版本号：签发 token 时把当前版本写入载荷，
+        # 校验时比对 token 中的 ver 与数据库值，不一致即视为已吊销。
+        # logout / 改密码时 +1，使该用户所有旧 token 立即失效。
+        Integer,
+        default=0,
+        nullable=False,
+        comment="JWT revocation version; bump to invalidate all previously issued tokens",
+    )
     created_at: Mapped[datetime] = mapped_column(
         # 创建时间：使用 utc_now() 保证全局统一 UTC 时间，避免服务器时区差异
         DateTime, default=utc_now, nullable=False

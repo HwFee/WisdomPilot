@@ -103,9 +103,9 @@ class AuthService:
         # refresh 从数据库重新加载对象，获取默认值生成的字段（如 id, created_at） 这里实测即使不刷新也没事，这只是一个防御性编程，防止有别的地方改写同一行
         await self.db.refresh(new_user)
 
-        # 生成 JWT 令牌，载荷中包含用户 ID（sub）和邮箱（email）
+        # 生成 JWT 令牌，载荷中包含用户 ID（sub）、邮箱（email）和吊销版本号（ver）
         access_token = create_access_token(
-            data={"sub": new_user.id, "email": new_user.email},
+            data={"sub": new_user.id, "email": new_user.email, "ver": new_user.token_version},
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
 
@@ -162,9 +162,9 @@ class AuthService:
         else:
             expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-        # 生成 JWT 令牌，载荷中包含用户 ID（sub）和邮箱（email）
+        # 生成 JWT 令牌，载荷中包含用户 ID（sub）、邮箱（email）和吊销版本号（ver）
         access_token = create_access_token(
-            data={"sub": user.id, "email": user.email},
+            data={"sub": user.id, "email": user.email, "ver": user.token_version},
             expires_delta=expires_delta,
         )
 

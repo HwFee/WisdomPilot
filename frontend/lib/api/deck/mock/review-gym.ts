@@ -7,7 +7,7 @@ interface MockSession extends ReviewSession {
   injected: InjectedDefect[]
 }
 
-/** 第 12 关：Python 快速排序，2 处注入缺陷（第 5 行是「疑似但正常」的陷阱行） */
+/** 第 12 关：Python 快速排序，1 处注入缺陷（与后端 seed.py 逐字对齐） */
 const SESSION_0247: MockSession = {
   id: 'REVIEW-0247',
   title: '快速排序实现',
@@ -17,21 +17,15 @@ const SESSION_0247: MockSession = {
     if len(arr) <= 1:
         return arr
     pivot = arr[len(arr) // 2]
-    rest = arr[:len(arr) // 2] + arr[len(arr) // 2:]
+    rest = arr[:len(arr) // 2] + arr[len(arr) // 2 + 1:]
     left = [x for x in rest if x < pivot]
     right = [x for x in rest if x > pivot]
     return quicksort(left) + [pivot] + quicksort(right)`,
-  defect_count: 2,
+  defect_count: 1,
   difficulty: 3,
   eta_minutes: 8,
   related_weakness: '边界条件处理',
   injected: [
-    {
-      line: 6,
-      type: 'boundary',
-      explanation:
-        '右半切片 arr[len(arr)//2:] 把 pivot 本体又算了进去——pivot 会在结果里出现两次。应为 arr[len(arr)//2 + 1:]。',
-    },
     {
       line: 7,
       type: 'logic',
@@ -80,7 +74,8 @@ void free_list(Node *head) {
     {
       line: 16,
       type: 'logic',
-      explanation: 'cur = next->next 每轮跳过一个节点，链表一半节点丢失。应为 cur = next。',
+      explanation:
+        'cur = next->next 每轮跳过一个节点：偶数长度时约一半节点被跳过丢失，奇数长度时 next 为 NULL 再解引用 next->next 直接段错误。应为 cur = next。',
     },
     {
       line: 18,
@@ -88,7 +83,7 @@ void free_list(Node *head) {
       explanation: '返回的是旧头指针 head（反转后它是尾节点），新头应是 prev。',
     },
     {
-      line: 22,
+      line: 24,
       type: 'performance',
       explanation: 'free_list 只移动指针从不 free(tmp)，每个节点都泄漏。',
     },
@@ -299,7 +294,7 @@ const SESSION_0254: MockSession = {
   title: '冒泡排序',
   language: 'python',
   code: `def b(a):
-    """冒泡排序 -- AI 生成，待审查"""
+    """冒泡排序（升序） -- AI 生成，待审查"""
     n = len(a)
     for i in range(n):
         for j in range(0, n - i - 1):
@@ -323,7 +318,7 @@ const SESSION_0254: MockSession = {
       line: 6,
       type: 'logic',
       explanation:
-        '比较方向错误：a[j] < a[j+1] 会把大元素冒泡到前面（降序），冒泡排序通常期望升序。应为 a[j] > a[j + 1]。',
+        '比较方向错误：a[j] < a[j+1] 会把大元素冒泡到前面（降序），而函数声明的是升序。应为 a[j] > a[j + 1]。',
     },
   ],
 }

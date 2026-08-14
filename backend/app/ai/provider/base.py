@@ -15,9 +15,11 @@ from collections.abc import AsyncGenerator
 from typing import Protocol
 
 # AIMessage 是一条 chat 消息的类型别名。
-# 格式：{"role": "system"|"user"|"assistant", "content": "文本内容"}
+# 常见格式：{"role": "system"|"user"|"assistant", "content": "文本内容"}
 # 与 OpenAI Chat Completions API 的 messages 字段格式一致。
-AIMessage = dict[str, str]
+# function calling 场景下消息可携带额外字段（assistant 的 tool_calls、
+# tool 角色的 tool_call_id），故值类型放宽为 object。
+AIMessage = dict[str, object]
 
 
 class AICompletionClient(Protocol):
@@ -50,6 +52,21 @@ class AICompletionClient(Protocol):
 
         Yields:
             AI 生成的文本片段（每次 yield 一个 chunk，通常是几个字到一句话）。
+        """
+        ...
+
+    async def complete_with_tools(
+        self, messages: list[AIMessage], tools: list[dict]
+    ) -> dict:
+        """带工具声明的非流式补全（function calling）。
+
+        Args:
+            messages: 对话消息列表。
+            tools: 工具声明列表（OpenAI ``tools`` 字段格式）。
+
+        Returns:
+            ``{"content": str, "tool_calls": list[dict]}``——模型直接回答时
+            tool_calls 为空列表；请求调用工具时 content 可能为空串。
         """
         ...
 

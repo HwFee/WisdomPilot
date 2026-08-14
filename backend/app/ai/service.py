@@ -961,6 +961,37 @@ class AIService:
             messages = [{"role": "system", "content": system_prompt}, *messages]
         return await provider.complete_messages(messages)
 
+    async def generate_with_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict],
+        system_prompt: Optional[str] = None,
+    ) -> dict:
+        """带工具声明的多轮对话生成（function calling 单轮）。
+
+        与 ``generate_messages()`` 的区别：请求携带 ``tools`` 声明，返回
+        结构化结果而非纯文本——模型可能请求调用工具（tool_calls 非空），
+        由调用方执行工具后以 tool 角色消息追加回对话再发起下一轮
+        （工具循环由业务层驱动，本方法只跑单轮）。
+
+        Args:
+            messages: 对话消息列表（可含 tool_calls/tool_call_id 等扩展字段）。
+            tools: 工具声明列表（OpenAI ``tools`` 字段格式）。
+            system_prompt: 可选的系统提示词，会作为第一条 system 消息插入。
+
+        Returns:
+            ``{"content": str, "tool_calls": list[dict]}``；未配置时返回
+            兜底提示文本 + 空 tool_calls（与 generate_messages 行为一致）。
+        """
+        if not self.is_configured():
+            return {"content": "AI 服务未配置，请联系管理员。", "tool_calls": []}
+
+        provider = self._require_provider()
+
+        if system_prompt:
+            messages = [{"role": "system", "content": system_prompt}, *messages]
+        return await provider.complete_messages_with_tools(messages, tools)
+
     async def generate_question_analysis(
         self,
         question_text: str,

@@ -35,10 +35,17 @@ from app.config import Settings
 # 显式标记副作用导入：两个模块都只为了让模型注册到 Base.metadata 避免警告，假装使用
 _MODELS_REGISTERED = (_register_auth_models, _register_training_models)
 from app.database import AsyncSessionLocal, init_db
-from app.training.seed import seed_deck
+from app.training.seed import (
+    ARENA_CHALLENGES,
+    CERT_QUESTIONS,
+    REVIEW_SESSIONS,
+    seed_deck,
+)
 from app.training import service as training_service
 from app.ai.config import AIProviderConfig
 from app.ai.service import ai_service
+
+logger = logging.getLogger(__name__)
 
 # 日志格式：时间 - 模块名 - 级别 - 消息
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -78,6 +85,43 @@ def configure_ai_service(settings: Settings) -> None:
     ai_service.configure(ai_config)
 
 
+async def warn_if_seed_content_stale() -> None:
+    """检测已有数据库是否缺失/滞后于 seed.py 的种子内容，滞后则打印升级提示。
+
+    seed_deck 的幂等策略是「知识点表非空即跳过」，因此已有库升级代码后
+    不会自动获得新增关卡/挑战/题目，也不会获得对既有题目的修订。
+    这里对比各内容表的行数与种子数量，不一致时提示运行回填脚本
+    （脚本是 upsert 语义：补缺失行 + 按 seed 更新既有行内容字段）。
+    """
+    from sqlalchemy import func, select
+
+    from app.training.models import (
+        DeckArenaChallenge,
+        DeckCertQuestion,
+        DeckReviewSession,
+    )
+
+    expected = {
+        DeckArenaChallenge: len(ARENA_CHALLENGES),
+        DeckReviewSession: len(REVIEW_SESSIONS),
+        DeckCertQuestion: len(CERT_QUESTIONS),
+    }
+    try:
+        async with AsyncSessionLocal() as db:
+            for model, want in expected.items():
+                got = await db.scalar(select(func.count()).select_from(model))
+                if got is not None and got < want:
+                    logger.warning(
+                        "种子内容不完整：%s 现有 %d 行，种子需要 %d 行。"
+                        "已有数据库请执行 python -m scripts.migrate_backfill_deck_content "
+                        "同步新增/修订内容（幂等，可重复执行）",
+                        model.__tablename__, got, want,
+                    )
+    except Exception:
+        # 内容检查失败（如旧库缺新列）不应阻断启动；列补齐由 migrate_missing_columns 负责
+        logger.exception("种子内容完整性检查失败（若为旧库缺列，请先跑 migrate_missing_columns）")
+
+
 def create_lifespan(settings: Settings):
     """创建 FastAPI 生命周期处理器（工厂函数）。
 
@@ -106,6 +150,8 @@ def create_lifespan(settings: Settings):
         # 3. 使用独立会话执行种子数据填充（确保系统有默认训练舱数据）
         async with AsyncSessionLocal() as db:
             await seed_deck(db)
+        # 3b. 已有库升级检测：内容缺失/滞后时打印回填提示（不自动改数据）
+        await warn_if_seed_content_stale()
         # 4. 初始化 AI 服务（配置大模型提供商连接）
         configure_ai_service(settings)
         # 5. 配置 Judge0 判题服务（base_url 为空则不启用，判题走关键字降级）

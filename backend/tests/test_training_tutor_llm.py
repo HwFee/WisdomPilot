@@ -315,6 +315,199 @@ class TestTutorUserContextInjection:
         assert reply == service.KEYWORD_PROBES[0][1]
 
 
+# ── 导师工具调用与题目上下文 ─────────────────────────────
+
+
+class ToolFakeAI(FakeAI):
+    """支持工具调用（generate_with_tools）的假 AI：预置若干轮响应，依次吐出。"""
+
+    def __init__(self, rounds=None, **kwargs):
+        super().__init__(**kwargs)
+        self._rounds = list(rounds or [])  # 每轮 {"content": str, "tool_calls": [...]}
+        self.tool_calls_log: list[dict] = []
+
+    async def generate_with_tools(self, messages, tools, system_prompt=None):
+        self.tool_calls_log.append(
+            {
+                "messages": list(messages),
+                "tools": tools,
+                "system_prompt": system_prompt,
+            }
+        )
+        if self._error is not None:
+            raise self._error
+        if self._rounds:
+            return self._rounds.pop(0)
+        return {"content": "", "tool_calls": []}
+
+
+def _ability_tool_call(call_id="call_1"):
+    """构造一条 get_student_ability 工具调用响应。"""
+    return {
+        "content": "",
+        "tool_calls": [
+            {"id": call_id, "function": {"name": "get_student_ability", "arguments": "{}"}}
+        ],
+    }
+
+
+class TestTutorQuestionContext:
+    """题目上下文注入：question_context 拼进 system prompt，空上下文保持原样。"""
+
+    @pytest.mark.asyncio
+    async def test_question_context_injected_into_system_prompt(
+        self, db_session, test_user
+    ):
+        fake = FakeAI(response="追问")
+        await tutor_llm_reply(
+            db_session,
+            test_user.id,
+            "这题怎么改",
+            [],
+            ai=fake,
+            question_context={
+                "source": "arena",
+                "title": "旋转数组",
+                "content": "def rotate(nums, k): ...",
+            },
+        )
+        system_prompt = fake.calls[0]["system_prompt"]
+        assert system_prompt.startswith(SOCRATIC_SYSTEM_PROMPT)
+        assert "学生正在询问的题目" in system_prompt
+        assert "竞技场" in system_prompt  # source 映射为中文标签
+        assert "旋转数组" in system_prompt
+        assert "def rotate(nums, k)" in system_prompt
+
+    @pytest.mark.asyncio
+    async def test_empty_question_context_keeps_prompt_unchanged(
+        self, db_session, test_user
+    ):
+        fake = FakeAI(response="追问")
+        await tutor_llm_reply(
+            db_session,
+            test_user.id,
+            "指针是什么",
+            [],
+            ai=fake,
+            question_context={"source": "arena", "title": " ", "content": ""},
+        )
+        assert fake.calls[0]["system_prompt"] == SOCRATIC_SYSTEM_PROMPT
+
+    def test_question_context_block_pure_function(self):
+        assert service._question_context_block(None) == ""
+        assert service._question_context_block({"title": "", "content": ""}) == ""
+        block = service._question_context_block(
+            {"source": "review_gym", "title": "t", "content": "c"}
+        )
+        assert "审查训练营" in block and "t" in block and "c" in block
+        # 未知来源回退「练习」
+        assert "练习" in service._question_context_block(
+            {"source": "unknown", "title": "t"}
+        )
+
+
+class TestTutorAbilityTool:
+    """get_student_ability 工具循环：调用-执行-回喂-收口。"""
+
+    @pytest.mark.asyncio
+    async def test_tool_call_loop_feeds_ability_report_back(
+        self, db_session, test_user
+    ):
+        """模型先请求工具再回答：能力报告以 tool 消息回喂，最终文本作为回复。"""
+        await seed_deck(db_session)
+        kps = (await db_session.execute(select(DeckKnowledgePoint))).scalars().all()
+        for kp in kps:
+            await service.record_mastery_event(
+                db_session, test_user.id, kp.id, "placement", True
+            )
+        await db_session.commit()
+        fake = ToolFakeAI(
+            rounds=[
+                _ability_tool_call(),
+                {"content": "你的指针掌握度很高，最近哪一步卡住了？", "tool_calls": []},
+            ]
+        )
+        reply = await tutor_llm_reply(
+            db_session, test_user.id, "我指针学得怎么样", [], ai=fake
+        )
+        assert reply == "你的指针掌握度很高，最近哪一步卡住了？"
+        # 第一轮带工具声明与工具提示
+        first = fake.tool_calls_log[0]
+        assert first["tools"] == [service.STUDENT_ABILITY_TOOL]
+        assert "可用工具" in first["system_prompt"]
+        # 第二轮对话里追加了 assistant（带 tool_calls）+ tool 结果消息
+        second_messages = fake.tool_calls_log[1]["messages"]
+        assistant_msg = second_messages[-2]
+        tool_msg = second_messages[-1]
+        assert assistant_msg["role"] == "assistant"
+        assert assistant_msg["tool_calls"][0]["id"] == "call_1"
+        assert tool_msg["role"] == "tool" and tool_msg["tool_call_id"] == "call_1"
+        # 工具结果是该学生本人的能力档案（含知识点名）
+        assert "指针的内存布局" in tool_msg["content"]
+        assert "知识点掌握度" in tool_msg["content"]
+
+    @pytest.mark.asyncio
+    async def test_unplaced_user_tool_report_says_no_data(self, db_session, test_user):
+        fake = ToolFakeAI(
+            rounds=[
+                _ability_tool_call(),
+                {"content": "先完成定级测试，我们再聊", "tool_calls": []},
+            ]
+        )
+        reply = await tutor_llm_reply(db_session, test_user.id, "我哪里弱", [], ai=fake)
+        assert reply == "先完成定级测试，我们再聊"
+        tool_msg = fake.tool_calls_log[1]["messages"][-1]
+        assert "暂无能力数据" in tool_msg["content"]
+
+    @pytest.mark.asyncio
+    async def test_unknown_tool_name_gets_error_text(self, db_session, test_user):
+        """模型请求未声明的工具：回喂错误文本（不抛异常），模型下一轮自行收口。"""
+        fake = ToolFakeAI(
+            rounds=[
+                {
+                    "content": "",
+                    "tool_calls": [
+                        {"id": "c9", "function": {"name": "delete_db", "arguments": "{}"}}
+                    ],
+                },
+                {"content": "换个角度想", "tool_calls": []},
+            ]
+        )
+        reply = await tutor_llm_reply(db_session, test_user.id, "指针是什么", [], ai=fake)
+        assert reply == "换个角度想"
+        tool_msg = fake.tool_calls_log[1]["messages"][-1]
+        assert "未知工具" in tool_msg["content"]
+
+    @pytest.mark.asyncio
+    async def test_tool_loop_max_rounds_forces_plain_text(self, db_session, test_user):
+        """模型连续索取工具触达上限：去掉工具声明强制要一轮纯文本收口。"""
+        fake = ToolFakeAI(
+            rounds=[_ability_tool_call(f"c{i}") for i in range(service.TUTOR_TOOL_MAX_ROUNDS)],
+            response="最终收口回复",
+        )
+        reply = await tutor_llm_reply(db_session, test_user.id, "指针是什么", [], ai=fake)
+        assert reply == "最终收口回复"
+        # 工具循环恰好跑满上限，最后走 generate_messages 收口
+        assert len(fake.tool_calls_log) == service.TUTOR_TOOL_MAX_ROUNDS
+        assert len(fake.calls) == 1
+
+    @pytest.mark.asyncio
+    async def test_tool_call_error_falls_back_to_script(self, db_session, test_user):
+        fake = ToolFakeAI(error=RuntimeError("boom"))
+        reply = await tutor_llm_reply(db_session, test_user.id, "指针是什么", [], ai=fake)
+        assert reply == service.KEYWORD_PROBES[0][1]
+
+    @pytest.mark.asyncio
+    async def test_client_without_tools_keeps_single_round_path(
+        self, db_session, test_user
+    ):
+        """不支持 generate_with_tools 的客户端（旧 FakeAI）：单轮路径，system 无工具提示。"""
+        fake = FakeAI(response="追问")
+        await tutor_llm_reply(db_session, test_user.id, "指针是什么", [], ai=fake)
+        assert len(fake.calls) == 1
+        assert "可用工具" not in fake.calls[0]["system_prompt"]
+
+
 # ── 费曼检验评分 ─────────────────────────────────────────
 
 

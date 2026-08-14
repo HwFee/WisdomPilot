@@ -24,6 +24,7 @@ from app.training.models import (
     DeckArenaChallenge,
     DeckArenaRating,
     DeckKnowledgePoint,
+    DeckMasteryEvent,
     DeckReviewAttempt,
     DeckUserMastery,
 )
@@ -49,6 +50,19 @@ async def _set_axes(db, user_id: str, levels: dict[str, int]) -> None:
     """设置三轴经验值使等级等于 levels（等级 = 1 + xp // 400）。"""
     for axis, level in levels.items():
         db.add(DeckAbilityAxis(user_id=user_id, axis=axis, xp=(level - 1) * 400))
+    await db.commit()
+
+
+async def _mark_placed(db, user_id: str) -> None:
+    """写一条定级事件（直接插行、不重算 p_l），让 has_placement 判定为已定级。
+
+    has_placement 的事实源是 deck_mastery_events 中 source="placement" 的事件
+    （掌握度缓存行不再作为定级代理信号，审查/竞技场/认证也会建行）。
+    """
+    kp_id = (await db.execute(select(DeckKnowledgePoint.id))).scalars().first()
+    db.add(
+        DeckMasteryEvent(user_id=user_id, kp_id=kp_id, source="placement", correct=True)
+    )
     await db.commit()
 
 
@@ -131,6 +145,7 @@ class TestMainTaskDueReview:
     async def test_main_task_due_review(self, db_session, auth_user):
         """到期复习优先：主任务为费曼复习最到期的知识点，reason 引用记忆消退与掌握度。"""
         await seed_deck(db_session)
+        await _mark_placed(db_session, auth_user.id)
         await _set_axes(db_session, auth_user.id, {"review": 3, "debug": 3, "implement": 3})
         await _mastery_rows(
             db_session, auth_user.id, [("边界条件处理", 0.3), ("指针的内存布局", 0.8)]
@@ -150,6 +165,7 @@ class TestMainTaskDueReview:
     async def test_main_task_no_due_falls_back_to_lowest_axis(self, db_session, auth_user):
         """无到期知识点：保持原最低轴分发（P-01 理由），复习分支不触发。"""
         await seed_deck(db_session)
+        await _mark_placed(db_session, auth_user.id)
         await _set_axes(db_session, auth_user.id, {"review": 2, "debug": 4, "implement": 4})
         await _mastery_rows(
             db_session, auth_user.id, [("边界条件处理", 0.7), ("指针的内存布局", 0.8)]
@@ -163,6 +179,7 @@ class TestMainTaskDueReview:
     async def test_implement_low_still_prefers_cert(self, db_session, auth_user):
         """实现轴 < LV.3 即使存在到期知识点也优先认证（P-06 优先级低于认证入门路径）。"""
         await seed_deck(db_session)
+        await _mark_placed(db_session, auth_user.id)
         await _set_axes(db_session, auth_user.id, {"review": 3, "debug": 3, "implement": 2})
         await _mastery_rows(
             db_session, auth_user.id, [("边界条件处理", 0.3), ("指针的内存布局", 0.8)]

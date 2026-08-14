@@ -19,13 +19,14 @@ from app.training.models import (
 )
 from app.training.seed import seed_deck
 
-# placement 5 题全对答案（与 seed.py 一致）
+# placement 5 题全对答案（与 seed.py 一致；code 题需命中强化后的 answer_includes）
 PLACEMENT_ANSWERS = [
     {"question_id": "p1", "answer": "越界访问 arr[n]"},
-    {"question_id": "p2", "answer": "while (x > 0) { x -= 2; }（x 为奇数正数）"},
+    {"question_id": "p2", "answer": "while (x != 0) { x = x - 2; }（x 为奇数正数）"},
     {"question_id": "p3", "answer": "与 pivot 相等的元素"},
-    {"question_id": "p4", "answer": "def f(s):\n    return -1"},
-    {"question_id": "p5", "answer": "def f(n):\n    return n>0 and True"},
+    {"question_id": "p4", "answer": "def first_unique(s):\n    for i, ch in enumerate(s):\n"
+     "        if s.count(ch) == 1:\n            return i\n    return -1"},
+    {"question_id": "p5", "answer": "def is_power_of_two(n):\n    return n > 0 and (n & (n - 1)) == 0"},
 ]
 
 
@@ -170,15 +171,16 @@ class TestNextReviewSession:
     async def test_no_match_falls_back_to_order(self, db_session, auth_user):
         """无匹配回退顺序：掌握度行只含不与任何关卡 related_weakness 匹配的知识点 → 取第一关。"""
         await seed_deck(db_session)
-        for name, p_l in [
-            ("栈与调用帧", 0.1),
-            ("日志定位法", 0.2),
-            ("断点与单步策略", 0.3),
-        ]:
+        # 种子 13 个知识点均已被关卡关联，这里造 3 个"孤儿"知识点保证不命中任何 related_weakness
+        for i, name in enumerate(["冷门知识点甲", "冷门知识点乙", "冷门知识点丙"]):
+            db_session.add(
+                DeckKnowledgePoint(name=name, category="测试 · 孤儿", axis="review")
+            )
+            await db_session.flush()
             db_session.add(
                 DeckUserMastery(
-                    user_id=auth_user.id, kp_id=await _kp_id(db_session, name),
-                    p_l=p_l, level="初识",
+                    user_id=auth_user.id, kp_id=(await _kp_id(db_session, name)),
+                    p_l=0.1 + i * 0.1, level="初识",
                 )
             )
         await db_session.commit()
