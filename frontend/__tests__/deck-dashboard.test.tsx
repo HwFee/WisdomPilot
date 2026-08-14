@@ -31,6 +31,18 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/lib/api', () => ({
   isAuthenticated: () => true,
   getStoredUser: () => ({ username: '清源' }),
+  getStoredToken: () => 'test-token',
+  getCurrentUser: () =>
+    Promise.resolve({
+      id: '1',
+      email: 'test@example.com',
+      username: '清源',
+      is_active: true,
+      is_admin: false,
+      cores: 100,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    }),
   logout: jest.fn(),
 }))
 

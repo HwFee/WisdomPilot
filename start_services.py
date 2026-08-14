@@ -221,12 +221,36 @@ def ensure_backend_env(backend_dir: Path) -> None:
     env_file = backend_dir / ".env"
     example_file = backend_dir.parent / ".env.example"
 
+    # 安全审计修复：已知弱/占位密钥即使长度达标也必须重新生成，
+    # 防止可预测的 SECRET_KEY 让攻击者伪造任意用户 JWT。
+    known_weak_keys = {
+        "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
+    }
+
     if env_file.exists():
         content = env_file.read_text(encoding="utf-8")
         for line in content.splitlines():
-            if line.startswith("SECRET_KEY=") and len(line.split("=", 1)[1]) >= 32:
-                return
-        print("[检查] .env 中 SECRET_KEY 为空，正在重新生成...")
+            if line.startswith("SECRET_KEY="):
+                value = line.split("=", 1)[1]
+                if value and value not in known_weak_keys and len(value) >= 32:
+                    return
+        print("[检查] .env 中 SECRET_KEY 缺失或为已知弱密钥，正在原地重新生成...")
+        import secrets
+
+        secret_key = secrets.token_hex(32)
+        lines = content.splitlines()
+        new_lines = []
+        replaced = False
+        for line in lines:
+            if line.startswith("SECRET_KEY="):
+                new_lines.append(f"SECRET_KEY={secret_key}")
+                replaced = True
+            else:
+                new_lines.append(line)
+        if not replaced:
+            new_lines.append(f"SECRET_KEY={secret_key}")
+        env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        return
 
     import secrets
 

@@ -101,6 +101,16 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY is required and must not be empty")
         if len(v) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters long")
+        # 安全审计修复：拒绝可预测的占位/示例密钥，防止 JWT 伪造。
+        # 这些密钥曾被提交进工作区 .env，攻击者可直接猜测并伪造任意用户令牌。
+        known_weak_keys = {
+            "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
+        }
+        if v in known_weak_keys or v.startswith("change-me") or v.startswith("your-secret"):
+            raise ValueError(
+                "SECRET_KEY is a known placeholder/weak key; generate a random one "
+                "with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
         return v
 
     @field_validator("DATABASE_URL")

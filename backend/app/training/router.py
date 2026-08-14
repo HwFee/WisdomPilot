@@ -31,6 +31,7 @@ from uuid import uuid4  # 生成唯一 ID（费曼检验会话）
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -1412,6 +1413,21 @@ async def run_arena(
     if challenge is None:
         raise HTTPException(status_code=404, detail="挑战不存在")
 
+    # 安全审计修复：此前同一挑战可无限重放，每次 solved 都加积分/经验/连胜，
+    # 三连胜奖励也随之反复触发，可脚本化刷爆排行榜与智核。这里检查该挑战
+    # 是否已被本用户攻克过：已攻克则只记录尝试事实，不再发放任何奖励。
+    already_solved = (
+        await db.execute(
+            select(DeckArenaAttempt.id)
+            .where(
+                DeckArenaAttempt.user_id == user.id,
+                DeckArenaAttempt.challenge_id == challenge.id,
+                DeckArenaAttempt.solved == 1,
+            )
+            .limit(1)
+        )
+    ).first() is not None
+
     # 判定用户代码（Judge0 优先，未配置/异常时自动降级为关键字匹配）
     result = await service.judge_arena_code_submit(
         body.code,
@@ -1420,19 +1436,38 @@ async def run_arena(
         challenge.test_cases,
         challenge.language,
     )
-    # 记录本次尝试（无论成败）
+    if result["solved"] and already_solved:
+        # 已攻克挑战的重放：判定照常返回，但不发任何奖励。
+        # score_delta 归零让前端结果条显示「+0 分」而非误导性的 +23。
+        result["score_delta"] = 0
+    # 记录本次尝试。已攻克挑战的重放以 solved=0 落尝试记录：
+    # - 保留重放分析数据（次数/时间）且不违反 partial unique index
+    # - rank_delta 等重放只统计 solved=1，不受影响
+    # - 奖励仍由 already_solved 分支拦截，绝不重复发放
     db.add(
         DeckArenaAttempt(
             user_id=user.id,
             challenge_id=challenge.id,
-            solved=1 if result["solved"] else 0,
+            solved=1 if result["solved"] and not already_solved else 0,
             passed=result["passed"],
             total=result["total"],
         )
     )
+    if result["solved"] and not already_solved:
+        # 安全审计修复（TOCTOU 兜底）：先 flush 尝试记录。并发双击时两个请求
+        # 都通过上面的 already_solved 检查，但第二个 INSERT 撞 partial unique
+        # index（user_id+challenge_id WHERE solved=1）抛 IntegrityError，
+        # 由数据库层保证同一挑战至多发一次奖，而非依赖先查后写。
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            result["score_delta"] = 0
+            result["new_badges"] = []
+            return result
 
     rating = await service.get_or_create_rating(db, user.id)
-    if result["solved"]:
+    if result["solved"] and not already_solved:
         # 攻克成功：加积分、连胜 +1、加 debug 轴经验
         rating.rating += result["score_delta"]
         rating.win_streak += 1
@@ -1447,10 +1482,12 @@ async def run_arena(
                 {"t": f"，积分 +{result['score_delta']}", "tone": "ok"},
             ],
         )
-        if rating.win_streak >= 3:
+        # 安全审计修复：连胜奖励只在恰好达到 3 的倍数时发放一次
+        # （原 >= 3 导致 3 连胜后每次获胜都触发 +10 智核）
+        if rating.win_streak >= 3 and rating.win_streak % 3 == 0:
             # 三连胜额外奖励
             await service.change_cores(db, user, 10, "竞技场三连胜奖励")
-    else:
+    elif not result["solved"]:
         # 未攻克：连胜归零
         rating.win_streak = 0
     # 记录今日活动
@@ -1612,6 +1649,12 @@ async def check_feynman(
     kp = await db.get(DeckKnowledgePoint, session["kp_id"])
     if kp is None:
         raise HTTPException(status_code=404, detail="知识点不存在")
+
+    # 安全审计修复：此前余额不足时仍会触发 LLM 评分调用（AI 费用白嫖）
+    # 且仍写掌握度事件。这里与 send_tutor_message 对齐：余额不足直接拒绝，
+    # 不调用 LLM、不写事件。
+    if user.cores < service.TUTOR_COST:
+        raise HTTPException(status_code=402, detail="智核余额不足，无法进行费曼检验")
 
     # 统一入口评分：LLM 优先（含 covered/missed 与点评），异常/脏 JSON 回退脚本
     grade, verdict = await service.feynman_evaluate(body.text, kp.name, kp.key_points)
@@ -1819,6 +1862,22 @@ async def submit_certification(
     exam = await db.get(DeckCertExam, body.exam_id)
     if exam is None:
         raise HTTPException(status_code=404, detail="试卷不存在")
+
+    # 安全审计修复：此前冷却期只在响应中展示、提交端点不校验，
+    # 同一场考试可无限重考刷智核/经验/证书。这里在提交前强制检查：
+    # - 定级测试：每用户仅一次（重复提交会覆盖定级事件与轴经验）
+    # - 普通试卷：距上次认证不足 3 天（CERT_COOLDOWN_DAYS）时拒绝提交
+    if exam.id == "placement":
+        if await service.has_placement(db, user.id):
+            raise HTTPException(status_code=400, detail="定级测试只能进行一次")
+    else:
+        cooldown = await service.next_cert_available_days(db, user.id)
+        if cooldown:
+            raise HTTPException(
+                status_code=429,
+                detail=f"认证考试冷却中，还需等待 {cooldown} 天",
+            )
+
     questions = (
         await db.execute(
             select(DeckCertQuestion).where(DeckCertQuestion.exam_id == exam.id)
@@ -1845,6 +1904,22 @@ async def submit_certification(
     # 计算总分（百分比，四舍五入）
     total = len(questions) or 1
     score = round(sum(1 for p in per_question if p["correct"]) / total * 100)
+
+    # 安全审计修复（TOCTOU 收窄）：判分期间（Judge0 为网络调用，秒级）并发请求
+    # 可同时通过上面的冷却/定级检查。这里在发奖前二次复检，把并发窗口缩小到
+    # 毫秒级。竞技场侧有 partial unique index 兜底；认证侧无可用唯一约束
+    # （DeckCertification 允许同一主题重复认证，仅频率受限），彻底堵死需引入
+    # 尝试表，见审计报告后续建议。
+    if exam.id == "placement":
+        if await service.has_placement(db, user.id):
+            raise HTTPException(status_code=400, detail="定级测试只能进行一次")
+    else:
+        cooldown = await service.next_cert_available_days(db, user.id)
+        if cooldown:
+            raise HTTPException(
+                status_code=429,
+                detail=f"认证考试冷却中，还需等待 {cooldown} 天",
+            )
 
     certificate = None
     if exam.id == "placement":

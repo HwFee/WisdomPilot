@@ -13,6 +13,7 @@ export interface User {
   username: string
   is_active: boolean
   is_admin: boolean
+  cores: number
   created_at: string
   updated_at: string
 }

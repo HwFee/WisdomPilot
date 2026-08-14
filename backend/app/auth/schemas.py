@@ -34,6 +34,24 @@ class UserBase(BaseModel):
     email: EmailStr
     username: str
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        """规范化邮箱：本地部分统一转小写，防止大小写变体创建重复账户。
+
+        安全审计修复：EmailStr 只小写域名部分，本地部分保留原样。
+        攻击者可用 Boss@x.com / boss@x.com 注册两个看似相同的账户，
+        造成身份混淆。这里将本地部分统一小写后返回（EmailStr 会再次校验格式）。
+
+        Args:
+            v: 待规范化的邮箱字符串。
+
+        Returns:
+            本地部分小写化后的邮箱字符串。
+        """
+        local, _, domain = str(v).partition("@")
+        return f"{local.lower()}@{domain}"
+
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
@@ -95,6 +113,10 @@ class UserCreate(UserBase):
         errors = []
         if len(v) < 8:
             errors.append("密码长度至少需要8个字符")
+        # 安全审计修复：bcrypt 只取前 72 字节，超长部分被静默丢弃会让用户误以为
+        # 长密码生效，且截断多字节字符会破坏字符边界。这里明确拒绝超长密码。
+        if len(v.encode("utf-8")) > 72:
+            errors.append("密码过长（最多 72 字节，中文约 24 字）")
         # 检查是否包含至少一个字母（大小写均可）
         if not re.search(r"[A-Za-z]", v):
             errors.append("密码需要包含至少一个字母")
@@ -122,6 +144,13 @@ class UserLogin(BaseModel):
     # remember_me=True 时使用更长的令牌过期时间
     remember_me: bool = False
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        """登录邮箱本地部分统一转小写，与注册侧规范化保持一致。"""
+        local, _, domain = str(v).partition("@")
+        return f"{local.lower()}@{domain}"
+
 
 class UserResponse(UserBase):
     """用户信息响应 Schema（公开信息）。
@@ -132,6 +161,9 @@ class UserResponse(UserBase):
     id: str
     is_active: bool
     is_admin: bool = False
+    # 性能审计修复：智核余额随响应返回，DeckHeader 走轻量 /api/auth/me
+    # 即可刷新余额，无需每个页面都拉取重量级 /api/dashboard 聚合。
+    cores: int = 0
     created_at: datetime
     updated_at: datetime
 

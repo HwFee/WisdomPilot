@@ -55,6 +55,7 @@ from sqlalchemy import (
     DateTime,      # 日期时间类型：如 created_at
     Float,         # 浮点类型：如 p_l（回忆概率，0~1）
     ForeignKey,    # 外键：建立表间关联
+    Index,         # 复合索引：性能审计修复，加速 (user_id, created_at) 类查询
     Integer,       # 整数类型：如 xp、score
     JSON,          # JSON 类型：存储复杂结构（如 marks、payload、key_points）
     String,        # 字符串类型：如 name、title
@@ -63,6 +64,8 @@ from sqlalchemy import (
 )
 # SQLAlchemy 2.0 的类型安全映射工具
 from sqlalchemy.orm import Mapped, mapped_column
+# text 用于 partial unique index 的 WHERE 子句（SQLite 支持部分索引）
+from sqlalchemy import text
 
 # Base 是所有 ORM 模型的声明基类，定义在 app/database.py
 from app.database import Base
@@ -123,6 +126,12 @@ class DeckMasteryEvent(Base):
     """掌握度事件流（事实源）：每次答题/检验一条，p_l 与 level 由它重放推导"""
 
     __tablename__ = "deck_mastery_events"
+    # 性能审计修复：HLR 重放与趋势计算高频按 (user_id, kp_id) + created_at 排序查询，
+    # 复合索引替代原来的单列 user_id / kp_id 索引，避免每用户每知识点的全表临时排序。
+    __table_args__ = (
+        Index("ix_deck_mastery_events_user_kp_created", "user_id", "kp_id", "created_at"),
+        Index("ix_deck_mastery_events_user_created", "user_id", "created_at"),
+    )
 
     # 事件 ID：UUID 主键
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
@@ -223,6 +232,10 @@ class DeckReviewAttempt(Base):
     # 提交时间
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
+    # 性能审计修复："最近 N 次提交"查询按 user_id + created_at 排序，
+    # 复合索引避免全历史临时排序。
+    __table_args__ = (Index("ix_deck_review_attempts_user_created", "user_id", "created_at"),)
+
 
 class DeckArenaChallenge(Base):
     """调试竞技场挑战（种子内容，按日轮换）"""
@@ -268,11 +281,31 @@ class DeckArenaAttempt(Base):
     # 提交时间
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
+    # 性能审计修复：连胜/周榜/回顾查询按 user_id + created_at 过滤排序，
+    # 复合索引避免全表扫描；同时支撑已攻克挑战的幂等检查。
+    # 安全审计修复（TOCTOU 兜底）：partial unique index 保证同一 (用户, 挑战)
+    # 至多存在一条 solved=1 记录。并发双击同时通过"是否已攻克"的 SELECT 检查时，
+    # 第二个 INSERT 撞唯一约束抛 IntegrityError，由端点捕获后按已攻克处理，
+    # 从数据库层杜绝重复发奖。
+    __table_args__ = (
+        Index("ix_deck_arena_attempts_user_created", "user_id", "created_at"),
+        Index(
+            "uq_deck_arena_attempts_solved_once",
+            "user_id",
+            "challenge_id",
+            unique=True,
+            sqlite_where=text("solved = 1"),
+        ),
+    )
+
 
 class DeckArenaRating(Base):
     """调试竞技场 ELO 评分（每用户一行）"""
 
     __tablename__ = "deck_arena_ratings"
+    # 性能审计修复：排行榜 ORDER BY rating DESC 与周榜 COUNT(rating > x)
+    # 每次请求全表扫描，加 rating 索引使其走索引扫描。
+    __table_args__ = (Index("ix_deck_arena_ratings_rating", "rating"),)
 
     # 用户 ID：主键，每用户仅一行评分记录
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), primary_key=True)
@@ -301,6 +334,9 @@ class DeckCoreTransaction(Base):
     balance_after: Mapped[int] = mapped_column(Integer, nullable=False)
     # 流水时间
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+    # 性能审计修复：流水展示按 user_id + created_at 倒序查询，复合索引避免临时排序。
+    __table_args__ = (Index("ix_deck_core_transactions_user_created", "user_id", "created_at"),)
 
 
 class DeckCertExam(Base):
@@ -405,6 +441,9 @@ class DeckFeedEvent(Base):
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     # 事件创建时间
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+    # 性能审计修复：动态流按 user_id + created_at 倒序取最近 N 条，复合索引避免临时排序。
+    __table_args__ = (Index("ix_deck_feed_events_user_created", "user_id", "created_at"),)
 
 
 class DeckUserBadge(Base):

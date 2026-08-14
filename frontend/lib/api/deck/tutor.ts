@@ -1,4 +1,4 @@
-import { deckCall } from './client'
+import { deckCall, LLM_TIMEOUT_MS } from './client'
 import { awardMockBadges, isNightHour } from './mock/badges'
 import {
   TUTOR_STATE_MOCK,
@@ -25,7 +25,9 @@ export interface TutorHistoryItem {
   text: string
 }
 
-/** POST /api/tutor/message —— 发送消息，返回导师追问。余额不足时不扣费并提示 */
+/** POST /api/tutor/message —— 发送消息，返回导师追问。余额不足时不扣费并提示。
+ *  安全审计修复：后端 tutor 端点串行两次 LLM 调用（各 3 重试 × 60s+退避），
+ *  最坏 ~366s。用 300s 超时，避免前端提前 abort 后后端仍在烧 LLM 费用。 */
 export function sendTutorMessage(
   text: string,
   mode: TutorMode,
@@ -63,7 +65,8 @@ export function sendTutorMessage(
         new_badges: [],
       }
     },
-    { method: 'POST', body: JSON.stringify({ text, mode, history }) }
+    { method: 'POST', body: JSON.stringify({ text, mode, history }) },
+    LLM_TIMEOUT_MS
   )
 }
 
@@ -84,7 +87,8 @@ export function startFeynman(topic: string): Promise<FeynmanStartResult> {
   )
 }
 
-/** POST /api/tutor/feynman/check —— 提交解释，返回盲区点评 + 评级 + 掌握度变化（扣一次提问费用） */
+/** POST /api/tutor/feynman/check —— 提交解释，返回盲区点评 + 评级 + 掌握度变化（扣一次提问费用）
+ *  安全审计修复：同 sendTutorMessage，费曼评分走 LLM，用长超时避免前端 abort 后后端仍在烧费用。 */
 export function submitFeynman(
   sessionId: string,
   text: string,
@@ -104,6 +108,7 @@ export function submitFeynman(
         new_badges,
       }
     },
-    { method: 'POST', body: JSON.stringify({ session_id: sessionId, text }) }
+    { method: 'POST', body: JSON.stringify({ session_id: sessionId, text }) },
+    LLM_TIMEOUT_MS
   )
 }

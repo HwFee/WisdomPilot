@@ -76,9 +76,9 @@ def _review_attempt(user_id: str, session_id: str, accuracy: float) -> DeckRevie
     )
 
 
-def _arena_attempt(user_id: str, solved: int) -> DeckArenaAttempt:
+def _arena_attempt(user_id: str, solved: int, challenge_id: str = "DEBUG-0091") -> DeckArenaAttempt:
     return DeckArenaAttempt(
-        user_id=user_id, challenge_id="DEBUG-0091", solved=solved, passed=5 if solved else 0, total=5
+        user_id=user_id, challenge_id=challenge_id, solved=solved, passed=5 if solved else 0, total=5
     )
 
 
@@ -206,19 +206,42 @@ class TestRecentPerformanceQueries:
         assert await service.recent_review_accuracy(db_session, auth_user.id) == 0.8
 
     async def test_arena_win_rate_values(self, db_session, auth_user):
-        """竞技场攻克率：无记录 None；3 连过 1.0；3 连败 0.0。"""
+        """竞技场攻克率：无记录 None；3 连过 1.0；3 连败 0.0；已攻克挑战的重放失败不计入。"""
         await seed_deck(db_session)
         assert await service.recent_arena_win_rate(db_session, auth_user.id) is None
-        for _ in range(3):
-            db_session.add(_arena_attempt(auth_user.id, 1))
+        # 安全审计修复后的 partial unique index 要求每 (用户, 挑战) 至多一条 solved=1，
+        # 连胜用不同挑战 ID 构造
+        for i in range(3):
+            db_session.add(_arena_attempt(auth_user.id, 1, challenge_id=f"DEBUG-009{i + 1}"))
         await db_session.commit()
         assert await service.recent_arena_win_rate(db_session, auth_user.id) == 1.0
 
-        # 换新会话再测 3 连败（fixture 每测试独立建库）
-        db_session.add_all(_arena_attempt(auth_user.id, 0) for _ in range(3))
+        # 换新会话再测 3 连败：用 3 个未攻克过的合成挑战（fixture 每测试独立建库）
+        for i in range(3):
+            cid = f"LOSE-{i:03d}"
+            db_session.add(
+                DeckArenaChallenge(
+                    id=cid, title="t", language="python", code="c",
+                    failing_output="f", time_limit_sec=600, difficulty=1,
+                )
+            )
+            await db_session.flush()
+            db_session.add(_arena_attempt(auth_user.id, 0, challenge_id=cid))
         await db_session.commit()
-        # 新插入 3 条覆盖窗口 → 攻克率 0.0
+        # 新插入 3 条真实失败覆盖窗口 → 攻克率 0.0
         assert await service.recent_arena_win_rate(db_session, auth_user.id) == 0.0
+
+    async def test_arena_win_rate_excludes_replay_failures(self, db_session, auth_user):
+        """已攻克挑战的重放（solved=0）不计入攻克率：练习不拉低难度推荐。"""
+        await seed_deck(db_session)
+        db_session.add(_arena_attempt(auth_user.id, 1, challenge_id="DEBUG-0091"))
+        await db_session.commit()
+        assert await service.recent_arena_win_rate(db_session, auth_user.id) == 1.0
+        # 对已攻克的 DEBUG-0091 重放 3 次（记为 solved=0）
+        db_session.add_all(_arena_attempt(auth_user.id, 0, challenge_id="DEBUG-0091") for _ in range(3))
+        await db_session.commit()
+        # 重放失败被排除，攻克率保持 1.0
+        assert await service.recent_arena_win_rate(db_session, auth_user.id) == 1.0
 
 
 # ── P-08 审查室难度自适应（P-05 弱点匹配 + P-08 选难度）──
@@ -282,8 +305,8 @@ class TestArenaTodayChallenge:
     async def test_winning_streak_shifts_up(self, db_session, auth_user):
         """近 3 次全攻克 → 升档：今日挑战难度 ≥ 基准挑战难度。"""
         await seed_deck(db_session)
-        for _ in range(3):
-            db_session.add(_arena_attempt(auth_user.id, 1))
+        for i in range(3):
+            db_session.add(_arena_attempt(auth_user.id, 1, challenge_id=f"DEBUG-009{i + 1}"))
         await db_session.commit()
         base = await _all_challenges(db_session)
         base_ch = base[service.today_bjt().toordinal() % len(base)]
@@ -338,6 +361,29 @@ class TestRankDelta7d:
     rank_delta = 7 天前排名 − 当前排名（正数 = 上升）。
     """
 
+    # partial unique index 下同一用户同挑战仅一条 solved=1。
+    # 用类级计数器生成无限不重复的合成挑战 ID（并建对应挑战行），
+    # 避免种子 5 个 ID 轮换在用例扩展后撞约束。
+    _attempt_seq = 0
+
+    @classmethod
+    def _next_challenge_id(cls) -> str:
+        """生成新的合成挑战 ID（并保证其在 deck_arena_challenges 中有对应行）。"""
+        cls._attempt_seq += 1
+        return f"RANK-TEST-{cls._attempt_seq:04d}"
+
+    @classmethod
+    async def _add_challenge(cls, db, challenge_id: str) -> str:
+        """创建合成挑战行（partial unique index 下每条 solved=1 需要不同挑战），返回挑战 ID。"""
+        db.add(
+            DeckArenaChallenge(
+                id=challenge_id, title="t", language="python", code="c",
+                failing_output="f", time_limit_sec=600, difficulty=1,
+            )
+        )
+        await db.flush()
+        return challenge_id
+
     async def _add_opponent(
         self, db, uid: str, rating: int, old_solves: int, recent_solves: int
     ) -> None:
@@ -350,25 +396,28 @@ class TestRankDelta7d:
         )
         db.add(DeckArenaRating(user_id=uid, rating=rating, win_streak=0))
         for _ in range(old_solves):
+            cid = await self._add_challenge(db, self._next_challenge_id())
             db.add(
                 DeckArenaAttempt(
-                    user_id=uid, challenge_id="DEBUG-0091", solved=1, passed=5, total=5,
+                    user_id=uid, challenge_id=cid, solved=1, passed=5, total=5,
                     created_at=datetime.now(timezone.utc) - timedelta(days=10),
                 )
             )
         for _ in range(recent_solves):
+            cid = await self._add_challenge(db, self._next_challenge_id())
             db.add(
                 DeckArenaAttempt(
-                    user_id=uid, challenge_id="DEBUG-0091", solved=1, passed=5, total=5,
+                    user_id=uid, challenge_id=cid, solved=1, passed=5, total=5,
                     created_at=datetime.now(timezone.utc),
                 )
             )
         await db.commit()
 
     async def _add_own_attempt(self, db, user_id: str, solved: bool, days_ago: int) -> None:
+        cid = await self._add_challenge(db, self._next_challenge_id())
         db.add(
             DeckArenaAttempt(
-                user_id=user_id, challenge_id="DEBUG-0091",
+                user_id=user_id, challenge_id=cid,
                 solved=1 if solved else 0, passed=5 if solved else 0, total=5,
                 created_at=datetime.now(timezone.utc) - timedelta(days=days_ago),
             )

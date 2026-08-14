@@ -16,6 +16,7 @@ from app.training import service
 from app.training.models import (
     DeckAbilityAxis,
     DeckArenaAttempt,
+    DeckArenaChallenge,
     DeckCertification,
     DeckFeedEvent,
     DeckKnowledgePoint,
@@ -33,6 +34,18 @@ PLACEMENT_ANSWERS = [
     {"question_id": "p4", "answer": "def f(s):\n    return -1"},
     {"question_id": "p5", "answer": "def f(n):\n    return n>0 and True"},
 ]
+
+
+async def _add_arena_challenges(db, count: int) -> None:
+    """补充测试专用的竞技场挑战行（partial unique index 下每场攻克需要不同挑战）。"""
+    db.add_all(
+        DeckArenaChallenge(
+            id=f"TST-{i:03d}", title=f"t{i}", language="python", code="c",
+            failing_output="f", time_limit_sec=600, difficulty=1,
+        )
+        for i in range(count)
+    )
+    await db.flush()
 
 
 async def _seed_placement(
@@ -205,10 +218,12 @@ class TestBuildTimeline:
         """轴升级重放：初始 debug xp=200（LV.1）+ 9 场攻克×23=207 → 407 跨过 400 边界升 LV.2。"""
         await seed_deck(db_session)
         await _seed_placement(db_session, auth_user.id, score=0)
-        for _ in range(9):
+        # 安全审计修复：partial unique index 要求同挑战仅一条 solved=1，创建 9 个测试挑战
+        await _add_arena_challenges(db_session, 9)
+        for i in range(9):
             db_session.add(
                 DeckArenaAttempt(
-                    user_id=auth_user.id, challenge_id="DEBUG-0091",
+                    user_id=auth_user.id, challenge_id=f"TST-{i:03d}",
                     solved=1, passed=5, total=5,
                 )
             )
@@ -268,10 +283,12 @@ class TestBuildTimeline:
         await _seed_placement(db_session, auth_user.id, score=0)  # 三轴均 LV.1（xp=200）
         now = utc_now() + timedelta(days=1)
         # 第 1 天：9 场竞技场攻克 → debug 407 跨 400 边界 → LV.2
-        for _ in range(9):
+        # （partial unique index：同挑战仅一条 solved=1，创建 9 个测试挑战）
+        await _add_arena_challenges(db_session, 9)
+        for i in range(9):
             db_session.add(
                 DeckArenaAttempt(
-                    user_id=auth_user.id, challenge_id="DEBUG-0091",
+                    user_id=auth_user.id, challenge_id=f"TST-{i:03d}",
                     solved=1, passed=5, total=5, created_at=now,
                 )
             )
