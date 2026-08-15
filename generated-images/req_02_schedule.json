@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "model": "gpt-image-2",
+  "input": {
+    "prompt": "Create a clean professional flow chart (process diagram) for a personalized learning scheduling algorithm in a thesis proposal. Flat design, white background, rounded rectangles, blue and teal accents, all labels in Simplified Chinese, legible Chinese text. Title at top: '个性化训练调度流程'. Vertical flow with arrows, starting at top: step1 rounded box '新用户注册', arrow down to step2 '定级测试（5 分钟）', arrow down to step3 '三轴初始等级 · 审阅 / 调试 / 实现', arrow down to step4 '每日主任务：按最低能力轴分发', arrow down to a large container box '训练模块' with three cards '代码审查室' '调试竞技场' '费曼检验', from this container an arrow to step5 '回忆概率 p 低于阈值 → 进入复习队列', arrow to step6 '弱点知识点优先推送复习', then a long curved return arrow from step6 back up to step4 labeled '事件回写掌握度 · 循环迭代'. Between step4 and the training container, small note '最弱轴优先 · 解释推荐理由'. Clean vector style, crisp borders, no watermark.",
+    "size": "16:9",
+    "resolution": "2k",
+    "n": 1
+  }
+}

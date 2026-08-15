@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "model": "gpt-image-2",
+  "input": {
+    "prompt": "Create a clean professional layered software architecture diagram for a thesis proposal. Flat design, white background, minimal shadows, blue and teal accent colors, all labels in Simplified Chinese, legible Chinese text. Top title bar: '系统总体架构'. Four horizontal layers stacked top to bottom, connected by downward arrows between layers. Layer 1 (top, dark navy): box '学习者（浏览器）'. Layer 2 (labeled '表现层 · 前端'): one wide box containing tech 'Next.js 15 · React 19 · TypeScript · Tailwind · Monaco Editor' and four small UI cards '代码审查室' '调试竞技场' '苏格拉底导师' '认证考试'. Layer 3 (labeled '应用层 · 后端 FastAPI'): wide box containing four small cards '代码审查室业务' '调试竞技场业务' '导师与费曼检验' '认证考试业务', and below them three medium cards '个性化调度引擎' 'HLR 掌握度引擎' '智核经济 · 徽章'. Layer 4 (labeled '基础设施层'): three cards 'SQLite WAL · 18 张表' 'Judge0 判题服务' 'AI 大模型 · DeepSeek / OpenAI'. On the right side a vertical note box: 'JWT 认证 · 请求限流'. Clean vector style, crisp borders, no watermark, no footer text.",
+    "size": "16:9",
+    "resolution": "2k",
+    "n": 1
+  }
+}

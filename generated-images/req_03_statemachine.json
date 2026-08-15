@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "model": "gpt-image-2",
+  "input": {
+    "prompt": "Create a clean professional state machine diagram for a 4-level mastery model in a thesis proposal. Flat design, white background, rounded rectangle states, blue and amber accents, all labels in Simplified Chinese, legible Chinese text. Title at top: '四级掌握状态机'. Four state boxes arranged left to right: '初识' → '熟悉' → '熟练' → '精通', connected by forward arrows. Arrow labels: between 初识 and 熟悉 label '回忆概率 p ≥ 0.3'; between 熟悉 and 熟练 label 'p ≥ 0.6 且 答对 ≥ 3 次'; between 熟练 and 精通 label 'p ≥ 0.8 · 答对 ≥ 4 次 · 间隔重复 ≥ 3 天 · 实战来源'. Below each state a small caption of what it requires: 初识 '未接触或 p < 0.3', 熟悉 '短期记忆', 熟练 '稳定掌握', 精通 '实战 + 间隔重复，不可速通'. Add a curved dashed return arrow from 精通 back to 熟悉 labeled '遗忘 · p 下降回退'. Clean vector style, crisp borders, no watermark.",
+    "size": "16:9",
+    "resolution": "2k",
+    "n": 1
+  }
+}

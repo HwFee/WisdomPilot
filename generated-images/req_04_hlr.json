@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "model": "gpt-image-2",
+  "input": {
+    "prompt": "Create a clean mathematical forgetting-curve chart for a memory model in a thesis proposal. Flat design, white background, clean axes, Simplified Chinese labels, legible Chinese text. Title at top: 'HLR 半衰期回归记忆模型 · 遗忘曲线'. Line chart: horizontal x-axis labeled '距上次复习的天数 Δ（天）' from 0 to 30; vertical y-axis labeled '回忆概率 p' from 0 to 1.0. Draw three smooth decreasing exponential curves, each starting near p=1 at Δ=0: curve 1 labeled 'h = 1 天（初学）' decays fastest; curve 2 labeled 'h = 3.24 天' decays slower; curve 3 labeled 'h = 5.83 天（多次复习）' decays slowest. Add a dashed horizontal reference line at p=0.5 crossing all three curves, labeled at the intersection 'Δ = h 时 p = 0.5'. Add a large formula annotation in a box: 'p = 2^(−Δ/h)'. Add three horizontal shaded bands on the y-axis right side labeled '精通 ≥ 0.8', '熟练 ≥ 0.6', '熟悉 ≥ 0.3'. Clean vector style, thin gridlines, no watermark.",
+    "size": "16:9",
+    "resolution": "2k",
+    "n": 1
+  }
+}

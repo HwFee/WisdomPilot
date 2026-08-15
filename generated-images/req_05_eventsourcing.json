@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "model": "gpt-image-2",
+  "input": {
+    "prompt": "Create a clean professional event-sourcing data flow diagram for a mastery tracking engine in a thesis proposal. Flat design, white background, rounded rectangles, blue and teal accents, all labels in Simplified Chinese, legible Chinese text. Title at top: '掌握度事件溯源架构'. Layout: top row of five small source boxes: '代码审查室' '调试竞技场' '费曼检验' '认证考试' '定级测试'. Arrows from all five pointing down into a central prominent database box labeled 'deck_mastery_events 事件表（唯一事实源）· 追加写'. From this box an arrow down to a processing engine box labeled 'HLR 纯函数重放引擎（mastery.py）'. From the engine an arrow down to a cache box labeled 'deck_user_mastery 读模型 · 回忆概率 p_l · 掌握等级'. From the cache three arrows to three consumer boxes at the bottom: '个性化调度引擎' '徽章系统' '学习仪表盘'. Add a small curved note near the event table: '事件可审计 · 可回溯 · 可重算'. Clean vector style, crisp borders, no watermark.",
+    "size": "16:9",
+    "resolution": "2k",
+    "n": 1
+  }
+}
